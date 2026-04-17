@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { ClipboardCheck, FileText } from 'lucide-react';
+import { ClipboardCheck, FileText, MessageSquare } from 'lucide-react'; // NUEVO: ícono para feedback
 
 export function PanelEvaluador() {
-  const { user } = useAuth();
+  const { user, sendNotificationToUser } = useAuth(); // NUEVO: traemos sendNotificationToUser
   const navigate = useNavigate();
   const [works, setWorks] = useState<any[]>([]);
 
+  // NUEVO: estado para guardar el texto de feedback por cada trabajo
+  // es un objeto { [workId]: string } para manejar múltiples trabajos abiertos
+  const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
+
+  // NUEVO: estado para mostrar/ocultar el área de feedback por trabajo
+  const [showFeedback, setShowFeedback] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     if (!user) return;
-
     if (user.currentRole !== 'evaluador') {
       navigate('/');
       return;
@@ -34,7 +40,7 @@ export function PanelEvaluador() {
     );
     localStorage.setItem('congress_works', JSON.stringify(updatedWorks));
 
-    // Convertir usuario en autor
+    // Convertir usuario en autor — sin cambios
     const users = JSON.parse(localStorage.getItem('congress_users') || '[]');
     const updatedUsers = users.map((u: any) =>
       u.id === work.userId
@@ -43,28 +49,57 @@ export function PanelEvaluador() {
     );
     localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
 
+    // NUEVO: notificar al autor que su trabajo fue aprobado
+    // si el evaluador escribió feedback, se incluye en el mensaje; si no, mensaje genérico
+    const feedbackText = feedbacks[workId]?.trim();
+    const message = feedbackText
+      ? `Tu trabajo "${work.title}" fue aprobado. Comentario del evaluador: ${feedbackText}`
+      : `Tu trabajo "${work.title}" fue aprobado. ¡Felicitaciones!`;
+
+    sendNotificationToUser(work.userId, 'Trabajo aprobado', message);
+
     setWorks(
       updatedWorks.filter(
         (w: any) => w.status === 'pending' && w.userId !== user.id
       )
     );
+
+    // NUEVO: limpia el feedback de ese trabajo del estado local
+    setFeedbacks(prev => { const copy = { ...prev }; delete copy[workId]; return copy; });
+    setShowFeedback(prev => { const copy = { ...prev }; delete copy[workId]; return copy; });
   };
 
   const handleReject = (workId: string) => {
     const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
+    const work = allWorks.find((w: any) => w.id === workId); // NUEVO: necesitamos el trabajo para el mensaje
+
     const updatedWorks = allWorks.map((w: any) =>
       w.id === workId
         ? { ...w, status: 'rejected', attempts: (w.attempts || 1) + 1 }
         : w
     );
     localStorage.setItem('congress_works', JSON.stringify(updatedWorks));
-    setWorks(updatedWorks.filter((w: any) => w.status === 'pending'));
+
+    // NUEVO: notificar al autor que su trabajo fue rechazado
+    const feedbackText = feedbacks[workId]?.trim();
+    const message = feedbackText
+      ? `Tu trabajo "${work.title}" no fue aprobado. Comentario del evaluador: ${feedbackText}`
+      : `Tu trabajo "${work.title}" no fue aprobado. Podés volver a enviarlo con correcciones.`;
+
+    sendNotificationToUser(work.userId, 'Trabajo no aprobado', message);
+
+    setWorks(updatedWorks.filter((w: any) => w.status === 'pending' && w.userId !== user.id));
+
+    // NUEVO: limpia el feedback de ese trabajo del estado local
+    setFeedbacks(prev => { const copy = { ...prev }; delete copy[workId]; return copy; });
+    setShowFeedback(prev => { const copy = { ...prev }; delete copy[workId]; return copy; });
   };
 
   return (
     <div className="min-h-[calc(100vh-80px)] py-12 px-4 bg-gradient-to-br from-[#faf8f5] to-[#f3f1ed]">
       <div className="container mx-auto max-w-6xl">
 
+        {/* Header — sin cambios */}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
           <div className="flex items-center gap-4">
             <ClipboardCheck className="w-12 h-12 text-purple-600" />
@@ -75,6 +110,7 @@ export function PanelEvaluador() {
           </div>
         </div>
 
+        {/* Stats — sin cambios */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl shadow-md">
             <p className="text-sm text-gray-600 mb-1">Trabajos Pendientes</p>
@@ -96,6 +132,7 @@ export function PanelEvaluador() {
           </div>
         </div>
 
+        {/* Lista de trabajos */}
         <div className="space-y-4">
           {works.length === 0 ? (
             <div className="text-center text-gray-500 py-10">
@@ -122,7 +159,32 @@ export function PanelEvaluador() {
                   <FileText className="w-8 h-8 text-gray-400" />
                 </div>
 
-                <div className="flex gap-3 mt-4">
+                {/* NUEVO: botón para mostrar/ocultar el área de feedback opcional */}
+                <button
+                  onClick={() =>
+                    setShowFeedback(prev => ({ ...prev, [work.id]: !prev[work.id] }))
+                  }
+                  className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-800 transition mb-3"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  {showFeedback[work.id] ? 'Ocultar comentario' : 'Agregar comentario (opcional)'}
+                </button>
+
+                {/* NUEVO: área de texto de feedback, solo visible si el evaluador la abrió */}
+                {showFeedback[work.id] && (
+                  <textarea
+                    value={feedbacks[work.id] || ''}
+                    onChange={(e) =>
+                      setFeedbacks(prev => ({ ...prev, [work.id]: e.target.value }))
+                    }
+                    placeholder="Escribí tu devolución al autor. Tu identidad no será revelada."
+                    rows={3}
+                    className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-purple-300 mb-3"
+                  />
+                )}
+
+                {/* Botones aprobar/rechazar — misma lógica, ahora también envían notificación */}
+                <div className="flex gap-3 mt-2">
                   <button
                     onClick={() => handleApprove(work.id)}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm"
