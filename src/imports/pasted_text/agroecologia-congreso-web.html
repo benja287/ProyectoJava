@@ -1,0 +1,57 @@
+PROMPT PARA FIGMA MAKE:
+
+Design a complete web platform in HTML for the V Congreso Argentino de Agroecología (La Plata, 2027), organized by LIRA - UNLP. The platform must be fully in Spanish, with a green and earthy color palette (forest green, olive, warm beige, brown tones) reflecting the agroecological identity. Use a clean, institutional and modern style.
+
+GLOBAL NAVIGATION
+Create a top navbar visible on all pages with the congress logo on the left, the name "V Congreso Argentino de Agroecología — La Plata 2027" as title, and navigation links: Inicio, Circulares, Actividades, Mapas, Feria Agroecológica, Organizadores, Contacto. On the right side show two buttons: "Registrarse" and "Iniciar sesión". When the user is logged in, replace those buttons with the user's name, a notification bell icon with a badge counter, and a dropdown menu with options: Mi perfil, Editar datos, Cerrar sesión. If the user has multiple roles, the dropdown must also include "Cambiar rol".
+
+PAGE 1 — INICIO (Public)
+Hero section with full-width banner image representing agroecology (fields, community, nature). Display the congress name, tagline, date and city. Below show four info cards: Ediciones anteriores, Qué es la Agroecología, Cómo funciona un congreso, Sede La Plata. Then a timeline section showing the evolution of congresses from I (Cuyo 2019) to V (La Plata 2027) with attendee and paper counts per edition.
+
+PAGE 2 — REGISTRO (Public)
+A centered registration form with fields: Nombre, Apellido, Email, Contraseña, Confirmar contraseña. A "Registrarse" primary button. Show inline validation messages below each field: "El email ingresado ya se encuentra registrado en el sistema", "La contraseña debe contener al menos ocho caracteres". On success show a confirmation message and auto-login redirect.
+
+PAGE 3 — INICIAR SESIÓN (Public)
+A centered login form with fields: Email, Contraseña. Button "Iniciar sesión". A link "¿Olvidaste tu contraseña?" below. Show error messages: "La contraseña no es válida. Intente nuevamente", "El email ingresado no se encuentra registrado". If the user has multiple roles after login, redirect to a role selection screen showing role cards: Asistente, Autor, Evaluador, Administrador — each with an icon and a "Ingresar como [rol]" button.
+
+PAGE 4 — RECUPERAR CONTRASEÑA (Public)
+Step 1: Form with email field and "Enviar instrucciones" button. Error: "El correo ingresado no se encuentra registrado". Step 2 (after email link): Form with "Nueva contraseña" and "Confirmar nueva contraseña" fields and "Restablecer" button. Show confirmation modal "¿Estás seguro de cambiar la contraseña?" with Aceptar/Cancelar. Error messages: "La clave debe poseer al menos 8 dígitos", "La clave no coincide".
+
+PAGE 5 — CIRCULARES (Public)
+A list of published circulars ordered by date, each showing: circular number, title, date and a "Ver circular" button. Empty state message: "Todavía no hay circulares publicadas". Administrators see additional buttons: "Nueva circular", "Editar" and "Eliminar" per item. Deletion triggers a confirmation modal.
+
+PAGE 6 — ACTIVIDADES (Mixed visibility)
+Four subsections as tabs or cards: Actividades Juveniles, Agenda Cultural, Talleres, Presentaciones orales y pósters. Public users see only Actividades Juveniles and Agenda Cultural as read-only. Logged-in users without inscription see the same. Asistentes and Autores additionally see: Talleres aprobados with a "Proponer taller" button that opens a form with fields Título, Descripción, Metodología participativa, Datos del coordinador. Autores also see "Mis Presentaciones" with their assigned schedule, room, campus map indicator and material reminder (upload file or bring printed poster).
+
+PAGE 7 — FERIA AGROECOLÓGICA (Mixed visibility)
+Public view: a visual grid or map of confirmed exhibitors showing name, products and province. Logged-in users see an additional "Inscribirme como expositor" button that opens a form with fields: Nombre, Organización, Productos, Provincia, Contacto, Necesidades específicas. On submit show: "Tu solicitud como expositor fue enviada. El equipo organizador la revisará a la brevedad". Pending state shows "Pendiente de aprobación" badge on the user's request.
+
+PAGE 8 — PROGRAMA GENERAL (Public, visible once published)
+A visual schedule showing the main activities: feria, cultural events, conferences. Displayed as a timeline or calendar grid by day and time slot. When not yet published show: "El programa aún no está disponible. Te notificaremos cuando sea publicado."
+
+PAGE 9 — PROGRAMA DETALLADO (Asistente / Autor only)
+Full congress schedule with all activities: conferencias, mesas temáticas, talleres, presentaciones orales, pósters, feria. Each slot shows title, time, room/space. Asistentes and Autores can click "Agregar a mi agenda" on any activity. If there is a time conflict show: "Ya tenés una actividad en ese horario. Revisá tu agenda antes de agregar". Personal agenda view shows saved activities with option to remove each one.
+
+PAGE 10 — INSCRIPCIÓN AL CONGRESO (Logged-in user)
+A form showing congress details, fee information and a file upload field for the payment receipt (image or PDF). Button "Enviar inscripción". Status messages: "Tu inscripción fue enviada. Será validada por el equipo organizador", "Tu inscripción fue confirmada. ¡Ya sos asistente del V Congreso!", "Tu comprobante de pago fue rechazado. Comunicate con la organización para más información".
+
+PAGE 11 — ENVÍO DE TRABAJOS (Asistente)
+A form with fields: Título del trabajo, Eje temático (dropdown), Tipo de presentación (Oral / Póster), file upload (PDF only). Button "Enviar trabajo". Messages: "Tu trabajo fue enviado correctamente y está siendo evaluado", "Completá todos los campos obligatorios y adjuntá el archivo antes de enviar", "Alcanzaste el límite de trabajos permitidos para este congreso". Work list below showing submitted works with status badges: En evaluación, Aprobado, Requiere correcciones, Rechazado.
+
+PAGE 12 — MIS PRESENTACIONES (Autor)
+Enabled only after work approval and schedule publication. Show: assigned day, exact time, room number and building. Campus map or location indicator. General presentation schedule showing all authors. Material reminder section: if oral show upload file option or "llevar el día del evento" notice; if poster show "Llevar póster impreso" notice. If schedule not yet published show: "Tu presentación aún no fue asignada. Te notificaremos cuando el cronograma esté disponible".
+
+PAGE 13 — PANEL EVALUADOR
+List of assigned works showing title, author (anonymous), submission date and status. Each work opens a detail view with: full text/PDF viewer, evaluation form with radio buttons (Aprobado / Requiere correcciones / Rechazado), text area for feedback comments (anonymous to author), and "Enviar evaluación" button. Conflict of interest button per work: "Declarar conflicto de interés" which notifies the administrator. Works automatically assigned by the system with balanced load — no manual intervention needed.
+
+PAGE 14 — PANEL ADMINISTRADOR
+Dashboard with summary cards: total registered users, confirmed assistants, submitted works, pending payment validations, pending exhibitor requests. Sections accessible from sidebar: Gestión de usuarios (list with role assignment, manual assistant registration form), Validación de pagos (list of pending receipts with Aprobar/Rechazar buttons and batch validation option), Gestión del programa (form to add conferences, thematic tables, approved workshops, oral presentations, posters and fair with fields: título, fecha, hora inicio, hora fin, sala/espacio), Publicar programa (toggle to publish general and detailed program), Gestión de evaluadores (assign evaluator role, view workload per evaluator), Circulares (create, edit, delete), Notificaciones (compose general or role-specific notification with "Enviar" button).
+
+PAGE 15 — CENTRO DE NOTIFICACIONES (Logged-in user)
+Notification list showing unread items highlighted and read items in normal style. Each notification shows title, message, date and origin (general or specific). Empty state: "No tenés notificaciones nuevas". Bell icon in navbar shows unread count badge.
+
+PAGE 16 — MAPAS / LOCALIDAD (Public)
+Three subsections as tabs: Alojamientos (list organized by zone and budget), Turismo y recreación (tourist activities near the congress venue), Mapa del congreso (embedded map showing the congress venue with key locations marked).
+
+DESIGN SYSTEM
+Use consistent components throughout: primary buttons in forest green, secondary buttons in olive outline, status badges with colors (En evaluación: blue, Aprobado: green, Rechazado: red, Pendiente: yellow), modal confirmations for all destructive actions, empty state illustrations for lists with no content, responsive layout for mobile and desktop, sidebar navigation for admin and evaluator panels, breadcrumb navigation on inner pages.
