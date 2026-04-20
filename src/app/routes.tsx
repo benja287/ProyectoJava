@@ -18,6 +18,11 @@ import { PanelAutor} from "./pages/PanelAutor";
 import { PanelEvaluador } from "./pages/PanelEvaluador";
 import { PanelAdmin } from "./pages/PanelAdmin";
 import { NotificacionesPage } from "./pages/NotificacionesPage";
+import { AdminMesasTematicas } from "./pages/AdminMesasTematicas";
+import { AdminMesasRedondas } from "./pages/AdminMesasRedondas";
+import { AdminPosters } from './pages/AdminPosters';
+import { ProgramaCongreso} from './pages/ProgramaCongreso';
+import { MiAgenda} from './pages/MiAgenda';
 import { OrganizadoresPage } from "./pages/OrganizadoresPage";
 import { ContactoPage } from "./pages/ContactoPage";
 import { Dashboard } from "./pages/Dashboard"; 
@@ -44,6 +49,11 @@ export const router = createBrowserRouter([
       { path: "evaluador", Component: PanelEvaluador },
       { path: "admin", Component: PanelAdmin },
       { path: "notificaciones", Component: NotificacionesPage },
+      { path: "admin/mesas-tematicas", Component: AdminMesasTematicas },
+      { path: "admin/mesas-redondas", Component: AdminMesasRedondas },  
+      { path: "ProgramaCongreso", Component: ProgramaCongreso}, 
+      { path: "MiAgenda", Component: MiAgenda}, 
+      { path: "admin/posters", Component: AdminPosters }, 
       { path: "organizadores", Component: OrganizadoresPage },
       { path: "contacto", Component: ContactoPage },
     ],

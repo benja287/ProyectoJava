@@ -94,6 +94,7 @@ export function EnvioTrabajosPage() {
       const newWork = {
         id: Date.now().toString(),
         userId: user.id,
+        userName: user.name + ' ' + user.lastName,
         title: formData.title,
         axis: formData.axis,
         type: formData.type,
@@ -168,8 +169,8 @@ export function EnvioTrabajosPage() {
                 className="w-full border p-2 rounded"
               >
                 <option value="">Eje temático</option>
-                <option value="produccion">Producción</option>
-                <option value="comercializacion">Comercialización</option>
+                <option value="Relato de experiencia">Relato de experiencia</option>
+                <option value="Trabajo cientifico">Trabajo cientifico</option>
               </select>
 
               <div>

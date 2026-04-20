@@ -1,51 +1,129 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { Settings, Users, Bell } from 'lucide-react'; // NUEVO: ícono Bell para la sección
-import { UserRole } from '../context/AuthContext'; // NUEVO: importamos el tipo para el selector de rol
+import { Settings, Bell, Pencil, X, Trash2 } from 'lucide-react';
+import { UserRole } from '../context/AuthContext';
 
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+interface Session {
+  id: string;
+  code: string;
+  name: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+  works: string[];
+}
+
+interface PosterSession {
+  id: string;
+  name: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  works: { workId: string; stand: string }[];
+}
+
+interface RoundTable {
+  id: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+  moderator: string;
+  panelists: string;
+  description: string;
+}
+
+// ─── Componente ───────────────────────────────────────────────────────────────
 export function PanelAdmin() {
-  const { user, sendNotificationToAll } = useAuth(); // NUEVO: traemos sendNotificationToAll
+  const { user, sendNotificationToAll } = useAuth();
   const navigate = useNavigate();
 
   const [inscriptions, setInscriptions] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [approvedWorks, setApprovedWorks] = useState<any[]>([]);
-  const [scheduledWorks, setScheduledWorks] = useState<any[]>([]);
-  const [formData, setFormData] = useState<any>({});
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [roundTables, setRoundTables] = useState<RoundTable[]>([]);
+  const [works, setWorks] = useState<any[]>([]);
+  const [posterSessions, setPosterSessions] = useState<PosterSession[]>([]);
 
-  // NUEVO: estado para el formulario de notificaciones
   const [notifForm, setNotifForm] = useState({
     title: '',
     message: '',
-    role: '' as UserRole | '', // vacío significa "todos"
+    role: '' as UserRole | '',
   });
-  // NUEVO: mensaje de feedback al admin después de enviar
   const [notifFeedback, setNotifFeedback] = useState('');
 
+  // ── Modal: Mesa Temática ───────────────────────────────────────────────────
+  const [editingSession, setEditingSession] = useState<Session | null>(null);
+  const [editSessionForm, setEditSessionForm] = useState({
+    code: '', name: '', date: '', startTime: '', endTime: '', room: '',
+  });
+
+  // ── Modal: Sesión de Pósters ───────────────────────────────────────────────
+  const [editingPoster, setEditingPoster] = useState<PosterSession | null>(null);
+  const [editPosterForm, setEditPosterForm] = useState({
+    name: '', date: '', startTime: '', endTime: '', location: '',
+  });
+
+  // ── Modal: Mesa Redonda ────────────────────────────────────────────────────
+  const [editingRoundTable, setEditingRoundTable] = useState<RoundTable | null>(null);
+  const [editRoundTableForm, setEditRoundTableForm] = useState({
+    title: '', date: '', startTime: '', endTime: '', room: '',
+    moderator: '', panelists: '', description: '',
+  });
+
+  // ── Modal de confirmación de eliminación ──────────────────────────────────
+  const [confirmDelete, setConfirmDelete] = useState<{
+    type: 'session' | 'poster' | 'roundtable';
+    id: string;
+    name: string;
+  } | null>(null);
+
+  // ─── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user || user.currentRole !== 'admin') {
       navigate('/');
       return;
     }
-
-    const allUsers = JSON.parse(localStorage.getItem('congress_users') || '[]');
-    const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
-
-    const pending = allUsers.filter((u: any) => u.inscriptionStatus === 'pending');
-    const approved = allWorks.filter((w: any) => w.status === 'approved');
-    const scheduled = allWorks.filter((w: any) => w.status === 'scheduled');
+    const allUsers   = JSON.parse(localStorage.getItem('congress_users')      || '[]');
+    const allWorks   = JSON.parse(localStorage.getItem('congress_works')      || '[]');
+    const sesiones   = JSON.parse(localStorage.getItem('congress_sessions')   || '[]');
+    const mesas      = JSON.parse(localStorage.getItem('congress_roundtables')|| '[]');
+    const posters    = JSON.parse(localStorage.getItem('congress_posters')    || '[]');
+    const pending    = allUsers.filter((u: any) => u.inscriptionStatus === 'pending');
 
     setInscriptions(pending);
     setUsers(allUsers);
-    setApprovedWorks(approved);
-    setScheduledWorks(scheduled);
+    setSessions(sesiones);
+    setPosterSessions(posters);
+    setWorks(allWorks);
+    setRoundTables(mesas);
   }, [user, navigate]);
 
   if (!user) return null;
 
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+  const getAuthor = (userId: string) => {
+    const u = users.find((u) => u.id === userId);
+    return u ? `${u.name} ${u.lastName}` : 'Autor desconocido';
+  };
+
+  /** Restaura el status de un trabajo a 'approved' en congress_works */
+  const restoreWorkToApproved = (workId: string) => {
+    const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
+    const updated  = allWorks.map((w: any) =>
+      w.id === workId ? { ...w, status: 'approved' } : w
+    );
+    localStorage.setItem('congress_works', JSON.stringify(updated));
+    setWorks(updated);
+  };
+
   // =========================
-  // INSCRIPCIONES — sin cambios
+  // INSCRIPCIONES
   // =========================
   const handleApprove = (userId: string) => {
     const updatedUsers = users.map((u: any) =>
@@ -55,7 +133,7 @@ export function PanelAdmin() {
     );
     localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
     setUsers(updatedUsers);
-    setInscriptions(inscriptions.filter(i => i.id !== userId));
+    setInscriptions(inscriptions.filter((i) => i.id !== userId));
   };
 
   const handleReject = (userId: string) => {
@@ -64,11 +142,11 @@ export function PanelAdmin() {
     );
     localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
     setUsers(updatedUsers);
-    setInscriptions(inscriptions.filter(i => i.id !== userId));
+    setInscriptions(inscriptions.filter((i) => i.id !== userId));
   };
 
   // =========================
-  // EVALUADORES — sin cambios
+  // EVALUADORES
   // =========================
   const makeEvaluator = (userId: string) => {
     const updatedUsers = users.map((u: any) => {
@@ -78,69 +156,171 @@ export function PanelAdmin() {
       return u;
     });
     localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
-
     const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
     if (currentUser.id === userId) {
-      localStorage.setItem('current_user', JSON.stringify({ ...currentUser, roles: [...(currentUser.roles || []), 'evaluador'] }));
+      localStorage.setItem('current_user', JSON.stringify({
+        ...currentUser, roles: [...(currentUser.roles || []), 'evaluador'],
+      }));
       window.location.reload();
     }
     setUsers(updatedUsers);
   };
 
   // =========================
-  // CRONOGRAMA — sin cambios
+  // MESA TEMÁTICA — editar / quitar trabajo / ELIMINAR
   // =========================
-  const handleChange = (id: string, field: string, value: string) => {
-    setFormData((prev: any) => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  const openEditSession = (s: Session) => {
+    setEditingSession(s);
+    setEditSessionForm({ code: s.code, name: s.name, date: s.date, startTime: s.startTime, endTime: s.endTime, room: s.room });
   };
 
-  const asignarHorario = (id: string) => {
-    const data = formData[id];
-    if (!data?.fecha || !data?.hora || !data?.sala) {
-      alert('Completar todos los campos');
-      return;
-    }
-    const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
-    const updated = allWorks.map((w: any) =>
-      w.id === id ? { ...w, ...data, status: 'scheduled' } : w
+  const saveSession = () => {
+    if (!editingSession) return;
+    const updated = sessions.map((s) =>
+      s.id === editingSession.id ? { ...s, ...editSessionForm } : s
     );
-    localStorage.setItem('congress_works', JSON.stringify(updated));
-    setApprovedWorks(updated.filter((w: any) => w.status === 'approved'));
-    setScheduledWorks(updated.filter((w: any) => w.status === 'scheduled'));
-    alert('Cronograma asignado');
+    localStorage.setItem('congress_sessions', JSON.stringify(updated));
+    setSessions(updated);
+    setEditingSession(null);
+  };
+
+  const removeWorkFromSession = (sessionId: string, workId: string) => {
+    const updatedSessions = sessions.map((s) =>
+      s.id === sessionId ? { ...s, works: s.works.filter((id) => id !== workId) } : s
+    );
+    localStorage.setItem('congress_sessions', JSON.stringify(updatedSessions));
+    setSessions(updatedSessions);
+    restoreWorkToApproved(workId);
+    if (editingSession?.id === sessionId) {
+      setEditingSession({ ...editingSession, works: editingSession.works.filter((id) => id !== workId) });
+    }
+  };
+
+  /** Elimina completamente una mesa temática y restaura todos sus trabajos */
+  const deleteSession = (sessionId: string) => {
+    const sessionToDelete = sessions.find((s) => s.id === sessionId);
+    // Restaurar todos los trabajos asignados a "approved"
+    sessionToDelete?.works.forEach((workId) => {
+      restoreWorkToApproved(workId);
+    });
+    const updated = sessions.filter((s) => s.id !== sessionId);
+    localStorage.setItem('congress_sessions', JSON.stringify(updated));
+    setSessions(updated);
+    setConfirmDelete(null);
+    if (editingSession?.id === sessionId) setEditingSession(null);
   };
 
   // =========================
-  // NUEVO: NOTIFICACIONES
+  // SESIÓN DE PÓSTERS — editar / quitar trabajo / ELIMINAR
+  // =========================
+  const openEditPoster = (p: PosterSession) => {
+    setEditingPoster(p);
+    setEditPosterForm({ name: p.name, date: p.date, startTime: p.startTime, endTime: p.endTime, location: p.location });
+  };
+
+  const savePoster = () => {
+    if (!editingPoster) return;
+    const updated = posterSessions.map((p) =>
+      p.id === editingPoster.id ? { ...p, ...editPosterForm } : p
+    );
+    localStorage.setItem('congress_posters', JSON.stringify(updated));
+    setPosterSessions(updated);
+    setEditingPoster(null);
+  };
+
+  const removeWorkFromPoster = (posterId: string, workId: string) => {
+    const updatedPosters = posterSessions.map((p) =>
+      p.id === posterId
+        ? { ...p, works: p.works.filter((w) => w.workId !== workId) }
+        : p
+    );
+    localStorage.setItem('congress_posters', JSON.stringify(updatedPosters));
+    setPosterSessions(updatedPosters);
+    restoreWorkToApproved(workId);
+    if (editingPoster?.id === posterId) {
+      setEditingPoster({ ...editingPoster, works: editingPoster.works.filter((w) => w.workId !== workId) });
+    }
+  };
+
+  /** Elimina completamente una sesión de pósters y restaura todos sus trabajos */
+  const deletePoster = (posterId: string) => {
+    const poster = posterSessions.find((p) => p.id === posterId);
+    // Restaurar todos los pósters asignados a "approved"
+    poster?.works.forEach((w) => {
+      restoreWorkToApproved(w.workId);
+    });
+    const updated = posterSessions.filter((p) => p.id !== posterId);
+    localStorage.setItem('congress_posters', JSON.stringify(updated));
+    setPosterSessions(updated);
+    setConfirmDelete(null);
+    if (editingPoster?.id === posterId) setEditingPoster(null);
+  };
+
+  // =========================
+  // MESA REDONDA — editar / ELIMINAR
+  // =========================
+  const openEditRoundTable = (m: RoundTable) => {
+    setEditingRoundTable(m);
+    setEditRoundTableForm({
+      title: m.title, date: m.date, startTime: m.startTime, endTime: m.endTime,
+      room: m.room, moderator: m.moderator, panelists: m.panelists, description: m.description,
+    });
+  };
+
+  const saveRoundTable = () => {
+    if (!editingRoundTable) return;
+    const updated = roundTables.map((m) =>
+      m.id === editingRoundTable.id ? { ...m, ...editRoundTableForm } : m
+    );
+    localStorage.setItem('congress_roundtables', JSON.stringify(updated));
+    setRoundTables(updated);
+    setEditingRoundTable(null);
+  };
+
+  /** Elimina completamente una mesa redonda (sin trabajos asociados, sin restauración necesaria) */
+  const deleteRoundTable = (roundTableId: string) => {
+    const updated = roundTables.filter((m) => m.id !== roundTableId);
+    localStorage.setItem('congress_roundtables', JSON.stringify(updated));
+    setRoundTables(updated);
+    setConfirmDelete(null);
+    if (editingRoundTable?.id === roundTableId) setEditingRoundTable(null);
+  };
+
+  // ── Dispatcher del modal de confirmación ──────────────────────────────────
+  const handleConfirmDelete = () => {
+    if (!confirmDelete) return;
+    if (confirmDelete.type === 'session')    deleteSession(confirmDelete.id);
+    if (confirmDelete.type === 'poster')     deletePoster(confirmDelete.id);
+    if (confirmDelete.type === 'roundtable') deleteRoundTable(confirmDelete.id);
+  };
+
+  // =========================
+  // NOTIFICACIONES
   // =========================
   const handleSendNotification = () => {
-    // Escenario 3 HU-18: campos obligatorios vacíos
     if (!notifForm.title.trim() || !notifForm.message.trim()) {
       setNotifFeedback('error');
       return;
     }
-
-    // Escenario 1 (todos) y Escenario 2 (por rol) HU-18
-    // si notifForm.role está vacío se manda a todos, si tiene valor se filtra por ese rol
     const count = sendNotificationToAll(
-      notifForm.title.trim(),
-      notifForm.message.trim(),
-      notifForm.role || undefined
+      notifForm.title.trim(), notifForm.message.trim(), notifForm.role || undefined
     );
-
-    // Limpia el formulario y muestra confirmación
     setNotifForm({ title: '', message: '', role: '' });
-    setNotifFeedback(`ok:${count}`); // guardamos cuántos recibieron para mostrarlo
+    setNotifFeedback(`ok:${count}`);
   };
 
+  // ─── Clases reutilizables ──────────────────────────────────────────────────
+  const inputCls = 'w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300';
+  const labelCls = 'block text-sm text-gray-600 mb-1';
+
   // =========================
-  // UI
+  // RENDER
   // =========================
   return (
     <div className="min-h-[calc(100vh-80px)] py-12 px-4 bg-gradient-to-br from-[#faf8f5] to-[#f3f1ed]">
       <div className="container mx-auto max-w-6xl">
 
-        {/* HEADER — sin cambios */}
+        {/* HEADER */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-lg p-8 mb-8">
           <div className="flex items-center gap-4">
             <Settings className="w-12 h-12" />
@@ -151,35 +331,44 @@ export function PanelAdmin() {
           </div>
         </div>
 
-        {/* INSCRIPCIONES — sin cambios */}
-        <div className="bg-white rounded-xl shadow-md p-8 mb-8">
-          <h2 className="text-2xl mb-6">Validación de Inscripciones</h2>
-          {inscriptions.length === 0 ? (
-            <p className="text-gray-500">No hay pendientes</p>
-          ) : (
-            inscriptions.map((i) => (
-              <div key={i.id} className="flex justify-between border p-3 mb-2 rounded">
-                <div>{i.name} {i.lastName}</div>
-                <div className="flex gap-2">
-                  <button onClick={() => handleApprove(i.id)} className="bg-green-600 text-white px-2 py-1 rounded">Aprobar</button>
-                  <button onClick={() => handleReject(i.id)} className="bg-red-600 text-white px-2 py-1 rounded">Rechazar</button>
-                </div>
-              </div>
-            ))
-          )}
+        {/* BOTONES MESAS */}
+        <div className="flex gap-4 mb-8">
+          <button onClick={() => navigate('/admin/mesas-tematicas')} className="bg-blue-600 text-white px-4 py-2 rounded">
+            Crear Mesa Temática
+          </button>
+          <button onClick={() => navigate('/admin/mesas-redondas')} className="bg-purple-600 text-white px-4 py-2 rounded">
+            Crear Mesa Redonda
+          </button>
+          <button onClick={() => navigate('/admin/posters')} className="bg-yellow-600 text-white px-4 py-2 rounded">
+            Crear Sesión de Pósters
+          </button>
         </div>
 
-        {/* EVALUADORES — sin cambios */}
+        {/* INSCRIPCIONES */}
+        <div className="bg-white rounded-xl shadow-md p-8 mb-8">
+          <h2 className="text-2xl mb-6">Validación de Inscripciones</h2>
+          {inscriptions.length === 0 && <p className="text-gray-500">No hay inscripciones pendientes.</p>}
+          {inscriptions.map((i) => (
+            <div key={i.id} className="flex justify-between border p-3 mb-2 rounded">
+              <div>{i.name} {i.lastName}</div>
+              <div className="flex gap-2">
+                <button onClick={() => handleApprove(i.id)} className="bg-green-600 text-white px-2 py-1 rounded">Aprobar</button>
+                <button onClick={() => handleReject(i.id)} className="bg-red-600 text-white px-2 py-1 rounded">Rechazar</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* EVALUADORES */}
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
           <h2 className="text-2xl mb-6">Asignar Evaluadores</h2>
           {users.map((u) => (
             <div key={u.id} className="flex justify-between items-center border p-3 mb-2 rounded">
               <div>
-                <p className="font-medium">{u.name} {u.lastName}</p>
-                <p className="text-sm text-gray-500">{u.email}</p>
-                <div className="flex gap-2 mt-1 flex-wrap">
-                  {u.roles?.map((role: string) => (
-                    <span key={role} className="text-xs px-2 py-1 rounded bg-gray-200">{role}</span>
+                <p>{u.name} {u.lastName}</p>
+                <div className="flex gap-2 mt-1">
+                  {u.roles?.map((r: string) => (
+                    <span key={r} className="text-xs bg-gray-200 px-2 rounded">{r}</span>
                   ))}
                 </div>
               </div>
@@ -194,125 +383,502 @@ export function PanelAdmin() {
           ))}
         </div>
 
-        {/* CRONOGRAMA PENDIENTE — sin cambios */}
+        {/* CRONOGRAMA */}
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
-          <h2 className="text-2xl mb-6">Trabajos aprobados (sin programar)</h2>
-          {approvedWorks.length === 0 ? (
-            <p className="text-gray-500">No hay trabajos pendientes</p>
-          ) : (
-            approvedWorks.map((w) => (
-              <div key={w.id} className="border p-4 mb-4 rounded">
-                <h3 className="font-semibold mb-2">{w.title}</h3>
-                <div className="grid md:grid-cols-3 gap-2">
-                  <input type="date" onChange={(e) => handleChange(w.id, 'fecha', e.target.value)} className="border p-2 rounded" />
-                  <input type="text" placeholder="Hora" onChange={(e) => handleChange(w.id, 'hora', e.target.value)} className="border p-2 rounded" />
-                  <input type="text" placeholder="Sala" onChange={(e) => handleChange(w.id, 'sala', e.target.value)} className="border p-2 rounded" />
+          <h2 className="text-2xl mb-6">Cronograma del Congreso</h2>
+
+          {/* ── MESAS TEMÁTICAS ── */}
+          <h3 className="text-xl mb-4 text-blue-700">Mesas Temáticas</h3>
+          {sessions.length === 0 && <p className="text-gray-500 mb-4">No hay mesas temáticas.</p>}
+          {sessions.map((s) => (
+            <div key={s.id} className="border p-4 mb-4 rounded bg-blue-50">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="font-semibold">{s.code} - {s.name}</h3>
+                  <p className="text-sm text-gray-600">📅 {s.date} | 🕒 {s.startTime} - {s.endTime} | 📍 {s.room}</p>
                 </div>
-                <button onClick={() => asignarHorario(w.id)} className="mt-2 bg-indigo-600 text-white px-3 py-1 rounded">
-                  Programar
-                </button>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => openEditSession(s)}
+                    className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition"
+                  >
+                    <Pencil className="w-4 h-4" /> Editar
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete({ type: 'session', id: s.id, name: `${s.code} - ${s.name}` })}
+                    className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
+                  >
+                    <Trash2 className="w-4 h-4" /> Eliminar
+                  </button>
+                </div>
               </div>
-            ))
-          )}
+              <ul className="ml-4 list-disc">
+                {s.works.map((id, index) => {
+                  const work = works.find((w: any) => w.id === id);
+                  return (
+                    <li key={id} className="mb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="font-medium">{index + 1}. {work?.title}</span>
+                          <div className="text-sm text-gray-600">Autor: {getAuthor(work?.userId)}</div>
+                          <div className="text-sm text-gray-600">Tipo: {work?.axis}</div>
+                        </div>
+                        <button
+                          onClick={() => removeWorkFromSession(s.id, id)}
+                          className="flex items-center gap-1 bg-red-100 text-red-700 border border-red-300 px-2 py-0.5 rounded text-xs hover:bg-red-200 transition shrink-0 mt-0.5"
+                        >
+                          <X className="w-3 h-3" /> Quitar
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+
+          {/* ── MESAS REDONDAS ── */}
+          <h3 className="text-xl mt-8 mb-4 text-purple-700">Mesas Redondas</h3>
+          {roundTables.length === 0 && <p className="text-gray-500 mb-4">No hay mesas redondas.</p>}
+          {roundTables.map((m) => (
+            <div key={m.id} className="border p-4 mb-4 rounded bg-purple-50">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="font-semibold">{m.title}</h3>
+                  <p className="text-sm text-gray-600">📅 {m.date} | 🕒 {m.startTime} - {m.endTime} | 📍 {m.room}</p>
+                  <p className="text-sm"><strong>Moderador:</strong> {m.moderator}</p>
+                  <p className="text-sm"><strong>Panelistas:</strong> {m.panelists}</p>
+                  <p className="text-sm">{m.description}</p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => openEditRoundTable(m)}
+                    className="flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition"
+                  >
+                    <Pencil className="w-4 h-4" /> Editar
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete({ type: 'roundtable', id: m.id, name: m.title })}
+                    className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
+                  >
+                    <Trash2 className="w-4 h-4" /> Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* ── SESIONES DE PÓSTERS ── */}
+          <h3 className="text-xl mt-8 mb-4 text-yellow-700">Sesiones de Pósters</h3>
+          {posterSessions.length === 0 && <p className="text-gray-500">No hay sesiones de pósters.</p>}
+          {posterSessions.map((p) => (
+            <div key={p.id} className="border p-4 mb-4 rounded bg-yellow-50">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="font-semibold">{p.name}</h3>
+                  <p className="text-sm text-gray-600">📅 {p.date} | 🕒 {p.startTime} - {p.endTime} | 📍 {p.location}</p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={() => openEditPoster(p)}
+                    className="flex items-center gap-1 bg-yellow-600 text-white px-3 py-1 rounded text-sm hover:bg-yellow-700 transition"
+                  >
+                    <Pencil className="w-4 h-4" /> Editar
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete({ type: 'poster', id: p.id, name: p.name })}
+                    className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
+                  >
+                    <Trash2 className="w-4 h-4" /> Eliminar
+                  </button>
+                </div>
+              </div>
+              <ul className="ml-4 list-disc">
+                {p.works.map((w) => {
+                  const work = works.find((wk: any) => wk.id === w.workId);
+                  return (
+                    <li key={w.workId} className="mb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="font-medium">{work?.title}</span>
+                          <div className="text-sm text-gray-600">Autor: {getAuthor(work?.userId)} | Panel: {w.stand}</div>
+                          <div className="text-sm text-gray-600">Tipo: {work?.axis}</div>
+                        </div>
+                        <button
+                          onClick={() => removeWorkFromPoster(p.id, w.workId)}
+                          className="flex items-center gap-1 bg-red-100 text-red-700 border border-red-300 px-2 py-0.5 rounded text-xs hover:bg-red-200 transition shrink-0 mt-0.5"
+                        >
+                          <X className="w-3 h-3" /> Quitar
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        {/* CRONOGRAMA ARMADO — sin cambios */}
-        <div className="bg-white rounded-xl shadow-md p-8 mb-8">
-          <h2 className="text-2xl mb-6">Cronograma armado</h2>
-          {scheduledWorks.length === 0 ? (
-            <p className="text-gray-500">No hay trabajos programados</p>
-          ) : (
-            scheduledWorks.map((w) => (
-              <div key={w.id} className="border p-4 mb-3 rounded bg-green-50">
-                <h3 className="font-semibold">{w.title}</h3>
-                <p className="text-sm text-gray-600">📅 {w.fecha} | 🕒 {w.hora} | 📍 {w.sala}</p>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* NUEVO: SECCIÓN NOTIFICACIONES — implementa HU-18 */}
+        {/* NOTIFICACIONES */}
         <div className="bg-white rounded-xl shadow-md p-8">
           <div className="flex items-center gap-3 mb-6">
             <Bell className="w-7 h-7 text-indigo-600" />
             <h2 className="text-2xl">Enviar Notificación</h2>
           </div>
-
-          <div className="space-y-4">
-
-            {/* Título de la notificación */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-              <input
-                type="text"
-                value={notifForm.title}
-                onChange={(e) => {
-                  setNotifForm(prev => ({ ...prev, title: e.target.value }));
-                  setNotifFeedback(''); // limpia feedback al editar
-                }}
-                placeholder="Ej: Cambio de sala en mesa temática"
-                className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-              />
-            </div>
-
-            {/* Mensaje */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
-              <textarea
-                value={notifForm.message}
-                onChange={(e) => {
-                  setNotifForm(prev => ({ ...prev, message: e.target.value }));
-                  setNotifFeedback('');
-                }}
-                placeholder="Escribí el contenido del aviso..."
-                rows={4}
-                className="w-full border border-gray-200 rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
-              />
-            </div>
-
-            {/* Selector de destinatarios — Escenario 1 y 2 de HU-18 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Destinatarios</label>
-              <select
-                value={notifForm.role}
-                onChange={(e) => setNotifForm(prev => ({ ...prev, role: e.target.value as UserRole | '' }))}
-                className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-              >
-                {/* valor vacío = todos los usuarios — Escenario 1 */}
-                <option value="">Todos los usuarios</option>
-                {/* valores específicos — Escenario 2 */}
-                <option value="asistente">Asistentes</option>
-                <option value="autor">Autores</option>
-                <option value="evaluador">Evaluadores</option>
-              </select>
-            </div>
-
-            {/* Botón enviar */}
-            <button
-              onClick={handleSendNotification}
-              className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium"
-            >
-              Enviar notificación
-            </button>
-
-            {/* Feedback al admin después de enviar */}
-            {notifFeedback === 'error' && (
-              // Escenario 3 HU-18: campos vacíos
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
-                El título y el mensaje son obligatorios.
-              </div>
-            )}
-            {notifFeedback.startsWith('ok') && (
-              // Escenario 1 y 2 HU-18: envío exitoso
-              <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
-                La notificación fue enviada correctamente a {notifFeedback.split(':')[1]} usuario/s.
-              </div>
-            )}
-
-          </div>
+          <input
+            value={notifForm.title}
+            onChange={(e) => setNotifForm({ ...notifForm, title: e.target.value })}
+            placeholder="Título"
+            className="w-full border p-2 mb-2"
+          />
+          <textarea
+            value={notifForm.message}
+            onChange={(e) => setNotifForm({ ...notifForm, message: e.target.value })}
+            placeholder="Mensaje"
+            className="w-full border p-2 mb-2"
+          />
+          <select
+            value={notifForm.role}
+            onChange={(e) => setNotifForm({ ...notifForm, role: e.target.value as any })}
+            className="w-full border p-2 mb-2"
+          >
+            <option value="">Todos</option>
+            <option value="asistente">Asistentes</option>
+            <option value="autor">Autores</option>
+            <option value="evaluador">Evaluadores</option>
+          </select>
+          <button onClick={handleSendNotification} className="w-full bg-indigo-600 text-white py-2 rounded">
+            Enviar
+          </button>
+          {notifFeedback === 'error' && <p className="text-red-600 mt-2">Completar campos</p>}
+          {notifFeedback.startsWith('ok') && <p className="text-green-600 mt-2">Enviado ✔</p>}
         </div>
 
       </div>
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL — CONFIRMAR ELIMINACIÓN
+      ══════════════════════════════════════════════════════════════ */}
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={(e) => { if (e.target === e.currentTarget) setConfirmDelete(null); }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-red-100 rounded-full p-2">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800">Confirmar eliminación</h2>
+            </div>
+
+            <p className="text-gray-600 mb-2">
+              ¿Estás seguro que querés eliminar{' '}
+              <span className="font-semibold text-gray-800">"{confirmDelete.name}"</span>?
+            </p>
+
+            {/* Mensaje contextual según el tipo */}
+            {confirmDelete.type === 'session' && (
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-5">
+                ⚠️ Todos los trabajos asignados a esta mesa volverán al estado <strong>aprobado</strong>.
+              </p>
+            )}
+            {confirmDelete.type === 'poster' && (
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-5">
+                ⚠️ Todos los pósters asignados a esta sesión volverán al estado <strong>aprobado</strong>.
+              </p>
+            )}
+            {confirmDelete.type === 'roundtable' && (
+              <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">
+                Esta acción no afecta ningún trabajo. La mesa redonda se eliminará definitivamente.
+              </p>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" /> Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL — EDITAR MESA TEMÁTICA
+      ══════════════════════════════════════════════════════════════ */}
+      {editingSession && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingSession(null); }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">Editar Mesa Temática</h2>
+              <button onClick={() => setEditingSession(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className={labelCls}>Código</label>
+                <input name="code" value={editSessionForm.code}
+                  onChange={(e) => setEditSessionForm({ ...editSessionForm, code: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Sala</label>
+                <input name="room" value={editSessionForm.room}
+                  onChange={(e) => setEditSessionForm({ ...editSessionForm, room: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Nombre</label>
+                <input name="name" value={editSessionForm.name}
+                  onChange={(e) => setEditSessionForm({ ...editSessionForm, name: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Fecha</label>
+                <input type="date" value={editSessionForm.date}
+                  onChange={(e) => setEditSessionForm({ ...editSessionForm, date: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls}>Inicio</label>
+                  <input type="time" value={editSessionForm.startTime}
+                    onChange={(e) => setEditSessionForm({ ...editSessionForm, startTime: e.target.value })}
+                    className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Fin</label>
+                  <input type="time" value={editSessionForm.endTime}
+                    onChange={(e) => setEditSessionForm({ ...editSessionForm, endTime: e.target.value })}
+                    className={inputCls} />
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Trabajos asignados</h3>
+              {editingSession.works.length === 0
+                ? <p className="text-sm text-gray-400 italic">Sin trabajos asignados.</p>
+                : (
+                  <ul className="divide-y border rounded overflow-hidden">
+                    {editingSession.works.map((workId) => {
+                      const work = works.find((w: any) => w.id === workId);
+                      return (
+                        <li key={workId} className="flex justify-between items-center px-3 py-2 bg-gray-50 hover:bg-gray-100">
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{work?.title ?? 'Trabajo no encontrado'}</p>
+                            <p className="text-xs text-gray-500">{getAuthor(work?.userId)}</p>
+                          </div>
+                          <button
+                            onClick={() => removeWorkFromSession(editingSession.id, workId)}
+                            className="flex items-center gap-1 text-xs text-red-600 border border-red-300 bg-red-50 hover:bg-red-100 px-2 py-1 rounded"
+                          >
+                            <X className="w-3 h-3" /> Quitar
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setEditingSession(null)} className="px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50">
+                Cancelar
+              </button>
+              <button onClick={saveSession} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
+                Guardar cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL — EDITAR SESIÓN DE PÓSTERS
+      ══════════════════════════════════════════════════════════════ */}
+      {editingPoster && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingPoster(null); }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">Editar Sesión de Pósters</h2>
+              <button onClick={() => setEditingPoster(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="col-span-2">
+                <label className={labelCls}>Nombre</label>
+                <input value={editPosterForm.name}
+                  onChange={(e) => setEditPosterForm({ ...editPosterForm, name: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Ubicación</label>
+                <input value={editPosterForm.location}
+                  onChange={(e) => setEditPosterForm({ ...editPosterForm, location: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Fecha</label>
+                <input type="date" value={editPosterForm.date}
+                  onChange={(e) => setEditPosterForm({ ...editPosterForm, date: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls}>Inicio</label>
+                  <input type="time" value={editPosterForm.startTime}
+                    onChange={(e) => setEditPosterForm({ ...editPosterForm, startTime: e.target.value })}
+                    className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Fin</label>
+                  <input type="time" value={editPosterForm.endTime}
+                    onChange={(e) => setEditPosterForm({ ...editPosterForm, endTime: e.target.value })}
+                    className={inputCls} />
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Pósters asignados</h3>
+              {editingPoster.works.length === 0
+                ? <p className="text-sm text-gray-400 italic">Sin pósters asignados.</p>
+                : (
+                  <ul className="divide-y border rounded overflow-hidden">
+                    {editingPoster.works.map((w) => {
+                      const work = works.find((wk: any) => wk.id === w.workId);
+                      return (
+                        <li key={w.workId} className="flex justify-between items-center px-3 py-2 bg-gray-50 hover:bg-gray-100">
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{work?.title ?? 'Trabajo no encontrado'}</p>
+                            <p className="text-xs text-gray-500">{getAuthor(work?.userId)} | Panel: {w.stand}</p>
+                          </div>
+                          <button
+                            onClick={() => removeWorkFromPoster(editingPoster.id, w.workId)}
+                            className="flex items-center gap-1 text-xs text-red-600 border border-red-300 bg-red-50 hover:bg-red-100 px-2 py-1 rounded"
+                          >
+                            <X className="w-3 h-3" /> Quitar
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setEditingPoster(null)} className="px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50">
+                Cancelar
+              </button>
+              <button onClick={savePoster} className="px-4 py-2 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700">
+                Guardar cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL — EDITAR MESA REDONDA
+      ══════════════════════════════════════════════════════════════ */}
+      {editingRoundTable && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingRoundTable(null); }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">Editar Mesa Redonda</h2>
+              <button onClick={() => setEditingRoundTable(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="col-span-2">
+                <label className={labelCls}>Título</label>
+                <input value={editRoundTableForm.title}
+                  onChange={(e) => setEditRoundTableForm({ ...editRoundTableForm, title: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Sala</label>
+                <input value={editRoundTableForm.room}
+                  onChange={(e) => setEditRoundTableForm({ ...editRoundTableForm, room: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Fecha</label>
+                <input type="date" value={editRoundTableForm.date}
+                  onChange={(e) => setEditRoundTableForm({ ...editRoundTableForm, date: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div className="grid grid-cols-2 gap-2 col-span-2">
+                <div>
+                  <label className={labelCls}>Inicio</label>
+                  <input type="time" value={editRoundTableForm.startTime}
+                    onChange={(e) => setEditRoundTableForm({ ...editRoundTableForm, startTime: e.target.value })}
+                    className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Fin</label>
+                  <input type="time" value={editRoundTableForm.endTime}
+                    onChange={(e) => setEditRoundTableForm({ ...editRoundTableForm, endTime: e.target.value })}
+                    className={inputCls} />
+                </div>
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Moderador</label>
+                <input value={editRoundTableForm.moderator}
+                  onChange={(e) => setEditRoundTableForm({ ...editRoundTableForm, moderator: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Panelistas</label>
+                <input value={editRoundTableForm.panelists}
+                  onChange={(e) => setEditRoundTableForm({ ...editRoundTableForm, panelists: e.target.value })}
+                  className={inputCls} />
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Descripción</label>
+                <input value={editRoundTableForm.description}
+                  onChange={(e) => setEditRoundTableForm({ ...editRoundTableForm, description: e.target.value })}
+                  className={inputCls} />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setEditingRoundTable(null)} className="px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50">
+                Cancelar
+              </button>
+              <button onClick={saveRoundTable} className="px-4 py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700">
+                Guardar cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

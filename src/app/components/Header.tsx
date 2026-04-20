@@ -59,6 +59,7 @@ export function Header() {
             <Link to="/feria" className="px-3 py-2 text-sm hover:bg-white/10 rounded-lg transition">Feria Agroecológica</Link>
             <Link to="/organizadores" className="px-3 py-2 text-sm hover:bg-white/10 rounded-lg transition">Organizadores</Link>
             <Link to="/contacto" className="px-3 py-2 text-sm hover:bg-white/10 rounded-lg transition">Contacto</Link>
+            <Link to="/ProgramaCongreso" className="px-3 py-2 text-sm hover:bg-white/10 rounded-lg transition">Programa</Link>
           </nav>
 
           {/* User Actions */}
