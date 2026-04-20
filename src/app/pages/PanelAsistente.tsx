@@ -1,13 +1,11 @@
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { Calendar, FileText } from 'lucide-react';
+import { FileText, Presentation } from 'lucide-react';
 
 export function PanelAsistente() {
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  const programPublished = false;
 
   useEffect(() => {
     // 🔒 No logueado → login
@@ -26,7 +24,6 @@ export function PanelAsistente() {
   if (!user) return null;
 
   const isAsistente = user.roles?.includes('asistente');
-  const isAutor = user.roles?.includes('autor');
 
   return (
     <div className="min-h-[calc(100vh-80px)] py-12 px-4 bg-gradient-to-br from-[#faf8f5] to-[#f3f1ed]">
@@ -68,7 +65,25 @@ export function PanelAsistente() {
               </Link>
             )}
 
-            
+            {user.currentRole === 'asistente' && isAsistente && (
+              <Link
+                to="/proponer-taller"
+                className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-teal-100 rounded-lg">
+                    <Presentation className="w-8 h-8 text-teal-600" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl text-gray-800">Proponer Taller</h3>
+                    <p className="text-gray-600">
+                      Enviá tu propuesta de taller para evaluación del comité
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
 

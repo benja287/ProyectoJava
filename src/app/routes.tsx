@@ -14,6 +14,7 @@ import { ProgramaDetalladoPage } from "./pages/ProgramaDetalladoPage";
 import { MapasPage } from "./pages/MapasPage";
 import { InscripcionPage } from "./pages/InscripcionPage";
 import { EnvioTrabajosPage } from "./pages/EnvioTrabajosPage";
+import { ProponerTallerPage } from "./pages/ProponerTallerPage";
 import { PanelAutor} from "./pages/PanelAutor";
 import { PanelEvaluador } from "./pages/PanelEvaluador";
 import { PanelAdmin } from "./pages/PanelAdmin";
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
       { path: "mapas", Component: MapasPage },
       { path: "inscripcion", Component: InscripcionPage },
       { path: "envio-trabajos", Component: EnvioTrabajosPage },
+      { path: "proponer-taller", Component: ProponerTallerPage },
       { path: "mis-presentaciones", Component: PanelAutor },
       { path: "evaluador", Component: PanelEvaluador },
       { path: "admin", Component: PanelAdmin },
