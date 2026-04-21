@@ -24,6 +24,9 @@ export function PanelAsistente() {
   if (!user) return null;
 
   const isAsistente = user.roles?.includes('asistente');
+  const isAlsoAutor = user.roles?.includes('autor');
+  /** Con ambos roles, el envío de trabajos va solo con rol autor (panel Autor). */
+  const envioTrabajoDesdeAsistente = isAsistente && !isAlsoAutor;
 
   return (
     <div className="min-h-[calc(100vh-80px)] py-12 px-4 bg-gradient-to-br from-[#faf8f5] to-[#f3f1ed]">
@@ -42,8 +45,8 @@ export function PanelAsistente() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            {/* 🟡 Enviar trabajo (solo asistente) */}
-            {isAsistente  && (
+            {/* Enviar trabajo: solo cuenta “solo asistente”; si también es autor, indicar panel Autor */}
+            {envioTrabajoDesdeAsistente && (
               <Link
                 to="/envio-trabajos"
                 className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition"
@@ -58,11 +61,27 @@ export function PanelAsistente() {
                       Enviar Trabajo
                     </h3>
                     <p className="text-gray-600">
-                      Presenta tu trabajo científico o relato de experiencia
+                      Presenta tu trabajo científico o relato de experiencia (1 envío como asistente)
                     </p>
                   </div>
                 </div>
               </Link>
+            )}
+
+            {isAsistente && isAlsoAutor && (
+              <div className="bg-amber-50 border border-amber-200 p-6 rounded-xl shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-amber-100 rounded-lg shrink-0">
+                    <FileText className="w-8 h-8 text-amber-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl text-gray-800">Envío de trabajos científicos</h3>
+                    <p className="text-gray-700 text-sm mt-1">
+                      Tu cuenta tiene rol autor. Activá <strong>rol autor</strong> en el menú de usuario y entrá a <strong>Mis presentaciones</strong> para enviar o gestionar trabajos (hasta 2 activos).
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
 
             {user.currentRole === 'asistente' && isAsistente && (

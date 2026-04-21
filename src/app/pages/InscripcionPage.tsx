@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { CreditCard, Upload, CheckCircle } from 'lucide-react';
+import { saveBrowserFile } from '../lib/browserFiles';
 
 export function InscripcionPage() {
   const { user, updateUser } = useAuth();
@@ -9,20 +10,20 @@ export function InscripcionPage() {
 
   const [formData, setFormData] = useState({
     institution: user?.institution || '',
-    province: user?.province || '',
-    category: '',
-    receipt: null as File | null,
+    province:    user?.province    || '',
+    category:    '',
+    receipt:     null as File | null,
   });
 
-  const [submitted, setSubmitted] = useState(false);
-  const [fileError, setFileError] = useState('');
+  const [submitted, setSubmitted]   = useState(false);
+  const [fileError, setFileError]   = useState('');
+  const [uploading, setUploading]   = useState(false);
 
   if (!user) {
     navigate('/login');
     return null;
   }
 
-  // ✅ Tipos permitidos reales
   const allowedTypes = [
     'application/pdf',
     'image/jpeg',
@@ -30,17 +31,13 @@ export function InscripcionPage() {
     'image/png',
   ];
 
-  // ✅ Validación del archivo
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-
     if (!file) return;
 
     if (!allowedTypes.includes(file.type)) {
       setFileError('Formato inválido. Solo PDF, JPG o PNG.');
       setFormData({ ...formData, receipt: null });
-
-      // limpia el input visualmente
       e.target.value = '';
       return;
     }
@@ -49,23 +46,43 @@ export function InscripcionPage() {
     setFormData({ ...formData, receipt: file });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ✅ Validación extra antes de enviar
     if (!formData.receipt) {
-      setFileError('Debes subir un comprobante válido.');
+      setFileError('Debés subir un comprobante válido.');
       return;
     }
 
-    updateUser({
-      institution: formData.institution,
-      province: formData.province,
-      inscriptionStatus: 'pending',
-      category: formData.category,
-      receipt: formData.receipt.name,
-    });
+    setUploading(true);
 
+    // ── Guardar comprobante en IndexedDB ───────────────────────────────────
+    // Si falla, igual procesamos la inscripción sin archivo
+    let storedFile = null;
+    try {
+      storedFile = await saveBrowserFile(formData.receipt);
+    } catch {
+      console.warn('No se pudo guardar el comprobante en IndexedDB');
+    }
+
+    // Actualizar usuario — solo metadatos en localStorage, archivo en IndexedDB
+    const updates: any = {
+      institution:       formData.institution,
+      province:          formData.province,
+      inscriptionStatus: 'pending',
+      category:          formData.category,
+      receipt:           formData.receipt.name, // solo el nombre, como antes
+    };
+
+    if (storedFile) {
+      updates.receiptFileId   = storedFile.fileId;
+      updates.receiptFileSize = storedFile.fileSize;
+      updates.receiptMimeType = storedFile.fileType;
+    }
+
+    updateUser(updates);
+
+    setUploading(false);
     setSubmitted(true);
   };
 
@@ -97,14 +114,13 @@ export function InscripcionPage() {
             <div>
               <h1 className="text-3xl text-gray-800">Inscripción al Congreso</h1>
               <p className="text-gray-600">
-                Completa tus datos y adjunta el comprobante de pago
+                Completá tus datos y adjuntá el comprobante de pago
               </p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
 
-            {/* Institución */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Institución
@@ -113,14 +129,11 @@ export function InscripcionPage() {
                 type="text"
                 required
                 value={formData.institution}
-                onChange={(e) =>
-                  setFormData({ ...formData, institution: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b7c3a]"
               />
             </div>
 
-            {/* Provincia */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Provincia
@@ -128,9 +141,7 @@ export function InscripcionPage() {
               <select
                 required
                 value={formData.province}
-                onChange={(e) =>
-                  setFormData({ ...formData, province: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="">Selecciona</option>
@@ -141,7 +152,6 @@ export function InscripcionPage() {
               </select>
             </div>
 
-            {/* Categoría */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Categoría de Inscripción
@@ -149,9 +159,7 @@ export function InscripcionPage() {
               <select
                 required
                 value={formData.category}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg"
               >
                 <option value="">Selecciona una categoría</option>
@@ -163,15 +171,12 @@ export function InscripcionPage() {
               </select>
             </div>
 
-            {/* Archivo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Comprobante de Pago
               </label>
-
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                 <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-
                 <input
                   type="file"
                   required
@@ -179,11 +184,9 @@ export function InscripcionPage() {
                   onChange={handleFileChange}
                   className="w-full"
                 />
-
                 {fileError && (
                   <p className="text-red-600 text-sm mt-2">{fileError}</p>
                 )}
-
                 {formData.receipt && (
                   <p className="text-green-600 text-sm mt-2">
                     Archivo cargado: {formData.receipt.name}
@@ -192,12 +195,12 @@ export function InscripcionPage() {
               </div>
             </div>
 
-            {/* Botón */}
             <button
               type="submit"
-              className="w-full py-3 bg-[#2d5016] text-white rounded-lg hover:bg-[#3d6b23] transition font-medium"
+              disabled={uploading}
+              className="w-full py-3 bg-[#2d5016] text-white rounded-lg hover:bg-[#3d6b23] transition font-medium disabled:opacity-60"
             >
-              Enviar inscripción
+              {uploading ? 'Enviando...' : 'Enviar inscripción'}
             </button>
 
           </form>
