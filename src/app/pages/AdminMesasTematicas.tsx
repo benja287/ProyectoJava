@@ -102,7 +102,7 @@ export function AdminMesasTematicas() {
         />
 
         <input
-          placeholder="Nombre de la sesión"
+          placeholder="Descripcion de la sesión"
           className="border p-2 rounded"
           onChange={(e) => setForm({ ...form, name: e.target.value })}
         />
