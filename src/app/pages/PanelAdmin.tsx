@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Settings, Bell, Pencil, X, Trash2 } from 'lucide-react';
 import { UserRole } from '../context/AuthContext';
+import { TALLERES_PROGRAMADOS_KEY } from '../constants/congressEvent';
+import type { TallerProgramado } from './AdminCrearTaller';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface Session {
@@ -42,6 +44,7 @@ interface RoundTable {
 export function PanelAdmin() {
   const { user, sendNotificationToAll } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [inscriptions, setInscriptions] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -49,6 +52,8 @@ export function PanelAdmin() {
   const [roundTables, setRoundTables] = useState<RoundTable[]>([]);
   const [works, setWorks] = useState<any[]>([]);
   const [posterSessions, setPosterSessions] = useState<PosterSession[]>([]);
+  const [talleresProgramados, setTalleresProgramados] = useState<TallerProgramado[]>([]);
+  const [tallerOkBanner, setTallerOkBanner] = useState(false);
 
   const [notifForm, setNotifForm] = useState({
     title: '',
@@ -102,9 +107,25 @@ export function PanelAdmin() {
     setPosterSessions(posters);
     setWorks(allWorks);
     setRoundTables(mesas);
+    setTalleresProgramados(JSON.parse(localStorage.getItem(TALLERES_PROGRAMADOS_KEY) || '[]'));
   }, [user, navigate]);
 
+  useEffect(() => {
+    const st = location.state as { tallerCreado?: boolean } | null;
+    if (st?.tallerCreado) {
+      setTallerOkBanner(true);
+      setTalleresProgramados(JSON.parse(localStorage.getItem(TALLERES_PROGRAMADOS_KEY) || '[]'));
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
+
   if (!user) return null;
+
+  const deleteTallerProgramado = (id: string) => {
+    const updated = talleresProgramados.filter((t) => t.id !== id);
+    localStorage.setItem(TALLERES_PROGRAMADOS_KEY, JSON.stringify(updated));
+    setTalleresProgramados(updated);
+  };
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
   const getAuthor = (userId: string) => {
@@ -332,7 +353,7 @@ export function PanelAdmin() {
         </div>
 
         {/* BOTONES MESAS */}
-        <div className="flex gap-4 mb-8">
+        <div className="flex flex-wrap gap-4 mb-8">
           <button onClick={() => navigate('/admin/mesas-tematicas')} className="bg-blue-600 text-white px-4 py-2 rounded">
             Crear Mesa Temática
           </button>
@@ -342,7 +363,19 @@ export function PanelAdmin() {
           <button onClick={() => navigate('/admin/posters')} className="bg-yellow-600 text-white px-4 py-2 rounded">
             Crear Sesión de Pósters
           </button>
+          <button onClick={() => navigate('/admin/crear-taller')} className="bg-teal-700 text-white px-4 py-2 rounded hover:bg-teal-800 transition">
+            Crear Taller
+          </button>
         </div>
+
+        {tallerOkBanner && (
+          <div className="mb-6 bg-teal-50 border border-teal-200 text-teal-900 px-4 py-3 rounded-lg text-sm">
+            El taller quedó cargado y visible en el cronograma del congreso.
+            <button type="button" className="ml-3 underline font-medium" onClick={() => setTallerOkBanner(false)}>
+              Cerrar
+            </button>
+          </div>
+        )}
 
         {/* INSCRIPCIONES */}
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
@@ -390,7 +423,10 @@ export function PanelAdmin() {
           {/* ── MESAS TEMÁTICAS ── */}
           <h3 className="text-xl mb-4 text-blue-700">Mesas Temáticas</h3>
           {sessions.length === 0 && <p className="text-gray-500 mb-4">No hay mesas temáticas.</p>}
-          {sessions.map((s) => (
+          {[...sessions].sort((a, b) => {
+            const d = a.date.localeCompare(b.date);
+            return d !== 0 ? d : a.startTime.localeCompare(b.startTime);
+          }).map((s) => (
             <div key={s.id} className="border p-4 mb-4 rounded bg-blue-50">
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -440,7 +476,10 @@ export function PanelAdmin() {
           {/* ── MESAS REDONDAS ── */}
           <h3 className="text-xl mt-8 mb-4 text-purple-700">Mesas Redondas</h3>
           {roundTables.length === 0 && <p className="text-gray-500 mb-4">No hay mesas redondas.</p>}
-          {roundTables.map((m) => (
+          {[...roundTables].sort((a, b) => {
+            const d = a.date.localeCompare(b.date);
+            return d !== 0 ? d : a.startTime.localeCompare(b.startTime);
+          }).map((m) => (
             <div key={m.id} className="border p-4 mb-4 rounded bg-purple-50">
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -471,7 +510,10 @@ export function PanelAdmin() {
           {/* ── SESIONES DE PÓSTERS ── */}
           <h3 className="text-xl mt-8 mb-4 text-yellow-700">Sesiones de Pósters</h3>
           {posterSessions.length === 0 && <p className="text-gray-500">No hay sesiones de pósters.</p>}
-          {posterSessions.map((p) => (
+          {[...posterSessions].sort((a, b) => {
+            const d = a.date.localeCompare(b.date);
+            return d !== 0 ? d : a.startTime.localeCompare(b.startTime);
+          }).map((p) => (
             <div key={p.id} className="border p-4 mb-4 rounded bg-yellow-50">
               <div className="flex justify-between items-start mb-2">
                 <div>
@@ -515,6 +557,40 @@ export function PanelAdmin() {
                   );
                 })}
               </ul>
+            </div>
+          ))}
+
+          {/* ── TALLERES (PROGRAMA OFICIAL) ── */}
+          <h3 className="text-xl mt-8 mb-4 text-teal-800">Talleres</h3>
+          {talleresProgramados.length === 0 && (
+            <p className="text-gray-500 mb-4">No hay talleres en el programa. Usá &quot;Crear Taller&quot; para agregar uno.</p>
+          )}
+          {[...talleresProgramados].sort((a, b) => {
+            const d = a.fecha.localeCompare(b.fecha);
+            return d !== 0 ? d : a.startTime.localeCompare(b.startTime);
+          }).map((t) => (
+            <div key={t.id} className="border p-4 mb-4 rounded bg-teal-50">
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <h3 className="font-semibold">{t.titulo}</h3>
+                  <p className="text-sm text-gray-600">
+                    📅 {t.fecha} | 🕒 {t.startTime} - {t.endTime} | 📍 {t.room}
+                  </p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    <strong>Responsable(s):</strong> {t.responsables}
+                  </p>
+                  {t.descripcion && (
+                    <p className="text-sm text-gray-600 mt-1 italic">{t.descripcion}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => deleteTallerProgramado(t.id)}
+                  className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition shrink-0"
+                >
+                  <Trash2 className="w-4 h-4" /> Eliminar
+                </button>
+              </div>
             </div>
           ))}
         </div>

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { Calendar, Clock, MapPin, Trash2, BookOpen, Image, Users, CalendarDays } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, BookOpen, Image, Users, CalendarDays, Presentation } from 'lucide-react';
+import { TALLERES_PROGRAMADOS_KEY } from '../constants/congressEvent';
 
 interface AgendaItem {
   activityId: string;
-  type: 'session' | 'poster' | 'roundtable';
+  type: 'session' | 'poster' | 'roundtable' | 'workshop';
   name: string;
   date: string;
   startTime: string;
@@ -22,13 +23,15 @@ const formatDate = (dateStr: string) => {
 const typeConfig = {
   session:    { label: 'Mesa Temática',      icon: BookOpen, color: 'blue'   },
   poster:     { label: 'Sesión de Pósters',  icon: Image,    color: 'yellow' },
-  roundtable: { label: 'Mesa Redonda',        icon: Users,    color: 'purple' },
+  roundtable: { label: 'Mesa Redonda',       icon: Users,    color: 'purple' },
+  workshop:   { label: 'Taller',             icon: Presentation, color: 'teal' },
 } as const;
 
 const colorMap = {
   blue:   { badge: 'bg-blue-100 text-blue-700',     border: 'border-blue-400'   },
   yellow: { badge: 'bg-yellow-100 text-yellow-700', border: 'border-yellow-400' },
   purple: { badge: 'bg-purple-100 text-purple-700', border: 'border-purple-400' },
+  teal:   { badge: 'bg-teal-100 text-teal-900',     border: 'border-teal-400' },
 };
 
 export function MiAgenda() {
@@ -53,6 +56,7 @@ export function MiAgenda() {
     const sessions:    any[] = JSON.parse(localStorage.getItem('congress_sessions')    || '[]');
     const posters:     any[] = JSON.parse(localStorage.getItem('congress_posters')     || '[]');
     const roundTables: any[] = JSON.parse(localStorage.getItem('congress_roundtables') || '[]');
+    const tallerProg: any[] = JSON.parse(localStorage.getItem(TALLERES_PROGRAMADOS_KEY) || '[]');
 
     const allActivities: Record<string, any> = {};
     sessions.forEach((s: any) => allActivities[s.id] = {
@@ -63,6 +67,9 @@ export function MiAgenda() {
     });
     roundTables.forEach((m: any) => allActivities[m.id] = {
       name: m.title, date: m.date, startTime: m.startTime, endTime: m.endTime, room: m.room,
+    });
+    tallerProg.forEach((t: any) => allActivities[t.id] = {
+      name: t.titulo, date: t.fecha, startTime: t.startTime, endTime: t.endTime, room: t.room,
     });
 
     // Filtrar actividades eliminadas y actualizar las modificadas

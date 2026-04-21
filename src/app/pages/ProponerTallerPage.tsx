@@ -103,6 +103,13 @@ export function ProponerTallerPage() {
           <p className="text-lg text-gray-800 font-medium">
             Tu propuesta fue enviada correctamente y está siendo evaluada
           </p>
+          <button
+            type="button"
+            onClick={() => navigate('/asistente')}
+            className="mt-8 w-full sm:w-auto px-8 py-2.5 bg-[#2d5016] text-white rounded-lg hover:opacity-95 transition text-sm font-medium"
+          >
+            Volver
+          </button>
         </div>
       </div>
     );
