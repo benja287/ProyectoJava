@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { Calendar, Clock, MapPin, Trash2, BookOpen, Image, Users, CalendarDays } from 'lucide-react';
+import { Calendar, Clock, MapPin, Trash2, BookOpen, Image, Users, CalendarDays, Presentation } from 'lucide-react';
+import { CONFERENCIAS_KEY, TALLERES_PROGRAMADOS_KEY } from '../constants/congressEvent';
 
 interface AgendaItem {
   activityId: string;
-  type: 'session' | 'poster' | 'roundtable';
+  type: 'conference' | 'session' | 'poster' | 'roundtable' | 'workshop';
   name: string;
   date: string;
   startTime: string;
@@ -22,13 +23,17 @@ const formatDate = (dateStr: string) => {
 const typeConfig = {
   session:    { label: 'Mesa Temática',      icon: BookOpen, color: 'blue'   },
   poster:     { label: 'Sesión de Pósters',  icon: Image,    color: 'yellow' },
-  roundtable: { label: 'Mesa Redonda',        icon: Users,    color: 'purple' },
+  roundtable: { label: 'Mesa Redonda',       icon: Users,    color: 'purple' },
+  workshop:   { label: 'Taller',             icon: Presentation, color: 'teal' },
+  conference: { label: 'Conferencia',        icon: CalendarDays, color: 'indigo' },
 } as const;
 
 const colorMap = {
   blue:   { badge: 'bg-blue-100 text-blue-700',     border: 'border-blue-400'   },
   yellow: { badge: 'bg-yellow-100 text-yellow-700', border: 'border-yellow-400' },
   purple: { badge: 'bg-purple-100 text-purple-700', border: 'border-purple-400' },
+  teal:   { badge: 'bg-teal-100 text-teal-900',     border: 'border-teal-400' },
+  indigo: { badge: 'bg-indigo-100 text-indigo-900', border: 'border-indigo-400' },
 };
 
 export function MiAgenda() {
@@ -53,6 +58,8 @@ export function MiAgenda() {
     const sessions:    any[] = JSON.parse(localStorage.getItem('congress_sessions')    || '[]');
     const posters:     any[] = JSON.parse(localStorage.getItem('congress_posters')     || '[]');
     const roundTables: any[] = JSON.parse(localStorage.getItem('congress_roundtables') || '[]');
+    const tallerProg: any[] = JSON.parse(localStorage.getItem(TALLERES_PROGRAMADOS_KEY) || '[]');
+    const conferencias: any[] = JSON.parse(localStorage.getItem(CONFERENCIAS_KEY) || '[]');
 
     const allActivities: Record<string, any> = {};
     sessions.forEach((s: any) => allActivities[s.id] = {
@@ -63,6 +70,12 @@ export function MiAgenda() {
     });
     roundTables.forEach((m: any) => allActivities[m.id] = {
       name: m.title, date: m.date, startTime: m.startTime, endTime: m.endTime, room: m.room,
+    });
+    tallerProg.forEach((t: any) => allActivities[t.id] = {
+      name: t.titulo, date: t.fecha, startTime: t.startTime, endTime: t.endTime, room: t.room,
+    });
+    conferencias.forEach((c: any) => allActivities[c.id] = {
+      name: c.titulo, date: c.fecha, startTime: c.startTime, endTime: c.endTime, room: c.room,
     });
 
     // Filtrar actividades eliminadas y actualizar las modificadas
@@ -150,12 +163,6 @@ export function MiAgenda() {
           <div className="bg-white p-10 text-center rounded-xl shadow">
             <CalendarDays className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">Todavía no agregaste actividades a tu agenda.</p>
-            <button
-              onClick={() => navigate('/ProgramaCongreso')}
-              className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition text-sm"
-            >
-              Explorar el programa
-            </button>
           </div>
         )}
 

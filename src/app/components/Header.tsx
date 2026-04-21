@@ -13,6 +13,7 @@ export function Header() {
   const notificationsRef = useRef<HTMLDivElement>(null); // NUEVO: ref para el dropdown de notificaciones
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const orderedNotifications = [...notifications].reverse();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -111,7 +112,7 @@ export function Header() {
                       ) : (
                         // Escenario 1 HU-17: lista con leídas y no leídas diferenciadas
                         <div>
-                          {notifications.map((notif) => (
+                          {orderedNotifications.map((notif) => (
                             <div
                               key={notif.id}
                               onClick={() => markNotificationRead(notif.id)}

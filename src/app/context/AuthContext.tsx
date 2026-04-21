@@ -32,7 +32,7 @@ interface AuthContextType {
   updateUser: (updates: Partial<User>) => void;
   selectRole: (role: UserRole) => void;
   markNotificationRead: (id: string) => void;
-  sendNotificationToUser: (userId: string, title: string, message: string) => void;
+  sendNotificationToUser: (userId: string, title: string, message: string, origin?: string) => void;
   // NUEVO: envía notificación a todos los usuarios o filtrado por rol
   sendNotificationToAll: (title: string, message: string, role?: UserRole) => void;
 }
@@ -173,8 +173,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // sendNotificationToUser — escribe en la key del usuario destino — sin cambios
-  const sendNotificationToUser = (userId: string, title: string, message: string) => {
+  // sendNotificationToUser — escribe en la key del usuario destino
+  // origin es opcional para permitir distintos emisores (evaluador/admin).
+  const sendNotificationToUser = (userId: string, title: string, message: string, origin: string = 'Comité Evaluador') => {
     const key = getUserNotificationsKey(userId);
     const existing = JSON.parse(localStorage.getItem(key) || '[]');
     const newNotification: Notification = {
@@ -183,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       message,
       date: new Date().toLocaleDateString('es-AR'),
       read: false,
-      origin: 'Comité Evaluador', // anónimo
+      origin,
     };
     localStorage.setItem(key, JSON.stringify([...existing, newNotification]));
   };
