@@ -265,23 +265,6 @@ export function ProgramaCongreso() {
     setTimeout(() => setFeedback(null), 3000);
   };
 
-  /** Franjas paralelas dentro del día */
-  const timeSlots = useMemo(() => {
-    const slots: Activity[][] = [];
-    for (const act of activitiesForDay) {
-      const slotIdx = slots.findIndex((slot) =>
-        slot.some(
-          (s) =>
-            toMinutes(s.startTime) < toMinutes(act.endTime) &&
-            toMinutes(act.startTime) < toMinutes(s.endTime)
-        )
-      );
-      if (slotIdx >= 0) slots[slotIdx].push(act);
-      else slots.push([act]);
-    }
-    return slots;
-  }, [activitiesForDay]);
-
   const ActivityBlock = ({ activity }: { activity: Activity }) => {
     const cfg = typeConfig[activity.type];
     const inAgenda = user?.id ? isInAgenda(activity.id) : false;
@@ -456,18 +439,9 @@ export function ProgramaCongreso() {
               No hay actividades cargadas para este día.
             </p>
           ) : (
-            <div className="space-y-10">
-              {timeSlots.map((slot, slotIdx) => (
-                <div
-                  key={slot.map((a) => a.id).join('-') || String(slotIdx)}
-                  className={`grid ${slot.length === 1 ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-4'}`}
-                >
-                  {slot.map((activity) => (
-                    <div key={activity.id} className="min-w-0">
-                      <ActivityBlock activity={activity} />
-                    </div>
-                  ))}
-                </div>
+            <div className="space-y-6">
+              {activitiesForDay.map((activity) => (
+                <ActivityBlock key={activity.id} activity={activity} />
               ))}
             </div>
           )}

@@ -163,12 +163,6 @@ export function MiAgenda() {
           <div className="bg-white p-10 text-center rounded-xl shadow">
             <CalendarDays className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">Todavía no agregaste actividades a tu agenda.</p>
-            <button
-              onClick={() => navigate('/ProgramaCongreso')}
-              className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition text-sm"
-            >
-              Explorar el programa
-            </button>
           </div>
         )}
 

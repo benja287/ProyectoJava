@@ -41,6 +41,29 @@ export function isValidTimeRange(startTime: string, endTime: string): boolean {
   return toMinutes(endTime) > toMinutes(startTime);
 }
 
+export function timeRangesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
+  return toMinutes(startA) < toMinutes(endB) && toMinutes(startB) < toMinutes(endA);
+}
+
+/**
+ * Valida que no haya superposición horaria dentro de una misma entidad (mismo tipo) en una fecha.
+ * Sirve para mesas temáticas, redondas, pósters, talleres y conferencias.
+ */
+export function hasTimeOverlap<T extends { id?: string; date?: string; fecha?: string; startTime: string; endTime: string }>(
+  list: T[],
+  date: string,
+  startTime: string,
+  endTime: string,
+  excludeId?: string
+): boolean {
+  return list.some((it: any) => {
+    const itDate = it.date ?? it.fecha;
+    if (itDate !== date) return false;
+    if (excludeId && it.id === excludeId) return false;
+    return timeRangesOverlap(it.startTime, it.endTime, startTime, endTime);
+  });
+}
+
 /** Leyenda tipo sitio del III CAAE: "Desde 10 may. 2027 - hasta 12 may. 2027" */
 export function congressDateRangeCaption(): string {
   const dates = [...CONGRESS_EVENT_DATES];

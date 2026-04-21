@@ -3,7 +3,14 @@ import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Settings, Bell, Pencil, X, Trash2 } from 'lucide-react';
 import { UserRole } from '../context/AuthContext';
-import { CONFERENCIAS_KEY, PROGRAM_PUBLISHED_KEY, TALLERES_PROGRAMADOS_KEY } from '../constants/congressEvent';
+import {
+  CONFERENCIAS_KEY,
+  PROGRAM_PUBLISHED_KEY,
+  TALLERES_PROGRAMADOS_KEY,
+  hasTimeOverlap,
+  isCongressDate,
+  isValidTimeRange,
+} from '../constants/congressEvent';
 import type { TallerProgramado } from './AdminCrearTaller';
 import type { ConferenciaPrograma } from './AdminCrearConferencia';
 
@@ -83,6 +90,32 @@ export function PanelAdmin() {
   const [editRoundTableForm, setEditRoundTableForm] = useState({
     title: '', date: '', startTime: '', endTime: '', room: '',
     moderator: '', panelists: '', description: '',
+  });
+
+  // ── Modal: Taller (programa oficial) ───────────────────────────────────────
+  const [editingWorkshop, setEditingWorkshop] = useState<TallerProgramado | null>(null);
+  const [editWorkshopForm, setEditWorkshopForm] = useState({
+    titulo: '',
+    fecha: '',
+    startTime: '',
+    endTime: '',
+    room: '',
+    responsables: '',
+    descripcion: '',
+  });
+
+  // ── Modal: Conferencia (programa oficial) ─────────────────────────────────
+  const [editingConference, setEditingConference] = useState<ConferenciaPrograma | null>(null);
+  const [editConferenceForm, setEditConferenceForm] = useState({
+    titulo: '',
+    fecha: '',
+    startTime: '',
+    endTime: '',
+    room: '',
+    conferencistas: '',
+    moderador: '',
+    institucion: '',
+    descripcion: '',
   });
 
   // ── Modal de confirmación de eliminación ──────────────────────────────────
@@ -241,6 +274,10 @@ export function PanelAdmin() {
   const saveSession = () => {
     if (!editingSession) return;
     const before = editingSession;
+    if (hasTimeOverlap(sessions, editSessionForm.date, editSessionForm.startTime, editSessionForm.endTime, editingSession.id)) {
+      alert('Ya existe una mesa temática en ese horario. Elegí otro horario.');
+      return;
+    }
     const updated = sessions.map((s) =>
       s.id === editingSession.id ? { ...s, ...editSessionForm } : s
     );
@@ -293,6 +330,10 @@ export function PanelAdmin() {
   const savePoster = () => {
     if (!editingPoster) return;
     const before = editingPoster;
+    if (hasTimeOverlap(posterSessions, editPosterForm.date, editPosterForm.startTime, editPosterForm.endTime, editingPoster.id)) {
+      alert('Ya existe una sesión de pósters en ese horario. Elegí otro horario.');
+      return;
+    }
     const updated = posterSessions.map((p) =>
       p.id === editingPoster.id ? { ...p, ...editPosterForm } : p
     );
@@ -349,6 +390,10 @@ export function PanelAdmin() {
   const saveRoundTable = () => {
     if (!editingRoundTable) return;
     const before = editingRoundTable;
+    if (hasTimeOverlap(roundTables, editRoundTableForm.date, editRoundTableForm.startTime, editRoundTableForm.endTime, editingRoundTable.id)) {
+      alert('Ya existe una mesa redonda en ese horario. Elegí otro horario.');
+      return;
+    }
     const updated = roundTables.map((m) =>
       m.id === editingRoundTable.id ? { ...m, ...editRoundTableForm } : m
     );
@@ -369,6 +414,126 @@ export function PanelAdmin() {
     setRoundTables(updated);
     setConfirmDelete(null);
     if (editingRoundTable?.id === roundTableId) setEditingRoundTable(null);
+  };
+
+  // =========================
+  // TALLER (PROGRAMA OFICIAL) — editar
+  // =========================
+  const openEditWorkshop = (t: TallerProgramado) => {
+    setEditingWorkshop(t);
+    setEditWorkshopForm({
+      titulo: t.titulo,
+      fecha: t.fecha,
+      startTime: t.startTime,
+      endTime: t.endTime,
+      room: t.room,
+      responsables: t.responsables,
+      descripcion: t.descripcion || '',
+    });
+  };
+
+  const saveWorkshop = () => {
+    if (!editingWorkshop) return;
+    const before = editingWorkshop;
+
+    if (!editWorkshopForm.titulo.trim() || !editWorkshopForm.room.trim() || !editWorkshopForm.responsables.trim()) {
+      alert('Completá los campos obligatorios.');
+      return;
+    }
+    if (!isCongressDate(editWorkshopForm.fecha)) {
+      alert('La fecha seleccionada no es válida para este congreso');
+      return;
+    }
+    if (!isValidTimeRange(editWorkshopForm.startTime, editWorkshopForm.endTime)) {
+      alert('La hora de fin debe ser posterior a la hora de inicio');
+      return;
+    }
+    if (
+      hasTimeOverlap(
+        talleresProgramados,
+        editWorkshopForm.fecha,
+        editWorkshopForm.startTime,
+        editWorkshopForm.endTime,
+        editingWorkshop.id
+      )
+    ) {
+      alert('Ya existe un taller en ese horario. Elegí otro horario.');
+      return;
+    }
+
+    const updated = talleresProgramados.map((t) =>
+      t.id === editingWorkshop.id ? { ...t, ...editWorkshopForm } : t
+    );
+    localStorage.setItem(TALLERES_PROGRAMADOS_KEY, JSON.stringify(updated));
+    setTalleresProgramados(updated);
+    setEditingWorkshop(null);
+
+    const after = updated.find((t) => t.id === before.id) || before;
+    const msg =
+      `Se actualizó la actividad \"${after.titulo}\".\n` +
+      `Nuevo horario: ${after.fecha} ${after.startTime}–${after.endTime}. Lugar: ${after.room}.`;
+    notifyAgendaUsers(after.id, 'Actividad actualizada', msg);
+  };
+
+  // =========================
+  // CONFERENCIA (PROGRAMA OFICIAL) — editar
+  // =========================
+  const openEditConference = (c: ConferenciaPrograma) => {
+    setEditingConference(c);
+    setEditConferenceForm({
+      titulo: c.titulo,
+      fecha: c.fecha,
+      startTime: c.startTime,
+      endTime: c.endTime,
+      room: c.room,
+      conferencistas: c.conferencistas,
+      moderador: c.moderador || '',
+      institucion: c.institucion || '',
+      descripcion: c.descripcion || '',
+    });
+  };
+
+  const saveConference = () => {
+    if (!editingConference) return;
+    const before = editingConference;
+
+    if (!editConferenceForm.titulo.trim() || !editConferenceForm.room.trim() || !editConferenceForm.conferencistas.trim()) {
+      alert('Completá los campos obligatorios.');
+      return;
+    }
+    if (!isCongressDate(editConferenceForm.fecha)) {
+      alert('La fecha seleccionada no es válida para este congreso');
+      return;
+    }
+    if (!isValidTimeRange(editConferenceForm.startTime, editConferenceForm.endTime)) {
+      alert('La hora de fin debe ser posterior a la hora de inicio');
+      return;
+    }
+    if (
+      hasTimeOverlap(
+        conferencias,
+        editConferenceForm.fecha,
+        editConferenceForm.startTime,
+        editConferenceForm.endTime,
+        editingConference.id
+      )
+    ) {
+      alert('Ya existe una conferencia en ese horario. Elegí otro horario.');
+      return;
+    }
+
+    const updated = conferencias.map((c) =>
+      c.id === editingConference.id ? { ...c, ...editConferenceForm } : c
+    );
+    localStorage.setItem(CONFERENCIAS_KEY, JSON.stringify(updated));
+    setConferencias(updated);
+    setEditingConference(null);
+
+    const after = updated.find((c) => c.id === before.id) || before;
+    const msg =
+      `Se actualizó la actividad \"${after.titulo}\".\n` +
+      `Nuevo horario: ${after.fecha} ${after.startTime}–${after.endTime}. Lugar: ${after.room}.`;
+    notifyAgendaUsers(after.id, 'Actividad actualizada', msg);
   };
 
   // ── Dispatcher del modal de confirmación ──────────────────────────────────
@@ -689,16 +854,25 @@ export function PanelAdmin() {
                     <p className="text-sm text-gray-600 mt-1 italic">{t.descripcion}</p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  disabled={!programPublished}
-                  onClick={() => setConfirmDelete({ type: 'workshop', id: t.id, name: t.titulo })}
-                  className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition shrink-0 ${
-                    programPublished ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  <Trash2 className="w-4 h-4" /> Eliminar
-                </button>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => openEditWorkshop(t)}
+                    className="flex items-center gap-1 bg-teal-700 text-white px-3 py-1 rounded text-sm hover:bg-teal-800 transition"
+                  >
+                    <Pencil className="w-4 h-4" /> Editar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!programPublished}
+                    onClick={() => setConfirmDelete({ type: 'workshop', id: t.id, name: t.titulo })}
+                    className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition ${
+                      programPublished ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <Trash2 className="w-4 h-4" /> Eliminar
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -738,16 +912,25 @@ export function PanelAdmin() {
                     <p className="text-sm text-gray-600 mt-1 italic">{c.descripcion}</p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  disabled={!programPublished}
-                  onClick={() => setConfirmDelete({ type: 'conference', id: c.id, name: c.titulo })}
-                  className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition shrink-0 ${
-                    programPublished ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  <Trash2 className="w-4 h-4" /> Eliminar
-                </button>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => openEditConference(c)}
+                    className="flex items-center gap-1 bg-indigo-700 text-white px-3 py-1 rounded text-sm hover:bg-indigo-800 transition"
+                  >
+                    <Pencil className="w-4 h-4" /> Editar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!programPublished}
+                    onClick={() => setConfirmDelete({ type: 'conference', id: c.id, name: c.titulo })}
+                    className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition ${
+                      programPublished ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <Trash2 className="w-4 h-4" /> Eliminar
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -1116,6 +1299,218 @@ export function PanelAdmin() {
                 Cancelar
               </button>
               <button onClick={saveRoundTable} className="px-4 py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700">
+                Guardar cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL — EDITAR TALLER (PROGRAMA OFICIAL)
+      ══════════════════════════════════════════════════════════════ */}
+      {editingWorkshop && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingWorkshop(null); }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">Editar Taller</h2>
+              <button onClick={() => setEditingWorkshop(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="col-span-2">
+                <label className={labelCls}>Título</label>
+                <input
+                  value={editWorkshopForm.titulo}
+                  onChange={(e) => setEditWorkshopForm({ ...editWorkshopForm, titulo: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Fecha</label>
+                <input
+                  type="date"
+                  value={editWorkshopForm.fecha}
+                  onChange={(e) => setEditWorkshopForm({ ...editWorkshopForm, fecha: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls}>Inicio</label>
+                  <input
+                    type="time"
+                    value={editWorkshopForm.startTime}
+                    onChange={(e) => setEditWorkshopForm({ ...editWorkshopForm, startTime: e.target.value })}
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Fin</label>
+                  <input
+                    type="time"
+                    value={editWorkshopForm.endTime}
+                    onChange={(e) => setEditWorkshopForm({ ...editWorkshopForm, endTime: e.target.value })}
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Lugar</label>
+                <input
+                  value={editWorkshopForm.room}
+                  onChange={(e) => setEditWorkshopForm({ ...editWorkshopForm, room: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Responsable(s)</label>
+                <input
+                  value={editWorkshopForm.responsables}
+                  onChange={(e) => setEditWorkshopForm({ ...editWorkshopForm, responsables: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Descripción (opcional)</label>
+                <input
+                  value={editWorkshopForm.descripcion}
+                  onChange={(e) => setEditWorkshopForm({ ...editWorkshopForm, descripcion: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setEditingWorkshop(null)}
+                className="px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveWorkshop}
+                className="px-4 py-2 text-sm bg-teal-700 text-white rounded hover:bg-teal-800"
+              >
+                Guardar cambios
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          MODAL — EDITAR CONFERENCIA (PROGRAMA OFICIAL)
+      ══════════════════════════════════════════════════════════════ */}
+      {editingConference && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingConference(null); }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">Editar Conferencia</h2>
+              <button onClick={() => setEditingConference(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="col-span-2">
+                <label className={labelCls}>Título</label>
+                <input
+                  value={editConferenceForm.titulo}
+                  onChange={(e) => setEditConferenceForm({ ...editConferenceForm, titulo: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Fecha</label>
+                <input
+                  type="date"
+                  value={editConferenceForm.fecha}
+                  onChange={(e) => setEditConferenceForm({ ...editConferenceForm, fecha: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls}>Inicio</label>
+                  <input
+                    type="time"
+                    value={editConferenceForm.startTime}
+                    onChange={(e) => setEditConferenceForm({ ...editConferenceForm, startTime: e.target.value })}
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Fin</label>
+                  <input
+                    type="time"
+                    value={editConferenceForm.endTime}
+                    onChange={(e) => setEditConferenceForm({ ...editConferenceForm, endTime: e.target.value })}
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Lugar</label>
+                <input
+                  value={editConferenceForm.room}
+                  onChange={(e) => setEditConferenceForm({ ...editConferenceForm, room: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Conferencista(s)</label>
+                <input
+                  value={editConferenceForm.conferencistas}
+                  onChange={(e) => setEditConferenceForm({ ...editConferenceForm, conferencistas: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Moderación (opcional)</label>
+                <input
+                  value={editConferenceForm.moderador}
+                  onChange={(e) => setEditConferenceForm({ ...editConferenceForm, moderador: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Institución (opcional)</label>
+                <input
+                  value={editConferenceForm.institucion}
+                  onChange={(e) => setEditConferenceForm({ ...editConferenceForm, institucion: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className={labelCls}>Descripción (opcional)</label>
+                <input
+                  value={editConferenceForm.descripcion}
+                  onChange={(e) => setEditConferenceForm({ ...editConferenceForm, descripcion: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setEditingConference(null)}
+                className="px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveConference}
+                className="px-4 py-2 text-sm bg-indigo-700 text-white rounded hover:bg-indigo-800"
+              >
                 Guardar cambios
               </button>
             </div>

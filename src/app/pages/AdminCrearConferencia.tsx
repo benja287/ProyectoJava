@@ -7,6 +7,7 @@ import {
   congressDateLabels,
   isCongressDate,
   isValidTimeRange,
+  hasTimeOverlap,
 } from '../constants/congressEvent';
 
 export interface ConferenciaPrograma {
@@ -27,7 +28,17 @@ export function AdminCrearConferencia() {
   const navigate = useNavigate();
 
   const [error, setError] = useState('');
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    titulo: string;
+    fecha: string;
+    startTime: string;
+    endTime: string;
+    room: string;
+    conferencistas: string;
+    moderador: string;
+    institucion: string;
+    descripcion: string;
+  }>({
     titulo: '',
     fecha: CONGRESS_EVENT_DATES[0],
     startTime: '09:00',
@@ -70,6 +81,10 @@ export function AdminCrearConferencia() {
     }
 
     const list: ConferenciaPrograma[] = JSON.parse(localStorage.getItem(CONFERENCIAS_KEY) || '[]');
+    if (hasTimeOverlap(list, form.fecha, form.startTime, form.endTime)) {
+      setError('Ya existe una conferencia en ese horario. Elegí otro horario.');
+      return;
+    }
     const nuevo: ConferenciaPrograma = {
       id: Date.now().toString(),
       titulo,

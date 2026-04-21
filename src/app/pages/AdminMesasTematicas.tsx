@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
+import {
+  CONGRESS_EVENT_DATES,
+  congressDateLabels,
+  isCongressDate,
+  isValidTimeRange,
+  hasTimeOverlap,
+} from '../constants/congressEvent';
 
 export function AdminMesasTematicas() {
   const { user } = useAuth();
@@ -8,14 +15,22 @@ export function AdminMesasTematicas() {
 
   const [approvedWorks, setApprovedWorks] = useState<any[]>([]);
   const [selectedWorks, setSelectedWorks] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    code: string;
+    name: string;
+    room: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+  }>({
     code: '',
     name: '',
     room: '',
-    date: '',
-    startTime: '',
-    endTime: '',
+    date: CONGRESS_EVENT_DATES[0],
+    startTime: '09:00',
+    endTime: '11:00',
   });
 
   useEffect(() => {
@@ -42,6 +57,8 @@ export function AdminMesasTematicas() {
   };
 
   const handleSubmit = () => {
+    setError(null);
+
     if (
       !form.code ||
       !form.name ||
@@ -51,12 +68,27 @@ export function AdminMesasTematicas() {
       !form.endTime ||
       selectedWorks.length === 0
     ) {
-      alert('Completar todos los campos');
+      setError('Completá todos los campos obligatorios y seleccioná al menos un trabajo.');
+      return;
+    }
+
+    if (!isCongressDate(form.date)) {
+      setError('La fecha seleccionada no es válida para este congreso.');
+      return;
+    }
+    if (!isValidTimeRange(form.startTime, form.endTime)) {
+      setError('La hora de fin debe ser posterior a la hora de inicio.');
+      return;
+    }
+
+    const sesionesExistentes = JSON.parse(localStorage.getItem('congress_sessions') || '[]');
+    if (hasTimeOverlap(sesionesExistentes, form.date, form.startTime, form.endTime)) {
+      setError('Ya existe una mesa temática en ese horario. Elegí otro horario.');
       return;
     }
 
     // 🔹 1. GUARDAR LA MESA
-    const sesiones = JSON.parse(localStorage.getItem('congress_sessions') || '[]');
+    const sesiones = sesionesExistentes;
 
     sesiones.push({
       id: Date.now().toString(),
@@ -94,6 +126,14 @@ export function AdminMesasTematicas() {
       <h1 className="text-3xl mb-6">Crear Mesa Temática</h1>
 
       {/* FORM */}
+      {error && (
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        >
+          {error}
+        </div>
+      )}
       <div className="grid gap-4 mb-6">
         <input
           placeholder="Código (SO 15)"
@@ -116,19 +156,28 @@ export function AdminMesasTematicas() {
         <input
           type="date"
           className="border p-2 rounded"
+          value={form.date}
           onChange={(e) => setForm({ ...form, date: e.target.value })}
+          list="congressDates"
         />
+        <datalist id="congressDates">
+          {congressDateLabels().map((o) => (
+            <option key={o.value} value={o.value} />
+          ))}
+        </datalist>
 
         {/* 🔥 NUEVO */}
         <input
           type="time"
           className="border p-2 rounded"
+          value={form.startTime}
           onChange={(e) => setForm({ ...form, startTime: e.target.value })}
         />
 
         <input
           type="time"
           className="border p-2 rounded"
+          value={form.endTime}
           onChange={(e) => setForm({ ...form, endTime: e.target.value })}
         />
       </div>
@@ -154,12 +203,21 @@ export function AdminMesasTematicas() {
         ))}
       </div>
 
-      <button
-        onClick={handleSubmit}
-        className="bg-green-600 text-white px-4 py-2 rounded"
-      >
-        Crear Mesa
-      </button>
+      <div className="flex gap-3">
+        <button
+          onClick={handleSubmit}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
+          Crear Mesa
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/admin')}
+          className="border px-4 py-2 rounded text-gray-700 hover:bg-gray-50"
+        >
+          Cancelar
+        </button>
+      </div>
     </div>
   );
 }

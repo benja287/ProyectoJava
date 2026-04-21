@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { FileText, Presentation } from 'lucide-react';
+import { CalendarDays, FileText, Presentation } from 'lucide-react';
 
 export function PanelAsistente() {
   const { user } = useAuth();
@@ -79,6 +79,27 @@ export function PanelAsistente() {
                     <h3 className="text-xl text-gray-800">Proponer Taller</h3>
                     <p className="text-gray-600">
                       Enviá tu propuesta de taller para evaluación del comité
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            )}
+
+            {/* 📅 Mi agenda (solo asistente) */}
+            {isAsistente && (
+              <Link
+                to="/MiAgenda"
+                className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-indigo-100 rounded-lg">
+                    <CalendarDays className="w-8 h-8 text-indigo-600" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl text-gray-800">Ver mi agenda</h3>
+                    <p className="text-gray-600">
+                      Consultá las actividades que agregaste al cronograma
                     </p>
                   </div>
                 </div>

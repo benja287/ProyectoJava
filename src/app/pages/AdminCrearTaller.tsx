@@ -7,6 +7,7 @@ import {
   congressDateLabels,
   isCongressDate,
   isValidTimeRange,
+  hasTimeOverlap,
 } from '../constants/congressEvent';
 
 const PROGRAM_KEY = TALLERES_PROGRAMADOS_KEY;
@@ -32,7 +33,15 @@ export function AdminCrearTaller() {
   const [proposalId, setProposalId] = useState('');
   const [approvedList, setApprovedList] = useState<any[]>([]);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    titulo: string;
+    fecha: string;
+    startTime: string;
+    endTime: string;
+    room: string;
+    responsables: string;
+    descripcion: string;
+  }>({
     titulo: '',
     fecha: CONGRESS_EVENT_DATES[0],
     startTime: '09:00',
@@ -90,6 +99,10 @@ export function AdminCrearTaller() {
     }
 
     const list: TallerProgramado[] = JSON.parse(localStorage.getItem(PROGRAM_KEY) || '[]');
+    if (hasTimeOverlap(list, form.fecha, form.startTime, form.endTime)) {
+      setError('Ya existe un taller en ese horario. Elegí otro horario.');
+      return;
+    }
     const nuevo: TallerProgramado = {
       id: Date.now().toString(),
       titulo,
