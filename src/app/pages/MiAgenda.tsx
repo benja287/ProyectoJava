@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Calendar, Clock, MapPin, Trash2, BookOpen, Image, Users, CalendarDays, Presentation } from 'lucide-react';
-import { TALLERES_PROGRAMADOS_KEY } from '../constants/congressEvent';
+import { CONFERENCIAS_KEY, TALLERES_PROGRAMADOS_KEY } from '../constants/congressEvent';
 
 interface AgendaItem {
   activityId: string;
-  type: 'session' | 'poster' | 'roundtable' | 'workshop';
+  type: 'conference' | 'session' | 'poster' | 'roundtable' | 'workshop';
   name: string;
   date: string;
   startTime: string;
@@ -25,6 +25,7 @@ const typeConfig = {
   poster:     { label: 'Sesión de Pósters',  icon: Image,    color: 'yellow' },
   roundtable: { label: 'Mesa Redonda',       icon: Users,    color: 'purple' },
   workshop:   { label: 'Taller',             icon: Presentation, color: 'teal' },
+  conference: { label: 'Conferencia',        icon: CalendarDays, color: 'indigo' },
 } as const;
 
 const colorMap = {
@@ -32,6 +33,7 @@ const colorMap = {
   yellow: { badge: 'bg-yellow-100 text-yellow-700', border: 'border-yellow-400' },
   purple: { badge: 'bg-purple-100 text-purple-700', border: 'border-purple-400' },
   teal:   { badge: 'bg-teal-100 text-teal-900',     border: 'border-teal-400' },
+  indigo: { badge: 'bg-indigo-100 text-indigo-900', border: 'border-indigo-400' },
 };
 
 export function MiAgenda() {
@@ -57,6 +59,7 @@ export function MiAgenda() {
     const posters:     any[] = JSON.parse(localStorage.getItem('congress_posters')     || '[]');
     const roundTables: any[] = JSON.parse(localStorage.getItem('congress_roundtables') || '[]');
     const tallerProg: any[] = JSON.parse(localStorage.getItem(TALLERES_PROGRAMADOS_KEY) || '[]');
+    const conferencias: any[] = JSON.parse(localStorage.getItem(CONFERENCIAS_KEY) || '[]');
 
     const allActivities: Record<string, any> = {};
     sessions.forEach((s: any) => allActivities[s.id] = {
@@ -70,6 +73,9 @@ export function MiAgenda() {
     });
     tallerProg.forEach((t: any) => allActivities[t.id] = {
       name: t.titulo, date: t.fecha, startTime: t.startTime, endTime: t.endTime, room: t.room,
+    });
+    conferencias.forEach((c: any) => allActivities[c.id] = {
+      name: c.titulo, date: c.fecha, startTime: c.startTime, endTime: c.endTime, room: c.room,
     });
 
     // Filtrar actividades eliminadas y actualizar las modificadas

@@ -1,6 +1,12 @@
 /** Talleres cargados por administración en el programa oficial (distinto de propuestas evaluadas). */
 export const TALLERES_PROGRAMADOS_KEY = 'congress_talleres_programados';
 
+/** Conferencias cargadas por administración en el programa oficial. */
+export const CONFERENCIAS_KEY = 'congress_conferencias_programa';
+
+/** Flag de publicación del programa público. */
+export const PROGRAM_PUBLISHED_KEY = 'congress_program_published';
+
 /** Fechas hábiles del cronograma (3 días) — V Congreso UNLP La Plata 2027 (alineado al mock del proyecto). */
 export const CONGRESS_EVENT_DATES = ['2027-05-10', '2027-05-11', '2027-05-12'] as const;
 

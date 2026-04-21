@@ -3,8 +3,9 @@ import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Settings, Bell, Pencil, X, Trash2 } from 'lucide-react';
 import { UserRole } from '../context/AuthContext';
-import { TALLERES_PROGRAMADOS_KEY } from '../constants/congressEvent';
+import { CONFERENCIAS_KEY, PROGRAM_PUBLISHED_KEY, TALLERES_PROGRAMADOS_KEY } from '../constants/congressEvent';
 import type { TallerProgramado } from './AdminCrearTaller';
+import type { ConferenciaPrograma } from './AdminCrearConferencia';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface Session {
@@ -42,7 +43,7 @@ interface RoundTable {
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 export function PanelAdmin() {
-  const { user, sendNotificationToAll } = useAuth();
+  const { user, sendNotificationToAll, sendNotificationToUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -54,6 +55,9 @@ export function PanelAdmin() {
   const [posterSessions, setPosterSessions] = useState<PosterSession[]>([]);
   const [talleresProgramados, setTalleresProgramados] = useState<TallerProgramado[]>([]);
   const [tallerOkBanner, setTallerOkBanner] = useState(false);
+  const [conferencias, setConferencias] = useState<ConferenciaPrograma[]>([]);
+  const [confOkBanner, setConfOkBanner] = useState(false);
+  const [programPublished, setProgramPublished] = useState(true);
 
   const [notifForm, setNotifForm] = useState({
     title: '',
@@ -83,7 +87,7 @@ export function PanelAdmin() {
 
   // ── Modal de confirmación de eliminación ──────────────────────────────────
   const [confirmDelete, setConfirmDelete] = useState<{
-    type: 'session' | 'poster' | 'roundtable';
+    type: 'session' | 'poster' | 'roundtable' | 'workshop' | 'conference';
     id: string;
     name: string;
   } | null>(null);
@@ -108,13 +112,21 @@ export function PanelAdmin() {
     setWorks(allWorks);
     setRoundTables(mesas);
     setTalleresProgramados(JSON.parse(localStorage.getItem(TALLERES_PROGRAMADOS_KEY) || '[]'));
+    setConferencias(JSON.parse(localStorage.getItem(CONFERENCIAS_KEY) || '[]'));
+    const published = localStorage.getItem(PROGRAM_PUBLISHED_KEY);
+    setProgramPublished(published ? JSON.parse(published) : true);
   }, [user, navigate]);
 
   useEffect(() => {
-    const st = location.state as { tallerCreado?: boolean } | null;
+    const st = location.state as { tallerCreado?: boolean; conferenciaCreada?: boolean } | null;
     if (st?.tallerCreado) {
       setTallerOkBanner(true);
       setTalleresProgramados(JSON.parse(localStorage.getItem(TALLERES_PROGRAMADOS_KEY) || '[]'));
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    if (st?.conferenciaCreada) {
+      setConfOkBanner(true);
+      setConferencias(JSON.parse(localStorage.getItem(CONFERENCIAS_KEY) || '[]'));
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, location.pathname, navigate]);
@@ -125,6 +137,37 @@ export function PanelAdmin() {
     const updated = talleresProgramados.filter((t) => t.id !== id);
     localStorage.setItem(TALLERES_PROGRAMADOS_KEY, JSON.stringify(updated));
     setTalleresProgramados(updated);
+  };
+
+  const deleteConferencia = (id: string) => {
+    const updated = conferencias.filter((c) => c.id !== id);
+    localStorage.setItem(CONFERENCIAS_KEY, JSON.stringify(updated));
+    setConferencias(updated);
+  };
+
+  const toggleProgramPublished = () => {
+    const next = !programPublished;
+    setProgramPublished(next);
+    localStorage.setItem(PROGRAM_PUBLISHED_KEY, JSON.stringify(next));
+  };
+
+  const notifyAgendaUsers = (activityId: string, title: string, message: string) => {
+    const allAgendas: Record<string, any[]> = JSON.parse(localStorage.getItem('congress_agendas') || '{}');
+    Object.entries(allAgendas).forEach(([userId, items]) => {
+      if (Array.isArray(items) && items.some((it: any) => it.activityId === activityId)) {
+        sendNotificationToUser(userId, title, message, 'Administración');
+      }
+    });
+  };
+
+  const notifyAuthorsFromWorks = (workIds: string[], title: string, message: string) => {
+    const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
+    const targets = new Set<string>();
+    workIds.forEach((id) => {
+      const w = allWorks.find((wk: any) => wk.id === id);
+      if (w?.userId) targets.add(w.userId);
+    });
+    targets.forEach((uid) => sendNotificationToUser(uid, title, message, 'Administración'));
   };
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -197,12 +240,20 @@ export function PanelAdmin() {
 
   const saveSession = () => {
     if (!editingSession) return;
+    const before = editingSession;
     const updated = sessions.map((s) =>
       s.id === editingSession.id ? { ...s, ...editSessionForm } : s
     );
     localStorage.setItem('congress_sessions', JSON.stringify(updated));
     setSessions(updated);
     setEditingSession(null);
+
+    // HU-15: notificar a usuarios con esa actividad en agenda y a autores de trabajos asignados
+    const after = updated.find((s) => s.id === before.id) || before;
+    const msg = `Se actualizó la actividad \"${after.code} - ${after.name}\".\n` +
+      `Nuevo horario: ${after.date} ${after.startTime}–${after.endTime}. Lugar: ${after.room}.`;
+    notifyAgendaUsers(after.id, 'Actividad actualizada', msg);
+    notifyAuthorsFromWorks(after.works || [], 'Tu actividad fue actualizada', msg);
   };
 
   const removeWorkFromSession = (sessionId: string, workId: string) => {
@@ -241,12 +292,19 @@ export function PanelAdmin() {
 
   const savePoster = () => {
     if (!editingPoster) return;
+    const before = editingPoster;
     const updated = posterSessions.map((p) =>
       p.id === editingPoster.id ? { ...p, ...editPosterForm } : p
     );
     localStorage.setItem('congress_posters', JSON.stringify(updated));
     setPosterSessions(updated);
     setEditingPoster(null);
+
+    const after = updated.find((p) => p.id === before.id) || before;
+    const msg = `Se actualizó la actividad \"${after.name}\".\n` +
+      `Nuevo horario: ${after.date} ${after.startTime}–${after.endTime}. Lugar: ${after.location}.`;
+    notifyAgendaUsers(after.id, 'Actividad actualizada', msg);
+    notifyAuthorsFromWorks((after.works || []).map((w: any) => w.workId), 'Tu actividad fue actualizada', msg);
   };
 
   const removeWorkFromPoster = (posterId: string, workId: string) => {
@@ -290,12 +348,18 @@ export function PanelAdmin() {
 
   const saveRoundTable = () => {
     if (!editingRoundTable) return;
+    const before = editingRoundTable;
     const updated = roundTables.map((m) =>
       m.id === editingRoundTable.id ? { ...m, ...editRoundTableForm } : m
     );
     localStorage.setItem('congress_roundtables', JSON.stringify(updated));
     setRoundTables(updated);
     setEditingRoundTable(null);
+
+    const after = updated.find((m) => m.id === before.id) || before;
+    const msg = `Se actualizó la actividad \"${after.title}\".\n` +
+      `Nuevo horario: ${after.date} ${after.startTime}–${after.endTime}. Lugar: ${after.room}.`;
+    notifyAgendaUsers(after.id, 'Actividad actualizada', msg);
   };
 
   /** Elimina completamente una mesa redonda (sin trabajos asociados, sin restauración necesaria) */
@@ -313,6 +377,8 @@ export function PanelAdmin() {
     if (confirmDelete.type === 'session')    deleteSession(confirmDelete.id);
     if (confirmDelete.type === 'poster')     deletePoster(confirmDelete.id);
     if (confirmDelete.type === 'roundtable') deleteRoundTable(confirmDelete.id);
+    if (confirmDelete.type === 'workshop')   deleteTallerProgramado(confirmDelete.id);
+    if (confirmDelete.type === 'conference') deleteConferencia(confirmDelete.id);
   };
 
   // =========================
@@ -366,12 +432,49 @@ export function PanelAdmin() {
           <button onClick={() => navigate('/admin/crear-taller')} className="bg-teal-700 text-white px-4 py-2 rounded hover:bg-teal-800 transition">
             Crear Taller
           </button>
+          <button onClick={() => navigate('/admin/crear-conferencia')} className="bg-indigo-700 text-white px-4 py-2 rounded hover:bg-indigo-800 transition">
+            Crear Conferencia
+          </button>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800">Programa publicado</h2>
+              <p className="text-sm text-gray-600">
+                Controla si el cronograma es visible para el público en “Programa”.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleProgramPublished}
+              className={`px-4 py-2 rounded text-sm font-medium transition ${
+                programPublished ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              {programPublished ? 'Publicado' : 'No publicado'}
+            </button>
+          </div>
+          {!programPublished && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mt-4">
+              Mientras el programa esté “No publicado”, el público verá el mensaje de “aún no fue publicado”.
+            </p>
+          )}
         </div>
 
         {tallerOkBanner && (
           <div className="mb-6 bg-teal-50 border border-teal-200 text-teal-900 px-4 py-3 rounded-lg text-sm">
             El taller quedó cargado y visible en el cronograma del congreso.
             <button type="button" className="ml-3 underline font-medium" onClick={() => setTallerOkBanner(false)}>
+              Cerrar
+            </button>
+          </div>
+        )}
+
+        {confOkBanner && (
+          <div className="mb-6 bg-indigo-50 border border-indigo-200 text-indigo-900 px-4 py-3 rounded-lg text-sm">
+            La conferencia quedó cargada y visible en el cronograma del congreso.
+            <button type="button" className="ml-3 underline font-medium" onClick={() => setConfOkBanner(false)}>
               Cerrar
             </button>
           </div>
@@ -441,6 +544,7 @@ export function PanelAdmin() {
                     <Pencil className="w-4 h-4" /> Editar
                   </button>
                   <button
+                    disabled={!programPublished}
                     onClick={() => setConfirmDelete({ type: 'session', id: s.id, name: `${s.code} - ${s.name}` })}
                     className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
                   >
@@ -497,6 +601,7 @@ export function PanelAdmin() {
                     <Pencil className="w-4 h-4" /> Editar
                   </button>
                   <button
+                    disabled={!programPublished}
                     onClick={() => setConfirmDelete({ type: 'roundtable', id: m.id, name: m.title })}
                     className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
                   >
@@ -528,6 +633,7 @@ export function PanelAdmin() {
                     <Pencil className="w-4 h-4" /> Editar
                   </button>
                   <button
+                    disabled={!programPublished}
                     onClick={() => setConfirmDelete({ type: 'poster', id: p.id, name: p.name })}
                     className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
                   >
@@ -585,8 +691,60 @@ export function PanelAdmin() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => deleteTallerProgramado(t.id)}
-                  className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition shrink-0"
+                  disabled={!programPublished}
+                  onClick={() => setConfirmDelete({ type: 'workshop', id: t.id, name: t.titulo })}
+                  className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition shrink-0 ${
+                    programPublished ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <Trash2 className="w-4 h-4" /> Eliminar
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {/* ── CONFERENCIAS ── */}
+          <h3 className="text-xl mt-8 mb-4 text-indigo-800">Conferencias</h3>
+          {conferencias.length === 0 && (
+            <p className="text-gray-500 mb-4">
+              No hay conferencias en el programa. Usá &quot;Crear Conferencia&quot; para agregar una.
+            </p>
+          )}
+          {[...conferencias].sort((a, b) => {
+            const d = a.fecha.localeCompare(b.fecha);
+            return d !== 0 ? d : a.startTime.localeCompare(b.startTime);
+          }).map((c) => (
+            <div key={c.id} className="border p-4 mb-4 rounded bg-indigo-50">
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <h3 className="font-semibold">{c.titulo}</h3>
+                  <p className="text-sm text-gray-600">
+                    📅 {c.fecha} | 🕒 {c.startTime} - {c.endTime} | 📍 {c.room}
+                  </p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    <strong>Conferencista(s):</strong> {c.conferencistas}
+                  </p>
+                  {c.moderador && (
+                    <p className="text-sm text-gray-700">
+                      <strong>Moderación:</strong> {c.moderador}
+                    </p>
+                  )}
+                  {c.institucion && (
+                    <p className="text-sm text-gray-700">
+                      <strong>Institución:</strong> {c.institucion}
+                    </p>
+                  )}
+                  {c.descripcion && (
+                    <p className="text-sm text-gray-600 mt-1 italic">{c.descripcion}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  disabled={!programPublished}
+                  onClick={() => setConfirmDelete({ type: 'conference', id: c.id, name: c.titulo })}
+                  className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition shrink-0 ${
+                    programPublished ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  }`}
                 >
                   <Trash2 className="w-4 h-4" /> Eliminar
                 </button>
@@ -667,6 +825,16 @@ export function PanelAdmin() {
             {confirmDelete.type === 'roundtable' && (
               <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">
                 Esta acción no afecta ningún trabajo. La mesa redonda se eliminará definitivamente.
+              </p>
+            )}
+            {confirmDelete.type === 'workshop' && (
+              <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">
+                Esta acción eliminará el taller del programa oficial.
+              </p>
+            )}
+            {confirmDelete.type === 'conference' && (
+              <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">
+                Esta acción eliminará la conferencia del programa oficial.
               </p>
             )}
 

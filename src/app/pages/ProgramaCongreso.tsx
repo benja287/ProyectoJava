@@ -14,13 +14,15 @@ import {
 } from 'lucide-react';
 import {
   CONGRESS_EVENT_DATES,
+  CONFERENCIAS_KEY,
+  PROGRAM_PUBLISHED_KEY,
   TALLERES_PROGRAMADOS_KEY,
   congressDateRangeCaption,
 } from '../constants/congressEvent';
 
 interface AgendaItem {
   activityId: string;
-  type: 'session' | 'poster' | 'roundtable' | 'workshop';
+  type: 'conference' | 'session' | 'poster' | 'roundtable' | 'workshop';
   name: string;
   date: string;
   startTime: string;
@@ -30,7 +32,7 @@ interface AgendaItem {
 
 interface Activity {
   id: string;
-  type: 'session' | 'poster' | 'roundtable' | 'workshop';
+  type: 'conference' | 'session' | 'poster' | 'roundtable' | 'workshop';
   name: string;
   date: string;
   startTime: string;
@@ -43,6 +45,8 @@ interface Activity {
   moderator?: string;
   panelists?: string;
   responsables?: string;
+  conferencistas?: string;
+  institucion?: string;
 }
 
 const toMinutes = (time: string) => {
@@ -59,6 +63,12 @@ const overlaps = (a: AgendaItem, b: { date: string; startTime: string; endTime: 
 };
 
 const typeConfig = {
+  conference: {
+    label: 'Conferencia',
+    Icon: CalendarDays,
+    border: 'border-indigo-500',
+    badge: 'bg-indigo-100 text-indigo-900',
+  },
   session: {
     label: 'Mesa Temática',
     Icon: BookOpen,
@@ -86,12 +96,26 @@ const typeConfig = {
 } as const;
 
 function normalizeActivities(): Activity[] {
+  const conferencias = JSON.parse(localStorage.getItem(CONFERENCIAS_KEY) || '[]');
   const sesiones = JSON.parse(localStorage.getItem('congress_sessions') || '[]');
   const redondas = JSON.parse(localStorage.getItem('congress_roundtables') || '[]');
   const posters = JSON.parse(localStorage.getItem('congress_posters') || '[]');
   const tallerProg = JSON.parse(localStorage.getItem(TALLERES_PROGRAMADOS_KEY) || '[]');
 
   const normalized: Activity[] = [
+    ...conferencias.map((c: any) => ({
+      id: c.id,
+      type: 'conference' as const,
+      name: c.titulo,
+      date: c.fecha,
+      startTime: c.startTime,
+      endTime: c.endTime,
+      room: c.room,
+      description: c.descripcion,
+      conferencistas: c.conferencistas,
+      moderator: c.moderador,
+      institucion: c.institucion,
+    })),
     ...sesiones.map((s: any) => ({
       id: s.id,
       type: 'session' as const,
@@ -155,6 +179,7 @@ export function ProgramaCongreso() {
   const [agenda, setAgenda] = useState<AgendaItem[]>([]);
   const [feedback, setFeedback] = useState<{ id: string; msg: string; ok: boolean } | null>(null);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
+  const [programPublished, setProgramPublished] = useState(true);
 
   const canAgenda = !!(
     user &&
@@ -166,6 +191,8 @@ export function ProgramaCongreso() {
     const allUsers = JSON.parse(localStorage.getItem('congress_users') || '[]');
     setWorks(allWorks);
     setUsers(allUsers);
+    const published = localStorage.getItem(PROGRAM_PUBLISHED_KEY);
+    setProgramPublished(published ? JSON.parse(published) : true);
     setAllActivities(normalizeActivities());
   }, []);
 
@@ -182,7 +209,11 @@ export function ProgramaCongreso() {
 
   /** Refrescar si el usuario vuelve desde otra pestaña con datos nuevos */
   useEffect(() => {
-    const onFocus = () => setAllActivities(normalizeActivities());
+    const onFocus = () => {
+      const published = localStorage.getItem(PROGRAM_PUBLISHED_KEY);
+      setProgramPublished(published ? JSON.parse(published) : true);
+      setAllActivities(normalizeActivities());
+    };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, []);
@@ -269,6 +300,12 @@ export function ProgramaCongreso() {
       if (activity.description) detailLines.push(activity.description);
       if (activity.moderator) detailLines.push(`Modera: ${activity.moderator}`);
       if (activity.panelists) detailLines.push(`Panelistas: ${activity.panelists}`);
+    }
+    if (activity.type === 'conference') {
+      if (activity.description) detailLines.push(activity.description);
+      if (activity.conferencistas) detailLines.push(`Conferencista(s): ${activity.conferencistas}`);
+      if (activity.moderator) detailLines.push(`Moderación: ${activity.moderator}`);
+      if (activity.institucion) detailLines.push(`Institución: ${activity.institucion}`);
     }
     if (activity.type === 'workshop') {
       if (activity.description) detailLines.push(activity.description);
@@ -406,9 +443,13 @@ export function ProgramaCongreso() {
 
         {/* Lista del día */}
         <div className="bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-amber-900/10 px-4 py-6 sm:px-8">
-          {allActivities.length === 0 ? (
+          {!programPublished ? (
             <p className="text-center text-gray-500 py-12">
               El programa aún no fue publicado por el organizador.
+            </p>
+          ) : allActivities.length === 0 ? (
+            <p className="text-center text-gray-500 py-12">
+              No hay actividades cargadas todavía.
             </p>
           ) : activitiesForDay.length === 0 ? (
             <p className="text-center text-gray-500 py-12">

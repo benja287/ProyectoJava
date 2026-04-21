@@ -23,6 +23,7 @@ import { AdminMesasTematicas } from "./pages/AdminMesasTematicas";
 import { AdminMesasRedondas } from "./pages/AdminMesasRedondas";
 import { AdminPosters } from './pages/AdminPosters';
 import { AdminCrearTaller } from './pages/AdminCrearTaller';
+import { AdminCrearConferencia } from './pages/AdminCrearConferencia';
 import { ProgramaCongreso} from './pages/ProgramaCongreso';
 import { MiAgenda} from './pages/MiAgenda';
 import { OrganizadoresPage } from "./pages/OrganizadoresPage";
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
       { path: "MiAgenda", Component: MiAgenda}, 
       { path: "admin/posters", Component: AdminPosters },
       { path: "admin/crear-taller", Component: AdminCrearTaller },
+      { path: "admin/crear-conferencia", Component: AdminCrearConferencia },
       { path: "organizadores", Component: OrganizadoresPage },
       { path: "contacto", Component: ContactoPage },
     ],
