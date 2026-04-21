@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
+import {
+  CONGRESS_EVENT_DATES,
+  congressDateLabels,
+  isCongressDate,
+  isValidTimeRange,
+  hasTimeOverlap,
+} from '../constants/congressEvent';
 
 export function AdminPosters() {
   const { user } = useAuth();
@@ -8,13 +15,20 @@ export function AdminPosters() {
 
   const [approvedWorks, setApprovedWorks] = useState<any[]>([]);
   const [selectedWorks, setSelectedWorks] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    name: string;
+    location: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+  }>({
     name: '',
     location: '',
-    date: '',
-    startTime: '',
-    endTime: '',
+    date: CONGRESS_EVENT_DATES[0],
+    startTime: '09:00',
+    endTime: '11:00',
   });
 
   useEffect(() => {
@@ -53,6 +67,7 @@ export function AdminPosters() {
   };
 
   const handleSubmit = () => {
+    setError(null);
     if (
       !form.name ||
       !form.location ||
@@ -61,11 +76,26 @@ export function AdminPosters() {
       !form.endTime ||
       selectedWorks.length === 0
     ) {
-      alert('Completar todos los campos');
+      setError('Completá todos los campos obligatorios y seleccioná al menos un póster.');
       return;
     }
 
-    const sesiones = JSON.parse(localStorage.getItem('congress_posters') || '[]');
+    if (!isCongressDate(form.date)) {
+      setError('La fecha seleccionada no es válida para este congreso.');
+      return;
+    }
+    if (!isValidTimeRange(form.startTime, form.endTime)) {
+      setError('La hora de fin debe ser posterior a la hora de inicio.');
+      return;
+    }
+
+    const sesionesExistentes = JSON.parse(localStorage.getItem('congress_posters') || '[]');
+    if (hasTimeOverlap(sesionesExistentes, form.date, form.startTime, form.endTime)) {
+      setError('Ya existe una sesión de pósters en ese horario. Elegí otro horario.');
+      return;
+    }
+
+    const sesiones = sesionesExistentes;
 
     sesiones.push({
       id: Date.now().toString(),
@@ -95,6 +125,14 @@ export function AdminPosters() {
       <h1 className="text-3xl mb-6">Crear Sesión de Pósters</h1>
 
       {/* FORM */}
+      {error && (
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+        >
+          {error}
+        </div>
+      )}
       <div className="grid gap-4 mb-6">
         <input
           placeholder="Nombre de la sesión"
@@ -108,21 +146,29 @@ export function AdminPosters() {
           onChange={(e) => setForm({ ...form, location: e.target.value })}
         />
 
-        <input
-          type="date"
+        <select
+          value={form.date}
           className="border p-2 rounded"
           onChange={(e) => setForm({ ...form, date: e.target.value })}
-        />
+        >
+          {congressDateLabels().map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
 
         <input
           type="time"
           className="border p-2 rounded"
+          value={form.startTime}
           onChange={(e) => setForm({ ...form, startTime: e.target.value })}
         />
 
         <input
           type="time"
           className="border p-2 rounded"
+          value={form.endTime}
           onChange={(e) => setForm({ ...form, endTime: e.target.value })}
         />
       </div>
@@ -155,12 +201,21 @@ export function AdminPosters() {
         );
       })}
 
-      <button
-        onClick={handleSubmit}
-        className="bg-green-600 text-white px-4 py-2 rounded mt-4"
-      >
-        Crear Sesión
-      </button>
+      <div className="flex gap-3 mt-4">
+        <button
+          onClick={handleSubmit}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
+          Crear Sesión
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate('/admin')}
+          className="border px-4 py-2 rounded text-gray-700 hover:bg-gray-50"
+        >
+          Cancelar
+        </button>
+      </div>
     </div>
   );
 }

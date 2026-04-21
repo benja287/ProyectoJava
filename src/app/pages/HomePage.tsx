@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
-import { MapPin, BookOpen, Users, Building2, TrendingUp } from 'lucide-react';
+import { MapPin, BookOpen, Users, Building2, TrendingUp, Calendar } from 'lucide-react';
+import { congressDateRangeCaption } from '../constants/congressEvent';
 import { useAuth } from '../context/AuthContext';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
@@ -198,9 +199,25 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-16 bg-gradient-to-r from-[#2d5016] to-[#3d6b23] text-white">
-        
+      {/* Programa — mismo enlace que la vista cronograma */}
+      <section className="py-16 bg-[#eceaf2] border-t border-amber-900/10">
+        <div className="container mx-auto px-4 max-w-3xl text-center">
+          <h2 className="text-3xl font-bold tracking-wide text-amber-950 uppercase mb-2">
+            Programa
+          </h2>
+          <p className="text-gray-600 mb-2">
+            Este es el calendario de actividades: mesas temáticas, mesas redondas, pósters y talleres.
+          </p>
+          <div className="w-14 h-1 bg-yellow-400 mx-auto rounded-full mb-4" />
+          <p className="text-sm text-gray-600 mb-8">{congressDateRangeCaption()}</p>
+          <Link
+            to="/ProgramaCongreso"
+            className="inline-flex items-center gap-2 rounded-full bg-amber-900 text-white px-8 py-3 text-sm font-semibold hover:bg-amber-950 transition shadow-md"
+          >
+            <Calendar className="w-5 h-5 shrink-0" />
+            Ver programa completo
+          </Link>
+        </div>
       </section>
     </div>
   );

@@ -7,6 +7,8 @@ export function NotificacionesPage() {
   const { user, notifications, markNotificationRead } = useAuth();
   const navigate = useNavigate();
 
+  const orderedNotifications = [...notifications].reverse();
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -34,7 +36,7 @@ export function NotificacionesPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {notifications.map((notif) => (
+              {orderedNotifications.map((notif) => (
                 <div
                   key={notif.id}
                   onClick={() => markNotificationRead(notif.id)}
