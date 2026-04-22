@@ -24,6 +24,33 @@ export function InscripcionPage() {
     return null;
   }
 
+  // ── Bloquear re-inscripción si ya está pendiente o aprobada ───────────────
+  if (user.inscriptionStatus === 'pending' || user.inscriptionStatus === 'approved') {
+    return (
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 px-4 bg-gradient-to-br from-[#faf8f5] to-[#f3f1ed]">
+        <div className="max-w-2xl w-full bg-white rounded-xl shadow-xl p-8 text-center">
+          <CheckCircle className="w-16 h-16 text-[#2d5016] mx-auto mb-4" />
+          <h2 className="text-3xl text-gray-800 mb-4">
+            {user.inscriptionStatus === 'approved'
+              ? '¡Tu inscripción fue aprobada! ✅'
+              : 'Tu inscripción está pendiente de aprobación ⏳'}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {user.inscriptionStatus === 'approved'
+              ? 'Ya estás inscripto/a al congreso.'
+              : 'Será validada por el equipo organizador. Te notificaremos cuando sea aprobada.'}
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-[#2d5016] text-white rounded-lg hover:bg-[#3d6b23] transition"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const allowedTypes = [
     'application/pdf',
     'image/jpeg',

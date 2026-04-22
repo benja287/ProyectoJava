@@ -172,7 +172,7 @@ export function Header() {
                           </p>
                         )}
                       </div>
-                      <Link to="/inscripcion" className="block px-4 py-2 text-sm hover:bg-gray-100 transition" onClick={() => setShowDropdown(false)}>
+                      <Link to="/perfil" className="block px-4 py-2 text-sm hover:bg-gray-100 transition" onClick={() => setShowDropdown(false)}>
                         Mi perfil
                       </Link>
                       {user.roles && user.roles.length > 1 && (

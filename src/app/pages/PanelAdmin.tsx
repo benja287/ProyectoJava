@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { Settings, Bell, Pencil, X, Trash2, FileDown } from 'lucide-react';
+import { Settings, Bell, Pencil, X, Trash2, FileDown, FileText, Plus } from 'lucide-react';
 import { UserRole } from '../context/AuthContext';
-import { openStoredBrowserFile } from '../lib/browserFiles';
 import {
+  openStoredBrowserFile,
+  openOrDownloadFile,
+  deleteBrowserFile,
+} from '../lib/browserFiles';
+import {
+  CIRCULARES_KEY,
   CONFERENCIAS_KEY,
   PROGRAM_PUBLISHED_KEY,
   TALLERES_PROGRAMADOS_KEY,
+  CONGRESS_EVENT_DATES,
   hasTimeOverlap,
   isCongressDate,
   isValidTimeRange,
 } from '../constants/congressEvent';
+import type { StoredCircular, CircularStatus } from '../constants/congressEvent';
 import type { TallerProgramado } from './AdminCrearTaller';
 import type { ConferenciaPrograma } from './AdminCrearConferencia';
 
@@ -87,10 +94,13 @@ export function PanelAdmin() {
   const [editConferenceForm,  setEditConferenceForm]  = useState({ titulo: '', fecha: '', startTime: '', endTime: '', room: '', conferencistas: '', moderador: '', institucion: '', descripcion: '' });
 
   const [confirmDelete, setConfirmDelete] = useState<{
-    type: 'session' | 'poster' | 'roundtable' | 'workshop' | 'conference';
+    type: 'session' | 'poster' | 'roundtable' | 'workshop' | 'conference' | 'circular';
     id: string;
     name: string;
   } | null>(null);
+
+  const [circulares, setCirculares] = useState<StoredCircular[]>([]);
+  const [circularesFeedback, setCircularesFeedback] = useState('');
 
   // ─── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -113,10 +123,11 @@ export function PanelAdmin() {
     setConferencias(JSON.parse(localStorage.getItem(CONFERENCIAS_KEY) || '[]'));
     const published = localStorage.getItem(PROGRAM_PUBLISHED_KEY);
     setProgramPublished(published ? JSON.parse(published) : true);
+    setCirculares(JSON.parse(localStorage.getItem(CIRCULARES_KEY) || '[]'));
   }, [user, navigate]);
 
   useEffect(() => {
-    const st = location.state as { tallerCreado?: boolean; conferenciaCreada?: boolean } | null;
+    const st = location.state as { tallerCreado?: boolean; conferenciaCreada?: boolean; circularesFeedback?: string } | null;
     if (st?.tallerCreado) {
       setTallerOkBanner(true);
       setTalleresProgramados(JSON.parse(localStorage.getItem(TALLERES_PROGRAMADOS_KEY) || '[]'));
@@ -125,6 +136,11 @@ export function PanelAdmin() {
     if (st?.conferenciaCreada) {
       setConfOkBanner(true);
       setConferencias(JSON.parse(localStorage.getItem(CONFERENCIAS_KEY) || '[]'));
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    if (st?.circularesFeedback) {
+      setCircularesFeedback(st.circularesFeedback);
+      setCirculares(JSON.parse(localStorage.getItem(CIRCULARES_KEY) || '[]'));
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, location.pathname, navigate]);
@@ -179,6 +195,46 @@ export function PanelAdmin() {
     const next = !programPublished;
     setProgramPublished(next);
     localStorage.setItem(PROGRAM_PUBLISHED_KEY, JSON.stringify(next));
+  };
+
+  // =========================
+  // CIRCULARES
+  // =========================
+  const persistCirculares = (next: StoredCircular[]) => {
+    localStorage.setItem(CIRCULARES_KEY, JSON.stringify(next));
+    setCirculares(next);
+  };
+
+  const toggleCircularStatus = (id: string) => {
+    const now = new Date().toISOString();
+    const next = circulares.map((c) =>
+      c.id === id
+        ? {
+            ...c,
+            status: (c.status === 'published' ? 'draft' : 'published') as CircularStatus,
+            updatedAt: now,
+          }
+        : c
+    );
+    persistCirculares(next);
+  };
+
+  const deleteCircular = (id: string) => {
+    const c = circulares.find((x) => x.id === id);
+    if (c?.pdfFileId) void deleteBrowserFile(c.pdfFileId);
+    const next = circulares.filter((x) => x.id !== id);
+    persistCirculares(next);
+    setConfirmDelete(null);
+    setCircularesFeedback('La circular fue eliminada.');
+  };
+
+  const openCircularStoredFile = (c: StoredCircular) => {
+    void openOrDownloadFile({
+      fileId: c.pdfFileId,
+      fileName: c.pdfName,
+      filePdfBase64: c.pdfData,
+      fallbackMimeType: c.pdfMimeType || 'application/pdf',
+    });
   };
 
   // =========================
@@ -395,6 +451,7 @@ export function PanelAdmin() {
     if (confirmDelete.type === 'roundtable') deleteRoundTable(confirmDelete.id);
     if (confirmDelete.type === 'workshop')   deleteTallerProgramado(confirmDelete.id);
     if (confirmDelete.type === 'conference') deleteConferencia(confirmDelete.id);
+    if (confirmDelete.type === 'circular') deleteCircular(confirmDelete.id);
   };
 
   // =========================
@@ -410,6 +467,64 @@ export function PanelAdmin() {
   // ─── Clases reutilizables ──────────────────────────────────────────────────
   const inputCls = 'w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300';
   const labelCls = 'block text-sm text-gray-600 mb-1';
+  const cronogramaItems = [
+    ...sessions.map((s) => ({
+      kind: 'session' as const,
+      id: s.id,
+      date: s.date,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      title: `${s.code} - ${s.name}`,
+      room: s.room,
+      payload: s,
+    })),
+    ...roundTables.map((m) => ({
+      kind: 'roundtable' as const,
+      id: m.id,
+      date: m.date,
+      startTime: m.startTime,
+      endTime: m.endTime,
+      title: m.title,
+      room: m.room,
+      payload: m,
+    })),
+    ...posterSessions.map((p) => ({
+      kind: 'poster' as const,
+      id: p.id,
+      date: p.date,
+      startTime: p.startTime,
+      endTime: p.endTime,
+      title: p.name,
+      room: p.location,
+      payload: p,
+    })),
+    ...talleresProgramados.map((t) => ({
+      kind: 'workshop' as const,
+      id: t.id,
+      date: t.fecha,
+      startTime: t.startTime,
+      endTime: t.endTime,
+      title: t.titulo,
+      room: t.room,
+      payload: t,
+    })),
+    ...conferencias.map((c) => ({
+      kind: 'conference' as const,
+      id: c.id,
+      date: c.fecha,
+      startTime: c.startTime,
+      endTime: c.endTime,
+      title: c.titulo,
+      room: c.room,
+      payload: c,
+    })),
+  ].sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+
+  const cronogramaPorFecha = cronogramaItems.reduce<Record<string, typeof cronogramaItems>>((acc, item) => {
+    if (!acc[item.date]) acc[item.date] = [];
+    acc[item.date].push(item);
+    return acc;
+  }, {});
 
   // =========================
   // RENDER
@@ -529,185 +644,317 @@ export function PanelAdmin() {
         {/* ══ CRONOGRAMA ══ */}
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
           <h2 className="text-2xl mb-6">Cronograma del Congreso</h2>
+          {cronogramaItems.length === 0 ? (
+            <p className="text-gray-500">No hay actividades cargadas en el cronograma.</p>
+          ) : (
+            Object.keys(cronogramaPorFecha)
+              .sort((a, b) => a.localeCompare(b))
+              .map((fecha) => (
+                <div key={fecha} className="mb-8 last:mb-0">
+                  <h3 className="text-xl mb-4 text-gray-800">📅 {fecha}</h3>
+                  <div className="space-y-4">
+                    {cronogramaPorFecha[fecha].map((item) => {
+                      if (item.kind === 'session') {
+                        const s = item.payload as Session;
+                        return (
+                          <div key={s.id} className="border p-4 rounded bg-blue-50">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="text-xs font-semibold text-blue-700 mb-1">Mesa temática</p>
+                                <h3 className="font-semibold">{s.code} - {s.name}</h3>
+                                <p className="text-sm text-gray-600">🕒 {s.startTime} - {s.endTime} | 📍 {s.room}</p>
+                              </div>
+                              <div className="flex gap-2 shrink-0">
+                                <button onClick={() => openEditSession(s)} className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition">
+                                  <Pencil className="w-4 h-4" /> Editar
+                                </button>
+                                <button
+                                  disabled={!programPublished}
+                                  onClick={() => setConfirmDelete({ type: 'session', id: s.id, name: `${s.code} - ${s.name}` })}
+                                  className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
+                                >
+                                  <Trash2 className="w-4 h-4" /> Eliminar
+                                </button>
+                              </div>
+                            </div>
+                            <ul className="ml-4 list-disc">
+                              {s.works.map((id, index) => {
+                                const work = works.find((w: any) => w.id === id);
+                                return (
+                                  <li key={id} className="mb-2">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <span className="font-medium">{index + 1}. {work?.title}</span>
+                                        <div className="text-sm text-gray-600">Autor: {getAuthor(work?.userId)}</div>
+                                        <div className="text-sm text-gray-600">Tipo: {work?.axis}</div>
+                                      </div>
+                                      <button onClick={() => removeWorkFromSession(s.id, id)} className="flex items-center gap-1 bg-red-100 text-red-700 border border-red-300 px-2 py-0.5 rounded text-xs hover:bg-red-200 transition shrink-0 mt-0.5">
+                                        <X className="w-3 h-3" /> Quitar
+                                      </button>
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        );
+                      }
 
-          {/* MESAS TEMÁTICAS */}
-          <h3 className="text-xl mb-4 text-blue-700">Mesas Temáticas</h3>
-          {sessions.length === 0 && <p className="text-gray-500 mb-4">No hay mesas temáticas.</p>}
-          {[...sessions].sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)).map((s) => (
-            <div key={s.id} className="border p-4 mb-4 rounded bg-blue-50">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="font-semibold">{s.code} - {s.name}</h3>
-                  <p className="text-sm text-gray-600">📅 {s.date} | 🕒 {s.startTime} - {s.endTime} | 📍 {s.room}</p>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => openEditSession(s)} className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition">
-                    <Pencil className="w-4 h-4" /> Editar
-                  </button>
-                  <button
-                    disabled={!programPublished}
-                    onClick={() => setConfirmDelete({ type: 'session', id: s.id, name: `${s.code} - ${s.name}` })}
-                    className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
-                  >
-                    <Trash2 className="w-4 h-4" /> Eliminar
-                  </button>
-                </div>
-              </div>
-              <ul className="ml-4 list-disc">
-                {s.works.map((id, index) => {
-                  const work = works.find((w: any) => w.id === id);
-                  return (
-                    <li key={id} className="mb-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <span className="font-medium">{index + 1}. {work?.title}</span>
-                          <div className="text-sm text-gray-600">Autor: {getAuthor(work?.userId)}</div>
-                          <div className="text-sm text-gray-600">Tipo: {work?.axis}</div>
+                      if (item.kind === 'roundtable') {
+                        const m = item.payload as RoundTable;
+                        return (
+                          <div key={m.id} className="border p-4 rounded bg-purple-50">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="text-xs font-semibold text-purple-700 mb-1">Mesa redonda</p>
+                                <h3 className="font-semibold">{m.title}</h3>
+                                <p className="text-sm text-gray-600">🕒 {m.startTime} - {m.endTime} | 📍 {m.room}</p>
+                                <p className="text-sm"><strong>Moderador:</strong> {m.moderator}</p>
+                                <p className="text-sm"><strong>Panelistas:</strong> {m.panelists}</p>
+                                <p className="text-sm">{m.description}</p>
+                              </div>
+                              <div className="flex gap-2 shrink-0">
+                                <button onClick={() => openEditRoundTable(m)} className="flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition">
+                                  <Pencil className="w-4 h-4" /> Editar
+                                </button>
+                                <button
+                                  disabled={!programPublished}
+                                  onClick={() => setConfirmDelete({ type: 'roundtable', id: m.id, name: m.title })}
+                                  className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
+                                >
+                                  <Trash2 className="w-4 h-4" /> Eliminar
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (item.kind === 'poster') {
+                        const p = item.payload as PosterSession;
+                        return (
+                          <div key={p.id} className="border p-4 rounded bg-yellow-50">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="text-xs font-semibold text-yellow-700 mb-1">Sesión de pósters</p>
+                                <h3 className="font-semibold">{p.name}</h3>
+                                <p className="text-sm text-gray-600">🕒 {p.startTime} - {p.endTime} | 📍 {p.location}</p>
+                              </div>
+                              <div className="flex gap-2 shrink-0">
+                                <button onClick={() => openEditPoster(p)} className="flex items-center gap-1 bg-yellow-600 text-white px-3 py-1 rounded text-sm hover:bg-yellow-700 transition">
+                                  <Pencil className="w-4 h-4" /> Editar
+                                </button>
+                                <button
+                                  disabled={!programPublished}
+                                  onClick={() => setConfirmDelete({ type: 'poster', id: p.id, name: p.name })}
+                                  className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
+                                >
+                                  <Trash2 className="w-4 h-4" /> Eliminar
+                                </button>
+                              </div>
+                            </div>
+                            <ul className="ml-4 list-disc">
+                              {p.works.map((w) => {
+                                const work = works.find((wk: any) => wk.id === w.workId);
+                                return (
+                                  <li key={w.workId} className="mb-2">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <span className="font-medium">{work?.title}</span>
+                                        <div className="text-sm text-gray-600">Autor: {getAuthor(work?.userId)} | Panel: {w.stand}</div>
+                                        <div className="text-sm text-gray-600">Tipo: {work?.axis}</div>
+                                      </div>
+                                      <button onClick={() => removeWorkFromPoster(p.id, w.workId)} className="flex items-center gap-1 bg-red-100 text-red-700 border border-red-300 px-2 py-0.5 rounded text-xs hover:bg-red-200 transition shrink-0 mt-0.5">
+                                        <X className="w-3 h-3" /> Quitar
+                                      </button>
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        );
+                      }
+
+                      if (item.kind === 'workshop') {
+                        const t = item.payload as TallerProgramado;
+                        return (
+                          <div key={t.id} className="border p-4 rounded bg-teal-50">
+                            <div className="flex justify-between items-start gap-2">
+                              <div>
+                                <p className="text-xs font-semibold text-teal-700 mb-1">Taller</p>
+                                <h3 className="font-semibold">{t.titulo}</h3>
+                                <p className="text-sm text-gray-600">🕒 {t.startTime} - {t.endTime} | 📍 {t.room}</p>
+                                <p className="text-sm text-gray-700 mt-1"><strong>Responsable(s):</strong> {t.responsables}</p>
+                                {t.descripcion && <p className="text-sm text-gray-600 mt-1 italic">{t.descripcion}</p>}
+                              </div>
+                              <div className="flex gap-2 shrink-0">
+                                <button type="button" onClick={() => openEditWorkshop(t)} className="flex items-center gap-1 bg-teal-700 text-white px-3 py-1 rounded text-sm hover:bg-teal-800 transition">
+                                  <Pencil className="w-4 h-4" /> Editar
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={!programPublished}
+                                  onClick={() => setConfirmDelete({ type: 'workshop', id: t.id, name: t.titulo })}
+                                  className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition ${programPublished ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                                >
+                                  <Trash2 className="w-4 h-4" /> Eliminar
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      const c = item.payload as ConferenciaPrograma;
+                      return (
+                        <div key={c.id} className="border p-4 rounded bg-indigo-50">
+                          <div className="flex justify-between items-start gap-2">
+                            <div>
+                              <p className="text-xs font-semibold text-indigo-700 mb-1">Conferencia</p>
+                              <h3 className="font-semibold">{c.titulo}</h3>
+                              <p className="text-sm text-gray-600">🕒 {c.startTime} - {c.endTime} | 📍 {c.room}</p>
+                              <p className="text-sm text-gray-700 mt-1"><strong>Conferencista(s):</strong> {c.conferencistas}</p>
+                              {c.moderador   && <p className="text-sm text-gray-700"><strong>Moderación:</strong> {c.moderador}</p>}
+                              {c.institucion && <p className="text-sm text-gray-700"><strong>Institución:</strong> {c.institucion}</p>}
+                              {c.descripcion && <p className="text-sm text-gray-600 mt-1 italic">{c.descripcion}</p>}
+                            </div>
+                            <div className="flex gap-2 shrink-0">
+                              <button type="button" onClick={() => openEditConference(c)} className="flex items-center gap-1 bg-indigo-700 text-white px-3 py-1 rounded text-sm hover:bg-indigo-800 transition">
+                                <Pencil className="w-4 h-4" /> Editar
+                              </button>
+                              <button
+                                type="button"
+                                disabled={!programPublished}
+                                onClick={() => setConfirmDelete({ type: 'conference', id: c.id, name: c.titulo })}
+                                className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition ${programPublished ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                              >
+                                <Trash2 className="w-4 h-4" /> Eliminar
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <button onClick={() => removeWorkFromSession(s.id, id)} className="flex items-center gap-1 bg-red-100 text-red-700 border border-red-300 px-2 py-0.5 rounded text-xs hover:bg-red-200 transition shrink-0 mt-0.5">
-                          <X className="w-3 h-3" /> Quitar
+                      );
+                    })}
+                  </div>
+                </div>
+              ))
+          )}
+        </div>
+
+        {/* ══ CIRCULARES (debajo del cronograma) ══ */}
+        <div className="bg-white rounded-xl shadow-md p-8 mb-8">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <FileText className="w-7 h-7 text-emerald-700" />
+              <div>
+                <h2 className="text-2xl">Circulares</h2>
+                <p className="text-sm text-gray-600">
+                  Publicá circulares para que se vean en la sección pública.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/circulares/nueva')}
+              className="flex items-center gap-2 bg-emerald-700 text-white px-4 py-2 rounded hover:bg-emerald-800 transition"
+            >
+              <Plus className="w-5 h-5" />
+              Nueva circular
+            </button>
+          </div>
+
+          {circularesFeedback && (
+            <p className={`text-sm mb-5 ${circularesFeedback.includes('eliminada') ? 'text-red-600' : 'text-green-700'}`}>
+              {circularesFeedback}
+            </p>
+          )}
+
+          {circulares.length === 0 ? (
+            <div className="border border-dashed border-gray-300 rounded-xl p-8 text-center text-gray-500">
+              Todavía no cargaste circulares.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {[...circulares]
+                .sort((a, b) => b.date.localeCompare(a.date) || b.updatedAt.localeCompare(a.updatedAt))
+                .map((c) => (
+                  <div key={c.id} className="border rounded-xl p-4 bg-white">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className="font-semibold text-gray-800">{c.number}</span>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full ${
+                              c.status === 'published'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {c.status === 'published' ? 'Publicada' : 'Borrador'}
+                          </span>
+                        </div>
+                        <h4 className="text-base font-medium text-gray-800">{c.title}</h4>
+                        <p className="text-xs text-gray-500 mt-1">{c.date}</p>
+                        <p className="text-sm text-gray-600 mt-2">{c.summary}</p>
+                        {c.pdfName && (
+                          <p className="text-xs text-gray-500 mt-2">PDF: {c.pdfName}</p>
+                        )}
+                        {(c.pdfFileId || c.pdfData) && (
+                          <button
+                            type="button"
+                            onClick={() => openCircularStoredFile(c)}
+                            className="mt-3 rounded-lg bg-slate-100 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-200 transition"
+                          >
+                            Ver PDF
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/admin/circulares/editar/${c.id}`)}
+                          className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition"
+                        >
+                          <Pencil className="w-4 h-4" /> Editar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toggleCircularStatus(c.id);
+                            setCircularesFeedback(
+                              c.status === 'published'
+                                ? 'La circular fue guardada como borrador.'
+                                : 'La circular fue publicada correctamente.'
+                            );
+                          }}
+                          className={`px-3 py-1 rounded text-sm transition ${
+                            c.status === 'published'
+                              ? 'bg-amber-500 text-white hover:bg-amber-600'
+                              : 'bg-green-600 text-white hover:bg-green-700'
+                          }`}
+                        >
+                          {c.status === 'published' ? 'Despublicar' : 'Publicar'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setConfirmDelete({
+                              type: 'circular',
+                              id: c.id,
+                              name: `${c.number} - ${c.title}`,
+                            })
+                          }
+                          className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
+                        >
+                          <Trash2 className="w-4 h-4" /> Eliminar
                         </button>
                       </div>
-                    </li>
-                  );
-                })}
-              </ul>
+                    </div>
+                  </div>
+                ))}
             </div>
-          ))}
-
-          {/* MESAS REDONDAS */}
-          <h3 className="text-xl mt-8 mb-4 text-purple-700">Mesas Redondas</h3>
-          {roundTables.length === 0 && <p className="text-gray-500 mb-4">No hay mesas redondas.</p>}
-          {[...roundTables].sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)).map((m) => (
-            <div key={m.id} className="border p-4 mb-4 rounded bg-purple-50">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="font-semibold">{m.title}</h3>
-                  <p className="text-sm text-gray-600">📅 {m.date} | 🕒 {m.startTime} - {m.endTime} | 📍 {m.room}</p>
-                  <p className="text-sm"><strong>Moderador:</strong> {m.moderator}</p>
-                  <p className="text-sm"><strong>Panelistas:</strong> {m.panelists}</p>
-                  <p className="text-sm">{m.description}</p>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => openEditRoundTable(m)} className="flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 transition">
-                    <Pencil className="w-4 h-4" /> Editar
-                  </button>
-                  <button
-                    disabled={!programPublished}
-                    onClick={() => setConfirmDelete({ type: 'roundtable', id: m.id, name: m.title })}
-                    className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
-                  >
-                    <Trash2 className="w-4 h-4" /> Eliminar
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* SESIONES DE PÓSTERS */}
-          <h3 className="text-xl mt-8 mb-4 text-yellow-700">Sesiones de Pósters</h3>
-          {posterSessions.length === 0 && <p className="text-gray-500">No hay sesiones de pósters.</p>}
-          {[...posterSessions].sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)).map((p) => (
-            <div key={p.id} className="border p-4 mb-4 rounded bg-yellow-50">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="font-semibold">{p.name}</h3>
-                  <p className="text-sm text-gray-600">📅 {p.date} | 🕒 {p.startTime} - {p.endTime} | 📍 {p.location}</p>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => openEditPoster(p)} className="flex items-center gap-1 bg-yellow-600 text-white px-3 py-1 rounded text-sm hover:bg-yellow-700 transition">
-                    <Pencil className="w-4 h-4" /> Editar
-                  </button>
-                  <button
-                    disabled={!programPublished}
-                    onClick={() => setConfirmDelete({ type: 'poster', id: p.id, name: p.name })}
-                    className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
-                  >
-                    <Trash2 className="w-4 h-4" /> Eliminar
-                  </button>
-                </div>
-              </div>
-              <ul className="ml-4 list-disc">
-                {p.works.map((w) => {
-                  const work = works.find((wk: any) => wk.id === w.workId);
-                  return (
-                    <li key={w.workId} className="mb-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <span className="font-medium">{work?.title}</span>
-                          <div className="text-sm text-gray-600">Autor: {getAuthor(work?.userId)} | Panel: {w.stand}</div>
-                          <div className="text-sm text-gray-600">Tipo: {work?.axis}</div>
-                        </div>
-                        <button onClick={() => removeWorkFromPoster(p.id, w.workId)} className="flex items-center gap-1 bg-red-100 text-red-700 border border-red-300 px-2 py-0.5 rounded text-xs hover:bg-red-200 transition shrink-0 mt-0.5">
-                          <X className="w-3 h-3" /> Quitar
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-
-          {/* TALLERES */}
-          <h3 className="text-xl mt-8 mb-4 text-teal-800">Talleres</h3>
-          {talleresProgramados.length === 0 && <p className="text-gray-500 mb-4">No hay talleres en el programa.</p>}
-          {[...talleresProgramados].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.startTime.localeCompare(b.startTime)).map((t) => (
-            <div key={t.id} className="border p-4 mb-4 rounded bg-teal-50">
-              <div className="flex justify-between items-start gap-2">
-                <div>
-                  <h3 className="font-semibold">{t.titulo}</h3>
-                  <p className="text-sm text-gray-600">📅 {t.fecha} | 🕒 {t.startTime} - {t.endTime} | 📍 {t.room}</p>
-                  <p className="text-sm text-gray-700 mt-1"><strong>Responsable(s):</strong> {t.responsables}</p>
-                  {t.descripcion && <p className="text-sm text-gray-600 mt-1 italic">{t.descripcion}</p>}
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button type="button" onClick={() => openEditWorkshop(t)} className="flex items-center gap-1 bg-teal-700 text-white px-3 py-1 rounded text-sm hover:bg-teal-800 transition">
-                    <Pencil className="w-4 h-4" /> Editar
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!programPublished}
-                    onClick={() => setConfirmDelete({ type: 'workshop', id: t.id, name: t.titulo })}
-                    className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition ${programPublished ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
-                  >
-                    <Trash2 className="w-4 h-4" /> Eliminar
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* CONFERENCIAS */}
-          <h3 className="text-xl mt-8 mb-4 text-indigo-800">Conferencias</h3>
-          {conferencias.length === 0 && <p className="text-gray-500 mb-4">No hay conferencias en el programa.</p>}
-          {[...conferencias].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.startTime.localeCompare(b.startTime)).map((c) => (
-            <div key={c.id} className="border p-4 mb-4 rounded bg-indigo-50">
-              <div className="flex justify-between items-start gap-2">
-                <div>
-                  <h3 className="font-semibold">{c.titulo}</h3>
-                  <p className="text-sm text-gray-600">📅 {c.fecha} | 🕒 {c.startTime} - {c.endTime} | 📍 {c.room}</p>
-                  <p className="text-sm text-gray-700 mt-1"><strong>Conferencista(s):</strong> {c.conferencistas}</p>
-                  {c.moderador   && <p className="text-sm text-gray-700"><strong>Moderación:</strong> {c.moderador}</p>}
-                  {c.institucion && <p className="text-sm text-gray-700"><strong>Institución:</strong> {c.institucion}</p>}
-                  {c.descripcion && <p className="text-sm text-gray-600 mt-1 italic">{c.descripcion}</p>}
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button type="button" onClick={() => openEditConference(c)} className="flex items-center gap-1 bg-indigo-700 text-white px-3 py-1 rounded text-sm hover:bg-indigo-800 transition">
-                    <Pencil className="w-4 h-4" /> Editar
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!programPublished}
-                    onClick={() => setConfirmDelete({ type: 'conference', id: c.id, name: c.titulo })}
-                    className={`flex items-center gap-1 px-3 py-1 rounded text-sm transition ${programPublished ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
-                  >
-                    <Trash2 className="w-4 h-4" /> Eliminar
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+          )}
         </div>
 
         {/* ══ NOTIFICACIONES ══ */}
@@ -745,6 +992,7 @@ export function PanelAdmin() {
             {confirmDelete.type === 'roundtable' && <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">Esta acción no afecta ningún trabajo. La mesa redonda se eliminará definitivamente.</p>}
             {confirmDelete.type === 'workshop'   && <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">Esta acción eliminará el taller del programa oficial.</p>}
             {confirmDelete.type === 'conference' && <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">Esta acción eliminará la conferencia del programa oficial.</p>}
+            {confirmDelete.type === 'circular' && <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">La circular se eliminará del sistema y dejará de mostrarse en la página pública.</p>}
             <div className="flex justify-end gap-3">
               <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50">Cancelar</button>
               <button onClick={handleConfirmDelete} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2"><Trash2 className="w-4 h-4" /> Eliminar</button>

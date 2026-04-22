@@ -7,6 +7,27 @@ export const CONFERENCIAS_KEY = 'congress_conferencias_programa';
 /** Flag de publicación del programa público. */
 export const PROGRAM_PUBLISHED_KEY = 'congress_program_published';
 
+/** Circulares del congreso (borrador / publicadas). */
+export const CIRCULARES_KEY = 'congress_circulares';
+
+export type CircularStatus = 'draft' | 'published';
+
+export interface StoredCircular {
+  id: string;
+  number: string;
+  date: string;
+  title: string;
+  summary: string;
+  content: string;
+  status: CircularStatus;
+  updatedAt: string;
+  pdfName?: string;
+  pdfFileId?: string;
+  pdfMimeType?: string;
+  /** Base64 del PDF (sin prefijo data:) para compartir entre usuarios del mismo origen. */
+  pdfData?: string;
+}
+
 /** Fechas hábiles del cronograma (3 días) — V Congreso UNLP La Plata 2027 (alineado al mock del proyecto). */
 export const CONGRESS_EVENT_DATES = ['2027-05-10', '2027-05-11', '2027-05-12'] as const;
 

@@ -56,10 +56,9 @@ const toMinutes = (time: string) => {
 
 const overlaps = (a: AgendaItem, b: { date: string; startTime: string; endTime: string }) => {
   if (a.date !== b.date) return false;
-  return (
-    toMinutes(a.startTime) < toMinutes(b.endTime) &&
-    toMinutes(b.startTime) < toMinutes(a.endTime)
-  );
+  if (!a.startTime || !a.endTime || !b.startTime || !b.endTime) return false;
+  // Regla solicitada: conflicto solo cuando el bloque horario es exactamente el mismo.
+  return a.startTime === b.startTime && a.endTime === b.endTime;
 };
 
 const typeConfig = {
@@ -241,7 +240,17 @@ export function ProgramaCongreso() {
   const isInAgenda = (id: string) => agenda.some((a) => a.activityId === id);
 
   const hasConflict = (id: string, date: string, startTime: string, endTime: string) =>
-    !isInAgenda(id) && agenda.some((item) => overlaps(item, { date, startTime, endTime }));
+    !isInAgenda(id) &&
+    agenda.some((item) => {
+      const fallback = allActivities.find((a) => a.id === item.activityId);
+      const itemWithFallback: AgendaItem = {
+        ...item,
+        date: item.date || fallback?.date || '',
+        startTime: item.startTime || fallback?.startTime || '',
+        endTime: item.endTime || fallback?.endTime || '',
+      };
+      return overlaps(itemWithFallback, { date, startTime, endTime });
+    });
 
   const saveAgenda = (newAgenda: AgendaItem[]) => {
     if (!user?.id) return;
@@ -255,7 +264,17 @@ export function ProgramaCongreso() {
 
   const handleAdd = (item: AgendaItem) => {
     if (!user?.id) return;
-    if (agenda.find((a) => overlaps(a, item))) {
+    const conflictExists = agenda.some((a) => {
+      const fallback = allActivities.find((act) => act.id === a.activityId);
+      const agendaWithFallback: AgendaItem = {
+        ...a,
+        date: a.date || fallback?.date || '',
+        startTime: a.startTime || fallback?.startTime || '',
+        endTime: a.endTime || fallback?.endTime || '',
+      };
+      return overlaps(agendaWithFallback, item);
+    });
+    if (conflictExists) {
       setFeedback({ id: item.activityId, msg: 'Ya tenés una actividad en ese horario.', ok: false });
       setTimeout(() => setFeedback(null), 3000);
       return;
@@ -342,6 +361,7 @@ export function ProgramaCongreso() {
               ) : (
                 <button
                   type="button"
+                  disabled={conflict}
                   onClick={() =>
                     handleAdd({
                       activityId: activity.id,
@@ -353,7 +373,11 @@ export function ProgramaCongreso() {
                       room: activity.room,
                     })
                   }
-                  className="inline-flex items-center gap-1 text-white text-xs px-4 py-2 rounded-full bg-amber-900 hover:bg-amber-950 transition shadow-sm"
+                  className={`inline-flex items-center gap-1 text-xs px-4 py-2 rounded-full transition shadow-sm ${
+                    conflict
+                      ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                      : 'text-white bg-amber-900 hover:bg-amber-950'
+                  }`}
                 >
                   <Plus className="w-3 h-3" /> Agregar a mi agenda
                 </button>

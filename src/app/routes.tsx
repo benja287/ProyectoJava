@@ -28,6 +28,8 @@ import { ProgramaCongreso} from './pages/ProgramaCongreso';
 import { MiAgenda} from './pages/MiAgenda';
 import { OrganizadoresPage } from "./pages/OrganizadoresPage";
 import { ContactoPage } from "./pages/ContactoPage";
+import { AdminCircularForm } from "./pages/AdminCircularForm";
+import { PerfilPage } from "./pages/PerfilPage";
 import { Dashboard } from "./pages/Dashboard"; 
 export const router = createBrowserRouter([
   {
@@ -60,6 +62,9 @@ export const router = createBrowserRouter([
       { path: "admin/posters", Component: AdminPosters },
       { path: "admin/crear-taller", Component: AdminCrearTaller },
       { path: "admin/crear-conferencia", Component: AdminCrearConferencia },
+      { path: "admin/circulares/nueva", Component: AdminCircularForm },
+      { path: "admin/circulares/editar/:id", Component: AdminCircularForm },
+      { path: "perfil", Component: PerfilPage },
       { path: "organizadores", Component: OrganizadoresPage },
       { path: "contacto", Component: ContactoPage },
     ],
