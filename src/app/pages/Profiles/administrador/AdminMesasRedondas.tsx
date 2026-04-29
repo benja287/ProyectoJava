@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 import {
   CONGRESS_EVENT_DATES,
   congressDateLabels,
   isCongressDate,
   isValidTimeRange,
   hasTimeOverlap,
-} from '../constants/congressEvent';
+} from '../../../constants/congressEvent';
 
 export function AdminMesasRedondas() {
   const { user } = useAuth();

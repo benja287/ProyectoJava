@@ -1,53 +1,52 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 import {
+  CONFERENCIAS_KEY,
   CONGRESS_EVENT_DATES,
-  TALLERES_PROGRAMADOS_KEY,
   congressDateLabels,
   isCongressDate,
   isValidTimeRange,
   hasTimeOverlap,
-} from '../constants/congressEvent';
+} from '../../../constants/congressEvent';
 
-const PROGRAM_KEY = TALLERES_PROGRAMADOS_KEY;
-const PROPUESTAS_KEY = 'congress_talleres_propuestos';
-
-export interface TallerProgramado {
+export interface ConferenciaPrograma {
   id: string;
   titulo: string;
   fecha: string;
   startTime: string;
   endTime: string;
   room: string;
-  responsables: string;
+  conferencistas: string;
+  moderador?: string;
+  institucion?: string;
   descripcion?: string;
-  proposalId?: string | null;
 }
 
-export function AdminCrearTaller() {
+export function AdminCrearConferencia() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const [error, setError] = useState('');
-  const [proposalId, setProposalId] = useState('');
-  const [approvedList, setApprovedList] = useState<any[]>([]);
-
   const [form, setForm] = useState<{
     titulo: string;
     fecha: string;
     startTime: string;
     endTime: string;
     room: string;
-    responsables: string;
+    conferencistas: string;
+    moderador: string;
+    institucion: string;
     descripcion: string;
   }>({
     titulo: '',
     fecha: CONGRESS_EVENT_DATES[0],
     startTime: '09:00',
-    endTime: '11:00',
+    endTime: '10:00',
     room: '',
-    responsables: '',
+    conferencistas: '',
+    moderador: '',
+    institucion: '',
     descripcion: '',
   });
 
@@ -56,24 +55,9 @@ export function AdminCrearTaller() {
       navigate('/');
       return;
     }
-    const raw = JSON.parse(localStorage.getItem(PROPUESTAS_KEY) || '[]');
-    setApprovedList(raw.filter((t: any) => t.status === 'approved'));
   }, [user, navigate]);
 
   if (!user || user.currentRole !== 'admin') return null;
-
-  const applyProposal = (id: string) => {
-    setProposalId(id);
-    if (!id) return;
-    const raw = JSON.parse(localStorage.getItem(PROPUESTAS_KEY) || '[]');
-    const p = raw.find((t: any) => t.id === id);
-    if (!p) return;
-    setForm((prev) => ({
-      ...prev,
-      titulo: p.titulo || prev.titulo,
-      descripcion: [p.descripcion, p.metodologia].filter(Boolean).join('\n\n') || prev.descripcion,
-    }));
-  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -81,78 +65,59 @@ export function AdminCrearTaller() {
 
     const titulo = form.titulo.trim();
     const room = form.room.trim();
-    const responsables = form.responsables.trim();
+    const conferencistas = form.conferencistas.trim();
 
-    if (!titulo || !room || !responsables) {
-      setError('Completá título, lugar y responsable(s) del taller.');
+    if (!titulo || !room || !conferencistas) {
+      setError('Completá título, lugar/espacio y conferencista(s).');
       return;
     }
-
     if (!isCongressDate(form.fecha)) {
       setError('La fecha seleccionada no es válida para este congreso.');
       return;
     }
-
     if (!isValidTimeRange(form.startTime, form.endTime)) {
       setError('La hora de fin debe ser posterior a la hora de inicio.');
       return;
     }
 
-    const list: TallerProgramado[] = JSON.parse(localStorage.getItem(PROGRAM_KEY) || '[]');
+    const list: ConferenciaPrograma[] = JSON.parse(localStorage.getItem(CONFERENCIAS_KEY) || '[]');
     if (hasTimeOverlap(list, form.fecha, form.startTime, form.endTime)) {
-      setError('Ya existe un taller en ese horario. Elegí otro horario.');
+      setError('Ya existe una conferencia en ese horario. Elegí otro horario.');
       return;
     }
-    const nuevo: TallerProgramado = {
+    const nuevo: ConferenciaPrograma = {
       id: Date.now().toString(),
       titulo,
       fecha: form.fecha,
       startTime: form.startTime,
       endTime: form.endTime,
       room,
-      responsables,
+      conferencistas,
+      moderador: form.moderador.trim() || undefined,
+      institucion: form.institucion.trim() || undefined,
       descripcion: form.descripcion.trim() || undefined,
-      proposalId: proposalId || undefined,
     };
 
-    localStorage.setItem(PROGRAM_KEY, JSON.stringify([...list, nuevo]));
-    navigate('/admin', { state: { tallerCreado: true } });
+    localStorage.setItem(CONFERENCIAS_KEY, JSON.stringify([...list, nuevo]));
+    navigate('/admin', { state: { conferenciaCreada: true } });
   };
 
   return (
     <div className="min-h-[calc(100vh-80px)] py-12 px-4">
       <div className="container mx-auto max-w-2xl">
         <div className="bg-white rounded-xl shadow-lg p-8">
-          <h1 className="text-3xl mb-2">Crear Taller (programa oficial)</h1>
+          <h1 className="text-3xl mb-2">Crear Conferencia (programa oficial)</h1>
           <p className="text-sm text-gray-600 mb-6">
             Fechas permitidas: {CONGRESS_EVENT_DATES.join(', ')}. Horarios validados automáticamente.
           </p>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-800 border border-red-200 rounded text-sm">{error}</div>
+            <div className="mb-4 p-3 bg-red-50 text-red-800 border border-red-200 rounded text-sm">
+              {error}
+            </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {approvedList.length > 0 && (
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Vincular propuesta aprobada (opcional)
-                </label>
-                <select
-                  value={proposalId}
-                  onChange={(e) => applyProposal(e.target.value)}
-                  className="w-full border rounded px-3 py-2 text-sm"
-                >
-                  <option value="">— Sin vincular —</option>
-                  {approvedList.map((p: any) => (
-                    <option key={p.id} value={p.id}>
-                      {p.titulo}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             <div>
               <label className="block text-sm text-gray-600 mb-1">Título</label>
               <input
@@ -160,7 +125,7 @@ export function AdminCrearTaller() {
                 value={form.titulo}
                 onChange={(e) => setForm({ ...form, titulo: e.target.value })}
                 className="w-full border rounded px-3 py-2"
-                placeholder="Título del taller"
+                placeholder="Título de la conferencia"
               />
             </div>
 
@@ -209,38 +174,59 @@ export function AdminCrearTaller() {
                 value={form.room}
                 onChange={(e) => setForm({ ...form, room: e.target.value })}
                 className="w-full border rounded px-3 py-2"
-                placeholder="Ej. Aula 5 — FCAyF"
+                placeholder="Ej. Aula Magna — FCAyF"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Responsable(s) / moderación</label>
+              <label className="block text-sm text-gray-600 mb-1">Conferencista(s)</label>
               <input
                 required
-                value={form.responsables}
-                onChange={(e) => setForm({ ...form, responsables: e.target.value })}
+                value={form.conferencistas}
+                onChange={(e) => setForm({ ...form, conferencistas: e.target.value })}
                 className="w-full border rounded px-3 py-2"
-                placeholder="Nombres del equipo o moderador/a"
+                placeholder="Nombre(s) y apellido(s)"
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Moderador/a (opcional)</label>
+                <input
+                  value={form.moderador}
+                  onChange={(e) => setForm({ ...form, moderador: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="Nombre"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Institución (opcional)</label>
+                <input
+                  value={form.institucion}
+                  onChange={(e) => setForm({ ...form, institucion: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="UNLP, INTA, etc."
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Descripción (opcional)</label>
+              <label className="block text-sm text-gray-600 mb-1">Descripción / resumen (opcional)</label>
               <textarea
                 value={form.descripcion}
                 onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
                 rows={4}
                 className="w-full border rounded px-3 py-2 resize-y min-h-[100px]"
-                placeholder="Objetivos o detalle para el programa público"
+                placeholder="Detalle para mostrar en el programa"
               />
             </div>
 
             <div className="flex gap-3 pt-2">
               <button
                 type="submit"
-                className="flex-1 bg-teal-700 text-white py-2.5 rounded-lg font-medium hover:bg-teal-800 transition"
+                className="flex-1 bg-indigo-700 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-800 transition"
               >
-                Guardar taller
+                Guardar conferencia
               </button>
               <button
                 type="button"
@@ -256,3 +242,4 @@ export function AdminCrearTaller() {
     </div>
   );
 }
+

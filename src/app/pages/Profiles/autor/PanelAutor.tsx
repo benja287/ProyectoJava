@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 import { Calendar, Clock, MapPin, BookOpen, Image } from 'lucide-react';
 
 interface Presentation {

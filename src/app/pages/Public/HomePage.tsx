@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { MapPin, BookOpen, Users, Building2, TrendingUp, Calendar } from 'lucide-react';
-import { congressDateRangeCaption } from '../constants/congressEvent';
-import { useAuth } from '../context/AuthContext';
+import { congressDateRangeCaption } from '../../constants/congressEvent';
+import { useAuth } from '../../context/AuthContext';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 export function HomePage() {

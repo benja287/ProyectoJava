@@ -1,0 +1,133 @@
+import { useEffect } from 'react';
+import { useNavigate, Link } from 'react-router';
+import { useAuth } from '../../../context/AuthContext';
+import { CalendarDays, FileText, Presentation } from 'lucide-react';
+
+export function PanelAsistente() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // 🔒 No logueado → login
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    // 🔒 Solo asistentes o autores
+    if (!user.roles?.includes('asistente') && !user.roles?.includes('autor')) {
+      navigate('/');
+      return;
+    }
+  }, [user, navigate]);
+
+  if (!user) return null;
+
+  const isAsistente = user.roles?.includes('asistente');
+  const isAlsoAutor = user.roles?.includes('autor');
+  /** Con ambos roles, el envío de trabajos va solo con rol autor (panel Autor). */
+  const envioTrabajoDesdeAsistente = isAsistente && !isAlsoAutor;
+
+  return (
+    <div className="min-h-[calc(100vh-80px)] py-12 px-4 bg-gradient-to-br from-[#faf8f5] to-[#f3f1ed]">
+      <div className="container mx-auto max-w-4xl">
+
+        
+
+        
+
+        {/* ACCIONES */}
+        <div className="mt-8">
+
+          <h2 className="text-2xl text-gray-800 mb-4">
+            Acciones disponibles
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Enviar trabajo: solo cuenta “solo asistente”; si también es autor, indicar panel Autor */}
+            {envioTrabajoDesdeAsistente && (
+              <Link
+                to="/envio-trabajos"
+                className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-amber-100 rounded-lg">
+                    <FileText className="w-8 h-8 text-amber-600" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl text-gray-800">
+                      Enviar Trabajo
+                    </h3>
+                    <p className="text-gray-600">
+                      Presenta tu trabajo científico o relato de experiencia (1 envío como asistente)
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            )}
+
+            {isAsistente && isAlsoAutor && (
+              <div className="bg-amber-50 border border-amber-200 p-6 rounded-xl shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-amber-100 rounded-lg shrink-0">
+                    <FileText className="w-8 h-8 text-amber-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl text-gray-800">Envío de trabajos científicos</h3>
+                    <p className="text-gray-700 text-sm mt-1">
+                      Tu cuenta tiene rol autor. Activá <strong>rol autor</strong> en el menú de usuario y entrá a <strong>Mis presentaciones</strong> para enviar o gestionar trabajos (hasta 2 activos).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {user.currentRole === 'asistente' && isAsistente && (
+              <Link
+                to="/proponer-taller"
+                className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-teal-100 rounded-lg">
+                    <Presentation className="w-8 h-8 text-teal-600" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl text-gray-800">Proponer Taller</h3>
+                    <p className="text-gray-600">
+                      Enviá tu propuesta de taller para evaluación del comité
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            )}
+
+            {/* 📅 Mi agenda (solo asistente) */}
+            {isAsistente && (
+              <Link
+                to="/MiAgenda"
+                className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-indigo-100 rounded-lg">
+                    <CalendarDays className="w-8 h-8 text-indigo-600" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl text-gray-800">Ver mi agenda</h3>
+                    <p className="text-gray-600">
+                      Consultá las actividades que agregaste al cronograma
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            )}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

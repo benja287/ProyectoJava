@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { Users, FileText, ClipboardCheck, Settings } from 'lucide-react';
 
 export function RoleSelection() {
