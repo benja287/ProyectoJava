@@ -12,10 +12,23 @@ export function EnvioTrabajosPage() {
   const [error, setError]         = useState('');
   const [uploading, setUploading] = useState(false);
 
+  const thematicAxes = [
+    'Diseño y manejo de sistemas productivos agroecológicos',
+    'Formación y construcción de saberes agroecológicos',
+    'Metodologías de análisis y diagnóstico',
+    'Semillas, agrobiodiversidad y servicios ecosistémicos',
+    'Salud, nutrición y agroecología',
+    'Economía, valor agregado y comercialización',
+    'Planificación y desarrollo territorial',
+    'Pueblos indígenas, géneros y juventudes',
+    'Políticas públicas, movimientos sociales e institucionalidades',
+  ] as const;
+
   const [formData, setFormData] = useState({
     title: '',
+    workType: '',
+    modality: '',
     axis:  '',
-    type:  '',
     file:  null as File | null,
   });
 
@@ -38,9 +51,9 @@ export function EnvioTrabajosPage() {
   const bloqueadoPorDobleRol =
     isAsistente && cuentaTieneAutor && cuentaTieneAsistente;
 
-  const activeWorks          = myWorks.filter((w) => w.status !== 'rejected');
+  const activeWorks          = myWorks.filter((w) => w.status !== 'rejected' && w.status !== 'prechecked_failed');
   const rejectedWithAttempts = myWorks.filter(
-    (w) => w.status === 'rejected' && (w.attempts || 1) < 3
+    (w) => (w.status === 'rejected' || w.status === 'prechecked_failed') && (w.attempts || 1) < 3
   );
 
   const canSubmit = () => {
@@ -80,7 +93,10 @@ export function EnvioTrabajosPage() {
     }
     if (!canSubmit()) { setError('No podés enviar más trabajos según tu rol.'); return; }
     if (!formData.file) { setError('Debés adjuntar un archivo PDF.'); return; }
-    if (!formData.type) { setError('Debés seleccionar el tipo: Oral o Poster.'); return; }
+    if (formData.file.type !== 'application/pdf') { setError('El archivo debe ser un PDF válido.'); return; }
+    if (!formData.workType) { setError('Debés seleccionar el tipo de trabajo: Científico o Relato de experiencia.'); return; }
+    if (!formData.modality) { setError('Debés seleccionar la modalidad: Oral o Póster.'); return; }
+    if (!formData.axis) { setError('Debés seleccionar un eje temático.'); return; }
 
     setUploading(true);
 
@@ -94,8 +110,8 @@ export function EnvioTrabajosPage() {
     }
 
     const allWorks     = JSON.parse(localStorage.getItem('congress_works') || '[]');
-    const rejectedWork = myWorks.find(
-      (w) => w.status === 'rejected' && (w.attempts || 1) < 3
+    const rejectedWork = myWorks.find((w) =>
+      (w.status === 'rejected' || w.status === 'prechecked_failed') && (w.attempts || 1) < 3
     );
 
     let updatedWorks;
@@ -110,8 +126,11 @@ export function EnvioTrabajosPage() {
               ...w,
               title:    formData.title,
               axis:     formData.axis,
-              type:     formData.type,
-              status:   'pending',
+              workType: formData.workType,
+              modality: formData.modality,
+              // compatibilidad con datos viejos que usan `type` para modalidad
+              type:     formData.modality,
+              status:   'submitted',
               attempts: (w.attempts || 1) + 1,
               ...(storedFile ? {
                 fileName: storedFile.fileName,
@@ -130,8 +149,11 @@ export function EnvioTrabajosPage() {
         userName: `${user.name} ${user.lastName}`,
         title:    formData.title,
         axis:     formData.axis,
-        type:     formData.type,
-        status:   'pending',
+        workType: formData.workType,
+        modality: formData.modality,
+        // compatibilidad con pantallas existentes que filtran por `type`
+        type:     formData.modality,
+        status:   'submitted',
         attempts: 1,
         fecha:    null,
         hora:     null,
@@ -216,22 +238,45 @@ export function EnvioTrabajosPage() {
 
               <select
                 required
+                value={formData.workType}
+                onChange={(e) => setFormData({ ...formData, workType: e.target.value })}
+                className="w-full border p-2 rounded"
+              >
+                <option value="">Tipo de trabajo</option>
+                <option value="cientifico">Científico</option>
+                <option value="experiencia">Relato de experiencia</option>
+              </select>
+
+              <select
+                required
+                value={formData.modality}
+                onChange={(e) => setFormData({ ...formData, modality: e.target.value })}
+                className="w-full border p-2 rounded"
+              >
+                <option value="">Modalidad de presentación</option>
+                <option value="oral">Oral</option>
+                <option value="poster">Póster</option>
+              </select>
+
+              <select
+                required
                 value={formData.axis}
                 onChange={(e) => setFormData({ ...formData, axis: e.target.value })}
                 className="w-full border p-2 rounded"
               >
                 <option value="">Eje temático</option>
-                <option value="Relato de experiencia">Relato de experiencia</option>
-                <option value="Trabajo cientifico">Trabajo cientifico</option>
+                {thematicAxes.map((ax) => (
+                  <option key={ax} value={ax}>{ax}</option>
+                ))}
               </select>
 
-              <div className="flex gap-6">
+              <div className="flex gap-6 hidden">
                 <label className="flex items-center gap-2">
                   <input
                     type="radio"
                     value="oral"
-                    checked={formData.type === 'oral'}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    checked={formData.modality === 'oral'}
+                    onChange={(e) => setFormData({ ...formData, modality: e.target.value })}
                   />
                   Oral
                 </label>
@@ -239,8 +284,8 @@ export function EnvioTrabajosPage() {
                   <input
                     type="radio"
                     value="poster"
-                    checked={formData.type === 'poster'}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    checked={formData.modality === 'poster'}
+                    onChange={(e) => setFormData({ ...formData, modality: e.target.value })}
                   />
                   Poster
                 </label>
@@ -264,6 +309,21 @@ export function EnvioTrabajosPage() {
                 <p className="mt-1 text-xs text-gray-500">
                   El archivo se guarda localmente en este navegador para su revisión.
                 </p>
+              </div>
+
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="font-medium text-gray-800 mb-2">
+                  Criterios para evaluar el documento (control formal)
+                </div>
+                <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                  <li>Formato del archivo: PDF válido y legible.</li>
+                  <li>Extensión permitida: hasta 5 páginas.</li>
+                  <li>Cumplimiento de estructura: incluir apartados requeridos según el tipo de trabajo.</li>
+                  <li>Anonimato: sin nombres, filiaciones ni datos identificatorios (doble ciego).</li>
+                  <li>Clasificación correcta: tipo, modalidad y eje temático coherentes con el contenido.</li>
+                  <li>Pertinencia temática: dentro del marco de la Agroecología y el eje elegido.</li>
+                  <li>Completitud de datos: campos obligatorios del formulario correctamente completados.</li>
+                </ul>
               </div>
 
               <button

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type UserRole = 'asistente' | 'autor' | 'evaluador' | 'admin';
+export type UserRole = 'asistente' | 'autor' | 'evaluador' | 'comite' | 'admin';
 
 export interface User {
   id: string;
@@ -12,6 +12,8 @@ export interface User {
   inscriptionStatus?: 'pending' | 'confirmed' | 'rejected';
   institution?: string;
   province?: string;
+  /** Ejes temáticos en los que el evaluador está especializado. */
+  axes?: string[];
 }
 
 export interface Notification {
@@ -63,6 +65,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles: ['admin'],
       };
       users.push(adminUser);
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+
+    // Crear Administrador Comité académico si no existe
+    const comiteExists = users.some((u: any) => u.roles?.includes('comite'));
+    if (!comiteExists) {
+      const comiteUser = {
+        id: 'comite-1',
+        email: 'comiteacademico@gmail.com',
+        password: '12345678',
+        name: 'Comité',
+        lastName: 'Académico',
+        roles: ['comite'],
+      };
+      users.push(comiteUser);
       localStorage.setItem(USERS_KEY, JSON.stringify(users));
     }
 

@@ -101,6 +101,7 @@ export function PanelAdmin() {
 
   const [circulares, setCirculares] = useState<StoredCircular[]>([]);
   const [circularesFeedback, setCircularesFeedback] = useState('');
+  const [authorRequestsFeedback, setAuthorRequestsFeedback] = useState('');
 
   // ─── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -151,6 +152,58 @@ export function PanelAdmin() {
   const getAuthor = (userId: string) => {
     const u = users.find((u) => u.id === userId);
     return u ? `${u.name} ${u.lastName}` : 'Autor desconocido';
+  };
+
+  // ─── Asistente → Autor (solo si tiene trabajos aprobados) ───────────────────
+  const authorRequests = (() => {
+    const worksApproved = (works || []).filter((w: any) => w?.status === 'approved');
+    const byUser = new Map<string, any[]>();
+    worksApproved.forEach((w: any) => {
+      if (!w?.userId) return;
+      if (!byUser.has(w.userId)) byUser.set(w.userId, []);
+      byUser.get(w.userId)!.push(w);
+    });
+
+    return (users || [])
+      .filter((u: any) => {
+        const roles: string[] = Array.isArray(u.roles) ? u.roles : [];
+        const hasApproved = byUser.has(u.id);
+        const isAsistente = roles.includes('asistente');
+        const isAutor = roles.includes('autor');
+        return hasApproved && isAsistente && !isAutor;
+      })
+      .map((u: any) => ({ user: u, works: byUser.get(u.id) || [] }));
+  })();
+
+  const grantAuthorRole = (userId: string) => {
+    setAuthorRequestsFeedback('');
+    const allUsers = JSON.parse(localStorage.getItem('congress_users') || '[]');
+    const nextUsers = allUsers.map((u: any) => {
+      if (u.id !== userId) return u;
+      const roles: string[] = Array.isArray(u.roles) ? u.roles : [];
+      if (roles.includes('autor')) return u;
+      return { ...u, roles: [...new Set([...roles, 'autor'])] };
+    });
+    localStorage.setItem('congress_users', JSON.stringify(nextUsers));
+    setUsers(nextUsers);
+
+    // si el usuario al que habilitamos es el current_user del navegador, actualizamos también
+    const current = JSON.parse(localStorage.getItem('current_user') || '{}');
+    if (current?.id === userId) {
+      const updatedSelf = nextUsers.find((u: any) => u.id === userId);
+      if (updatedSelf) localStorage.setItem('current_user', JSON.stringify({ ...current, ...updatedSelf }));
+    }
+
+    const u = nextUsers.find((x: any) => x.id === userId);
+    if (u) {
+      sendNotificationToUser(
+        userId,
+        'Rol autor habilitado',
+        'Tu rol de autor fue habilitado. Ahora podés acceder al panel Autor y ver tus presentaciones cuando sean programadas.',
+        'Administración'
+      );
+      setAuthorRequestsFeedback(`Se habilitó el rol autor para ${u.name} ${u.lastName}.`);
+    }
   };
 
   const restoreWorkToApproved = (workId: string) => {
@@ -619,26 +672,55 @@ export function PanelAdmin() {
           ))}
         </div>
 
-        {/* ══ EVALUADORES ══ */}
+        {/* ══ SOLICITUDES PARA SER AUTOR (aprobado por 2 evaluadores) ══ */}
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
-          <h2 className="text-2xl mb-6">Asignar Evaluadores</h2>
-          {users.map((u) => (
-            <div key={u.id} className="flex justify-between items-center border p-3 mb-2 rounded">
-              <div>
-                <p>{u.name} {u.lastName}</p>
-                <div className="flex gap-2 mt-1">
-                  {u.roles?.map((r: string) => (
-                    <span key={r} className="text-xs bg-gray-200 px-2 rounded">{r}</span>
-                  ))}
-                </div>
-              </div>
-              {!u.roles?.includes('evaluador') ? (
-                <button onClick={() => makeEvaluator(u.id)} className="bg-purple-600 text-white px-2 py-1 rounded">Hacer evaluador</button>
-              ) : (
-                <span className="text-green-600">✔ Evaluador</span>
-              )}
+          <h2 className="text-2xl mb-2">Solicitudes para ser Autor</h2>
+          <p className="text-sm text-gray-600 mb-6">
+            Acá aparecen solo asistentes con al menos un trabajo <strong>aprobado</strong> por evaluadores (2 aprobaciones) y pendientes de habilitación del rol autor.
+          </p>
+
+          {authorRequestsFeedback && (
+            <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              {authorRequestsFeedback}
             </div>
-          ))}
+          )}
+
+          {authorRequests.length === 0 ? (
+            <p className="text-gray-500">No hay solicitudes pendientes.</p>
+          ) : (
+            <div className="space-y-3">
+              {authorRequests.map(({ user: u, works: uw }: any) => (
+                <div key={u.id} className="border border-gray-200 rounded-lg p-4 flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-900">{u.name} {u.lastName}</div>
+                    <div className="text-xs text-gray-500">{u.email}</div>
+                    <div className="mt-2 text-sm text-gray-700">
+                      Trabajos aprobados:
+                      <ul className="list-disc ml-5 mt-1 text-sm text-gray-700">
+                        {uw.map((w: any) => (
+                          <li key={w.id}>
+                            <span className="font-medium">{w.title}</span>
+                            <span className="text-xs text-gray-500">
+                              {' '}— {w.axis || '—'} — {(w.workType === 'cientifico' ? 'Científico' : w.workType === 'experiencia' ? 'Relato de experiencia' : '—')}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => grantAuthorRole(u.id)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm"
+                    >
+                      Habilitar rol Autor
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ══ CRONOGRAMA ══ */}
@@ -686,7 +768,9 @@ export function PanelAdmin() {
                                       <div>
                                         <span className="font-medium">{index + 1}. {work?.title}</span>
                                         <div className="text-sm text-gray-600">Autor: {getAuthor(work?.userId)}</div>
-                                        <div className="text-sm text-gray-600">Tipo: {work?.axis}</div>
+                                        <div className="text-sm text-gray-600">Eje temático: {work?.axis || '—'}</div>
+                                        <div className="text-sm text-gray-600">Tipo de trabajo: {work?.workType ? (work.workType === 'cientifico' ? 'Científico' : 'Relato de experiencia') : '—'}</div>
+                                        <div className="text-sm text-gray-600">Modalidad: {(work?.modality ?? work?.type) || '—'}</div>
                                       </div>
                                       <button onClick={() => removeWorkFromSession(s.id, id)} className="flex items-center gap-1 bg-red-100 text-red-700 border border-red-300 px-2 py-0.5 rounded text-xs hover:bg-red-200 transition shrink-0 mt-0.5">
                                         <X className="w-3 h-3" /> Quitar
@@ -762,7 +846,9 @@ export function PanelAdmin() {
                                       <div>
                                         <span className="font-medium">{work?.title}</span>
                                         <div className="text-sm text-gray-600">Autor: {getAuthor(work?.userId)} | Panel: {w.stand}</div>
-                                        <div className="text-sm text-gray-600">Tipo: {work?.axis}</div>
+                                        <div className="text-sm text-gray-600">Eje temático: {work?.axis || '—'}</div>
+                                        <div className="text-sm text-gray-600">Tipo de trabajo: {work?.workType ? (work.workType === 'cientifico' ? 'Científico' : 'Relato de experiencia') : '—'}</div>
+                                        <div className="text-sm text-gray-600">Modalidad: {(work?.modality ?? work?.type) || '—'}</div>
                                       </div>
                                       <button onClick={() => removeWorkFromPoster(p.id, w.workId)} className="flex items-center gap-1 bg-red-100 text-red-700 border border-red-300 px-2 py-0.5 rounded text-xs hover:bg-red-200 transition shrink-0 mt-0.5">
                                         <X className="w-3 h-3" /> Quitar

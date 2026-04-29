@@ -49,6 +49,8 @@ if (currentUser.roles?.length === 1) {
 // 🔥 REDIRECCIÓN FINAL SEGÚN ROL ACTIVO
 if (currentUser.currentRole === 'admin') {
   navigate('/admin');
+} else if (currentUser.currentRole === 'comite') {
+  navigate('/comite-academico');
 } else if (!currentUser.roles || currentUser.roles.length === 0) {
   navigate('/inscripcion');
 } else if (currentUser.currentRole === 'asistente') {

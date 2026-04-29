@@ -20,10 +20,14 @@ export function EvaluatorDashboard() {
     const storedWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
     console.log('storedWorks:', storedWorks);
   
-    const pendingWorks = storedWorks.filter((w: any) => w.status === 'pending');
-    console.log('pendingWorks:', pendingWorks);
+    const assignedToMe = storedWorks.filter((w: any) => {
+      const assignments = Array.isArray(w.assignments) ? w.assignments : [];
+      const mine = assignments.find((a: any) => a?.evaluatorId === user.id && a?.status !== 'done');
+      return Boolean(mine) && ['assigned', 'under_review'].includes(w.status);
+    });
+    console.log('assignedToMe:', assignedToMe);
   
-    setWorks(pendingWorks);
+    setWorks(assignedToMe);
   }, [user, navigate]);
 
   if (!user) return null;
@@ -129,7 +133,10 @@ export function EvaluatorDashboard() {
 
                     <div className="flex flex-wrap gap-2">
                       <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                        {work.type}
+                        {work.workType ? (work.workType === 'cientifico' ? 'Científico' : 'Relato de experiencia') : 'Tipo: —'}
+                      </span>
+                      <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                        Modalidad: {(work.modality ?? work.type) || '—'}
                       </span>
                       <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
                         {work.axis}

@@ -5,6 +5,8 @@ import { ClipboardCheck, FileText, MessageSquare, Presentation, FileDown } from 
 import { openOrDownloadFile } from '../lib/browserFiles';
 
 const TALLERES_KEY = 'congress_talleres_propuestos';
+const WORKS_KEY = 'congress_works';
+const USERS_KEY = 'congress_users';
 
 export function PanelEvaluador() {
   const { user, sendNotificationToUser } = useAuth();
@@ -21,8 +23,14 @@ export function PanelEvaluador() {
     if (!user) return;
     if (user.currentRole !== 'evaluador') { navigate('/'); return; }
 
-    const storedWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
-    setWorks(storedWorks.filter((w: any) => w.status === 'pending' && w.userId !== user.id));
+    const storedWorks = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
+    const assignedToMe = storedWorks.filter((w: any) => {
+      const assignments = Array.isArray(w.assignments) ? w.assignments : [];
+      const mine = assignments.find((a: any) => a?.evaluatorId === user.id && a?.status !== 'done');
+      if (!mine) return false;
+      return ['assigned', 'under_review'].includes(w.status) || (!w.status && true);
+    });
+    setWorks(assignedToMe);
 
     const storedTalleres = JSON.parse(localStorage.getItem(TALLERES_KEY) || '[]');
     setTalleres(storedTalleres.filter((t: any) => t.status === 'pending' && t.userId !== user.id));
@@ -31,59 +39,93 @@ export function PanelEvaluador() {
   if (!user) return null;
 
   // ── Trabajos ────────────────────────────────────────────────────────────────
-  const handleApprove = (workId: string) => {
-    const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
-    const work     = allWorks.find((w: any) => w.id === workId);
+  const persistAllWorks = (next: any[]) => {
+    localStorage.setItem(WORKS_KEY, JSON.stringify(next));
+    const assignedToMe = next.filter((w: any) => {
+      const assignments = Array.isArray(w.assignments) ? w.assignments : [];
+      const mine = assignments.find((a: any) => a?.evaluatorId === user.id && a?.status !== 'done');
+      return Boolean(mine) && ['assigned', 'under_review'].includes(w.status);
+    });
+    setWorks(assignedToMe);
+  };
 
-    const updatedWorks = allWorks.map((w: any) =>
-      w.id === workId ? { ...w, status: 'approved' } : w
+  const handleDecision = (workId: string, decision: 'approve' | 'reject') => {
+    const allWorks = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
+    const work = allWorks.find((w: any) => w.id === workId);
+    if (!work) return;
+
+    const now = new Date().toISOString();
+    const comment = (feedbacks[workId] || '').trim();
+
+    const prevReviews = Array.isArray(work.reviews) ? work.reviews : [];
+    const alreadyReviewed = prevReviews.some((r: any) => r?.evaluatorId === user.id);
+    if (alreadyReviewed) return;
+
+    const nextReviews = [
+      ...prevReviews,
+      { evaluatorId: user.id, decision, comment: comment || undefined, createdAt: now },
+    ];
+
+    const prevAssignments = Array.isArray(work.assignments) ? work.assignments : [];
+    const nextAssignments = prevAssignments.map((a: any) =>
+      a?.evaluatorId === user.id ? { ...a, status: 'done', doneAt: now } : a
     );
-    localStorage.setItem('congress_works', JSON.stringify(updatedWorks));
 
-    const users        = JSON.parse(localStorage.getItem('congress_users') || '[]');
-    const updatedUsers = users.map((u: any) =>
-      u.id === work.userId
-        ? { ...u, roles: [...new Set([...(u.roles || []), 'autor'])] }
-        : u
-    );
-    localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
+    const approvals = nextReviews.filter((r: any) => r?.decision === 'approve').length;
+    const rejects = nextReviews.filter((r: any) => r?.decision === 'reject').length;
 
-    const feedbackText = feedbacks[workId]?.trim();
-    sendNotificationToUser(
-      work.userId,
-      'Trabajo aprobado',
-      feedbackText
-        ? `Tu trabajo "${work.title}" fue aprobado. Comentario del evaluador: ${feedbackText}`
-        : `Tu trabajo "${work.title}" fue aprobado. ¡Felicitaciones!`
-    );
+    let nextStatus: string = work.status || 'under_review';
+    if (approvals >= 2) nextStatus = 'approved';
+    else if (rejects >= 2) nextStatus = 'rejected';
+    else nextStatus = 'under_review';
 
-    setWorks(updatedWorks.filter((w: any) => w.status === 'pending' && w.userId !== user.id));
+    const updatedWork = {
+      ...work,
+      status: nextStatus,
+      reviews: nextReviews,
+      assignments: nextAssignments,
+    };
+
+    const updatedWorks = allWorks.map((w: any) => (w.id === workId ? updatedWork : w));
+    persistAllWorks(updatedWorks);
+
+    // Notificar autor
+    if (nextStatus === 'approved') {
+      sendNotificationToUser(
+        updatedWork.userId,
+        'Trabajo aprobado por evaluadores',
+        comment
+          ? `Tu trabajo "${updatedWork.title}" fue aprobado por los evaluadores. Comentario: ${comment}. Ahora queda pendiente la habilitación del rol autor por parte de Administración.`
+          : `Tu trabajo "${updatedWork.title}" fue aprobado por los evaluadores. Ahora queda pendiente la habilitación del rol autor por parte de Administración.`,
+        'Comité Evaluador'
+      );
+    } else if (nextStatus === 'rejected') {
+      sendNotificationToUser(
+        updatedWork.userId,
+        'Trabajo no aprobado',
+        comment
+          ? `Tu trabajo "${updatedWork.title}" no fue aprobado. Comentario del evaluador: ${comment}`
+          : `Tu trabajo "${updatedWork.title}" no fue aprobado. Podés volver a enviarlo con correcciones.`,
+        'Comité Evaluador'
+      );
+    } else {
+      // estado intermedio: no notificamos “aprobado/rechazado” aún
+      sendNotificationToUser(
+        updatedWork.userId,
+        'Trabajo en evaluación',
+        comment
+          ? `Se registró una evaluación para tu trabajo "${updatedWork.title}". Comentario: ${comment}`
+          : `Se registró una evaluación para tu trabajo "${updatedWork.title}".`,
+        'Comité Evaluador'
+      );
+    }
+
     setFeedbacks(p => { const c = { ...p }; delete c[workId]; return c; });
     setShowFeedback(p => { const c = { ...p }; delete c[workId]; return c; });
   };
 
-  const handleReject = (workId: string) => {
-    const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
-    const work     = allWorks.find((w: any) => w.id === workId);
-
-    const updatedWorks = allWorks.map((w: any) =>
-      w.id === workId ? { ...w, status: 'rejected', attempts: (w.attempts || 1) + 1 } : w
-    );
-    localStorage.setItem('congress_works', JSON.stringify(updatedWorks));
-
-    const feedbackText = feedbacks[workId]?.trim();
-    sendNotificationToUser(
-      work.userId,
-      'Trabajo no aprobado',
-      feedbackText
-        ? `Tu trabajo "${work.title}" no fue aprobado. Comentario del evaluador: ${feedbackText}`
-        : `Tu trabajo "${work.title}" no fue aprobado. Podés volver a enviarlo con correcciones.`
-    );
-
-    setWorks(updatedWorks.filter((w: any) => w.status === 'pending' && w.userId !== user.id));
-    setFeedbacks(p => { const c = { ...p }; delete c[workId]; return c; });
-    setShowFeedback(p => { const c = { ...p }; delete c[workId]; return c; });
-  };
+  const handleApprove = (workId: string) => handleDecision(workId, 'approve');
+  const handleReject = (workId: string) => handleDecision(workId, 'reject');
 
   // ── Talleres ─────────────────────────────────────────────────────────────────
   const handleApproveTaller = (tallerId: string) => {
@@ -187,7 +229,12 @@ export function PanelEvaluador() {
                     <div className="flex-1">
                       <h3 className="text-xl text-gray-800 mb-2">{work.title}</h3>
                       <div className="flex flex-wrap gap-2">
-                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">{work.type}</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                          {work.workType ? (work.workType === 'cientifico' ? 'Científico' : 'Relato de experiencia') : 'Tipo: —'}
+                        </span>
+                        <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                          Modalidad: {(work.modality ?? work.type) || '—'}
+                        </span>
                         <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">{work.axis}</span>
                         <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm">Pendiente</span>
                       </div>

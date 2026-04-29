@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { Users, FileText, ClipboardCheck, Settings } from 'lucide-react';
+import { Users, FileText, ClipboardCheck, Settings, ShieldCheck } from 'lucide-react';
 
 export function RoleSelection() {
   const { user, selectRole } = useAuth();
@@ -29,7 +29,7 @@ export function RoleSelection() {
 
   const handleRoleSelect = (role: string) => {
     selectRole(role as any);
-    navigate('/');
+    navigate('/dashboard');
   };
 
   const roleInfo = {
@@ -50,6 +50,12 @@ export function RoleSelection() {
       title: 'Evaluador',
       description: 'Accede a los trabajos asignados y realiza las evaluaciones correspondientes',
       color: 'from-purple-500 to-purple-600',
+    },
+    comite: {
+      icon: ShieldCheck,
+      title: 'Administrador Comité académico',
+      description: 'Valida formalmente trabajos y los asigna a evaluadores por eje temático',
+      color: 'from-indigo-500 to-indigo-600',
     },
     admin: {
       icon: Settings,

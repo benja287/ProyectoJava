@@ -41,9 +41,10 @@ export function AdminMesasTematicas() {
 
     const works = JSON.parse(localStorage.getItem('congress_works') || '[]');
 
-    const approved = works.filter(
-      (w: any) => w.status === 'approved' && w.type === 'oral'
-    );
+    const approved = works.filter((w: any) => {
+      const modality = w.modality ?? w.type; // compatibilidad
+      return w.status === 'approved' && modality === 'oral';
+    });
 
     setApprovedWorks(approved);
   }, [user, navigate]);
@@ -196,7 +197,7 @@ export function AdminMesasTematicas() {
             <span>
               {w.title}
               <span className="text-xs text-gray-500 ml-2">
-                ({w.axis} - {w.type})
+                ({w.axis} - {(w.modality ?? w.type) || '—'}{w.workType ? ` - ${w.workType}` : ''})
               </span>
             </span>
           </label>

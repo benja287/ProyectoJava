@@ -39,9 +39,10 @@ export function AdminPosters() {
 
     const works = JSON.parse(localStorage.getItem('congress_works') || '[]');
 
-    const posters = works.filter(
-      (w: any) => w.status === 'approved' && w.type === 'poster'
-    );
+    const posters = works.filter((w: any) => {
+      const modality = w.modality ?? w.type; // compatibilidad
+      return w.status === 'approved' && modality === 'poster';
+    });
 
     setApprovedWorks(posters);
   }, [user, navigate]);
