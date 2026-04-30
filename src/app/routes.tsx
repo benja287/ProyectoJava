@@ -1,36 +1,5 @@
 import { createBrowserRouter } from "react-router";
 import { RootLayout } from "./layouts/RootLayout";
-<<<<<<< Updated upstream
-import { HomePage } from "./pages/HomePage";
-import { Login } from "./pages/Login";
-import { Register } from "./pages/Register";
-import { ForgotPassword } from "./pages/ForgotPassword";
-import { RoleSelection } from "./pages/RoleSelection";
-import { CircularesPage } from "./pages/CircularesPage";
-import { ActividadesPage } from "./pages/ActividadesPage";
-import { FeriaPage } from "./pages/FeriaPage";
-import { PanelAsistente} from "./pages/PanelAsistente";
-import { VerPresentacionesGenerales} from "./pages/VerPresentacionesGenerales";
-import { ProgramaDetalladoPage } from "./pages/ProgramaDetalladoPage";
-import { MapasPage } from "./pages/MapasPage";
-import { InscripcionPage } from "./pages/InscripcionPage";
-import { EnvioTrabajosPage } from "./pages/EnvioTrabajosPage";
-import { ProponerTallerPage } from "./pages/ProponerTallerPage";
-import { PanelAutor} from "./pages/PanelAutor";
-import { PanelEvaluador } from "./pages/PanelEvaluador";
-import { PanelAdmin } from "./pages/PanelAdmin";
-import { NotificacionesPage } from "./pages/NotificacionesPage";
-import { AdminMesasTematicas } from "./pages/AdminMesasTematicas";
-import { AdminMesasRedondas } from "./pages/AdminMesasRedondas";
-import { AdminPosters } from './pages/AdminPosters';
-import { AdminCrearTaller } from './pages/AdminCrearTaller';
-import { AdminCrearConferencia } from './pages/AdminCrearConferencia';
-import { ProgramaCongreso} from './pages/ProgramaCongreso';
-import { MiAgenda} from './pages/MiAgenda';
-import { OrganizadoresPage } from "./pages/OrganizadoresPage";
-import { ContactoPage } from "./pages/ContactoPage";
-import { Dashboard } from "./pages/Dashboard"; 
-=======
 
 // Public
 import { HomePage } from "./pages/Public/HomePage";
@@ -67,7 +36,7 @@ import { InscripcionPage } from "./pages/InscripcionPage";//6
 import { MiAgenda} from './pages/MiAgenda'; //8
 import { NotificacionesPage } from "./pages/NotificacionesPage"; //9
 import { OrganizadoresPage } from "./pages/OrganizadoresPage"; //10
-import { PerfilPage } from "./pages/PerfilPage"; //11
+//import { PerfilPage } from "./pages/PerfilPage"; //11
 import { ProgramaCongreso} from './pages/ProgramaCongreso';//12
 import { ProgramaDetalladoPage } from "./pages/ProgramaDetalladoPage";//13
 import { ProponerTallerPage } from "./pages/ProponerTallerPage";//15
@@ -82,7 +51,6 @@ import { VerPresentacionesGenerales} from "./pages/VerPresentacionesGenerales";/
 
 
 
->>>>>>> Stashed changes
 export const router = createBrowserRouter([
   {
     path: "/",
