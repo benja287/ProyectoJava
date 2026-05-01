@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { ClipboardCheck, FileText, MessageSquare, Presentation, FileDown } from 'lucide-react';
 import { openOrDownloadFile } from '../lib/browserFiles';
+import { sendTransactionalEmail } from '../lib/emailSender';
 
 const TALLERES_KEY = 'congress_talleres_propuestos';
 const WORKS_KEY = 'congress_works';
 const USERS_KEY = 'congress_users';
+const EMAIL_LOG_KEY = 'congress_email_log';
 
 export function PanelEvaluador() {
   const { user, sendNotificationToUser } = useAuth();
@@ -37,6 +39,38 @@ export function PanelEvaluador() {
   }, [user, navigate]);
 
   if (!user) return null;
+
+  const logEmailToUser = (toEmail: string, subject: string, body: string) => {
+    const outbox = JSON.parse(localStorage.getItem(EMAIL_LOG_KEY) || '[]');
+    const emailRecord = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      to: toEmail,
+      subject,
+      body,
+      createdAt: new Date().toISOString(),
+      from: 'evaluacion@congreso.local',
+      status: 'queued',
+    };
+    localStorage.setItem(EMAIL_LOG_KEY, JSON.stringify([emailRecord, ...outbox]));
+
+    void sendTransactionalEmail({
+      toEmail,
+      subject,
+      message: body,
+    }).then((result) => {
+      const latestOutbox = JSON.parse(localStorage.getItem(EMAIL_LOG_KEY) || '[]');
+      const patched = latestOutbox.map((m: any) =>
+        m.id === emailRecord.id
+          ? {
+              ...m,
+              status: result.sent ? 'sent' : 'failed',
+              error: result.reason || '',
+            }
+          : m
+      );
+      localStorage.setItem(EMAIL_LOG_KEY, JSON.stringify(patched));
+    });
+  };
 
   // ── Trabajos ────────────────────────────────────────────────────────────────
   const persistAllWorks = (next: any[]) => {
@@ -73,41 +107,101 @@ export function PanelEvaluador() {
 
     const approvals = nextReviews.filter((r: any) => r?.decision === 'approve').length;
     const rejects = nextReviews.filter((r: any) => r?.decision === 'reject').length;
+    const prevReviewAttempts = typeof work?.reviewAttempts === 'number' ? work.reviewAttempts : 0;
 
     let nextStatus: string = work.status || 'under_review';
-    if (approvals >= 2) nextStatus = 'approved';
-    else if (rejects >= 2) nextStatus = 'rejected';
-    else nextStatus = 'under_review';
+    let nextReviewAttempts = prevReviewAttempts;
+
+    if (decision === 'reject') {
+      nextReviewAttempts = prevReviewAttempts + 1;
+      nextStatus = nextReviewAttempts >= 2 ? 'rejected_final' : 'rejected';
+    } else if (approvals >= 2) {
+      nextStatus = 'approved';
+    } else if (rejects >= 1) {
+      // si ya hubo rechazo previo, mantiene el estado de rechazo
+      nextStatus = prevReviewAttempts >= 2 ? 'rejected_final' : 'rejected';
+    } else {
+      nextStatus = 'under_review';
+    }
+
+    // Si se rechaza, cerramos esta ronda de asignaciones y el autor corrige/reenvía
+    const normalizedAssignments =
+      nextStatus === 'rejected' || nextStatus === 'rejected_final'
+        ? prevAssignments.map((a: any) => ({ ...a, status: 'done', doneAt: a?.doneAt || now }))
+        : nextAssignments;
 
     const updatedWork = {
       ...work,
       status: nextStatus,
+      reviewAttempts: nextReviewAttempts,
       reviews: nextReviews,
-      assignments: nextAssignments,
+      assignments: normalizedAssignments,
     };
 
     const updatedWorks = allWorks.map((w: any) => (w.id === workId ? updatedWork : w));
     persistAllWorks(updatedWorks);
+
+    const allReviewComments = nextReviews
+      .filter((r: any) => typeof r?.comment === 'string' && r.comment.trim().length > 0)
+      .map((r: any, idx: number) => `Eval ${idx + 1}: ${r.comment.trim()}`);
+    const reviewCommentsText = allReviewComments.length > 0 ? allReviewComments.join(' | ') : '';
+    const allUsers = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+    const author = allUsers.find((u: any) => u.id === updatedWork.userId);
 
     // Notificar autor
     if (nextStatus === 'approved') {
       sendNotificationToUser(
         updatedWork.userId,
         'Trabajo aprobado por evaluadores',
-        comment
-          ? `Tu trabajo "${updatedWork.title}" fue aprobado por los evaluadores. Comentario: ${comment}. Ahora queda pendiente la habilitación del rol autor por parte de Administración.`
-          : `Tu trabajo "${updatedWork.title}" fue aprobado por los evaluadores. Ahora queda pendiente la habilitación del rol autor por parte de Administración.`,
+        reviewCommentsText
+          ? `Tu trabajo "${updatedWork.title}" fue aprobado por los evaluadores. Comentarios: ${reviewCommentsText}.`
+          : `Tu trabajo "${updatedWork.title}" fue aprobado por los evaluadores.`,
         'Comité Evaluador'
       );
-    } else if (nextStatus === 'rejected') {
+      if (author?.email) {
+        const subject = '[APROBADO] Trabajo aprobado por evaluadores';
+        const body =
+          `Hola ${author.name || ''},\n\n` +
+          `Tu trabajo "${updatedWork.title}" fue aprobado por evaluadores.\n` +
+          `${reviewCommentsText ? `Comentarios: ${reviewCommentsText}\n` : ''}` +
+          `\nIngresá a la plataforma para ver el estado actualizado.\n\n` +
+          `Comité Evaluador`;
+        logEmailToUser(author.email, subject, body);
+      }
+    } else if (nextStatus === 'rejected' || nextStatus === 'rejected_final') {
       sendNotificationToUser(
         updatedWork.userId,
-        'Trabajo no aprobado',
-        comment
-          ? `Tu trabajo "${updatedWork.title}" no fue aprobado. Comentario del evaluador: ${comment}`
-          : `Tu trabajo "${updatedWork.title}" no fue aprobado. Podés volver a enviarlo con correcciones.`,
+        nextStatus === 'rejected_final' ? 'Trabajo rechazado final' : 'Trabajo rechazado por evaluación',
+        reviewCommentsText
+          ? `Tu trabajo "${updatedWork.title}" ${nextStatus === 'rejected_final' ? 'quedó en rechazo final' : 'fue rechazado en evaluación'}. Comentarios: ${reviewCommentsText}. ${nextStatus === 'rejected_final' ? 'Ya no tiene más reenvíos por evaluación.' : 'Podés corregirlo y reenviarlo (intento de revisión 1/2).' }`
+          : `Tu trabajo "${updatedWork.title}" ${nextStatus === 'rejected_final' ? 'quedó en rechazo final' : 'fue rechazado en evaluación'}. ${nextStatus === 'rejected_final' ? 'Ya no tiene más reenvíos por evaluación.' : 'Podés corregirlo y reenviarlo.' }`,
         'Comité Evaluador'
       );
+
+      if (author?.email) {
+        const subject = nextStatus === 'rejected_final'
+          ? '[RECHAZADO FINAL] Resultado de evaluación'
+          : '[RECHAZADO] Resultado de evaluación';
+        const body =
+          `Hola ${author.name || ''},\n\n` +
+          `Tu trabajo "${updatedWork.title}" ${nextStatus === 'rejected_final' ? 'quedó en rechazo final' : 'fue rechazado en evaluación'}.\n` +
+          `${reviewCommentsText ? `Comentarios: ${reviewCommentsText}\n` : ''}` +
+          `${nextStatus === 'rejected_final' ? 'No quedan reenvíos disponibles por evaluación.\n' : 'Podés corregir y reenviar.\n'}` +
+          `\nComité Evaluador`;
+        logEmailToUser(author.email, subject, body);
+      }
+
+      const committeeUsers = allUsers.filter((u: any) => Array.isArray(u.roles) && u.roles.includes('comite'));
+      committeeUsers.forEach((comite: any) => {
+        sendNotificationToUser(
+          comite.id,
+          nextStatus === 'rejected_final' ? 'Trabajo rechazado final' : 'Trabajo rechazado por evaluación',
+          reviewCommentsText
+            ? `El trabajo "${updatedWork.title}" quedó ${nextStatus === 'rejected_final' ? 'en rechazo final' : 'rechazado por evaluación'} (intento revisión ${nextReviewAttempts}/2). Comentarios: ${reviewCommentsText}`
+            : `El trabajo "${updatedWork.title}" quedó ${nextStatus === 'rejected_final' ? 'en rechazo final' : 'rechazado por evaluación'} (intento revisión ${nextReviewAttempts}/2).`,
+          'Comité Evaluador'
+        );
+      });
     } else {
       // estado intermedio: no notificamos “aprobado/rechazado” aún
       sendNotificationToUser(

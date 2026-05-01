@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { ClipboardList, Users, CheckCircle, XCircle, UserPlus } from 'lucide-react';
+import { ClipboardList, Users, CheckCircle, XCircle, UserPlus, FileDown } from 'lucide-react';
+import { deleteBrowserFile, openOrDownloadFile } from '../lib/browserFiles';
+import { sendTransactionalEmail } from '../lib/emailSender';
 
 type PrecheckChecks = {
   pdfOk: boolean;
@@ -25,6 +27,7 @@ const defaultChecks: PrecheckChecks = {
 
 const WORKS_KEY = 'congress_works';
 const USERS_KEY = 'congress_users';
+const EMAIL_LOG_KEY = 'congress_email_log';
 
 function toBool(v: any): boolean {
   return v === true;
@@ -58,6 +61,17 @@ function rejectsCount(reviews: any[]): number {
   return reviews.filter((r) => r?.decision === 'reject').length;
 }
 
+function getPrecheckAttempts(work: any): number {
+  if (typeof work?.precheckAttempts === 'number') return work.precheckAttempts;
+  if (typeof work?.attempts === 'number') return work.attempts;
+  return 0;
+}
+
+function getReviewAttempts(work: any): number {
+  if (typeof work?.reviewAttempts === 'number') return work.reviewAttempts;
+  return 0;
+}
+
 export function PanelComiteAcademico() {
   const { user, sendNotificationToUser } = useAuth();
   const navigate = useNavigate();
@@ -66,6 +80,7 @@ export function PanelComiteAcademico() {
   const [users, setUsers] = useState<any[]>([]);
   const [error, setError] = useState<string>('');
   const [userFeedback, setUserFeedback] = useState<string>('');
+  const [emailLog, setEmailLog] = useState<any[]>([]);
   const [axisDraftByUserId, setAxisDraftByUserId] = useState<Record<string, string>>({});
 
   const [selectedWorkId, setSelectedWorkId] = useState<string>('');
@@ -73,6 +88,12 @@ export function PanelComiteAcademico() {
     () => works.find((w) => w.id === selectedWorkId) || null,
     [works, selectedWorkId]
   );
+  const selectedWorkStatus = selectedWork ? getWorkStatus(selectedWork) : '';
+  const selectedWorkAttempts = selectedWork ? getPrecheckAttempts(selectedWork) : 1;
+  const isCommitteeFlowClosed = selectedWorkStatus === 'approved' || selectedWorkStatus === 'rejected_final';
+  const isPrecheckFinalRejected = selectedWorkStatus === 'prechecked_final';
+  const isObservedAttemptsExhausted =
+    selectedWorkStatus === 'prechecked_final' || (selectedWorkStatus === 'prechecked_failed' && selectedWorkAttempts >= 3);
 
   const [checks, setChecks] = useState<PrecheckChecks>(defaultChecks);
   const [notes, setNotes] = useState<string>('');
@@ -86,8 +107,10 @@ export function PanelComiteAcademico() {
     }
     const storedWorks = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
     const storedUsers = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+    const storedEmailLog = JSON.parse(localStorage.getItem(EMAIL_LOG_KEY) || '[]');
     setWorks(storedWorks);
     setUsers(storedUsers);
+    setEmailLog(storedEmailLog);
   }, [user, navigate]);
 
   useEffect(() => {
@@ -229,6 +252,14 @@ export function PanelComiteAcademico() {
     );
   };
 
+  const clearEvaluatorAxis = (userId: string) => {
+    setUserFeedback('');
+    const all = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+    const next = all.map((u: any) => (u.id === userId ? { ...u, axes: [] } : u));
+    persistUsers(next);
+    setUserFeedback('Se quitó al evaluador de su eje temático. Ahora podés asignar ese cupo a otro usuario.');
+  };
+
   const makeEvaluatorWithAxis = (userId: string) => {
     setUserFeedback('');
     const axis = (axisDraftByUserId[userId] || '').trim();
@@ -252,9 +283,77 @@ export function PanelComiteAcademico() {
     persistWorks(next);
   };
 
+  const logEmailToUser = (toEmail: string, subject: string, body: string, toName?: string) => {
+    const outbox = JSON.parse(localStorage.getItem(EMAIL_LOG_KEY) || '[]');
+    const emailRecord = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      to: toEmail,
+      toName: toName || '',
+      subject,
+      body,
+      createdAt: new Date().toISOString(),
+      from: 'comite@congreso.local',
+      status: 'queued',
+    };
+    const nextOutbox = [emailRecord, ...outbox];
+    localStorage.setItem(EMAIL_LOG_KEY, JSON.stringify(nextOutbox));
+    setEmailLog(nextOutbox);
+
+    void sendTransactionalEmail({
+      toEmail,
+      toName,
+      subject,
+      message: body,
+    }).then((result) => {
+      const latestOutbox = JSON.parse(localStorage.getItem(EMAIL_LOG_KEY) || '[]');
+      const patched = latestOutbox.map((m: any) =>
+        m.id === emailRecord.id
+          ? {
+              ...m,
+              status: result.sent ? 'sent' : 'failed',
+              error: result.reason || '',
+            }
+          : m
+      );
+      localStorage.setItem(EMAIL_LOG_KEY, JSON.stringify(patched));
+      setEmailLog(patched);
+    });
+  };
+
+  const getUserEmailById = (userId: string): string => {
+    const u = users.find((usr: any) => usr.id === userId);
+    return u?.email || '';
+  };
+
+  const getEmailStatusText = (log: any): string => {
+    if (log?.status === 'sent') return 'Enviado';
+    if (log?.status === 'queued') return 'En cola';
+    if (log?.error === 'email_not_configured') return 'Error: falta configurar EmailJS (.env)';
+    if (typeof log?.error === 'string' && log.error.startsWith('email_api_error:')) {
+      return 'Error: EmailJS rechazó la solicitud';
+    }
+    return 'Error';
+  };
+
   const handlePrecheckOk = () => {
     setError('');
     if (!selectedWork) return;
+    if (selectedWorkStatus === 'rejected') {
+      setError('Este trabajo fue rechazado por evaluación y espera corrección/reenvío del autor.');
+      return;
+    }
+    if (isCommitteeFlowClosed) {
+      setError('Este trabajo ya tiene dictamen final. No se puede volver a prevalidar.');
+      return;
+    }
+    if (isPrecheckFinalRejected) {
+      setError('Este trabajo quedó en No prevalidado final. No se puede cambiar su estado.');
+      return;
+    }
+    if (isObservedAttemptsExhausted) {
+      setError('Este trabajo agotó sus 3 intentos y quedó observado. No se puede cambiar su estado.');
+      return;
+    }
     if (!isPrecheckOk) {
       setError('Para marcar como apto, completá todos los criterios del precheck.');
       return;
@@ -275,11 +374,37 @@ export function PanelComiteAcademico() {
       `Tu trabajo "${selectedWork.title}" pasó la validación formal y fue enviado a evaluación.`,
       'Comité Académico'
     );
+    const authorEmail = getUserEmailById(selectedWork.userId);
+    if (authorEmail) {
+      const subject = '[PRECHECK OK] Trabajo apto para evaluación';
+      const body =
+        `Hola,\n\n` +
+        `Tu trabajo "${selectedWork.title}" pasó la prevalidación formal del Comité Académico y fue enviado a evaluación.\n\n` +
+        `Ingresá a la plataforma para ver el estado actualizado.\n\n` +
+        `Comité Académico`;
+      logEmailToUser(authorEmail, subject, body, selectedWork.userName);
+    }
   };
 
   const handlePrecheckFail = () => {
     setError('');
     if (!selectedWork) return;
+    if (selectedWorkStatus === 'rejected') {
+      setError('Este trabajo fue rechazado por evaluación y espera corrección/reenvío del autor.');
+      return;
+    }
+    if (isCommitteeFlowClosed) {
+      setError('Este trabajo ya tiene dictamen final. No se puede volver a prevalidar.');
+      return;
+    }
+    if (isPrecheckFinalRejected) {
+      setError('Este trabajo quedó en No prevalidado final. No se puede cambiar su estado.');
+      return;
+    }
+    if (isObservedAttemptsExhausted) {
+      setError('Este trabajo agotó sus 3 intentos y quedó observado. No se puede volver a observar ni cambiar su estado.');
+      return;
+    }
     const precheck = {
       byAdminId: user.id,
       at: new Date().toISOString(),
@@ -288,23 +413,60 @@ export function PanelComiteAcademico() {
       result: 'failed' as const,
     };
 
-    const attempts = (selectedWork.attempts || 1) + 1;
-    updateWork(selectedWork.id, { precheck, status: 'prechecked_failed', attempts });
+    const nextPrecheckAttempts = selectedWorkAttempts + 1;
+    const isFinalFail = nextPrecheckAttempts >= 3;
+    updateWork(selectedWork.id, {
+      precheck,
+      precheckAttempts: nextPrecheckAttempts,
+      attempts: nextPrecheckAttempts,
+      status: isFinalFail ? 'prechecked_final' : 'prechecked_failed',
+    });
     sendNotificationToUser(
       selectedWork.userId,
-      'Trabajo observado (prevalidación)',
-      notes.trim()
-        ? `Tu trabajo "${selectedWork.title}" no pasó la validación formal. Observaciones: ${notes.trim()}`
-        : `Tu trabajo "${selectedWork.title}" no pasó la validación formal. Revisá las normas y reenviá.`,
+      isFinalFail ? 'Trabajo no prevalidado final' : 'Trabajo observado (prevalidación)',
+      isFinalFail
+        ? (notes.trim()
+            ? `Tu trabajo "${selectedWork.title}" no pasó la validación formal en el intento ${nextPrecheckAttempts}/3. Observaciones: ${notes.trim()}. Ya no tenés más chances de reenvío.`
+            : `Tu trabajo "${selectedWork.title}" no pasó la validación formal en el intento ${nextPrecheckAttempts}/3. Ya no tenés más chances de reenvío.`)
+        : (notes.trim()
+            ? `Tu trabajo "${selectedWork.title}" no pasó la validación formal. Observaciones: ${notes.trim()}`
+            : `Tu trabajo "${selectedWork.title}" no pasó la validación formal. Revisá las normas y reenviá.`),
       'Comité Académico'
     );
+    const authorEmail = getUserEmailById(selectedWork.userId);
+    if (authorEmail) {
+      const subject = isFinalFail
+        ? '[NO PREVALIDADO FINAL] Resultado de prevalidación'
+        : '[PRECHECK OBSERVADO] Observaciones de prevalidación';
+      const body = notes.trim()
+        ? `Hola,\n\nTu trabajo "${selectedWork.title}" no pasó la prevalidación.\nObservaciones: ${notes.trim()}\n\nEstado: ${isFinalFail ? 'No prevalidado final' : 'Observado (con posibilidad de reenvío)'}.\n\nComité Académico`
+        : `Hola,\n\nTu trabajo "${selectedWork.title}" no pasó la prevalidación.\nEstado: ${isFinalFail ? 'No prevalidado final' : 'Observado (con posibilidad de reenvío)'}.\n\nComité Académico`;
+      logEmailToUser(authorEmail, subject, body, selectedWork.userName);
+    }
   };
 
   const handleAssignEvaluators = () => {
     setError('');
+    setUserFeedback('');
     if (!selectedWork) return;
 
     const status = getWorkStatus(selectedWork);
+    if (status === 'rejected') {
+      setError('Este trabajo fue rechazado por evaluación y espera corrección/reenvío del autor.');
+      return;
+    }
+    if (status === 'approved' || status === 'rejected_final') {
+      setError('Este trabajo ya tiene dictamen final. No se puede reasignar a evaluación.');
+      return;
+    }
+    if (status === 'prechecked_final') {
+      setError('Este trabajo quedó en No prevalidado final. No se puede reasignar a evaluación.');
+      return;
+    }
+    if (status === 'prechecked_failed' && getPrecheckAttempts(selectedWork) >= 3) {
+      setError('Este trabajo quedó observado en el intento 3/3. No se puede reasignar a evaluación.');
+      return;
+    }
     if (status !== 'prechecked_ok' && status !== 'assigned' && status !== 'under_review') {
       setError('Primero marcá el trabajo como apto (precheck OK) antes de asignarlo a evaluación.');
       return;
@@ -351,14 +513,36 @@ export function PanelComiteAcademico() {
     const nextStatus = nextAssignments.length >= 2 ? 'assigned' : status;
     updateWork(selectedWork.id, { assignments: nextAssignments, status: nextStatus });
 
+    const evaluatorDataById = new Map<string, any>(evaluators.map((e: any) => [e.id, e]));
+    const emailedTo: string[] = [];
     unique.forEach((evaluatorId) => {
+      const evaluator = evaluatorDataById.get(evaluatorId);
       sendNotificationToUser(
         evaluatorId,
         'Nuevo trabajo asignado',
         `Se te asignó el trabajo "${selectedWork.title}" (eje: ${axis}).`,
         'Comité Académico'
       );
+
+      if (evaluator?.email) {
+        const subject = '[ASIGNADO A EVALUACIÓN] Nuevo trabajo asignado';
+        const body =
+          `Hola ${evaluator.name || ''},\n\n` +
+          `Se te asignó un nuevo trabajo para evaluar.\n` +
+          `Título: ${selectedWork.title}\n` +
+          `Eje temático: ${axis}\n\n` +
+          `Por favor ingresá al panel de evaluador para revisarlo.\n\n` +
+          `Comité Académico`;
+        logEmailToUser(evaluator.email, subject, body, `${evaluator.name || ''} ${evaluator.lastName || ''}`.trim());
+        emailedTo.push(evaluator.email);
+      }
     });
+
+    if (emailedTo.length > 0) {
+      setUserFeedback(`Asignación realizada. Aviso por email enviado a: ${emailedTo.join(', ')}`);
+    } else {
+      setUserFeedback('Asignación realizada. No se encontraron emails de evaluadores para avisar.');
+    }
   };
 
   const handleAssignThirdEvaluator = () => {
@@ -372,15 +556,45 @@ export function PanelComiteAcademico() {
     handleAssignEvaluators();
   };
 
+  const handleDeleteExhaustedWork = async () => {
+    setError('');
+    if (!selectedWork) return;
+    const deletableFinal = isObservedAttemptsExhausted || selectedWorkStatus === 'rejected_final';
+    if (!deletableFinal) {
+      setError('Solo se pueden eliminar trabajos finalizados (No prevalidado final o Rechazado final).');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Vas a eliminar el trabajo "${selectedWork.title}" de forma permanente. Esta acción no se puede deshacer.`
+    );
+    if (!confirmed) return;
+
+    if (selectedWork.fileId) {
+      try {
+        await deleteBrowserFile(selectedWork.fileId);
+      } catch {
+        // si falla la limpieza del archivo local, igual eliminamos el registro
+      }
+    }
+
+    const all = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
+    const next = all.filter((w: any) => w.id !== selectedWork.id);
+    persistWorks(next);
+    setSelectedWorkId('');
+  };
+
   const statusBadge = (st: string) => {
     const base = 'px-2 py-0.5 rounded-full text-xs font-medium';
     if (st === 'submitted') return <span className={`${base} bg-amber-100 text-amber-800`}>Enviado</span>;
     if (st === 'prechecked_ok') return <span className={`${base} bg-blue-100 text-blue-800`}>Precheck OK</span>;
     if (st === 'prechecked_failed') return <span className={`${base} bg-red-100 text-red-800`}>Observado</span>;
+    if (st === 'prechecked_final') return <span className={`${base} bg-red-200 text-red-900`}>No prevalidado final</span>;
     if (st === 'assigned') return <span className={`${base} bg-indigo-100 text-indigo-800`}>Asignado</span>;
     if (st === 'under_review') return <span className={`${base} bg-purple-100 text-purple-800`}>En revisión</span>;
     if (st === 'approved') return <span className={`${base} bg-green-100 text-green-800`}>Aprobado</span>;
-    if (st === 'rejected') return <span className={`${base} bg-gray-100 text-gray-800`}>No aprobado</span>;
+    if (st === 'rejected') return <span className={`${base} bg-orange-100 text-orange-800`}>Rechazado (reenvío)</span>;
+    if (st === 'rejected_final') return <span className={`${base} bg-gray-100 text-gray-800`}>Rechazado final</span>;
     return <span className={`${base} bg-gray-100 text-gray-700`}>{st}</span>;
   };
 
@@ -491,8 +705,17 @@ export function PanelComiteAcademico() {
                           Hacer evaluador en este eje
                         </button>
                       ) : (
-                        <div className="mt-2 text-[11px] text-gray-500">
-                          Regla: máximo 2 evaluadores por eje. Este evaluador queda asociado a 1 eje.
+                        <div className="mt-2">
+                          <button
+                            type="button"
+                            onClick={() => clearEvaluatorAxis(u.id)}
+                            className="w-full px-3 py-2 border border-red-200 text-red-700 rounded-lg text-xs hover:bg-red-50 transition"
+                          >
+                            Quitar del eje temático
+                          </button>
+                          <div className="mt-2 text-[11px] text-gray-500">
+                            Regla: máximo 2 evaluadores por eje. Si quitás a uno del eje, liberás cupo para asignar otro.
+                          </div>
                         </div>
                       )}
                     </div>
@@ -500,6 +723,40 @@ export function PanelComiteAcademico() {
                 );
               })}
             </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-6 lg:col-span-2">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl text-gray-800">Últimos emails enviados</h2>
+              <span className="text-sm text-gray-500">{emailLog.length} total</span>
+            </div>
+            {emailLog.some((m: any) => m?.error === 'email_not_configured') && (
+              <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                Falta configurar EmailJS para que el correo salga de verdad. Cargá `VITE_EMAILJS_SERVICE_ID`,
+                `VITE_EMAILJS_TEMPLATE_ID` y `VITE_EMAILJS_PUBLIC_KEY` en `.env` y reiniciá `npm run dev`.
+              </div>
+            )}
+            {emailLog.length === 0 ? (
+              <p className="text-sm text-gray-500">Todavía no se registraron emails.</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-auto pr-1">
+                {emailLog.slice(0, 10).map((m: any) => (
+                  <div key={m.id} className="border border-gray-200 rounded-lg p-3">
+                    <div className="text-xs text-gray-500">{new Date(m.createdAt).toLocaleString('es-AR')}</div>
+                    <div className="text-sm text-gray-800 mt-1">Para: {m.to}</div>
+                    <div className="text-sm text-gray-700">Asunto: {m.subject}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Estado: {getEmailStatusText(m)}
+                    </div>
+                    {m.status === 'failed' && m.error && m.error !== 'email_not_configured' && (
+                      <div className="text-[11px] text-red-600 mt-1 break-all">
+                        Detalle: {m.error}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Lista */}
@@ -542,6 +799,14 @@ export function PanelComiteAcademico() {
                           <div className="text-xs text-gray-400 mt-1">
                             Asignaciones: {a.length} • Reviews: {rev.length} (✓ {approvalsCount(rev)} / ✗ {rejectsCount(rev)})
                           </div>
+                          <div className="mt-2">
+                            <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                              Precheck {Math.min(getPrecheckAttempts(w), 3)}/3
+                            </span>
+                            <span className="ml-2 text-[11px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-800 border border-violet-200">
+                              Revisión {Math.min(getReviewAttempts(w), 2)}/2
+                            </span>
+                          </div>
                         </div>
                         <div className="shrink-0">{statusBadge(st)}</div>
                       </div>
@@ -576,12 +841,53 @@ export function PanelComiteAcademico() {
                     {error}
                   </div>
                 )}
+                {isCommitteeFlowClosed && (
+                  <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                    Este trabajo ya tiene dictamen final. La prevalidación y la asignación de evaluadores quedan bloqueadas.
+                  </div>
+                )}
+                {isObservedAttemptsExhausted && (
+                  <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    Este trabajo quedó en No prevalidado final (3/3). Ya no admite nuevos cambios de prevalidación ni reasignación.
+                  </div>
+                )}
+                {(isObservedAttemptsExhausted || selectedWorkStatus === 'rejected_final') && (
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={handleDeleteExhaustedWork}
+                      className="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition text-sm"
+                    >
+                      Eliminar trabajo finalizado
+                    </button>
+                  </div>
+                )}
 
                 {/* Precheck */}
                 <div className="border border-gray-200 rounded-lg p-4 mb-6">
                   <div className="flex items-center gap-2 mb-3">
                     <CheckCircle className="w-5 h-5 text-indigo-600" />
                     <div className="font-medium text-gray-900">Prevalidación formal (checklist)</div>
+                  </div>
+                  <div className="mb-3">
+                    {selectedWork.fileId || selectedWork.filePdfBase64 ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openOrDownloadFile({
+                            fileId: selectedWork.fileId,
+                            fileName: selectedWork.fileName,
+                            filePdfBase64: selectedWork.filePdfBase64,
+                          })
+                        }
+                        className="flex items-center gap-2 text-sm text-teal-700 border border-teal-300 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-lg transition"
+                      >
+                        <FileDown className="w-4 h-4" />
+                        Ver / descargar PDF enviado
+                      </button>
+                    ) : (
+                      <p className="text-xs text-gray-400 italic">Este trabajo no tiene PDF adjunto.</p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
@@ -598,6 +904,7 @@ export function PanelComiteAcademico() {
                         <input
                           type="checkbox"
                           checked={checks[key]}
+                          disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
                           onChange={(e) => setChecks({ ...checks, [key]: e.target.checked })}
                         />
                         <span className="text-gray-800">{label}</span>
@@ -609,6 +916,7 @@ export function PanelComiteAcademico() {
                     <label className="block text-xs text-gray-500 mb-1">Observaciones (se envían al autor)</label>
                     <textarea
                       value={notes}
+                      disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
                       onChange={(e) => setNotes(e.target.value)}
                       rows={3}
                       className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700"
@@ -620,6 +928,7 @@ export function PanelComiteAcademico() {
                     <button
                       type="button"
                       onClick={handlePrecheckOk}
+                      disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
                       className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm"
                     >
                       Marcar apto (precheck OK)
@@ -627,6 +936,7 @@ export function PanelComiteAcademico() {
                     <button
                       type="button"
                       onClick={handlePrecheckFail}
+                      disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
                       className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm"
                     >
                       Observar (precheck NO)
@@ -723,7 +1033,7 @@ export function PanelComiteAcademico() {
                                     <input
                                       type="checkbox"
                                       checked={checked}
-                                      disabled={disabled}
+                                      disabled={disabled || isCommitteeFlowClosed || isObservedAttemptsExhausted}
                                       onChange={() => toggle(ev.id)}
                                     />
                                   </label>
@@ -756,6 +1066,7 @@ export function PanelComiteAcademico() {
                     <button
                       type="button"
                       onClick={handleAssignEvaluators}
+                      disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
                       className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition text-sm flex items-center gap-2"
                     >
                       <UserPlus className="w-4 h-4" />
@@ -764,6 +1075,7 @@ export function PanelComiteAcademico() {
                     <button
                       type="button"
                       onClick={handleAssignThirdEvaluator}
+                      disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
                       className="px-4 py-2 border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-50 transition text-sm flex items-center gap-2"
                     >
                       <XCircle className="w-4 h-4" />
@@ -775,6 +1087,25 @@ export function PanelComiteAcademico() {
                     Nota: un trabajo se considera <span className="font-medium">Aprobado</span> cuando tiene 2 evaluaciones “approve”.
                     Si queda 1/1, el comité asigna un tercer evaluador.
                   </div>
+                  {getWorkReviews(selectedWork).length > 0 && (
+                    <div className="mt-4 border-t border-gray-100 pt-3">
+                      <div className="text-xs font-medium text-gray-700 mb-2">Devoluciones de evaluadores</div>
+                      <div className="space-y-2">
+                        {getWorkReviews(selectedWork).map((r: any, idx: number) => (
+                          <div key={`${r?.evaluatorId || 'ev'}-${idx}`} className="text-xs border border-gray-200 rounded p-2">
+                            <div className="text-gray-700">
+                              Dictamen: <span className="font-medium">{r?.decision === 'approve' ? 'Aprobar' : 'Rechazar'}</span>
+                            </div>
+                            {r?.comment ? (
+                              <div className="text-gray-600 mt-1">Comentario: {r.comment}</div>
+                            ) : (
+                              <div className="text-gray-400 mt-1 italic">Sin comentario del evaluador.</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}

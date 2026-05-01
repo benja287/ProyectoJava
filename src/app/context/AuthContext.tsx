@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!adminExists) {
       const adminUser = {
         id: 'admin-1',
-        email: 'alexisadmin@gmail.com',
+        email: 'mantillabenja153@gmail.com',
         password: '12345678',
         name: 'Admin',
         lastName: 'Principal',
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!comiteExists) {
       const comiteUser = {
         id: 'comite-1',
-        email: 'comiteacademico@gmail.com',
+        email: 'rodriguezmantilla123@gmail.com',
         password: '12345678',
         name: 'Comité',
         lastName: 'Académico',

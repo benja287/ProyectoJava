@@ -6,3 +6,6 @@ target/
 out/
 .idea/
 .vscode/
+.env
+.env.*
+!.env.example
