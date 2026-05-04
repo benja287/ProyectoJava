@@ -28,6 +28,22 @@ const defaultChecks: PrecheckChecks = {
 const WORKS_KEY = 'congress_works';
 const USERS_KEY = 'congress_users';
 const EMAIL_LOG_KEY = 'congress_email_log';
+const INSCRIPTION_CATEGORIES = [
+  { value: 'socio_saae', label: 'Socio/a SAAE' },
+  { value: 'no_socio', label: 'No socio/a' },
+  { value: 'estudiante', label: 'Estudiante' },
+  { value: 'productor', label: 'Productor/a' },
+  { value: 'investigador', label: 'Investigador/a' },
+  { value: 'extensionista', label: 'Extensionista' },
+  { value: 'docente', label: 'Docente' },
+  { value: 'extranjero', label: 'Extranjero/a' },
+] as const;
+
+function categoryLabel(category?: string): string {
+  if (!category) return 'Sin categoría';
+  const found = INSCRIPTION_CATEGORIES.find((c) => c.value === category);
+  return found?.label || category;
+}
 
 function toBool(v: any): boolean {
   return v === true;
@@ -665,6 +681,13 @@ export function PanelComiteAcademico() {
                     </div>
 
                     <div className="mt-3">
+                      <div className="text-xs text-gray-500 mb-1">Categoría de inscripción</div>
+                      <div className="w-full border border-gray-200 rounded-lg p-2 text-xs bg-gray-50 text-gray-700">
+                        {categoryLabel(u.category)}
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
                       <div className="text-xs text-gray-500 mb-1">
                         {isEval ? 'Eje temático asignado' : 'Elegí eje temático para hacerlo evaluador'}
                       </div>
@@ -779,6 +802,7 @@ export function PanelComiteAcademico() {
                   const st = getWorkStatus(w);
                   const rev = getWorkReviews(w);
                   const a = getWorkAssignments(w);
+                  const workUser = users.find((usr: any) => usr.id === w.userId);
                   return (
                     <button
                       key={w.id}
@@ -795,6 +819,9 @@ export function PanelComiteAcademico() {
                           <div className="text-xs text-gray-500 mt-1">
                             {w.workType ? (w.workType === 'cientifico' ? 'Científico' : 'Relato de experiencia') : 'Tipo: —'} •{' '}
                             {(w.modality ?? w.type) ? `Modalidad: ${w.modality ?? w.type}` : 'Modalidad: —'}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Categoría autor/a: {categoryLabel(workUser?.category)}
                           </div>
                           <div className="text-xs text-gray-400 mt-1">
                             Asignaciones: {a.length} • Reviews: {rev.length} (✓ {approvalsCount(rev)} / ✗ {rejectsCount(rev)})
@@ -831,6 +858,9 @@ export function PanelComiteAcademico() {
                     <p className="text-sm text-gray-600 mt-1">{selectedWork.axis || '—'}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       Autor: {selectedWork.userName || selectedWork.userId}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Categoría autor/a: {categoryLabel(users.find((usr: any) => usr.id === selectedWork.userId)?.category)}
                     </p>
                   </div>
                   <div className="shrink-0">{statusBadge(getWorkStatus(selectedWork))}</div>

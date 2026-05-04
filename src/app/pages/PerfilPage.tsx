@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, ShieldCheck, MapPin, Building2, BadgeCheck } from 'lucide-react';
+import type { InscriptionCategory } from '../context/AuthContext';
+import { buildComprobanteSearchParamsFromUser } from '../lib/inscriptionComprobantePayload';
 
 const roleLabel: Record<string, string> = {
   asistente: 'Asistente',
@@ -16,6 +18,21 @@ const inscriptionLabel: Record<string, string> = {
   rejected: 'Rechazada',
 };
 
+const categoryLabel: Record<InscriptionCategory, string> = {
+  socio_saae: 'Socio/a SAAE',
+  no_socio: 'No socio/a',
+  estudiante: 'Estudiante',
+  productor: 'Productor/a',
+  investigador: 'Investigador/a',
+  extensionista: 'Extensionista',
+  docente: 'Docente',
+  extranjero: 'Extranjero/a',
+};
+
+const categoryOptions: { value: InscriptionCategory; label: string }[] = Object.entries(
+  categoryLabel
+).map(([value, label]) => ({ value: value as InscriptionCategory, label }));
+
 export function PerfilPage() {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
@@ -26,6 +43,7 @@ export function PerfilPage() {
     lastName: '',
     institution: '',
     province: '',
+    category: '' as InscriptionCategory | '',
   });
 
   if (!user) {
@@ -38,14 +56,24 @@ export function PerfilPage() {
     return n || 'U';
   }, [user.name, user.lastName]);
 
+  const comprobanteHref = useMemo(() => {
+    const q = buildComprobanteSearchParamsFromUser(user);
+    if (q) return `/inscripcion/comprobante?${q}`;
+    if (user.inscriptionAccreditationToken) {
+      return `/inscripcion/comprobante?t=${encodeURIComponent(user.inscriptionAccreditationToken)}`;
+    }
+    return '/inscripcion/comprobante';
+  }, [user]);
+
   useEffect(() => {
     setForm({
       name: user.name || '',
       lastName: user.lastName || '',
       institution: user.institution || '',
       province: user.province || '',
+      category: (user.category || '') as InscriptionCategory | '',
     });
-  }, [user.name, user.lastName, user.institution, user.province]);
+  }, [user.name, user.lastName, user.institution, user.province, user.category]);
 
   const handleSave = () => {
     if (!form.name.trim() || !form.lastName.trim()) {
@@ -57,6 +85,7 @@ export function PerfilPage() {
       lastName: form.lastName.trim(),
       institution: form.institution.trim(),
       province: form.province.trim(),
+      category: form.category || undefined,
     });
     setEditing(false);
     setFeedback('Perfil actualizado correctamente.');
@@ -132,6 +161,30 @@ export function PerfilPage() {
               </p>
             </div>
             <div className="border rounded-lg p-4 bg-gray-50">
+              <p className="text-xs text-gray-500 mb-2">Categoría de inscripción</p>
+              {editing ? (
+                <select
+                  value={form.category}
+                  onChange={(e) => {
+                    setForm({ ...form, category: e.target.value as InscriptionCategory | '' });
+                    setFeedback('');
+                  }}
+                  className="w-full border rounded px-3 py-2 text-sm"
+                >
+                  <option value="">Sin categoría</option>
+                  {categoryOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-gray-800 font-medium">
+                  {user.category ? categoryLabel[user.category] : 'Sin categoría'}
+                </p>
+              )}
+            </div>
+            <div className="border rounded-lg p-4 bg-gray-50">
               <p className="text-xs text-gray-500 mb-2">Institución</p>
               {editing ? (
                 <input
@@ -192,6 +245,25 @@ export function PerfilPage() {
             </p>
           )}
 
+          {user.inscriptionStatus === 'confirmed' &&
+            user.inscriptionAccreditationToken &&
+            user.inscriptionInvoiceId && (
+              <div className="mb-8 rounded-xl border border-[#2d5016]/25 bg-[#f7faf5] p-5">
+                <h2 className="text-lg font-semibold text-gray-800 mb-1">Comprobante de inscripción</h2>
+                <p className="text-sm text-gray-600 mb-3">
+                  Nº {user.inscriptionInvoiceId}
+                  {user.inscriptionInvoiceIssuedAt &&
+                    ` · emitido ${new Date(user.inscriptionInvoiceIssuedAt).toLocaleString('es-AR')}`}
+                </p>
+                <Link
+                  to={comprobanteHref}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#2d5016] text-white rounded-lg hover:bg-[#3d6b23] transition text-sm font-medium"
+                >
+                  Abrir comprobante (QR e imprimir PDF)
+                </Link>
+              </div>
+            )}
+
           <div className="flex flex-wrap gap-3">
             {!editing ? (
               <button
@@ -223,6 +295,7 @@ export function PerfilPage() {
                       lastName: user.lastName || '',
                       institution: user.institution || '',
                       province: user.province || '',
+                      category: (user.category || '') as InscriptionCategory | '',
                     });
                   }}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"

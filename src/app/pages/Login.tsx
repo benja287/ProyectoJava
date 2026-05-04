@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, AlertCircle } from 'lucide-react';
 
@@ -9,6 +9,15 @@ export function Login() {
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const st = location.state as { sessionClosed?: string } | null;
+    if (st?.sessionClosed) {
+      setError(st.sessionClosed);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,9 +26,15 @@ export function Login() {
     const result = await login(email, password);
   
     if (!result.success) {
+      if (result.accountDisabled) {
+        setError(
+          'Tu cuenta está deshabilitada. No podés iniciar sesión ni usar el sistema hasta que un administrador habilite tu cuenta nuevamente.'
+        );
+        return;
+      }
       const users = JSON.parse(localStorage.getItem('congress_users') || '[]');
       const userExists = users.some((u: any) => u.email === email);
-  
+
       if (!userExists) {
         setError('El email ingresado no se encuentra registrado');
       } else {

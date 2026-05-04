@@ -21,6 +21,13 @@ import {
 import type { StoredCircular, CircularStatus } from '../constants/congressEvent';
 import type { TallerProgramado } from './AdminCrearTaller';
 import type { ConferenciaPrograma } from './AdminCrearConferencia';
+import { getInscriptionInvoiceLines } from '../constants/inscriptionInvoice';
+import { sendTransactionalEmail } from '../lib/emailSender';
+import { getPublicAppOrigin } from '../lib/publicAppUrl';
+import {
+  buildComprobanteSearchParams,
+  type ComprobanteUrlPayload,
+} from '../lib/inscriptionComprobantePayload';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface Session {
@@ -58,7 +65,7 @@ interface RoundTable {
 
 // ─── Componente ───────────────────────────────────────────────────────────────
 export function PanelAdmin() {
-  const { user, sendNotificationToAll, sendNotificationToUser } = useAuth();
+  const { user, sendNotificationToAll, sendNotificationToUser, logout } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
 
@@ -94,14 +101,17 @@ export function PanelAdmin() {
   const [editConferenceForm,  setEditConferenceForm]  = useState({ titulo: '', fecha: '', startTime: '', endTime: '', room: '', conferencistas: '', moderador: '', institucion: '', descripcion: '' });
 
   const [confirmDelete, setConfirmDelete] = useState<{
-    type: 'session' | 'poster' | 'roundtable' | 'workshop' | 'conference' | 'circular';
+    type: 'session' | 'poster' | 'roundtable' | 'workshop' | 'conference' | 'circular' | 'user';
     id: string;
     name: string;
   } | null>(null);
+  const [userDeleteFeedback, setUserDeleteFeedback] = useState('');
+  const [userAccountFeedback, setUserAccountFeedback] = useState('');
 
   const [circulares, setCirculares] = useState<StoredCircular[]>([]);
   const [circularesFeedback, setCircularesFeedback] = useState('');
   const [authorRequestsFeedback, setAuthorRequestsFeedback] = useState('');
+  const [inscriptionInvoiceFeedback, setInscriptionInvoiceFeedback] = useState('');
 
   // ─── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -293,24 +303,384 @@ export function PanelAdmin() {
   // =========================
   // INSCRIPCIONES
   // =========================
-  const handleApprove = (userId: string) => {
-    const updatedUsers = users.map((u: any) =>
-      u.id === userId
-        ? { ...u, inscriptionStatus: 'confirmed', roles: [...(u.roles || []), 'asistente'], currentRole: 'asistente' }
-        : u
-    );
+  const handleApprove = async (userId: string) => {
+    setInscriptionInvoiceFeedback('');
+    const subjectUser = users.find((u: any) => u.id === userId);
+    if (!subjectUser) return;
+
+    const escapeHtml = (s: string) =>
+      s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+    const token = crypto.randomUUID();
+    const invoiceId = `INS-${Date.now().toString(36).toUpperCase()}`;
+    const issuedAt = new Date().toISOString();
+    const { categoryLabel: catLab, amountLabel: amtLab } = getInscriptionInvoiceLines(subjectUser.category);
+    const baseUrl = getPublicAppOrigin();
+
+    const updatedUsers = users.map((u: any) => {
+      if (u.id !== userId) return u;
+      const nextRoles = [...new Set([...(u.roles || []), 'asistente'])];
+      return {
+        ...u,
+        inscriptionStatus: 'confirmed',
+        roles: nextRoles,
+        currentRole: 'asistente',
+        inscriptionInvoiceId: invoiceId,
+        inscriptionInvoiceIssuedAt: issuedAt,
+        inscriptionAccreditationToken: token,
+        inscriptionInvoiceAmountLabel: amtLab,
+        inscriptionInvoiceCategoryLabel: catLab,
+      };
+    });
+
     localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
     setUsers(updatedUsers);
     setInscriptions(inscriptions.filter((i) => i.id !== userId));
+
+    const currentStored = JSON.parse(localStorage.getItem('current_user') || '{}');
+    if (currentStored?.id === userId) {
+      const fresh = updatedUsers.find((x: any) => x.id === userId);
+      if (fresh) {
+        const { password: _, ...withoutPwd } = fresh;
+        localStorage.setItem('current_user', JSON.stringify(withoutPwd));
+      }
+    }
+
+    const appr = updatedUsers.find((x: any) => x.id === userId)!;
+    const displayName = `${appr.name || ''} ${appr.lastName || ''}`.trim();
+
+    const comprobantePayload: ComprobanteUrlPayload = {
+      v: 1,
+      token,
+      invoiceId,
+      issuedAt,
+      name: appr.name || '',
+      lastName: appr.lastName || '',
+      email: appr.email || '',
+      institution: appr.institution || '',
+      province: appr.province || '',
+      categoryLabel: catLab,
+      amountLabel: amtLab,
+      category: appr.category,
+    };
+    const facturaUrl = `${baseUrl}/inscripcion/comprobante?${buildComprobanteSearchParams(comprobantePayload)}`;
+    const qrImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(facturaUrl)}`;
+
+    sendNotificationToUser(
+      userId,
+      'Inscripción confirmada — comprobante y acreditación',
+      `¡Hola ${displayName}! Tu inscripción fue aprobada. Ya podés ingresar como asistente. Comprobante (guardalo o imprimilo):\n${facturaUrl}`,
+      'Administración'
+    );
+
+    if (appr.email) {
+      const instPlain = appr.institution?.trim() ? `Institución: ${appr.institution.trim()}` : '';
+      const provPlain = appr.province?.trim() ? `Provincia: ${appr.province.trim()}` : '';
+      const institution = appr.institution?.trim()
+        ? `<p><strong>Institución:</strong> ${escapeHtml(appr.institution.trim())}</p>`
+        : '';
+      const province = appr.province?.trim()
+        ? `<p><strong>Provincia:</strong> ${escapeHtml(appr.province.trim())}</p>`
+        : '';
+
+      const fechaEmision = new Date(issuedAt).toLocaleString('es-AR');
+      const plainMessage = [
+        `¡Hola ${displayName}!`,
+        '',
+        `Tu inscripción al congreso fue APROBADA. Ya podés entrar como asistente (iniciá sesión y elegí ese perfil si tenés más de uno).`,
+        '',
+        `── Comprobante ${invoiceId} ──`,
+        `Categoría / tarifa: ${catLab}`,
+        `Monto referencia:   ${amtLab}`,
+        `Fecha emisión:      ${fechaEmision}`,
+        ...(instPlain ? ['', instPlain] : []),
+        ...(provPlain ? [provPlain] : []),
+        '',
+        `Enlace para ver tu comprobante online (ideal para imprimir o guardar como PDF; incluye código QR):`,
+        facturaUrl,
+        '',
+        `El enlace lleva los datos del comprobante: podés abrirlo desde cualquier dispositivo con acceso a la web del congreso (no hace falta estar en la misma computadora que el administrador).`,
+        '',
+        `Si el sitio aún no está publicado en internet, pedí a la organización la URL correcta y configurá VITE_PUBLIC_APP_URL en el servidor.`,
+      ].join('\n');
+
+      const htmlBody = `
+        <div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;max-width:560px;">
+          <h2 style="color:#2d5016;">Inscripci&oacute;n confirmada</h2>
+          <p>Hola ${escapeHtml(displayName)},</p>
+          <p>Tu inscripci&oacute;n al congreso fue <strong>aprobada</strong>. Ya ten&eacute;s el rol <strong>asistente</strong>: inici&aacute; sesi&oacute;n y eleg&iacute; ese perfil si ten&eacute;s m&aacute;s de uno.</p>
+          <hr style="border:none;border-top:1px solid #e5e5e5;margin:20px 0;" />
+          <h3 style="margin-bottom:8px;">Comprobante (${escapeHtml(invoiceId)})</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px;">
+            <tr><td style="padding:6px 0;border-bottom:1px solid #eee;">Categoría / tarifa</td><td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right;"><strong>${escapeHtml(catLab)}</strong></td></tr>
+            <tr><td style="padding:6px 0;border-bottom:1px solid #eee;">Monto referencia</td><td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right;"><strong>${escapeHtml(amtLab)}</strong></td></tr>
+            <tr><td style="padding:6px 0;">Fecha emisión</td><td style="padding:6px 0;text-align:right;">${escapeHtml(fechaEmision)}</td></tr>
+          </table>
+          ${institution}${province}
+          <p style="margin-top:20px;"><a href="${facturaUrl}" style="display:inline-block;background:#2d5016;color:white;padding:10px 18px;text-decoration:none;border-radius:8px;">Ver / descargar comprobante (web)</a></p>
+          <p style="font-size:12px;color:#666;">En esa p&aacute;gina pod&eacute;s usar <strong>Imprimir &rarr; Guardar como PDF</strong> y ver el c&oacute;digo QR de acreditaci&oacute;n.</p>
+          <div style="margin-top:24px;text-align:center;">
+            <div style="font-size:13px;color:#444;margin-bottom:8px;">C&oacute;digo QR &mdash; acreditaci&oacute;n</div>
+            <img src="${qrImgSrc}" alt="QR" width="200" height="200" style="border:1px solid #ddd;border-radius:8px;padding:8px;background:#fff;" />
+          </div>
+        </div>`;
+
+      const emailResult = await sendTransactionalEmail({
+        toEmail: appr.email,
+        toName: displayName,
+        subject: `[Congreso Agroecología] Inscripción aprobada — ${invoiceId}`,
+        message: plainMessage,
+        messageHtml: htmlBody,
+      });
+
+      const localhostHint = baseUrl.includes('localhost')
+        ? ' El enlace del mail usa localhost: solo sirve en esta PC; para producción definí VITE_PUBLIC_APP_URL.'
+        : '';
+      setInscriptionInvoiceFeedback(
+        (emailResult.sent
+          ? 'Listo: comprobante guardado y correo enviado.'
+          : 'Comprobante guardado; no se pudo enviar el correo (el usuario puede abrir Mi perfil).') + localhostHint
+      );
+    } else {
+      const localhostHint = baseUrl.includes('localhost')
+        ? ' El enlace usa localhost: solo en esta PC; para otros equipos configurá VITE_PUBLIC_APP_URL.'
+        : '';
+      setInscriptionInvoiceFeedback(
+        `Comprobante guardado (${invoiceId}); el usuario no tiene email para envío automático.${localhostHint}`
+      );
+    }
   };
 
-  const handleReject = (userId: string) => {
+  const handleReject = async (userId: string) => {
+    setInscriptionInvoiceFeedback('');
+    const subject = users.find((u: any) => u.id === userId);
+    if (!subject) return;
+
+    const escapeHtml = (s: string) =>
+      s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
     const updatedUsers = users.map((u: any) =>
       u.id === userId ? { ...u, inscriptionStatus: 'rejected' } : u
     );
     localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
     setUsers(updatedUsers);
     setInscriptions(inscriptions.filter((i) => i.id !== userId));
+
+    const currentStored = JSON.parse(localStorage.getItem('current_user') || '{}');
+    if (currentStored?.id === userId) {
+      const fresh = updatedUsers.find((x: any) => x.id === userId);
+      if (fresh) {
+        const { password: _, ...withoutPwd } = fresh;
+        localStorage.setItem('current_user', JSON.stringify(withoutPwd));
+      }
+    }
+
+    const displayName = `${subject.name || ''} ${subject.lastName || ''}`.trim();
+    sendNotificationToUser(
+      userId,
+      'Inscripción no aprobada',
+      `Hola ${displayName}. Tu solicitud de inscripción al congreso no fue aprobada. Podés comunicarte con la organización si necesitás más información o volver a intentar la inscripción cuando corresponda.`,
+      'Administración'
+    );
+
+    const baseUrl = getPublicAppOrigin();
+    const homeUrl = baseUrl ? `${baseUrl}/` : '/';
+
+    if (subject.email) {
+      const plainMessage = [
+        `Hola ${displayName},`,
+        '',
+        `Lamentamos informarte que tu solicitud de inscripción al congreso no fue aprobada en esta instancia.`,
+        '',
+        `Si creés que hubo un error o necesitás más información, escribí al equipo organizador.`,
+        '',
+        `Sitio del congreso: ${homeUrl}`,
+      ].join('\n');
+
+      const htmlBody = `
+        <div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;max-width:560px;">
+          <h2 style="color:#7f1d1d;">Inscripción no aprobada</h2>
+          <p>Hola ${escapeHtml(displayName)},</p>
+          <p>Lamentamos informarte que tu solicitud de inscripci&oacute;n al congreso <strong>no fue aprobada</strong> en esta instancia.</p>
+          <p>Si cre&eacute;s que hubo un error o necesit&aacute;s m&aacute;s informaci&oacute;n, contact&aacute; al equipo organizador.</p>
+          <p style="margin-top:20px;"><a href="${escapeHtml(homeUrl)}" style="display:inline-block;background:#2d5016;color:white;padding:10px 18px;text-decoration:none;border-radius:8px;">Ir al sitio del congreso</a></p>
+        </div>`;
+
+      const emailResult = await sendTransactionalEmail({
+        toEmail: subject.email,
+        toName: displayName || subject.email,
+        subject: '[Congreso Agroecología] Inscripción no aprobada',
+        message: plainMessage,
+        messageHtml: htmlBody,
+      });
+
+      const localhostHint = baseUrl.includes('localhost')
+        ? ' El enlace al sitio en el mail puede usar localhost: definí VITE_PUBLIC_APP_URL en producción.'
+        : '';
+      setInscriptionInvoiceFeedback(
+        (emailResult.sent
+          ? 'Rechazo registrado; correo enviado al usuario.'
+          : `Rechazo registrado; no se pudo enviar el correo (${emailResult.reason || 'error'}).`) + localhostHint
+      );
+    } else {
+      setInscriptionInvoiceFeedback('Rechazo registrado; el usuario no tiene email cargado para envío automático.');
+    }
+  };
+
+  const EMAIL_LOG_KEY = 'congress_email_log';
+  const TALLERES_PROPUESTAS_KEY = 'congress_talleres_propuestos';
+  const AGENDAS_KEY = 'congress_agendas';
+  const notificationsStorageKey = (uid: string) => `congress_notifications_${uid}`;
+
+  const canDeleteUserAccount = (u: any) => {
+    if (!user || u.id === user.id) return false;
+    if (Array.isArray(u.roles) && u.roles.includes('admin')) {
+      const adminCount = users.filter((x: any) => Array.isArray(x.roles) && x.roles.includes('admin')).length;
+      if (adminCount <= 1) return false;
+    }
+    return true;
+  };
+
+  const toggleUserAccountActive = (userId: string) => {
+    setUserAccountFeedback('');
+    const target = users.find((u: any) => u.id === userId);
+    if (!target) return;
+    const isActive = target.accountActive !== false;
+    const nextActive = !isActive;
+
+    if (!nextActive) {
+      if (userId === user?.id) {
+        alert('No podés deshabilitar tu propia cuenta desde el panel. Pedí a otro administrador que la deshabilite si hace falta.');
+        return;
+      }
+      if (Array.isArray(target.roles) && target.roles.includes('admin')) {
+        const activeAdmins = users.filter(
+          (x: any) => x.roles?.includes('admin') && x.accountActive !== false
+        );
+        if (activeAdmins.length <= 1) {
+          alert('No podés deshabilitar al único administrador activo del sistema.');
+          return;
+        }
+      }
+    }
+
+    const updatedUsers = users.map((u: any) =>
+      u.id === userId ? { ...u, accountActive: nextActive } : u
+    );
+    localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
+    setUsers(updatedUsers);
+
+    sendNotificationToUser(
+      userId,
+      nextActive ? 'Cuenta habilitada' : 'Cuenta deshabilitada',
+      nextActive
+        ? 'Tu cuenta fue habilitada nuevamente. Ya podés iniciar sesión y usar todas las funciones disponibles según tu rol en el congreso.'
+        : 'Tu cuenta fue deshabilitada por administración. No podés iniciar sesión ni usar las funciones del sistema hasta que un administrador habilite tu cuenta de nuevo.',
+      'Administración'
+    );
+
+    setUserAccountFeedback(
+      nextActive
+        ? `Cuenta de ${target.name} ${target.lastName}: habilitada. Ya puede iniciar sesión y usar el sistema según su rol.`
+        : `Cuenta de ${target.name} ${target.lastName}: deshabilitada. No podrá iniciar sesión ni usar el sistema hasta que la reactives.`
+    );
+  };
+
+  const deleteUser = (userId: string) => {
+    const subject = users.find((x: any) => x.id === userId);
+    if (!subject) {
+      setConfirmDelete(null);
+      return;
+    }
+    if (!canDeleteUserAccount(subject)) {
+      setConfirmDelete(null);
+      alert(
+        subject.id === user?.id
+          ? 'No podés eliminar tu propia cuenta desde acá.'
+          : 'No se puede eliminar el único administrador del sistema.'
+      );
+      return;
+    }
+
+    if (subject.receiptFileId) void deleteBrowserFile(subject.receiptFileId);
+    if (subject.categoryCertificateFileId) void deleteBrowserFile(subject.categoryCertificateFileId);
+
+    const allWorks: any[] = JSON.parse(localStorage.getItem('congress_works') || '[]');
+    for (const w of allWorks) {
+      if (w?.userId === userId && w?.fileId) void deleteBrowserFile(w.fileId);
+    }
+
+    const ownedWorkIds = new Set(
+      allWorks.filter((w: any) => w?.userId === userId).map((w: any) => w.id)
+    );
+
+    const worksNext = allWorks
+      .filter((w: any) => w?.userId !== userId)
+      .map((w: any) => ({
+        ...w,
+        assignments: Array.isArray(w.assignments)
+          ? w.assignments.filter((a: any) => a?.evaluatorId !== userId)
+          : w.assignments,
+        reviews: Array.isArray(w.reviews)
+          ? w.reviews.filter((r: any) => r?.evaluatorId !== userId)
+          : w.reviews,
+      }));
+
+    localStorage.setItem('congress_works', JSON.stringify(worksNext));
+    setWorks(worksNext);
+
+    const sessionsNext = sessions.map((s) => ({
+      ...s,
+      works: (s.works || []).filter((wid) => !ownedWorkIds.has(wid)),
+    }));
+    localStorage.setItem('congress_sessions', JSON.stringify(sessionsNext));
+    setSessions(sessionsNext);
+
+    const postersNext = posterSessions.map((p) => ({
+      ...p,
+      works: (p.works || []).filter((row) => !ownedWorkIds.has(row.workId)),
+    }));
+    localStorage.setItem('congress_posters', JSON.stringify(postersNext));
+    setPosterSessions(postersNext);
+
+    const talleresProp = JSON.parse(localStorage.getItem(TALLERES_PROPUESTAS_KEY) || '[]');
+    const talleresNext = talleresProp.filter((t: any) => t?.userId !== userId);
+    localStorage.setItem(TALLERES_PROPUESTAS_KEY, JSON.stringify(talleresNext));
+
+    const agendas = JSON.parse(localStorage.getItem(AGENDAS_KEY) || '{}');
+    if (agendas && typeof agendas === 'object' && userId in agendas) {
+      const { [userId]: _, ...rest } = agendas;
+      localStorage.setItem(AGENDAS_KEY, JSON.stringify(rest));
+    }
+
+    const emailLog = JSON.parse(localStorage.getItem(EMAIL_LOG_KEY) || '[]');
+    const emailNext = Array.isArray(emailLog)
+      ? emailLog.filter((m: any) => m?.to !== subject.email)
+      : [];
+    localStorage.setItem(EMAIL_LOG_KEY, JSON.stringify(emailNext));
+
+    localStorage.removeItem(notificationsStorageKey(userId));
+
+    const usersNext = users.filter((u: any) => u.id !== userId);
+    localStorage.setItem('congress_users', JSON.stringify(usersNext));
+    setUsers(usersNext);
+    setInscriptions(usersNext.filter((u: any) => u.inscriptionStatus === 'pending'));
+
+    setConfirmDelete(null);
+    setUserDeleteFeedback(`Se eliminó la cuenta de ${subject.name} ${subject.lastName}.`);
+
+    if (user?.id === userId) {
+      logout();
+      navigate('/login');
+    }
   };
 
   // =========================
@@ -505,6 +875,7 @@ export function PanelAdmin() {
     if (confirmDelete.type === 'workshop')   deleteTallerProgramado(confirmDelete.id);
     if (confirmDelete.type === 'conference') deleteConferencia(confirmDelete.id);
     if (confirmDelete.type === 'circular') deleteCircular(confirmDelete.id);
+    if (confirmDelete.type === 'user') deleteUser(confirmDelete.id);
   };
 
   // =========================
@@ -644,11 +1015,35 @@ export function PanelAdmin() {
         {/* ══ INSCRIPCIONES ══ */}
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
           <h2 className="text-2xl mb-6">Validación de Inscripciones</h2>
+          {inscriptionInvoiceFeedback && (
+            <div
+              className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
+                inscriptionInvoiceFeedback.includes('correo enviado')
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                  : inscriptionInvoiceFeedback.includes('no se pudo') ||
+                      inscriptionInvoiceFeedback.includes('no tiene email')
+                    ? 'border-amber-200 bg-amber-50 text-amber-950'
+                  : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+              }`}
+            >
+              <span className="block">{inscriptionInvoiceFeedback}</span>
+              <button
+                type="button"
+                className="mt-2 text-xs underline font-medium opacity-90 hover:opacity-100"
+                onClick={() => setInscriptionInvoiceFeedback('')}
+              >
+                Cerrar
+              </button>
+            </div>
+          )}
           {inscriptions.length === 0 && <p className="text-gray-500">No hay inscripciones pendientes.</p>}
           {inscriptions.map((i) => (
             <div key={i.id} className="flex justify-between border p-3 mb-2 rounded">
               <div>
                 <p className="font-medium">{i.name} {i.lastName}</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Categoría: {i.category || 'Sin categoría'}
+                </p>
 
                 {/* ── VER COMPROBANTE DE PAGO ── */}
                 {i.receiptFileId ? (
@@ -663,13 +1058,147 @@ export function PanelAdmin() {
                 ) : (
                   <span className="text-xs text-gray-400 italic">Sin comprobante</span>
                 )}
+
+                {/* ── VER CERTIFICADO DE CATEGORÍA ── */}
+                {i.categoryCertificateFileId ? (
+                  <button
+                    type="button"
+                    onClick={() => openStoredBrowserFile({ fileId: i.categoryCertificateFileId, fileName: i.categoryCertificate })}
+                    className="flex items-center gap-1 text-xs text-indigo-700 border border-indigo-300 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded mt-1 transition"
+                  >
+                    <FileText className="w-3 h-3" />
+                    Ver certificado
+                  </button>
+                ) : (
+                  <span className="block text-xs text-gray-400 italic mt-1">Sin certificado de categoría</span>
+                )}
               </div>
               <div className="flex gap-2 items-start">
                 <button onClick={() => handleApprove(i.id)} className="bg-green-600 text-white px-2 py-1 rounded">Aprobar</button>
-                <button onClick={() => handleReject(i.id)}  className="bg-red-600 text-white px-2 py-1 rounded">Rechazar</button>
+                <button
+                  type="button"
+                  onClick={() => void handleReject(i.id)}
+                  className="bg-red-600 text-white px-2 py-1 rounded"
+                >
+                  Rechazar
+                </button>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* ══ USUARIOS ══ */}
+        <div className="bg-white rounded-xl shadow-md p-8 mb-8">
+          <h2 className="text-2xl mb-2">Usuarios registrados</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Podés <strong>habilitar o deshabilitar</strong> cuentas: si están deshabilitadas no pueden iniciar sesión ni
+            usar el sistema hasta que las reactives. Los registros nuevos quedan habilitados por defecto. También podés
+            eliminar cuentas de prueba: se quitan trabajos del cronograma, archivos, talleres propuestos, agenda y
+            notificaciones de ese usuario. No podés borrar tu propia sesión ni al único administrador.
+          </p>
+          {userAccountFeedback && (
+            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950 flex flex-wrap items-center justify-between gap-2">
+              <span>{userAccountFeedback}</span>
+              <button type="button" className="text-xs underline font-medium" onClick={() => setUserAccountFeedback('')}>
+                Cerrar
+              </button>
+            </div>
+          )}
+          {userDeleteFeedback && (
+            <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 flex flex-wrap items-center justify-between gap-2">
+              <span>{userDeleteFeedback}</span>
+              <button
+                type="button"
+                className="text-xs underline font-medium"
+                onClick={() => setUserDeleteFeedback('')}
+              >
+                Cerrar
+              </button>
+            </div>
+          )}
+          <div className="overflow-x-auto border border-gray-200 rounded-lg max-h-[min(70vh,520px)] overflow-y-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr className="text-left text-gray-600">
+                  <th className="px-3 py-2 font-medium">Nombre</th>
+                  <th className="px-3 py-2 font-medium">Email</th>
+                  <th className="px-3 py-2 font-medium">Roles</th>
+                  <th className="px-3 py-2 font-medium whitespace-nowrap">Cuenta</th>
+                  <th className="px-3 py-2 font-medium min-w-[200px] text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {[...users]
+                  .sort((a: any, b: any) =>
+                    `${a.lastName || ''} ${a.name || ''}`.localeCompare(`${b.lastName || ''} ${b.name || ''}`, 'es', {
+                      sensitivity: 'base',
+                    })
+                  )
+                  .map((u: any) => (
+                    <tr key={u.id} className="hover:bg-gray-50/80">
+                      <td className="px-3 py-2 text-gray-900">
+                        {u.name} {u.lastName}
+                      </td>
+                      <td className="px-3 py-2 text-gray-600 break-all max-w-[200px]">{u.email}</td>
+                      <td className="px-3 py-2">
+                        <span className="text-xs text-gray-500">
+                          {(u.roles || []).length ? (u.roles as string[]).join(', ') : '—'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`inline-block text-xs px-2 py-0.5 rounded-full ${
+                            u.accountActive === false
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}
+                        >
+                          {u.accountActive === false ? 'Deshabilitada' : 'Activa'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-1">
+                          {u.id !== user?.id ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleUserAccountActive(u.id)}
+                              className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded border transition ${
+                                u.accountActive === false
+                                  ? 'text-green-800 border-green-300 bg-green-50 hover:bg-green-100'
+                                  : 'text-amber-900 border-amber-300 bg-amber-50 hover:bg-amber-100'
+                              }`}
+                            >
+                              {u.accountActive === false ? 'Habilitar' : 'Deshabilitar'}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400 italic">Tu cuenta</span>
+                          )}
+                          {canDeleteUserAccount(u) ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUserDeleteFeedback('');
+                                setConfirmDelete({
+                                  type: 'user',
+                                  id: u.id,
+                                  name: `${u.name} ${u.lastName} (${u.email})`,
+                                });
+                              }}
+                              className="inline-flex items-center gap-1 text-xs text-red-700 border border-red-300 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Eliminar
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* ══ SOLICITUDES PARA SER AUTOR (aprobado por 2 evaluadores) ══ */}
@@ -1079,6 +1608,13 @@ export function PanelAdmin() {
             {confirmDelete.type === 'workshop'   && <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">Esta acción eliminará el taller del programa oficial.</p>}
             {confirmDelete.type === 'conference' && <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">Esta acción eliminará la conferencia del programa oficial.</p>}
             {confirmDelete.type === 'circular' && <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">La circular se eliminará del sistema y dejará de mostrarse en la página pública.</p>}
+            {confirmDelete.type === 'user' && (
+              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-5">
+                Se borrará la cuenta, sus trabajos (y se los sacará de mesas/pósters si estaban asignados), archivos de
+                comprobante en el navegador, propuestas de taller, agenda y notificaciones locales. Las revisiones de
+                ese evaluador en trabajos de otros autores también se quitan.
+              </p>
+            )}
             <div className="flex justify-end gap-3">
               <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50">Cancelar</button>
               <button onClick={handleConfirmDelete} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2"><Trash2 className="w-4 h-4" /> Eliminar</button>

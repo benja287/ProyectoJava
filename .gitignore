@@ -1,6 +1,7 @@
 *.class
 *.log
 *.jar
+dist/
 bin/
 target/
 out/

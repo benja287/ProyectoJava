@@ -2,7 +2,16 @@ type SendEmailInput = {
   toEmail: string;
   toName?: string;
   subject: string;
+  /**
+   * Cuerpo en texto plano (siempre legible). Poné este campo en EmailJS como `{{message}}`.
+   */
   message: string;
+  /**
+   * Opcional: HTML bonito. En EmailJS, en un bloque de contenido **HTML**, usá algo como `{{{message_html}}}`
+   * (triple llave si tu plantilla es Handlebars) o solo `{{message_html}}` si no escapa HTML.
+   * Si la plantilla es solo texto, ignorá este campo y usá bien `{{message}}` con texto plano.
+   */
+  messageHtml?: string;
 };
 
 type SendEmailResult = {
@@ -16,6 +25,10 @@ type SendEmailResult = {
  * - VITE_EMAILJS_SERVICE_ID
  * - VITE_EMAILJS_TEMPLATE_ID
  * - VITE_EMAILJS_PUBLIC_KEY
+ *
+ * **Plantilla en emailjs.com:** borrá el texto de ejemplo en inglés ("A message … has been received").
+ * Solo HTML en `message` si no mandás `messageHtml` muestra etiquetas feas en el cliente: usá texto en `message`
+ * y, si querés diseño HTML, repetí contenido en `message_html` y referenciá ese campo en contenido tipo HTML.
  */
 export async function sendTransactionalEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
@@ -41,6 +54,7 @@ export async function sendTransactionalEmail(input: SendEmailInput): Promise<Sen
           to_name: input.toName || '',
           subject: input.subject,
           message: input.message,
+          ...(input.messageHtml ? { message_html: input.messageHtml } : {}),
         },
       }),
     });

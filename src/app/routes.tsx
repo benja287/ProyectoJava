@@ -32,6 +32,7 @@ import { ContactoPage } from "./pages/ContactoPage";
 import { AdminCircularForm } from "./pages/AdminCircularForm";
 import { PerfilPage } from "./pages/PerfilPage";
 import { Dashboard } from "./pages/Dashboard"; 
+import { InscripcionComprobantePage } from "./pages/InscripcionComprobantePage";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
       { path: "programa-general", Component: ProgramaCongreso },
       { path: "mapas", Component: MapasPage },
       { path: "inscripcion", Component: InscripcionPage },
+      { path: "inscripcion/comprobante", Component: InscripcionComprobantePage },
       { path: "envio-trabajos", Component: EnvioTrabajosPage },
       { path: "proponer-taller", Component: ProponerTallerPage },
       { path: "mis-presentaciones", Component: PanelAutor },

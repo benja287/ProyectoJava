@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { UserPlus, AlertCircle } from 'lucide-react';
+import type { InscriptionCategory } from '../context/AuthContext';
 
 export function Register() {
   const [email, setEmail] = useState('');
@@ -9,6 +10,7 @@ export function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [category, setCategory] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -44,12 +46,22 @@ export function Register() {
       newErrors.confirmPassword = 'Las contraseñas no coinciden';
     }
 
+    if (!category) {
+      newErrors.category = 'Debés seleccionar una categoría';
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    const success = await register(email, password, name, lastName);
+    const success = await register(
+      email,
+      password,
+      name,
+      lastName,
+      category as InscriptionCategory
+    );
     
     if (!success) {
       setErrors({ email: 'El email ingresado ya se encuentra registrado en el sistema' });
@@ -107,6 +119,32 @@ export function Register() {
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
                   {errors.email}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b7c3a] focus:border-transparent bg-white"
+              >
+                <option value="">Seleccioná una categoría</option>
+                <option value="socio_saae">Socio/a SAAE</option>
+                <option value="no_socio">No socio/a</option>
+                <option value="estudiante">Estudiante</option>
+                <option value="productor">Productor/a</option>
+                <option value="investigador">Investigador/a</option>
+                <option value="extensionista">Extensionista</option>
+                <option value="docente">Docente</option>
+                <option value="extranjero">Extranjero/a</option>
+              </select>
+              {errors.category && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.category}
                 </p>
               )}
             </div>
