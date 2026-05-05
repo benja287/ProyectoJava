@@ -7,4 +7,6 @@ out/
 .idea/
 .vscode/
 node_modules/
-node_modules/
+.env
+.env.*
+!.env.example
