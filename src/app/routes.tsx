@@ -31,6 +31,7 @@ import { ContactoPage } from "./pages/ContactoPage";
 import { AdminCircularForm } from "./pages/AdminCircularForm";
 import { PerfilPage } from "./pages/PerfilPage";
 import { Dashboard } from "./pages/Dashboard"; 
+import { CertificateView } from "./pages/Certificaciones";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -67,6 +68,7 @@ export const router = createBrowserRouter([
       { path: "perfil", Component: PerfilPage },
       { path: "organizadores", Component: OrganizadoresPage },
       { path: "contacto", Component: ContactoPage },
+      { path: "certificado", Component: CertificateView },
     ],
   },
 ]);

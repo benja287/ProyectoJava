@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { ClipboardCheck, FileText, MessageSquare, Presentation, FileDown } from 'lucide-react';
+import { ClipboardCheck, FileText, MessageSquare, Presentation, FileDown, BadgeCheck } from 'lucide-react';
 import { openOrDownloadFile } from '../lib/browserFiles';
+import { CertificateView } from './Certificaciones';
 
 const TALLERES_KEY = 'congress_talleres_propuestos';
 
@@ -352,10 +353,26 @@ export function PanelEvaluador() {
                 </div>
               ))
             )}
+
+            {/* <CertificateView sectionTitle="Certificado de asistencia (rol evaluador/a)" /> */}
+            <div>
+              <Link
+                to="/Certificado"
+                className="inline-flex items-center gap-3 px-6 py-4 rounded-lg bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition font-semibold text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              >
+                <BadgeCheck className="w-7 h-7 mr-2" />
+                Generar Certificado de Asistencia
+              </Link>
+
+            </div>
+
+
           </div>
         </div>
 
       </div>
     </div>
+   
+   
   );
 }

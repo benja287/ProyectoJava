@@ -1,19 +1,37 @@
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { Sprout, Bell, ChevronDown } from 'lucide-react';
+import { Sprout, Bell, ChevronDown, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import {
+  getCertificatesAvailableFromDate,
+  areCertificatesDownloadEnabled,
+  formatCertificatesAvailableFromEsAR,
+  CERTIFICATE_SETTINGS_CHANGED_EVENT,
+  CERT_WAIT_HEADER_BANNER_DISMISSED_FOR_KEY,
+} from '../constants/congressEvent';
 
 export function Header() {
   const { user, logout, notifications, markNotificationRead } = useAuth();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false); // NUEVO: estado para el dropdown de notificaciones
+  const [, setCertificateHeaderTick] = useState(0);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null); // NUEVO: ref para el dropdown de notificaciones
 
   const unreadCount = notifications.filter(n => !n.read).length;
   const orderedNotifications = [...notifications].reverse();
+
+  useEffect(() => {
+    const syncCertificatesBanner = () => setCertificateHeaderTick((n) => n + 1);
+    window.addEventListener(CERTIFICATE_SETTINGS_CHANGED_EVENT, syncCertificatesBanner);
+    window.addEventListener('storage', syncCertificatesBanner);
+    return () => {
+      window.removeEventListener(CERTIFICATE_SETTINGS_CHANGED_EVENT, syncCertificatesBanner);
+      window.removeEventListener('storage', syncCertificatesBanner);
+    };
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -35,6 +53,14 @@ export function Header() {
     setShowDropdown(false);
     navigate('/');
   };
+
+  const certificatesFromDate = user ? getCertificatesAvailableFromDate() : null;
+  const certificatesUnlocked = user ? areCertificatesDownloadEnabled() : false;
+  const waitBannerDismissedFor =
+    typeof window !== 'undefined' ? localStorage.getItem(CERT_WAIT_HEADER_BANNER_DISMISSED_FOR_KEY) : null;
+  const showCertificatesWaitBanner = Boolean(
+    user && certificatesFromDate && !certificatesUnlocked && waitBannerDismissedFor !== certificatesFromDate
+  );
 
   return (
     <header className="bg-gradient-to-r from-[#2d5016] to-[#3d6b23] text-white shadow-lg sticky top-0 z-50">
@@ -193,6 +219,29 @@ export function Header() {
           </div>
         </div>
       </div>
+
+      {showCertificatesWaitBanner && certificatesFromDate && (
+        <div className="relative bg-amber-400 text-amber-950 border-t border-amber-500/30">
+          <div className="container mx-auto flex items-center justify-center gap-2 px-10 py-2 sm:px-14">
+            <p className="text-center text-xs sm:text-sm font-medium pr-6 sm:pr-0">
+              Certificados de asistencia: la descarga estará habilitada a partir del{' '}
+              <span className="whitespace-nowrap">{formatCertificatesAvailableFromEsAR(certificatesFromDate)}</span>{' '}
+              (inclusive). Podés ver el aviso detallado en tu panel.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem(CERT_WAIT_HEADER_BANNER_DISMISSED_FOR_KEY, certificatesFromDate);
+              setCertificateHeaderTick((n) => n + 1);
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-amber-950/80 hover:bg-amber-500/40 hover:text-amber-950"
+            aria-label="Cerrar aviso de certificados"
+          >
+            <X className="h-4 w-4 sm:h-[18px] sm:w-[18px]" aria-hidden />
+          </button>
+        </div>
+      )}
     </header>
   );
 }

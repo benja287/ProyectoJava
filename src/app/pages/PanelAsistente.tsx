@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { CalendarDays, FileText, Presentation } from 'lucide-react';
+import { BadgeCheck, CalendarDays, FileText, Presentation } from 'lucide-react';
+import { CertificateView } from './Certificaciones';
 
 export function PanelAsistente() {
   const { user } = useAuth();
@@ -32,9 +33,7 @@ export function PanelAsistente() {
     <div className="min-h-[calc(100vh-80px)] py-12 px-4 bg-gradient-to-br from-[#faf8f5] to-[#f3f1ed]">
       <div className="container mx-auto max-w-4xl">
 
-        
-
-        
+        {/* <CertificateView sectionTitle="Certificado de asistencia al congreso" /> */}
 
         {/* ACCIONES */}
         <div className="mt-8">
@@ -83,7 +82,7 @@ export function PanelAsistente() {
                 </div>
               </div>
             )}
-
+        
             {user.currentRole === 'asistente' && isAsistente && (
               <Link
                 to="/proponer-taller"
@@ -124,6 +123,34 @@ export function PanelAsistente() {
                 </div>
               </Link>
             )}
+
+              {/* <button onClick={() => navigate('/certificado')} 
+              className="bg-teal-700 text-white px-4 py-2 rounded 
+            hover:bg-teal-800 transition">Generar Certificado</button> */}
+            {/* Certificado (solo asistente) */}
+            {isAsistente && (
+              <Link
+                to="/Certificado"
+                className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-indigo-100 rounded-lg">
+                    <BadgeCheck className="w-8 h-8 text-indigo-600" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl text-gray-800">Generar Certificado de Asistencia</h3>
+                    <p className="text-gray-600">
+                      Generá un certificado de asistencia al congreso para tu rol activo
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            )}
+
+
+
+            
           </div>
         </div>
 

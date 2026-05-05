@@ -1,0 +1,39 @@
+/**
+ * Impresión / PDF del certificado: ocultamos todo el documento salvo el nodo
+ * #attendance-certificate-root para que el usuario no imprima header, menús ni el resto del panel.
+ *
+ * Si mañana se agrega otro bloque imprimible, conviene extraer un patrón (p. ej. clase `.print-only-root`)
+ * o una segunda id y duplicar la regla de visibilidad de forma controlada.
+ */
+@media print {
+  @page {
+    margin: 1.2cm;
+    size: A4 portrait;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #attendance-certificate-root,
+  #attendance-certificate-root * {
+    visibility: visible;
+  }
+
+  #attendance-certificate-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: none;
+    border-width: 3pt !important;
+    padding: 1.5cm !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .certificate-ui-only {
+    display: none !important;
+  }
+}
