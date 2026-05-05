@@ -28,6 +28,10 @@ export function Dashboard() {
       navigate('/evaluador');
     }
 
+    if (user.currentRole === 'comite') {
+      navigate('/comite-academico');
+    }
+
     if (user.currentRole === 'admin') {
       navigate('/admin');
     }

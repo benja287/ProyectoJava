@@ -18,6 +18,7 @@ import { ProponerTallerPage } from "./pages/ProponerTallerPage";
 import { PanelAutor} from "./pages/PanelAutor";
 import { PanelEvaluador } from "./pages/PanelEvaluador";
 import { PanelAdmin } from "./pages/PanelAdmin";
+import { PanelComiteAcademico } from "./pages/PanelComiteAcademico";
 import { NotificacionesPage } from "./pages/NotificacionesPage";
 import { AdminMesasTematicas } from "./pages/AdminMesasTematicas";
 import { AdminMesasRedondas } from "./pages/AdminMesasRedondas";
@@ -31,7 +32,11 @@ import { ContactoPage } from "./pages/ContactoPage";
 import { AdminCircularForm } from "./pages/AdminCircularForm";
 import { PerfilPage } from "./pages/PerfilPage";
 import { Dashboard } from "./pages/Dashboard"; 
+<<<<<<< HEAD
 import { CertificateView } from "./pages/Certificaciones";
+=======
+import { InscripcionComprobantePage } from "./pages/InscripcionComprobantePage";
+>>>>>>> origin/version1
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -42,18 +47,22 @@ export const router = createBrowserRouter([
       { path: "register", Component: Register },
       { path: "forgot-password", Component: ForgotPassword },
       { path: "select-role", Component: RoleSelection },
+      { path: "dashboard", Component: Dashboard },
       { path: "circulares", Component: CircularesPage },
       { path: "actividades", Component: ActividadesPage },
       { path: "feria", Component: FeriaPage },
       { path: "asistente", Component: PanelAsistente },
       { path: "verpresentacionesgenerales", Component: VerPresentacionesGenerales },
       { path: "programa-detallado", Component: ProgramaDetalladoPage },
+      { path: "programa-general", Component: ProgramaCongreso },
       { path: "mapas", Component: MapasPage },
       { path: "inscripcion", Component: InscripcionPage },
+      { path: "inscripcion/comprobante", Component: InscripcionComprobantePage },
       { path: "envio-trabajos", Component: EnvioTrabajosPage },
       { path: "proponer-taller", Component: ProponerTallerPage },
       { path: "mis-presentaciones", Component: PanelAutor },
       { path: "evaluador", Component: PanelEvaluador },
+      { path: "comite-academico", Component: PanelComiteAcademico },
       { path: "admin", Component: PanelAdmin },
       { path: "notificaciones", Component: NotificacionesPage },
       { path: "admin/mesas-tematicas", Component: AdminMesasTematicas },

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { Settings, Bell, Pencil, X, Trash2, FileDown, FileText, Plus } from 'lucide-react';
-import { UserRole } from '../context/AuthContext';
+import { Settings, Bell, Pencil, X, Trash2, FileDown, FileText, Plus, UserPlus } from 'lucide-react';
+import { type InscriptionCategory, UserRole } from '../context/AuthContext';
 import {
   openStoredBrowserFile,
   openOrDownloadFile,
@@ -25,6 +25,13 @@ import { CertificateView } from './Certificaciones';
 import type { StoredCircular, CircularStatus } from '../constants/congressEvent';
 import type { TallerProgramado } from './AdminCrearTaller';
 import type { ConferenciaPrograma } from './AdminCrearConferencia';
+import { getInscriptionInvoiceLines } from '../constants/inscriptionInvoice';
+import { sendTransactionalEmail } from '../lib/emailSender';
+import { getPublicAppOrigin } from '../lib/publicAppUrl';
+import {
+  buildComprobanteSearchParams,
+  type ComprobanteUrlPayload,
+} from '../lib/inscriptionComprobantePayload';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface Session {
@@ -60,9 +67,37 @@ interface RoundTable {
   description: string;
 }
 
+/** Roles asignables desde admin (mismos que en selección de rol). */
+const ADMIN_ROLE_OPTIONS: { role: UserRole; label: string }[] = [
+  { role: 'asistente', label: 'Asistente' },
+  { role: 'autor', label: 'Autor' },
+  { role: 'evaluador', label: 'Evaluador' },
+  { role: 'comite', label: 'Administrador Comité académico' },
+  { role: 'admin', label: 'Administrador' },
+];
+
+const CATEGORY_OPTIONS: { value: InscriptionCategory; label: string }[] = [
+  { value: 'socio_saae', label: 'Socio/a SAAE' },
+  { value: 'no_socio', label: 'No socio/a' },
+  { value: 'estudiante', label: 'Estudiante' },
+  { value: 'productor', label: 'Productor/a' },
+  { value: 'investigador', label: 'Investigador/a' },
+  { value: 'extensionista', label: 'Extensionista' },
+  { value: 'docente', label: 'Docente' },
+  { value: 'extranjero', label: 'Extranjero/a' },
+];
+
+const emptyRoleFlags = (): Record<UserRole, boolean> => ({
+  asistente: false,
+  autor: false,
+  evaluador: false,
+  comite: false,
+  admin: false,
+});
+
 // ─── Componente ───────────────────────────────────────────────────────────────
 export function PanelAdmin() {
-  const { user, sendNotificationToAll, sendNotificationToUser } = useAuth();
+  const { user, sendNotificationToAll, sendNotificationToUser, logout, updateUser } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
 
@@ -98,16 +133,37 @@ export function PanelAdmin() {
   const [editConferenceForm,  setEditConferenceForm]  = useState({ titulo: '', fecha: '', startTime: '', endTime: '', room: '', conferencistas: '', moderador: '', institucion: '', descripcion: '' });
 
   const [confirmDelete, setConfirmDelete] = useState<{
-    type: 'session' | 'poster' | 'roundtable' | 'workshop' | 'conference' | 'circular';
+    type: 'session' | 'poster' | 'roundtable' | 'workshop' | 'conference' | 'circular' | 'user';
     id: string;
     name: string;
   } | null>(null);
+  const [userDeleteFeedback, setUserDeleteFeedback] = useState('');
+  const [userAccountFeedback, setUserAccountFeedback] = useState('');
+
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [userModalMode, setUserModalMode] = useState<'create' | 'edit'>('create');
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [userFormError, setUserFormError] = useState('');
+  const [userForm, setUserForm] = useState({
+    name: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    category: '' as InscriptionCategory | '',
+    roles: emptyRoleFlags(),
+  });
 
   const [circulares, setCirculares] = useState<StoredCircular[]>([]);
   const [circularesFeedback, setCircularesFeedback] = useState('');
+<<<<<<< HEAD
   /** Valor del input fecha certificados (YYYY-MM-DD); la verdad persistida está en localStorage. */
   const [certificatesAvailableFromInput, setCertificatesAvailableFromInput] = useState('');
   const [, setCertificateAdminUiTick] = useState(0);
+=======
+  const [authorRequestsFeedback, setAuthorRequestsFeedback] = useState('');
+  const [inscriptionInvoiceFeedback, setInscriptionInvoiceFeedback] = useState('');
+>>>>>>> origin/version1
 
   // ─── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -118,7 +174,13 @@ export function PanelAdmin() {
     const sesiones = JSON.parse(localStorage.getItem('congress_sessions')    || '[]');
     const mesas    = JSON.parse(localStorage.getItem('congress_roundtables') || '[]');
     const posters  = JSON.parse(localStorage.getItem('congress_posters')     || '[]');
-    const pending  = allUsers.filter((u: any) => u.inscriptionStatus === 'pending');
+    const pending = allUsers
+      .filter((u: any) => u.inscriptionStatus === 'pending')
+      .sort((a: any, b: any) => {
+        const ac = a.inscriptionPaymentMethod === 'cash' ? 0 : 1;
+        const bc = b.inscriptionPaymentMethod === 'cash' ? 0 : 1;
+        return ac - bc;
+      });
 
     setInscriptions(pending);
     setUsers(allUsers);
@@ -159,6 +221,58 @@ export function PanelAdmin() {
   const getAuthor = (userId: string) => {
     const u = users.find((u) => u.id === userId);
     return u ? `${u.name} ${u.lastName}` : 'Autor desconocido';
+  };
+
+  // ─── Asistente → Autor (solo si tiene trabajos aprobados) ───────────────────
+  const authorRequests = (() => {
+    const worksApproved = (works || []).filter((w: any) => w?.status === 'approved');
+    const byUser = new Map<string, any[]>();
+    worksApproved.forEach((w: any) => {
+      if (!w?.userId) return;
+      if (!byUser.has(w.userId)) byUser.set(w.userId, []);
+      byUser.get(w.userId)!.push(w);
+    });
+
+    return (users || [])
+      .filter((u: any) => {
+        const roles: string[] = Array.isArray(u.roles) ? u.roles : [];
+        const hasApproved = byUser.has(u.id);
+        const isAsistente = roles.includes('asistente');
+        const isAutor = roles.includes('autor');
+        return hasApproved && isAsistente && !isAutor;
+      })
+      .map((u: any) => ({ user: u, works: byUser.get(u.id) || [] }));
+  })();
+
+  const grantAuthorRole = (userId: string) => {
+    setAuthorRequestsFeedback('');
+    const allUsers = JSON.parse(localStorage.getItem('congress_users') || '[]');
+    const nextUsers = allUsers.map((u: any) => {
+      if (u.id !== userId) return u;
+      const roles: string[] = Array.isArray(u.roles) ? u.roles : [];
+      if (roles.includes('autor')) return u;
+      return { ...u, roles: [...new Set([...roles, 'autor'])] };
+    });
+    localStorage.setItem('congress_users', JSON.stringify(nextUsers));
+    setUsers(nextUsers);
+
+    // si el usuario al que habilitamos es el current_user del navegador, actualizamos también
+    const current = JSON.parse(localStorage.getItem('current_user') || '{}');
+    if (current?.id === userId) {
+      const updatedSelf = nextUsers.find((u: any) => u.id === userId);
+      if (updatedSelf) localStorage.setItem('current_user', JSON.stringify({ ...current, ...updatedSelf }));
+    }
+
+    const u = nextUsers.find((x: any) => x.id === userId);
+    if (u) {
+      sendNotificationToUser(
+        userId,
+        'Rol autor habilitado',
+        'Tu rol de autor fue habilitado. Ahora podés acceder al panel Autor y ver tus presentaciones cuando sean programadas.',
+        'Administración'
+      );
+      setAuthorRequestsFeedback(`Se habilitó el rol autor para ${u.name} ${u.lastName}.`);
+    }
   };
 
   const restoreWorkToApproved = (workId: string) => {
@@ -248,24 +362,615 @@ export function PanelAdmin() {
   // =========================
   // INSCRIPCIONES
   // =========================
-  const handleApprove = (userId: string) => {
-    const updatedUsers = users.map((u: any) =>
-      u.id === userId
-        ? { ...u, inscriptionStatus: 'confirmed', roles: [...(u.roles || []), 'asistente'], currentRole: 'asistente' }
-        : u
-    );
+  const handleApprove = async (userId: string) => {
+    setInscriptionInvoiceFeedback('');
+    const subjectUser = users.find((u: any) => u.id === userId);
+    if (!subjectUser) return;
+
+    if (subjectUser.inscriptionPaymentMethod === 'cash') {
+      const ok = window.confirm(
+        'Pago en efectivo / presencial: ¿confirmás que consta el cobro verificado en recepción, caja o acreditación? Se aprobará la inscripción, se emitirá el comprobante y se notificará al asistente.'
+      );
+      if (!ok) return;
+    }
+
+    const escapeHtml = (s: string) =>
+      s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+    const token = crypto.randomUUID();
+    const invoiceId = `INS-${Date.now().toString(36).toUpperCase()}`;
+    const issuedAt = new Date().toISOString();
+    const { categoryLabel: catLab, amountLabel: amtLab } = getInscriptionInvoiceLines(subjectUser.category);
+    const baseUrl = getPublicAppOrigin();
+
+    const adminValidatorLabel =
+      `${user?.name || ''} ${user?.lastName || ''}`.trim() || user?.email || 'Administración';
+
+    const updatedUsers = users.map((u: any) => {
+      if (u.id !== userId) return u;
+      const nextRoles = [...new Set([...(u.roles || []), 'asistente'])];
+      return {
+        ...u,
+        inscriptionStatus: 'confirmed',
+        roles: nextRoles,
+        currentRole: 'asistente',
+        inscriptionInvoiceId: invoiceId,
+        inscriptionInvoiceIssuedAt: issuedAt,
+        inscriptionAccreditationToken: token,
+        inscriptionInvoiceAmountLabel: amtLab,
+        inscriptionInvoiceCategoryLabel: catLab,
+        ...(subjectUser.inscriptionPaymentMethod === 'cash'
+          ? {
+              inscriptionCashValidatedAt: issuedAt,
+              inscriptionCashValidatedByLabel: adminValidatorLabel,
+            }
+          : {}),
+      };
+    });
+
     localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
     setUsers(updatedUsers);
     setInscriptions(inscriptions.filter((i) => i.id !== userId));
+
+    const currentStored = JSON.parse(localStorage.getItem('current_user') || '{}');
+    if (currentStored?.id === userId) {
+      const fresh = updatedUsers.find((x: any) => x.id === userId);
+      if (fresh) {
+        const { password: _, ...withoutPwd } = fresh;
+        localStorage.setItem('current_user', JSON.stringify(withoutPwd));
+      }
+    }
+
+    const appr = updatedUsers.find((x: any) => x.id === userId)!;
+    const displayName = `${appr.name || ''} ${appr.lastName || ''}`.trim();
+
+    const comprobantePayload: ComprobanteUrlPayload = {
+      v: 1,
+      token,
+      invoiceId,
+      issuedAt,
+      name: appr.name || '',
+      lastName: appr.lastName || '',
+      email: appr.email || '',
+      institution: appr.institution || '',
+      province: appr.province || '',
+      categoryLabel: catLab,
+      amountLabel: amtLab,
+      category: appr.category,
+    };
+    const facturaUrl = `${baseUrl}/inscripcion/comprobante?${buildComprobanteSearchParams(comprobantePayload)}`;
+    const qrImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(facturaUrl)}`;
+
+    sendNotificationToUser(
+      userId,
+      'Inscripción confirmada — comprobante y acreditación',
+      `¡Hola ${displayName}! Tu inscripción fue aprobada. Ya podés ingresar como asistente. Comprobante (guardalo o imprimilo):\n${facturaUrl}`,
+      'Administración'
+    );
+
+    if (appr.email) {
+      const instPlain = appr.institution?.trim() ? `Institución: ${appr.institution.trim()}` : '';
+      const provPlain = appr.province?.trim() ? `Provincia: ${appr.province.trim()}` : '';
+      const institution = appr.institution?.trim()
+        ? `<p><strong>Institución:</strong> ${escapeHtml(appr.institution.trim())}</p>`
+        : '';
+      const province = appr.province?.trim()
+        ? `<p><strong>Provincia:</strong> ${escapeHtml(appr.province.trim())}</p>`
+        : '';
+
+      const fechaEmision = new Date(issuedAt).toLocaleString('es-AR');
+      const plainMessage = [
+        `¡Hola ${displayName}!`,
+        '',
+        `Tu inscripción al congreso fue APROBADA. Ya podés entrar como asistente (iniciá sesión y elegí ese perfil si tenés más de uno).`,
+        '',
+        subjectUser.inscriptionPaymentMethod === 'cash'
+          ? 'Modalidad de pago: efectivo / presencial (registrada como abonada por administración).'
+          : 'Modalidad de pago: transferencia u otro medio con comprobante.',
+        ...(subjectUser.inscriptionRequiresInvoice
+          ? [
+              '',
+              'Solicitaste factura fiscal: coordiná el trámite con la administración del congreso (presentá este comprobante o tus datos de facturación según indiquen).',
+            ]
+          : []),
+        '',
+        `── Comprobante ${invoiceId} ──`,
+        `Categoría / tarifa: ${catLab}`,
+        `Monto referencia:   ${amtLab}`,
+        `Fecha emisión:      ${fechaEmision}`,
+        ...(instPlain ? ['', instPlain] : []),
+        ...(provPlain ? [provPlain] : []),
+        '',
+        `Enlace para ver tu comprobante online (ideal para imprimir o guardar como PDF; incluye código QR):`,
+        facturaUrl,
+        '',
+        `El enlace lleva los datos del comprobante: podés abrirlo desde cualquier dispositivo con acceso a la web del congreso (no hace falta estar en la misma computadora que el administrador).`,
+        '',
+        `Si el sitio aún no está publicado en internet, pedí a la organización la URL correcta y configurá VITE_PUBLIC_APP_URL en el servidor.`,
+      ].join('\n');
+
+      const htmlBody = `
+        <div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;max-width:560px;">
+          <h2 style="color:#2d5016;">Inscripci&oacute;n confirmada</h2>
+          <p>Hola ${escapeHtml(displayName)},</p>
+          <p>Tu inscripci&oacute;n al congreso fue <strong>aprobada</strong>. Ya ten&eacute;s el rol <strong>asistente</strong>: inici&aacute; sesi&oacute;n y eleg&iacute; ese perfil si ten&eacute;s m&aacute;s de uno.</p>
+          <p style="font-size:14px;color:#444;">${
+            subjectUser.inscriptionPaymentMethod === 'cash'
+              ? '<strong>Pago:</strong> efectivo / presencial (validado por administraci&oacute;n).'
+              : '<strong>Pago:</strong> transferencia u otro medio con comprobante.'
+          }</p>
+          ${
+            subjectUser.inscriptionRequiresInvoice
+              ? '<p style="font-size:14px;color:#5b21b6;background:#f5f3ff;padding:10px 12px;border-radius:8px;border:1px solid #ddd6fe;"><strong>Factura:</strong> solicitaste factura fiscal &mdash; coordin&aacute; el tr&aacute;mite con la administraci&oacute;n del congreso.</p>'
+              : ''
+          }
+          <hr style="border:none;border-top:1px solid #e5e5e5;margin:20px 0;" />
+          <h3 style="margin-bottom:8px;">Comprobante (${escapeHtml(invoiceId)})</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px;">
+            <tr><td style="padding:6px 0;border-bottom:1px solid #eee;">Categoría / tarifa</td><td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right;"><strong>${escapeHtml(catLab)}</strong></td></tr>
+            <tr><td style="padding:6px 0;border-bottom:1px solid #eee;">Monto referencia</td><td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right;"><strong>${escapeHtml(amtLab)}</strong></td></tr>
+            <tr><td style="padding:6px 0;">Fecha emisión</td><td style="padding:6px 0;text-align:right;">${escapeHtml(fechaEmision)}</td></tr>
+          </table>
+          ${institution}${province}
+          <p style="margin-top:20px;"><a href="${facturaUrl}" style="display:inline-block;background:#2d5016;color:white;padding:10px 18px;text-decoration:none;border-radius:8px;">Ver / descargar comprobante (web)</a></p>
+          <p style="font-size:12px;color:#666;">En esa p&aacute;gina pod&eacute;s usar <strong>Imprimir &rarr; Guardar como PDF</strong> y ver el c&oacute;digo QR de acreditaci&oacute;n.</p>
+          <div style="margin-top:24px;text-align:center;">
+            <div style="font-size:13px;color:#444;margin-bottom:8px;">C&oacute;digo QR &mdash; acreditaci&oacute;n</div>
+            <img src="${qrImgSrc}" alt="QR" width="200" height="200" style="border:1px solid #ddd;border-radius:8px;padding:8px;background:#fff;" />
+          </div>
+        </div>`;
+
+      const emailResult = await sendTransactionalEmail({
+        toEmail: appr.email,
+        toName: displayName,
+        subject: `[Congreso Agroecología] Inscripción aprobada — ${invoiceId}`,
+        message: plainMessage,
+        messageHtml: htmlBody,
+      });
+
+      const localhostHint = baseUrl.includes('localhost')
+        ? ' El enlace del mail usa localhost: solo sirve en esta PC; para producción definí VITE_PUBLIC_APP_URL.'
+        : '';
+      setInscriptionInvoiceFeedback(
+        (emailResult.sent
+          ? 'Listo: comprobante guardado y correo enviado.'
+          : 'Comprobante guardado; no se pudo enviar el correo (el usuario puede abrir Mi perfil).') + localhostHint
+      );
+    } else {
+      const localhostHint = baseUrl.includes('localhost')
+        ? ' El enlace usa localhost: solo en esta PC; para otros equipos configurá VITE_PUBLIC_APP_URL.'
+        : '';
+      setInscriptionInvoiceFeedback(
+        `Comprobante guardado (${invoiceId}); el usuario no tiene email para envío automático.${localhostHint}`
+      );
+    }
   };
 
-  const handleReject = (userId: string) => {
+  const handleReject = async (userId: string) => {
+    setInscriptionInvoiceFeedback('');
+    const subject = users.find((u: any) => u.id === userId);
+    if (!subject) return;
+
+    const escapeHtml = (s: string) =>
+      s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
     const updatedUsers = users.map((u: any) =>
       u.id === userId ? { ...u, inscriptionStatus: 'rejected' } : u
     );
     localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
     setUsers(updatedUsers);
     setInscriptions(inscriptions.filter((i) => i.id !== userId));
+
+    const currentStored = JSON.parse(localStorage.getItem('current_user') || '{}');
+    if (currentStored?.id === userId) {
+      const fresh = updatedUsers.find((x: any) => x.id === userId);
+      if (fresh) {
+        const { password: _, ...withoutPwd } = fresh;
+        localStorage.setItem('current_user', JSON.stringify(withoutPwd));
+      }
+    }
+
+    const displayName = `${subject.name || ''} ${subject.lastName || ''}`.trim();
+    sendNotificationToUser(
+      userId,
+      'Inscripción no aprobada',
+      `Hola ${displayName}. Tu solicitud de inscripción al congreso no fue aprobada. Podés comunicarte con la organización si necesitás más información o volver a intentar la inscripción cuando corresponda.`,
+      'Administración'
+    );
+
+    const baseUrl = getPublicAppOrigin();
+    const homeUrl = baseUrl ? `${baseUrl}/` : '/';
+
+    if (subject.email) {
+      const plainMessage = [
+        `Hola ${displayName},`,
+        '',
+        `Lamentamos informarte que tu solicitud de inscripción al congreso no fue aprobada en esta instancia.`,
+        '',
+        `Si creés que hubo un error o necesitás más información, escribí al equipo organizador.`,
+        '',
+        `Sitio del congreso: ${homeUrl}`,
+      ].join('\n');
+
+      const htmlBody = `
+        <div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;max-width:560px;">
+          <h2 style="color:#7f1d1d;">Inscripción no aprobada</h2>
+          <p>Hola ${escapeHtml(displayName)},</p>
+          <p>Lamentamos informarte que tu solicitud de inscripci&oacute;n al congreso <strong>no fue aprobada</strong> en esta instancia.</p>
+          <p>Si cre&eacute;s que hubo un error o necesit&aacute;s m&aacute;s informaci&oacute;n, contact&aacute; al equipo organizador.</p>
+          <p style="margin-top:20px;"><a href="${escapeHtml(homeUrl)}" style="display:inline-block;background:#2d5016;color:white;padding:10px 18px;text-decoration:none;border-radius:8px;">Ir al sitio del congreso</a></p>
+        </div>`;
+
+      const emailResult = await sendTransactionalEmail({
+        toEmail: subject.email,
+        toName: displayName || subject.email,
+        subject: '[Congreso Agroecología] Inscripción no aprobada',
+        message: plainMessage,
+        messageHtml: htmlBody,
+      });
+
+      const localhostHint = baseUrl.includes('localhost')
+        ? ' El enlace al sitio en el mail puede usar localhost: definí VITE_PUBLIC_APP_URL en producción.'
+        : '';
+      setInscriptionInvoiceFeedback(
+        (emailResult.sent
+          ? 'Rechazo registrado; correo enviado al usuario.'
+          : `Rechazo registrado; no se pudo enviar el correo (${emailResult.reason || 'error'}).`) + localhostHint
+      );
+    } else {
+      setInscriptionInvoiceFeedback('Rechazo registrado; el usuario no tiene email cargado para envío automático.');
+    }
+  };
+
+  const EMAIL_LOG_KEY = 'congress_email_log';
+  const TALLERES_PROPUESTAS_KEY = 'congress_talleres_propuestos';
+  const AGENDAS_KEY = 'congress_agendas';
+  const notificationsStorageKey = (uid: string) => `congress_notifications_${uid}`;
+
+  const canDeleteUserAccount = (u: any) => {
+    if (!user || u.id === user.id) return false;
+    if (Array.isArray(u.roles) && u.roles.includes('admin')) {
+      const adminCount = users.filter((x: any) => Array.isArray(x.roles) && x.roles.includes('admin')).length;
+      if (adminCount <= 1) return false;
+    }
+    return true;
+  };
+
+  const toggleUserAccountActive = (userId: string) => {
+    setUserAccountFeedback('');
+    const target = users.find((u: any) => u.id === userId);
+    if (!target) return;
+    const isActive = target.accountActive !== false;
+    const nextActive = !isActive;
+
+    if (!nextActive) {
+      if (userId === user?.id) {
+        alert('No podés deshabilitar tu propia cuenta desde el panel. Pedí a otro administrador que la deshabilite si hace falta.');
+        return;
+      }
+      if (Array.isArray(target.roles) && target.roles.includes('admin')) {
+        const activeAdmins = users.filter(
+          (x: any) => x.roles?.includes('admin') && x.accountActive !== false
+        );
+        if (activeAdmins.length <= 1) {
+          alert('No podés deshabilitar al único administrador activo del sistema.');
+          return;
+        }
+      }
+    }
+
+    const updatedUsers = users.map((u: any) =>
+      u.id === userId ? { ...u, accountActive: nextActive } : u
+    );
+    localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
+    setUsers(updatedUsers);
+
+    sendNotificationToUser(
+      userId,
+      nextActive ? 'Cuenta habilitada' : 'Cuenta deshabilitada',
+      nextActive
+        ? 'Tu cuenta fue habilitada nuevamente. Ya podés iniciar sesión y usar todas las funciones disponibles según tu rol en el congreso.'
+        : 'Tu cuenta fue deshabilitada por administración. No podés iniciar sesión ni usar las funciones del sistema hasta que un administrador habilite tu cuenta de nuevo.',
+      'Administración'
+    );
+
+    setUserAccountFeedback(
+      nextActive
+        ? `Cuenta de ${target.name} ${target.lastName}: habilitada. Ya puede iniciar sesión y usar el sistema según su rol.`
+        : `Cuenta de ${target.name} ${target.lastName}: deshabilitada. No podrá iniciar sesión ni usar el sistema hasta que la reactives.`
+    );
+  };
+
+  const deleteUser = (userId: string) => {
+    const subject = users.find((x: any) => x.id === userId);
+    if (!subject) {
+      setConfirmDelete(null);
+      return;
+    }
+    if (!canDeleteUserAccount(subject)) {
+      setConfirmDelete(null);
+      alert(
+        subject.id === user?.id
+          ? 'No podés eliminar tu propia cuenta desde acá.'
+          : 'No se puede eliminar el único administrador del sistema.'
+      );
+      return;
+    }
+
+    if (subject.receiptFileId) void deleteBrowserFile(subject.receiptFileId);
+    if (subject.categoryCertificateFileId) void deleteBrowserFile(subject.categoryCertificateFileId);
+
+    const allWorks: any[] = JSON.parse(localStorage.getItem('congress_works') || '[]');
+    for (const w of allWorks) {
+      if (w?.userId === userId && w?.fileId) void deleteBrowserFile(w.fileId);
+    }
+
+    const ownedWorkIds = new Set(
+      allWorks.filter((w: any) => w?.userId === userId).map((w: any) => w.id)
+    );
+
+    const worksNext = allWorks
+      .filter((w: any) => w?.userId !== userId)
+      .map((w: any) => ({
+        ...w,
+        assignments: Array.isArray(w.assignments)
+          ? w.assignments.filter((a: any) => a?.evaluatorId !== userId)
+          : w.assignments,
+        reviews: Array.isArray(w.reviews)
+          ? w.reviews.filter((r: any) => r?.evaluatorId !== userId)
+          : w.reviews,
+      }));
+
+    localStorage.setItem('congress_works', JSON.stringify(worksNext));
+    setWorks(worksNext);
+
+    const sessionsNext = sessions.map((s) => ({
+      ...s,
+      works: (s.works || []).filter((wid) => !ownedWorkIds.has(wid)),
+    }));
+    localStorage.setItem('congress_sessions', JSON.stringify(sessionsNext));
+    setSessions(sessionsNext);
+
+    const postersNext = posterSessions.map((p) => ({
+      ...p,
+      works: (p.works || []).filter((row) => !ownedWorkIds.has(row.workId)),
+    }));
+    localStorage.setItem('congress_posters', JSON.stringify(postersNext));
+    setPosterSessions(postersNext);
+
+    const talleresProp = JSON.parse(localStorage.getItem(TALLERES_PROPUESTAS_KEY) || '[]');
+    const talleresNext = talleresProp.filter((t: any) => t?.userId !== userId);
+    localStorage.setItem(TALLERES_PROPUESTAS_KEY, JSON.stringify(talleresNext));
+
+    const agendas = JSON.parse(localStorage.getItem(AGENDAS_KEY) || '{}');
+    if (agendas && typeof agendas === 'object' && userId in agendas) {
+      const { [userId]: _, ...rest } = agendas;
+      localStorage.setItem(AGENDAS_KEY, JSON.stringify(rest));
+    }
+
+    const emailLog = JSON.parse(localStorage.getItem(EMAIL_LOG_KEY) || '[]');
+    const emailNext = Array.isArray(emailLog)
+      ? emailLog.filter((m: any) => m?.to !== subject.email)
+      : [];
+    localStorage.setItem(EMAIL_LOG_KEY, JSON.stringify(emailNext));
+
+    localStorage.removeItem(notificationsStorageKey(userId));
+
+    const usersNext = users.filter((u: any) => u.id !== userId);
+    localStorage.setItem('congress_users', JSON.stringify(usersNext));
+    setUsers(usersNext);
+    setInscriptions(usersNext.filter((u: any) => u.inscriptionStatus === 'pending'));
+
+    setConfirmDelete(null);
+    setUserDeleteFeedback(`Se eliminó la cuenta de ${subject.name} ${subject.lastName}.`);
+
+    if (user?.id === userId) {
+      logout();
+      navigate('/login');
+    }
+  };
+
+  const closeUserModal = () => {
+    setUserModalOpen(false);
+    setUserFormError('');
+    setEditingUserId(null);
+    setUserForm({
+      name: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      category: '',
+      roles: emptyRoleFlags(),
+    });
+  };
+
+  const openCreateUserModal = () => {
+    setUserModalMode('create');
+    setEditingUserId(null);
+    setUserFormError('');
+    setUserForm({
+      name: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      category: '',
+      roles: emptyRoleFlags(),
+    });
+    setUserModalOpen(true);
+  };
+
+  const openEditUserModal = (u: any) => {
+    setUserModalMode('edit');
+    setEditingUserId(u.id);
+    setUserFormError('');
+    const rf = emptyRoleFlags();
+    for (const r of u.roles || []) {
+      if (r in rf) rf[r as UserRole] = true;
+    }
+    setUserForm({
+      name: u.name || '',
+      lastName: u.lastName || '',
+      email: u.email || '',
+      password: '',
+      confirmPassword: '',
+      category: (u.category as InscriptionCategory) || '',
+      roles: rf,
+    });
+    setUserModalOpen(true);
+  };
+
+  const saveAdminUser = () => {
+    setUserFormError('');
+    const email = userForm.email.trim().toLowerCase();
+    const name = userForm.name.trim();
+    const lastName = userForm.lastName.trim();
+
+    if (!name || !lastName) {
+      setUserFormError('Completá nombre y apellido.');
+      return;
+    }
+    if (!email) {
+      setUserFormError('Completá el correo electrónico.');
+      return;
+    }
+    if (!userForm.category) {
+      setUserFormError('Seleccioná una categoría de inscripción.');
+      return;
+    }
+
+    const selectedRoles = ADMIN_ROLE_OPTIONS.map((o) => o.role).filter((r) => userForm.roles[r]);
+    if (selectedRoles.length === 0) {
+      setUserFormError('Seleccioná al menos un rol.');
+      return;
+    }
+
+    if (users.some((u: any) => u.email?.toLowerCase?.() === email && u.id !== editingUserId)) {
+      setUserFormError('Ese correo ya está registrado.');
+      return;
+    }
+
+    if (userModalMode === 'create') {
+      if (userForm.password.length < 8) {
+        setUserFormError('La contraseña debe tener al menos 8 caracteres.');
+        return;
+      }
+      if (userForm.password !== userForm.confirmPassword) {
+        setUserFormError('Las contraseñas no coinciden.');
+        return;
+      }
+    } else {
+      if (userForm.password && userForm.password.length < 8) {
+        setUserFormError('La contraseña debe tener al menos 8 caracteres.');
+        return;
+      }
+      if (userForm.password && userForm.password !== userForm.confirmPassword) {
+        setUserFormError('Las contraseñas no coinciden.');
+        return;
+      }
+    }
+
+    if (userModalMode === 'edit' && editingUserId) {
+      const subject = users.find((x: any) => x.id === editingUserId);
+      const hadAdmin = subject?.roles?.includes('admin');
+      const keepsAdmin = selectedRoles.includes('admin');
+      if (hadAdmin && !keepsAdmin) {
+        const otherAdmins = users.filter(
+          (x: any) => x.id !== editingUserId && x.roles?.includes('admin')
+        );
+        if (otherAdmins.length === 0) {
+          setUserFormError('Tiene que quedar al menos un usuario con rol Administrador.');
+          return;
+        }
+      }
+    }
+
+    const roleOrder: UserRole[] = ['asistente', 'autor', 'evaluador', 'comite', 'admin'];
+    const currentRole = roleOrder.find((r) => selectedRoles.includes(r))!;
+
+    if (userModalMode === 'create') {
+      const newUser: Record<string, unknown> = {
+        id: Date.now().toString(),
+        email,
+        password: userForm.password,
+        name,
+        lastName,
+        category: userForm.category,
+        roles: selectedRoles,
+        currentRole,
+        accountActive: true,
+      };
+      if (selectedRoles.includes('evaluador')) {
+        newUser.axes = [];
+      }
+      if (selectedRoles.includes('asistente')) {
+        newUser.inscriptionStatus = 'confirmed';
+      }
+      const next = [...users, newUser];
+      localStorage.setItem('congress_users', JSON.stringify(next));
+      setUsers(next);
+      setInscriptions(next.filter((u: any) => u.inscriptionStatus === 'pending'));
+      setUserAccountFeedback(`Se creó la cuenta de ${name} ${lastName}.`);
+      closeUserModal();
+      return;
+    }
+
+    const idx = users.findIndex((u: any) => u.id === editingUserId);
+    if (idx === -1) {
+      setUserFormError('Usuario no encontrado.');
+      return;
+    }
+    const prev = users[idx];
+    const updated: any = {
+      ...prev,
+      email,
+      name,
+      lastName,
+      category: userForm.category,
+      roles: selectedRoles,
+      currentRole,
+    };
+    if (userForm.password) {
+      updated.password = userForm.password;
+    }
+    if (selectedRoles.includes('evaluador')) {
+      updated.axes = Array.isArray(prev.axes) ? prev.axes : [];
+    } else {
+      delete updated.axes;
+    }
+    if (selectedRoles.includes('asistente') && prev.inscriptionStatus == null) {
+      updated.inscriptionStatus = 'confirmed';
+    }
+
+    const next = [...users];
+    next[idx] = updated;
+    localStorage.setItem('congress_users', JSON.stringify(next));
+    setUsers(next);
+    setInscriptions(next.filter((u: any) => u.inscriptionStatus === 'pending'));
+
+    if (user?.id === editingUserId) {
+      updateUser({
+        name: updated.name,
+        lastName: updated.lastName,
+        email: updated.email,
+        category: updated.category,
+        roles: updated.roles,
+        currentRole: updated.currentRole,
+        ...(updated.inscriptionStatus != null ? { inscriptionStatus: updated.inscriptionStatus } : {}),
+      });
+    }
+
+    setUserAccountFeedback(`Se actualizó la cuenta de ${name} ${lastName}.`);
+    closeUserModal();
   };
 
   // =========================
@@ -460,6 +1165,7 @@ export function PanelAdmin() {
     if (confirmDelete.type === 'workshop')   deleteTallerProgramado(confirmDelete.id);
     if (confirmDelete.type === 'conference') deleteConferencia(confirmDelete.id);
     if (confirmDelete.type === 'circular') deleteCircular(confirmDelete.id);
+    if (confirmDelete.type === 'user') deleteUser(confirmDelete.id);
   };
 
   // =========================
@@ -655,12 +1361,59 @@ export function PanelAdmin() {
 
         {/* ══ INSCRIPCIONES ══ */}
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
-          <h2 className="text-2xl mb-6">Validación de Inscripciones</h2>
+          <h2 className="text-2xl mb-2">Validación de Inscripciones</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            <strong>Transferencia:</strong> revisá el comprobante adjunto y aprobá o rechazá.
+            <span className="mx-1">·</span>
+            <strong>Efectivo / presencial:</strong> no hay archivo: el asistente declaró pagar en caja o durante el
+            congreso. <strong>Aprobá solo si ya verificaste el cobro en efectivo</strong> (recepción, caja o acreditación).
+            Si el usuario pidió factura, figura el aviso debajo del nombre.
+          </p>
+          {inscriptionInvoiceFeedback && (
+            <div
+              className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
+                inscriptionInvoiceFeedback.includes('correo enviado')
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                  : inscriptionInvoiceFeedback.includes('no se pudo') ||
+                      inscriptionInvoiceFeedback.includes('no tiene email')
+                    ? 'border-amber-200 bg-amber-50 text-amber-950'
+                  : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+              }`}
+            >
+              <span className="block">{inscriptionInvoiceFeedback}</span>
+              <button
+                type="button"
+                className="mt-2 text-xs underline font-medium opacity-90 hover:opacity-100"
+                onClick={() => setInscriptionInvoiceFeedback('')}
+              >
+                Cerrar
+              </button>
+            </div>
+          )}
           {inscriptions.length === 0 && <p className="text-gray-500">No hay inscripciones pendientes.</p>}
           {inscriptions.map((i) => (
             <div key={i.id} className="flex justify-between border p-3 mb-2 rounded">
               <div>
                 <p className="font-medium">{i.name} {i.lastName}</p>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {i.inscriptionPaymentMethod === 'cash' ? (
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-950 border border-amber-200">
+                      Efectivo / presencial — validar cobro antes de aprobar
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-800 border border-slate-200">
+                      Transferencia (comprobante)
+                    </span>
+                  )}
+                  {i.inscriptionRequiresInvoice && (
+                    <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-900 border border-violet-200">
+                      Solicita factura
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  Categoría: {i.category || 'Sin categoría'}
+                </p>
 
                 {/* ── VER COMPROBANTE DE PAGO ── */}
                 {i.receiptFileId ? (
@@ -672,38 +1425,234 @@ export function PanelAdmin() {
                     <FileDown className="w-3 h-3" />
                     Ver comprobante
                   </button>
+                ) : i.inscriptionPaymentMethod === 'cash' ? (
+                  <span className="block text-xs text-amber-900 mt-1 rounded border border-amber-200 bg-amber-50/80 px-2 py-1">
+                    Sin archivo (correcto para efectivo). Aprobá cuando conste el pago en caja / acreditación.
+                  </span>
                 ) : (
                   <span className="text-xs text-gray-400 italic">Sin comprobante</span>
                 )}
+
+                {/* ── VER CERTIFICADO DE CATEGORÍA ── */}
+                {i.categoryCertificateFileId ? (
+                  <button
+                    type="button"
+                    onClick={() => openStoredBrowserFile({ fileId: i.categoryCertificateFileId, fileName: i.categoryCertificate })}
+                    className="flex items-center gap-1 text-xs text-indigo-700 border border-indigo-300 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded mt-1 transition"
+                  >
+                    <FileText className="w-3 h-3" />
+                    Ver certificado
+                  </button>
+                ) : (
+                  <span className="block text-xs text-gray-400 italic mt-1">Sin certificado de categoría</span>
+                )}
               </div>
-              <div className="flex gap-2 items-start">
-                <button onClick={() => handleApprove(i.id)} className="bg-green-600 text-white px-2 py-1 rounded">Aprobar</button>
-                <button onClick={() => handleReject(i.id)}  className="bg-red-600 text-white px-2 py-1 rounded">Rechazar</button>
+              <div className="flex flex-col gap-2 items-end">
+                <button
+                  type="button"
+                  onClick={() => void handleApprove(i.id)}
+                  title={
+                    i.inscriptionPaymentMethod === 'cash'
+                      ? 'Usá este botón cuando ya verificaste el cobro en efectivo (recepción, caja o acreditación).'
+                      : 'Aprobar tras revisar el comprobante de transferencia.'
+                  }
+                  className="bg-green-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-green-700 transition whitespace-nowrap"
+                >
+                  {i.inscriptionPaymentMethod === 'cash' ? 'Aprobar (cobro efectivo OK)' : 'Aprobar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleReject(i.id)}
+                  className="bg-red-600 text-white px-2 py-1 rounded"
+                >
+                  Rechazar
+                </button>
               </div>
             </div>
           ))}
         </div>
 
-        {/* ══ EVALUADORES ══ */}
+        {/* ══ USUARIOS ══ */}
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
-          <h2 className="text-2xl mb-6">Asignar Evaluadores</h2>
-          {users.map((u) => (
-            <div key={u.id} className="flex justify-between items-center border p-3 mb-2 rounded">
-              <div>
-                <p>{u.name} {u.lastName}</p>
-                <div className="flex gap-2 mt-1">
-                  {u.roles?.map((r: string) => (
-                    <span key={r} className="text-xs bg-gray-200 px-2 rounded">{r}</span>
-                  ))}
-                </div>
-              </div>
-              {!u.roles?.includes('evaluador') ? (
-                <button onClick={() => makeEvaluator(u.id)} className="bg-purple-600 text-white px-2 py-1 rounded">Hacer evaluador</button>
-              ) : (
-                <span className="text-green-600">✔ Evaluador</span>
-              )}
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-2">
+            <h2 className="text-2xl">Usuarios registrados</h2>
+            <button
+              type="button"
+              onClick={openCreateUserModal}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition"
+            >
+              <UserPlus className="w-4 h-4" />
+              Crear usuario
+            </button>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Podés <strong>habilitar o deshabilitar</strong> cuentas: si están deshabilitadas no pueden iniciar sesión ni
+            usar el sistema hasta que las reactives. Los registros nuevos quedan habilitados por defecto. También podés
+            eliminar cuentas de prueba: se quitan trabajos del cronograma, archivos, talleres propuestos, agenda y
+            notificaciones de ese usuario. No podés borrar tu propia sesión ni al único administrador.
+          </p>
+          {userAccountFeedback && (
+            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950 flex flex-wrap items-center justify-between gap-2">
+              <span>{userAccountFeedback}</span>
+              <button type="button" className="text-xs underline font-medium" onClick={() => setUserAccountFeedback('')}>
+                Cerrar
+              </button>
             </div>
-          ))}
+          )}
+          {userDeleteFeedback && (
+            <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 flex flex-wrap items-center justify-between gap-2">
+              <span>{userDeleteFeedback}</span>
+              <button
+                type="button"
+                className="text-xs underline font-medium"
+                onClick={() => setUserDeleteFeedback('')}
+              >
+                Cerrar
+              </button>
+            </div>
+          )}
+          <div className="overflow-x-auto border border-gray-200 rounded-lg max-h-[min(70vh,520px)] overflow-y-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr className="text-left text-gray-600">
+                  <th className="px-3 py-2 font-medium">Nombre</th>
+                  <th className="px-3 py-2 font-medium">Email</th>
+                  <th className="px-3 py-2 font-medium">Roles</th>
+                  <th className="px-3 py-2 font-medium whitespace-nowrap">Cuenta</th>
+                  <th className="px-3 py-2 font-medium min-w-[200px] text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {[...users]
+                  .sort((a: any, b: any) =>
+                    `${a.lastName || ''} ${a.name || ''}`.localeCompare(`${b.lastName || ''} ${b.name || ''}`, 'es', {
+                      sensitivity: 'base',
+                    })
+                  )
+                  .map((u: any) => (
+                    <tr key={u.id} className="hover:bg-gray-50/80">
+                      <td className="px-3 py-2 text-gray-900">
+                        {u.name} {u.lastName}
+                      </td>
+                      <td className="px-3 py-2 text-gray-600 break-all max-w-[200px]">{u.email}</td>
+                      <td className="px-3 py-2">
+                        <span className="text-xs text-gray-500">
+                          {(u.roles || []).length ? (u.roles as string[]).join(', ') : '—'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`inline-block text-xs px-2 py-0.5 rounded-full ${
+                            u.accountActive === false
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}
+                        >
+                          {u.accountActive === false ? 'Deshabilitada' : 'Activa'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditUserModal(u)}
+                            className="inline-flex items-center gap-1 text-xs text-indigo-800 border border-indigo-300 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded transition"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            Editar
+                          </button>
+                          {u.id !== user?.id ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleUserAccountActive(u.id)}
+                              className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded border transition ${
+                                u.accountActive === false
+                                  ? 'text-green-800 border-green-300 bg-green-50 hover:bg-green-100'
+                                  : 'text-amber-900 border-amber-300 bg-amber-50 hover:bg-amber-100'
+                              }`}
+                            >
+                              {u.accountActive === false ? 'Habilitar' : 'Deshabilitar'}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400 italic">Tu cuenta</span>
+                          )}
+                          {canDeleteUserAccount(u) ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUserDeleteFeedback('');
+                                setConfirmDelete({
+                                  type: 'user',
+                                  id: u.id,
+                                  name: `${u.name} ${u.lastName} (${u.email})`,
+                                });
+                              }}
+                              className="inline-flex items-center gap-1 text-xs text-red-700 border border-red-300 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Eliminar
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ══ SOLICITUDES PARA SER AUTOR (aprobado por 2 evaluadores) ══ */}
+        <div className="bg-white rounded-xl shadow-md p-8 mb-8">
+          <h2 className="text-2xl mb-2">Solicitudes para ser Autor</h2>
+          <p className="text-sm text-gray-600 mb-6">
+            Acá aparecen solo asistentes con al menos un trabajo <strong>aprobado</strong> por evaluadores (2 aprobaciones) y pendientes de habilitación del rol autor.
+          </p>
+
+          {authorRequestsFeedback && (
+            <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              {authorRequestsFeedback}
+            </div>
+          )}
+
+          {authorRequests.length === 0 ? (
+            <p className="text-gray-500">No hay solicitudes pendientes.</p>
+          ) : (
+            <div className="space-y-3">
+              {authorRequests.map(({ user: u, works: uw }: any) => (
+                <div key={u.id} className="border border-gray-200 rounded-lg p-4 flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-900">{u.name} {u.lastName}</div>
+                    <div className="text-xs text-gray-500">{u.email}</div>
+                    <div className="mt-2 text-sm text-gray-700">
+                      Trabajos aprobados:
+                      <ul className="list-disc ml-5 mt-1 text-sm text-gray-700">
+                        {uw.map((w: any) => (
+                          <li key={w.id}>
+                            <span className="font-medium">{w.title}</span>
+                            <span className="text-xs text-gray-500">
+                              {' '}— {w.axis || '—'} — {(w.workType === 'cientifico' ? 'Científico' : w.workType === 'experiencia' ? 'Relato de experiencia' : '—')}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => grantAuthorRole(u.id)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm"
+                    >
+                      Habilitar rol Autor
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ══ CRONOGRAMA ══ */}
@@ -751,7 +1700,9 @@ export function PanelAdmin() {
                                       <div>
                                         <span className="font-medium">{index + 1}. {work?.title}</span>
                                         <div className="text-sm text-gray-600">Autor: {getAuthor(work?.userId)}</div>
-                                        <div className="text-sm text-gray-600">Tipo: {work?.axis}</div>
+                                        <div className="text-sm text-gray-600">Eje temático: {work?.axis || '—'}</div>
+                                        <div className="text-sm text-gray-600">Tipo de trabajo: {work?.workType ? (work.workType === 'cientifico' ? 'Científico' : 'Relato de experiencia') : '—'}</div>
+                                        <div className="text-sm text-gray-600">Modalidad: {(work?.modality ?? work?.type) || '—'}</div>
                                       </div>
                                       <button onClick={() => removeWorkFromSession(s.id, id)} className="flex items-center gap-1 bg-red-100 text-red-700 border border-red-300 px-2 py-0.5 rounded text-xs hover:bg-red-200 transition shrink-0 mt-0.5">
                                         <X className="w-3 h-3" /> Quitar
@@ -827,7 +1778,9 @@ export function PanelAdmin() {
                                       <div>
                                         <span className="font-medium">{work?.title}</span>
                                         <div className="text-sm text-gray-600">Autor: {getAuthor(work?.userId)} | Panel: {w.stand}</div>
-                                        <div className="text-sm text-gray-600">Tipo: {work?.axis}</div>
+                                        <div className="text-sm text-gray-600">Eje temático: {work?.axis || '—'}</div>
+                                        <div className="text-sm text-gray-600">Tipo de trabajo: {work?.workType ? (work.workType === 'cientifico' ? 'Científico' : 'Relato de experiencia') : '—'}</div>
+                                        <div className="text-sm text-gray-600">Modalidad: {(work?.modality ?? work?.type) || '—'}</div>
                                       </div>
                                       <button onClick={() => removeWorkFromPoster(p.id, w.workId)} className="flex items-center gap-1 bg-red-100 text-red-700 border border-red-300 px-2 py-0.5 rounded text-xs hover:bg-red-200 transition shrink-0 mt-0.5">
                                         <X className="w-3 h-3" /> Quitar
@@ -1043,6 +1996,137 @@ export function PanelAdmin() {
 
       </div>
 
+      {/* ══ MODAL CREAR / EDITAR USUARIO ══ */}
+      {userModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeUserModal();
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[min(90vh,640px)] overflow-y-auto">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-gray-100 bg-white px-6 py-4">
+              <h2 className="text-xl font-semibold text-gray-800">
+                {userModalMode === 'create' ? 'Crear usuario' : 'Editar usuario'}
+              </h2>
+              <button type="button" onClick={closeUserModal} className="text-gray-400 hover:text-gray-600" aria-label="Cerrar">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              {userFormError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{userFormError}</div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nombre</label>
+                  <input
+                    value={userForm.name}
+                    onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    autoComplete="off"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Apellido</label>
+                  <input
+                    value={userForm.lastName}
+                    onChange={(e) => setUserForm({ ...userForm, lastName: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Correo electrónico</label>
+                <input
+                  type="email"
+                  value={userForm.email}
+                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Categoría de inscripción</label>
+                <select
+                  value={userForm.category}
+                  onChange={(e) =>
+                    setUserForm({ ...userForm, category: e.target.value as InscriptionCategory | '' })
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                >
+                  <option value="">Seleccioná…</option>
+                  {CATEGORY_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Contraseña {userModalMode === 'edit' && <span className="font-normal text-gray-400">(opcional)</span>}
+                  </label>
+                  <input
+                    type="password"
+                    value={userForm.password}
+                    onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    autoComplete="new-password"
+                    placeholder={userModalMode === 'edit' ? 'Dejar vacío para no cambiar' : ''}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Confirmar contraseña</label>
+                  <input
+                    type="password"
+                    value={userForm.confirmPassword}
+                    onChange={(e) => setUserForm({ ...userForm, confirmPassword: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-2">Roles en el sistema</p>
+                <div className="rounded-lg border border-gray-200 bg-gray-50/80 p-3 space-y-2">
+                  {ADMIN_ROLE_OPTIONS.map(({ role, label }) => (
+                    <label key={role} className="flex items-start gap-2 cursor-pointer text-sm text-gray-800">
+                      <input
+                        type="checkbox"
+                        checked={userForm.roles[role]}
+                        onChange={(e) =>
+                          setUserForm({
+                            ...userForm,
+                            roles: { ...userForm.roles, [role]: e.target.checked },
+                          })
+                        }
+                        className="mt-0.5 rounded border-gray-300"
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                <button type="button" onClick={closeUserModal} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={saveAdminUser}
+                  className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                >
+                  {userModalMode === 'create' ? 'Crear' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ══ MODAL CONFIRMAR ELIMINACIÓN ══ */}
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) setConfirmDelete(null); }}>
@@ -1058,6 +2142,13 @@ export function PanelAdmin() {
             {confirmDelete.type === 'workshop'   && <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">Esta acción eliminará el taller del programa oficial.</p>}
             {confirmDelete.type === 'conference' && <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">Esta acción eliminará la conferencia del programa oficial.</p>}
             {confirmDelete.type === 'circular' && <p className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2 mb-5">La circular se eliminará del sistema y dejará de mostrarse en la página pública.</p>}
+            {confirmDelete.type === 'user' && (
+              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-5">
+                Se borrará la cuenta, sus trabajos (y se los sacará de mesas/pósters si estaban asignados), archivos de
+                comprobante en el navegador, propuestas de taller, agenda y notificaciones locales. Las revisiones de
+                ese evaluador en trabajos de otros autores también se quitan.
+              </p>
+            )}
             <div className="flex justify-end gap-3">
               <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50">Cancelar</button>
               <button onClick={handleConfirmDelete} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2"><Trash2 className="w-4 h-4" /> Eliminar</button>

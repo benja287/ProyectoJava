@@ -6,3 +6,4 @@ target/
 out/
 .idea/
 .vscode/
+node_modules/

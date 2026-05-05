@@ -3,9 +3,22 @@ import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { ClipboardCheck, FileText, MessageSquare, Presentation, FileDown, BadgeCheck } from 'lucide-react';
 import { openOrDownloadFile } from '../lib/browserFiles';
+<<<<<<< HEAD
 import { CertificateView } from './Certificaciones';
+=======
+import { sendTransactionalEmail } from '../lib/emailSender';
+import {
+  allActiveInvitesAccepted,
+  canEvaluatorSubmitReview,
+  canRespondToAssignmentInvite,
+  isActiveAssignmentSlot,
+} from '../lib/workAssignments';
+>>>>>>> origin/version1
 
 const TALLERES_KEY = 'congress_talleres_propuestos';
+const WORKS_KEY = 'congress_works';
+const USERS_KEY = 'congress_users';
+const EMAIL_LOG_KEY = 'congress_email_log';
 
 export function PanelEvaluador() {
   const { user, sendNotificationToUser } = useAuth();
@@ -22,8 +35,16 @@ export function PanelEvaluador() {
     if (!user) return;
     if (user.currentRole !== 'evaluador') { navigate('/'); return; }
 
-    const storedWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
-    setWorks(storedWorks.filter((w: any) => w.status === 'pending' && w.userId !== user.id));
+    const storedWorks = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
+    const assignedToMe = storedWorks.filter((w: any) => {
+      const assignments = Array.isArray(w.assignments) ? w.assignments : [];
+      const mine = assignments.some(
+        (a: any) => a?.evaluatorId === user.id && isActiveAssignmentSlot(a)
+      );
+      if (!mine) return false;
+      return ['assigned', 'under_review'].includes(w.status) || !w.status;
+    });
+    setWorks(assignedToMe);
 
     const storedTalleres = JSON.parse(localStorage.getItem(TALLERES_KEY) || '[]');
     setTalleres(storedTalleres.filter((t: any) => t.status === 'pending' && t.userId !== user.id));
@@ -31,59 +52,256 @@ export function PanelEvaluador() {
 
   if (!user) return null;
 
+  const logEmailToUser = (toEmail: string, subject: string, body: string) => {
+    const outbox = JSON.parse(localStorage.getItem(EMAIL_LOG_KEY) || '[]');
+    const emailRecord = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      to: toEmail,
+      subject,
+      body,
+      createdAt: new Date().toISOString(),
+      from: 'evaluacion@congreso.local',
+      status: 'queued',
+    };
+    localStorage.setItem(EMAIL_LOG_KEY, JSON.stringify([emailRecord, ...outbox]));
+
+    void sendTransactionalEmail({
+      toEmail,
+      subject,
+      message: body,
+    }).then((result) => {
+      const latestOutbox = JSON.parse(localStorage.getItem(EMAIL_LOG_KEY) || '[]');
+      const patched = latestOutbox.map((m: any) =>
+        m.id === emailRecord.id
+          ? {
+              ...m,
+              status: result.sent ? 'sent' : 'failed',
+              error: result.reason || '',
+            }
+          : m
+      );
+      localStorage.setItem(EMAIL_LOG_KEY, JSON.stringify(patched));
+    });
+  };
+
   // ── Trabajos ────────────────────────────────────────────────────────────────
-  const handleApprove = (workId: string) => {
-    const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
-    const work     = allWorks.find((w: any) => w.id === workId);
+  const persistAllWorks = (next: any[]) => {
+    localStorage.setItem(WORKS_KEY, JSON.stringify(next));
+    const assignedToMe = next.filter((w: any) => {
+      const assignments = Array.isArray(w.assignments) ? w.assignments : [];
+      const mine = assignments.some(
+        (a: any) => a?.evaluatorId === user.id && isActiveAssignmentSlot(a)
+      );
+      return mine && (['assigned', 'under_review'].includes(w.status) || !w.status);
+    });
+    setWorks(assignedToMe);
+  };
 
-    const updatedWorks = allWorks.map((w: any) =>
-      w.id === workId ? { ...w, status: 'approved' } : w
+  const handleDecision = (workId: string, decision: 'approve' | 'reject') => {
+    const allWorks = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
+    const work = allWorks.find((w: any) => w.id === workId);
+    if (!work) return;
+
+    const now = new Date().toISOString();
+    const comment = (feedbacks[workId] || '').trim();
+
+    const mineAssignment = (Array.isArray(work.assignments) ? work.assignments : []).find(
+      (a: any) => a?.evaluatorId === user.id
     );
-    localStorage.setItem('congress_works', JSON.stringify(updatedWorks));
+    if (!canEvaluatorSubmitReview(mineAssignment, user.id)) return;
 
-    const users        = JSON.parse(localStorage.getItem('congress_users') || '[]');
-    const updatedUsers = users.map((u: any) =>
-      u.id === work.userId
-        ? { ...u, roles: [...new Set([...(u.roles || []), 'autor'])] }
-        : u
-    );
-    localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
+    const prevReviews = Array.isArray(work.reviews) ? work.reviews : [];
+    const alreadyReviewed = prevReviews.some((r: any) => r?.evaluatorId === user.id);
+    if (alreadyReviewed) return;
 
-    const feedbackText = feedbacks[workId]?.trim();
-    sendNotificationToUser(
-      work.userId,
-      'Trabajo aprobado',
-      feedbackText
-        ? `Tu trabajo "${work.title}" fue aprobado. Comentario del evaluador: ${feedbackText}`
-        : `Tu trabajo "${work.title}" fue aprobado. ¡Felicitaciones!`
+    const nextReviews = [
+      ...prevReviews,
+      { evaluatorId: user.id, decision, comment: comment || undefined, createdAt: now },
+    ];
+
+    const prevAssignments = Array.isArray(work.assignments) ? work.assignments : [];
+    const nextAssignments = prevAssignments.map((a: any) =>
+      a?.evaluatorId === user.id ? { ...a, status: 'done', doneAt: now } : a
     );
 
-    setWorks(updatedWorks.filter((w: any) => w.status === 'pending' && w.userId !== user.id));
+    const approvals = nextReviews.filter((r: any) => r?.decision === 'approve').length;
+    const rejects = nextReviews.filter((r: any) => r?.decision === 'reject').length;
+    const prevReviewAttempts = typeof work?.reviewAttempts === 'number' ? work.reviewAttempts : 0;
+
+    let nextStatus: string = work.status || 'under_review';
+    let nextReviewAttempts = prevReviewAttempts;
+
+    if (decision === 'reject') {
+      nextReviewAttempts = prevReviewAttempts + 1;
+      nextStatus = nextReviewAttempts >= 2 ? 'rejected_final' : 'rejected';
+    } else if (approvals >= 2) {
+      nextStatus = 'pending_committee_final';
+    } else if (rejects >= 1) {
+      // si ya hubo rechazo previo, mantiene el estado de rechazo
+      nextStatus = prevReviewAttempts >= 2 ? 'rejected_final' : 'rejected';
+    } else {
+      nextStatus = 'under_review';
+    }
+
+    // Si se rechaza, cerramos esta ronda de asignaciones y el autor corrige/reenvía
+    const normalizedAssignments =
+      nextStatus === 'rejected' || nextStatus === 'rejected_final'
+        ? prevAssignments.map((a: any) => ({ ...a, status: 'done', doneAt: a?.doneAt || now }))
+        : nextAssignments;
+
+    const updatedWork = {
+      ...work,
+      status: nextStatus,
+      reviewAttempts: nextReviewAttempts,
+      reviews: nextReviews,
+      assignments: normalizedAssignments,
+    };
+
+    const updatedWorks = allWorks.map((w: any) => (w.id === workId ? updatedWork : w));
+    persistAllWorks(updatedWorks);
+
+    const allReviewComments = nextReviews
+      .filter((r: any) => typeof r?.comment === 'string' && r.comment.trim().length > 0)
+      .map((r: any, idx: number) => `Eval ${idx + 1}: ${r.comment.trim()}`);
+    const reviewCommentsText = allReviewComments.length > 0 ? allReviewComments.join(' | ') : '';
+    const allUsers = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+    const author = allUsers.find((u: any) => u.id === updatedWork.userId);
+
+    if (nextStatus === 'pending_committee_final') {
+      sendNotificationToUser(
+        updatedWork.userId,
+        'Evaluaciones favorables — pendiente del comité',
+        reviewCommentsText
+          ? `Tu trabajo "${updatedWork.title}" recibió 2 evaluaciones favorables. Comentarios de evaluadores: ${reviewCommentsText}. El Comité Académico debe confirmar el resultado final.`
+          : `Tu trabajo "${updatedWork.title}" recibió 2 evaluaciones favorables. El Comité Académico debe confirmar el resultado final.`,
+        'Comité Académico'
+      );
+      if (author?.email) {
+        const subject = '[EN CURSO] Evaluaciones favorables — confirmación del comité';
+        const body =
+          `Hola ${author.name || ''},\n\n` +
+          `Tu trabajo "${updatedWork.title}" tiene recomendación favorable de los evaluadores.\n` +
+          `${reviewCommentsText ? `Comentarios: ${reviewCommentsText}\n` : ''}` +
+          `El Comité Académico confirmará la aceptación oficial al congreso. Te avisaremos cuando esté resuelto.\n\n` +
+          `Comité Académico`;
+        logEmailToUser(author.email, subject, body);
+      }
+      const committeeUsers = allUsers.filter((u: any) => Array.isArray(u.roles) && u.roles.includes('comite'));
+      committeeUsers.forEach((comite: any) => {
+        sendNotificationToUser(
+          comite.id,
+          'Confirmar trabajo tras evaluaciones',
+          `El trabajo "${updatedWork.title}" tiene 2 aprobaciones de evaluadores. Confirmá la aceptación (o rechazo definitivo) desde el panel del comité académico.`,
+          'Sistema'
+        );
+      });
+    } else if (nextStatus === 'rejected' || nextStatus === 'rejected_final') {
+      sendNotificationToUser(
+        updatedWork.userId,
+        nextStatus === 'rejected_final' ? 'Trabajo rechazado final' : 'Trabajo rechazado por evaluación',
+        reviewCommentsText
+          ? `Tu trabajo "${updatedWork.title}" ${nextStatus === 'rejected_final' ? 'quedó en rechazo final' : 'fue rechazado en evaluación'}. Comentarios: ${reviewCommentsText}. ${nextStatus === 'rejected_final' ? 'Ya no tiene más reenvíos por evaluación.' : 'Podés corregirlo y reenviarlo (intento de revisión 1/2).' }`
+          : `Tu trabajo "${updatedWork.title}" ${nextStatus === 'rejected_final' ? 'quedó en rechazo final' : 'fue rechazado en evaluación'}. ${nextStatus === 'rejected_final' ? 'Ya no tiene más reenvíos por evaluación.' : 'Podés corregirlo y reenviarlo.' }`,
+        'Comité Evaluador'
+      );
+
+      if (author?.email) {
+        const subject = nextStatus === 'rejected_final'
+          ? '[RECHAZADO FINAL] Resultado de evaluación'
+          : '[RECHAZADO] Resultado de evaluación';
+        const body =
+          `Hola ${author.name || ''},\n\n` +
+          `Tu trabajo "${updatedWork.title}" ${nextStatus === 'rejected_final' ? 'quedó en rechazo final' : 'fue rechazado en evaluación'}.\n` +
+          `${reviewCommentsText ? `Comentarios: ${reviewCommentsText}\n` : ''}` +
+          `${nextStatus === 'rejected_final' ? 'No quedan reenvíos disponibles por evaluación.\n' : 'Podés corregir y reenviar.\n'}` +
+          `\nComité Evaluador`;
+        logEmailToUser(author.email, subject, body);
+      }
+
+      const committeeUsers = allUsers.filter((u: any) => Array.isArray(u.roles) && u.roles.includes('comite'));
+      committeeUsers.forEach((comite: any) => {
+        sendNotificationToUser(
+          comite.id,
+          nextStatus === 'rejected_final' ? 'Trabajo rechazado final' : 'Trabajo rechazado por evaluación',
+          reviewCommentsText
+            ? `El trabajo "${updatedWork.title}" quedó ${nextStatus === 'rejected_final' ? 'en rechazo final' : 'rechazado por evaluación'} (intento revisión ${nextReviewAttempts}/2). Comentarios: ${reviewCommentsText}`
+            : `El trabajo "${updatedWork.title}" quedó ${nextStatus === 'rejected_final' ? 'en rechazo final' : 'rechazado por evaluación'} (intento revisión ${nextReviewAttempts}/2).`,
+          'Comité Evaluador'
+        );
+      });
+    } else {
+      // estado intermedio: no notificamos “aprobado/rechazado” aún
+      sendNotificationToUser(
+        updatedWork.userId,
+        'Trabajo en evaluación',
+        comment
+          ? `Se registró una evaluación para tu trabajo "${updatedWork.title}". Comentario: ${comment}`
+          : `Se registró una evaluación para tu trabajo "${updatedWork.title}".`,
+        'Comité Evaluador'
+      );
+    }
+
     setFeedbacks(p => { const c = { ...p }; delete c[workId]; return c; });
     setShowFeedback(p => { const c = { ...p }; delete c[workId]; return c; });
   };
 
-  const handleReject = (workId: string) => {
-    const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
-    const work     = allWorks.find((w: any) => w.id === workId);
+  const handleApprove = (workId: string) => handleDecision(workId, 'approve');
+  const handleReject = (workId: string) => handleDecision(workId, 'reject');
 
-    const updatedWorks = allWorks.map((w: any) =>
-      w.id === workId ? { ...w, status: 'rejected', attempts: (w.attempts || 1) + 1 } : w
-    );
-    localStorage.setItem('congress_works', JSON.stringify(updatedWorks));
+  const handleAcceptInvite = (workId: string) => {
+    if (!user) return;
+    const allWorks = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
+    const work = allWorks.find((w: any) => w.id === workId);
+    if (!work) return;
 
-    const feedbackText = feedbacks[workId]?.trim();
-    sendNotificationToUser(
-      work.userId,
-      'Trabajo no aprobado',
-      feedbackText
-        ? `Tu trabajo "${work.title}" no fue aprobado. Comentario del evaluador: ${feedbackText}`
-        : `Tu trabajo "${work.title}" no fue aprobado. Podés volver a enviarlo con correcciones.`
-    );
+    const prevAssignments = Array.isArray(work.assignments) ? work.assignments : [];
+    const nextAssignments = prevAssignments.map((a: any) => {
+      if (a?.evaluatorId !== user.id) return a;
+      if (!canRespondToAssignmentInvite(a, user.id)) return a;
+      return { ...a, inviteStatus: 'accepted' };
+    });
 
-    setWorks(updatedWorks.filter((w: any) => w.status === 'pending' && w.userId !== user.id));
-    setFeedbacks(p => { const c = { ...p }; delete c[workId]; return c; });
-    setShowFeedback(p => { const c = { ...p }; delete c[workId]; return c; });
+    let nextStatus: string = work.status || 'assigned';
+    if (allActiveInvitesAccepted(nextAssignments) && (nextStatus === 'assigned' || nextStatus === 'under_review')) {
+      nextStatus = 'under_review';
+    }
+
+    const updatedWork = { ...work, assignments: nextAssignments, status: nextStatus };
+    const updatedWorks = allWorks.map((w: any) => (w.id === workId ? updatedWork : w));
+    persistAllWorks(updatedWorks);
+  };
+
+  const handleDeclineInvite = (workId: string) => {
+    if (!user) return;
+    const allWorks = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
+    const work = allWorks.find((w: any) => w.id === workId);
+    if (!work) return;
+
+    const prevAssignments = Array.isArray(work.assignments) ? work.assignments : [];
+    const nextAssignments = prevAssignments.map((a: any) => {
+      if (a?.evaluatorId !== user.id) return a;
+      if (!canRespondToAssignmentInvite(a, user.id)) return a;
+      return {
+        ...a,
+        inviteStatus: 'declined',
+        declinedAt: new Date().toISOString(),
+      };
+    });
+
+    const updatedWork = { ...work, assignments: nextAssignments };
+    const updatedWorks = allWorks.map((w: any) => (w.id === workId ? updatedWork : w));
+    persistAllWorks(updatedWorks);
+
+    const allUsers = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+    const committeeUsers = allUsers.filter((u: any) => Array.isArray(u.roles) && u.roles.includes('comite'));
+    committeeUsers.forEach((c: any) => {
+      sendNotificationToUser(
+        c.id,
+        'Evaluador rechazó una asignación',
+        `El evaluador rechazó evaluar el trabajo "${work.title}". Podés invitar a otro evaluador del mismo eje desde el panel del comité académico.`,
+        'Comité Académico'
+      );
+    });
   };
 
   // ── Talleres ─────────────────────────────────────────────────────────────────
@@ -139,7 +357,9 @@ export function PanelEvaluador() {
             <ClipboardCheck className="w-12 h-12 text-purple-600" />
             <div>
               <h1 className="text-3xl text-gray-800">Panel de Evaluador</h1>
-              <p className="text-gray-600">Evaluación de trabajos científicos y propuestas de taller</p>
+              <p className="text-gray-600">
+                Evaluación de trabajos científicos y propuestas de taller. Las nuevas asignaciones requieren que aceptes o rechaces la convocatoria antes del dictamen.
+              </p>
             </div>
           </div>
         </div>
@@ -182,13 +402,25 @@ export function PanelEvaluador() {
                 No hay trabajos pendientes de evaluación
               </div>
             ) : (
-              works.map((work) => (
+              works.map((work) => {
+                const mineA = (Array.isArray(work.assignments) ? work.assignments : []).find(
+                  (a: any) => a?.evaluatorId === user.id && isActiveAssignmentSlot(a)
+                );
+                const invitePending = Boolean(
+                  mineA && user && canRespondToAssignmentInvite(mineA, user.id)
+                );
+                return (
                 <div key={work.id} className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <h3 className="text-xl text-gray-800 mb-2">{work.title}</h3>
                       <div className="flex flex-wrap gap-2">
-                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">{work.type}</span>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                          {work.workType ? (work.workType === 'cientifico' ? 'Científico' : 'Relato de experiencia') : 'Tipo: —'}
+                        </span>
+                        <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                          Modalidad: {(work.modality ?? work.type) || '—'}
+                        </span>
                         <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">{work.axis}</span>
                         <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm">Pendiente</span>
                       </div>
@@ -218,6 +450,30 @@ export function PanelEvaluador() {
                     <FileText className="w-8 h-8 text-gray-400 shrink-0 ml-4" />
                   </div>
 
+                  {invitePending ? (
+                    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                      <p className="text-sm text-amber-950 mb-3">
+                        El comité te invitó a evaluar este trabajo. Aceptá la asignación para cargar tu dictamen, o rechazala para que puedan convocar a otro evaluador del mismo eje.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleAcceptInvite(work.id)}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm"
+                        >
+                          Aceptar asignación
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeclineInvite(work.id)}
+                          className="px-4 py-2 border border-amber-700 text-amber-900 rounded-lg hover:bg-amber-100 transition text-sm"
+                        >
+                          Rechazar asignación
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
                   {/* Comentario opcional */}
                   <button
                     onClick={() => setShowFeedback(p => ({ ...p, [work.id]: !p[work.id] }))}
@@ -251,8 +507,11 @@ export function PanelEvaluador() {
                       Rechazar
                     </button>
                   </div>
+                    </>
+                  )}
                 </div>
-              ))
+              );
+              })
             )}
           </div>
         </div>

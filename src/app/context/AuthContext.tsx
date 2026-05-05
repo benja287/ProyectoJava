@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type UserRole = 'asistente' | 'autor' | 'evaluador' | 'admin';
+export type UserRole = 'asistente' | 'autor' | 'evaluador' | 'comite' | 'admin';
 
 export interface User {
   id: string;
@@ -10,9 +10,45 @@ export interface User {
   roles: UserRole[];
   currentRole?: UserRole;
   inscriptionStatus?: 'pending' | 'confirmed' | 'rejected';
+  /** Transferencia con comprobante, o efectivo / presencial (sin archivo; valida admin). */
+  inscriptionPaymentMethod?: 'transfer' | 'cash';
+  /** Si el asistente pidió factura al inscribirse. */
+  inscriptionRequiresInvoice?: boolean;
+  /** Solo efectivo: fecha ISO en que un admin aprobó constando el cobro en caja/recepción. */
+  inscriptionCashValidatedAt?: string;
+  /** Solo efectivo: nombre o email del admin que confirmó el cobro (texto libre). */
+  inscriptionCashValidatedByLabel?: string;
+  category?: InscriptionCategory;
   institution?: string;
   province?: string;
+  /** Ejes temáticos en los que el evaluador está especializado. */
+  axes?: string[];
+  categoryCertificate?: string;
+  categoryCertificateFileId?: string;
+  categoryCertificateFileSize?: number;
+  categoryCertificateMimeType?: string;
+  /** Generado al aprobar inscripción (admin): comprobante / acreditación */
+  inscriptionInvoiceId?: string;
+  inscriptionInvoiceIssuedAt?: string;
+  inscriptionAccreditationToken?: string;
+  inscriptionInvoiceAmountLabel?: string;
+  inscriptionInvoiceCategoryLabel?: string;
+  /**
+   * Si es `false`, la cuenta fue deshabilitada por un administrador: no puede iniciar sesión
+   * hasta que la reactiven. Omitido o `true` = cuenta habilitada.
+   */
+  accountActive?: boolean;
 }
+
+export type InscriptionCategory =
+  | 'socio_saae'
+  | 'no_socio'
+  | 'estudiante'
+  | 'productor'
+  | 'investigador'
+  | 'extensionista'
+  | 'docente'
+  | 'extranjero';
 
 export interface Notification {
   id: string;
@@ -26,8 +62,18 @@ export interface Notification {
 interface AuthContextType {
   user: User | null;
   notifications: Notification[];
-  login: (email: string, password: string) => Promise<{ success: boolean; needsRoleSelection?: boolean }>;
-  register: (email: string, password: string, name: string, lastName: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{
+    success: boolean;
+    needsRoleSelection?: boolean;
+    accountDisabled?: boolean;
+  }>;
+  register: (
+    email: string,
+    password: string,
+    name: string,
+    lastName: string,
+    category: InscriptionCategory
+  ) => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   selectRole: (role: UserRole) => void;
@@ -41,6 +87,64 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const USERS_KEY = 'congress_users';
 
+/** Cuentas fijas por `id` para demo y equipo: siempre se crean/actualizan aunque ya exista otro admin en localStorage. */
+const DEMO_SEED_USERS: Record<string, unknown>[] = [
+  {
+    id: 'admin-1',
+    email: 'mantillabenja153@gmail.com',
+    password: '12345678',
+    name: 'Admin',
+    lastName: 'Principal',
+    roles: ['admin'] as UserRole[],
+    accountActive: true,
+  },
+  {
+    id: 'comite-1',
+    email: 'rodriguezmantilla123@gmail.com',
+    password: '12345678',
+    name: 'Comité',
+    lastName: 'Académico',
+    roles: ['comite'] as UserRole[],
+    accountActive: true,
+  },
+];
+
+function ensureDemoSeedUsers(list: any[]): { next: any[]; changed: boolean } {
+  let changed = false;
+  const next = [...list];
+  for (const seed of DEMO_SEED_USERS) {
+    const id = seed.id as string;
+    const i = next.findIndex((u: any) => u?.id === id);
+    if (i === -1) {
+      next.push({ ...seed });
+      changed = true;
+      continue;
+    }
+    const cur = next[i];
+    const merged = {
+      ...cur,
+      ...seed,
+      roles: [...(seed.roles as UserRole[])],
+      accountActive: true,
+    };
+    const rolesEqual =
+      Array.isArray(cur.roles) &&
+      Array.isArray(merged.roles) &&
+      cur.roles.length === merged.roles.length &&
+      cur.roles.every((r: string, j: number) => r === merged.roles[j]);
+    const needUpdate =
+      cur.email !== merged.email ||
+      cur.password !== merged.password ||
+      !rolesEqual ||
+      cur.accountActive === false;
+    if (needUpdate) {
+      next[i] = merged;
+      changed = true;
+    }
+  }
+  return { next, changed };
+}
+
 // Cada usuario tiene su propia key de notificaciones
 // formato: congress_notifications_{userId}
 const getUserNotificationsKey = (userId: string) => `congress_notifications_${userId}`;
@@ -50,20 +154,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
-    // Crear admin si no existe — sin cambios
-    const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-    const adminExists = users.some((u: any) => u.roles?.includes('admin'));
-    if (!adminExists) {
-      const adminUser = {
-        id: 'admin-1',
-        email: 'alexisadmin@gmail.com',
-        password: '12345678',
-        name: 'Admin',
-        lastName: 'Principal',
-        roles: ['admin'],
-      };
-      users.push(adminUser);
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    let users: any[] = [];
+    try {
+      const raw = localStorage.getItem(USERS_KEY) || '[]';
+      const parsed = JSON.parse(raw);
+      users = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      users = [];
+    }
+
+    const { next, changed } = ensureDemoSeedUsers(users);
+    if (changed) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(next));
     }
       // Generamos un asistente sin log
       const asistUser = {
@@ -122,20 +224,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const savedUser = localStorage.getItem('current_user');
     if (savedUser) {
       const parsedUser = JSON.parse(savedUser);
-      setUser(parsedUser);
-      // Carga las notificaciones propias del usuario logueado
-      const userNotifs = localStorage.getItem(getUserNotificationsKey(parsedUser.id));
-      if (userNotifs) {
-        setNotifications(JSON.parse(userNotifs));
+      const list = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+      const fresh = list.find((u: any) => u.id === parsedUser.id);
+      if (fresh && fresh.accountActive === false) {
+        localStorage.removeItem('current_user');
+        setUser(null);
+      } else {
+        setUser(parsedUser);
+        const userNotifs = localStorage.getItem(getUserNotificationsKey(parsedUser.id));
+        if (userNotifs) {
+          setNotifications(JSON.parse(userNotifs));
+        }
       }
     }
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; needsRoleSelection?: boolean }> => {
+  // Cierra sesión si la cuenta pasó a deshabilitada (otra pestaña admin o enfoque de ventana)
+  useEffect(() => {
+    const validateSession = () => {
+      const saved = localStorage.getItem('current_user');
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      const list = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+      const fresh = list.find((u: any) => u.id === parsed.id);
+      if (fresh && fresh.accountActive === false) {
+        localStorage.removeItem('current_user');
+        setUser(null);
+        setNotifications([]);
+      }
+    };
+    window.addEventListener('focus', validateSession);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === USERS_KEY) validateSession();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('focus', validateSession);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
+
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; needsRoleSelection?: boolean; accountDisabled?: boolean }> => {
     const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-    const foundUser = users.find((u: any) => u.email === email && u.password === password);
+    const norm = email.trim().toLowerCase();
+    const foundUser = users.find(
+      (u: any) => u.email?.toLowerCase?.() === norm && u.password === password
+    );
 
     if (foundUser) {
+      if (foundUser.accountActive === false) {
+        return { success: false, accountDisabled: true };
+      }
+
       const { password: _, ...userWithoutPassword } = foundUser;
 
       if (userWithoutPassword.roles && userWithoutPassword.roles.length > 1) {
@@ -159,10 +302,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: false };
   };
 
-  // register — sin cambios
-  const register = async (email: string, password: string, name: string, lastName: string): Promise<boolean> => {
+  // register
+  const register = async (
+    email: string,
+    password: string,
+    name: string,
+    lastName: string,
+    category: InscriptionCategory
+  ): Promise<boolean> => {
     const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-    if (users.some((u: any) => u.email === email)) return false;
+    if (users.some((u: any) => u.email?.toLowerCase?.() === email.trim().toLowerCase())) return false;
 
     const newUser = {
       id: Date.now().toString(),
@@ -170,7 +319,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       name,
       lastName,
+      category,
       roles: [] as UserRole[],
+      accountActive: true,
     };
 
     users.push(newUser);
@@ -250,6 +401,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Filtra destinatarios según si se eligió un rol o todos
     const targets = users.filter((u: any) => {
+      if (u.accountActive === false) return false;
       if (u.id === user?.id) return false; // el admin no se notifica a sí mismo
       if (role) {
         return u.roles?.includes(role); // solo los que tienen ese rol

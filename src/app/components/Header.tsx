@@ -193,6 +193,7 @@ export function Header() {
                               user.currentRole === 'asistente' ? 'Asistente' :
                               user.currentRole === 'autor' ? 'Autor' :
                               user.currentRole === 'evaluador' ? 'Evaluador' :
+                              user.currentRole === 'comite' ? 'Comité académico' :
                               user.currentRole === 'admin' ? 'Administrador' : ''
                             }
                           </p>
