@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
+import { DEMO_USERS_LOGIN_LIST, formatRolesForLogin } from '../constants/demoSeedUsers';
 import { LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export function Login() {
@@ -99,14 +100,17 @@ if (currentUser.currentRole === 'admin') {
             </div>
           )}
           <fieldset>
-          <legend><h3>Usuarios de prueba</h3></legend>
-            <p className="text-sm text-gray-600 mb-6">
-              <strong>alexisadmin@gmail.com</strong><br />
-              <strong>lucasbudnik@hotmail.com.ar</strong><br />
-              <strong>rodriguezmantilla123@gmail.com</strong><br />
-              <strong>alci0483@gmail.com</strong><br />
-              <strong>admin2@gmail.com</strong><br />
-            </p>
+            <legend>
+              <h3>Usuarios de prueba</h3>
+            </legend>
+            <div className="text-sm text-gray-600 mb-6 space-y-2">
+              {DEMO_USERS_LOGIN_LIST.map((u) => (
+                <div key={u.id}>
+                  <strong>{u.email}</strong>
+                  <span className="text-gray-500"> — {formatRolesForLogin(u.roles)}</span>
+                </div>
+              ))}
+            </div>
           </fieldset>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

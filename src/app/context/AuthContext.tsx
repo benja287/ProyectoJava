@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { DEMO_SEED_USERS, EXTRA_SEED_USERS } from '../constants/demoSeedUsers';
 
 export type UserRole = 'asistente' | 'autor' | 'evaluador' | 'comite' | 'admin';
 
@@ -86,62 +87,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const USERS_KEY = 'congress_users';
-
-/** Cuentas fijas por `id` para demo y equipo: siempre se crean/actualizan aunque ya exista otro admin en localStorage. */
-const DEMO_SEED_USERS: Record<string, unknown>[] = [
-  {
-    id: 'admin-1',
-    email: 'mantillabenja153@gmail.com',
-    password: '12345678',
-    name: 'Admin',
-    lastName: 'Principal',
-    roles: ['admin'] as UserRole[],
-    accountActive: true,
-  },
-  {
-    id: 'comite-1',
-    email: 'rodriguezmantilla123@gmail.com',
-    password: '12345678',
-    name: 'Comité',
-    lastName: 'Académico',
-    roles: ['comite'] as UserRole[],
-    accountActive: true,
-  },
-];
-
-const EXTRA_SEED_USERS: Record<string, unknown>[] = [
-  {
-    id: 'asistLucas',
-    email: 'lucasbudnik@hotmail.com.ar',
-    password: '12345678',
-    name: 'Asistente',
-    lastName: 'Principal',
-    roles: ['asistente'] as UserRole[],
-    currentRole: 'asistente' as UserRole,
-    inscriptionStatus: 'confirmed' as const,
-    institution: 'Instituto de Agroecologia',
-    province: 'Buenos Aires',
-    accountActive: true,
-  },
-  {
-    id: 'evaluadorAlci',
-    email: 'alci0483@gmail.com',
-    password: '12345678',
-    name: 'Evaluador',
-    lastName: 'Principal',
-    roles: ['evaluador'] as UserRole[],
-    accountActive: true,
-  },
-  {
-    id: 'admin-2',
-    email: 'admin2@gmail.com',
-    password: '12345678',
-    name: 'Admin',
-    lastName: 'Secondary',
-    roles: ['admin', 'asistente', 'autor', 'evaluador'] as UserRole[],
-    accountActive: true,
-  },
-];
 
 function upsertSeedUsers(list: any[], seeds: Record<string, unknown>[]): { next: any[]; changed: boolean } {
   let changed = false;
