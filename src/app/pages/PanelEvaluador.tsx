@@ -3,9 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { ClipboardCheck, FileText, MessageSquare, Presentation, FileDown, BadgeCheck } from 'lucide-react';
 import { openOrDownloadFile } from '../lib/browserFiles';
-<<<<<<< HEAD
 import { CertificateView } from './Certificaciones';
-=======
 import { sendTransactionalEmail } from '../lib/emailSender';
 import {
   allActiveInvitesAccepted,
@@ -13,7 +11,6 @@ import {
   canRespondToAssignmentInvite,
   isActiveAssignmentSlot,
 } from '../lib/workAssignments';
->>>>>>> origin/version1
 
 const TALLERES_KEY = 'congress_talleres_propuestos';
 const WORKS_KEY = 'congress_works';

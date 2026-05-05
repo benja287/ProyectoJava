@@ -32,11 +32,8 @@ import { ContactoPage } from "./pages/ContactoPage";
 import { AdminCircularForm } from "./pages/AdminCircularForm";
 import { PerfilPage } from "./pages/PerfilPage";
 import { Dashboard } from "./pages/Dashboard"; 
-<<<<<<< HEAD
 import { CertificateView } from "./pages/Certificaciones";
-=======
 import { InscripcionComprobantePage } from "./pages/InscripcionComprobantePage";
->>>>>>> origin/version1
 export const router = createBrowserRouter([
   {
     path: "/",

@@ -156,14 +156,11 @@ export function PanelAdmin() {
 
   const [circulares, setCirculares] = useState<StoredCircular[]>([]);
   const [circularesFeedback, setCircularesFeedback] = useState('');
-<<<<<<< HEAD
   /** Valor del input fecha certificados (YYYY-MM-DD); la verdad persistida está en localStorage. */
   const [certificatesAvailableFromInput, setCertificatesAvailableFromInput] = useState('');
   const [, setCertificateAdminUiTick] = useState(0);
-=======
   const [authorRequestsFeedback, setAuthorRequestsFeedback] = useState('');
   const [inscriptionInvoiceFeedback, setInscriptionInvoiceFeedback] = useState('');
->>>>>>> origin/version1
 
   // ─── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
