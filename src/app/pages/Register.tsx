@@ -1,12 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-<<<<<<< HEAD
 import { UserPlus, AlertCircle, Eye, EyeOff } from 'lucide-react';
-=======
-import { UserPlus, AlertCircle } from 'lucide-react';
 import type { InscriptionCategory } from '../context/AuthContext';
->>>>>>> origin/version1
 
 export function Register() {
   const [email, setEmail] = useState('');
