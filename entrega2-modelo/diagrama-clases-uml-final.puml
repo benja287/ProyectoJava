@@ -1,0 +1,254 @@
+@startuml
+skinparam classAttributeIconSize 0
+title V Congreso Agroecologia - Diagrama de clases UML (final)
+
+package "Usuarios y Roles" {
+  abstract class Usuario {
+    -id: UUID
+    -nombre: String
+    -apellido: String
+    -email: String
+    -activo: boolean
+    +activar(): void
+    +desactivar(): void
+  }
+
+  class Administrador
+  class OrganizadorCientifico
+  class Evaluador
+  class Autor
+  class Participante
+
+  Usuario <|-- Administrador
+  Usuario <|-- OrganizadorCientifico
+  Usuario <|-- Evaluador
+  Usuario <|-- Autor
+  Usuario <|-- Participante
+}
+
+package "Academico" {
+  enum TipoTrabajo {
+    TRABAJO_CIENTIFICO
+    RELATO_DE_EXPERIENCIA
+    PROPUESTA_TALLER
+  }
+
+  enum EstadoTrabajo {
+    BORRADOR
+    ENVIADO
+    EN_EVALUACION
+    APROBADO
+    APROBADO_CON_CORRECCIONES
+    RECHAZADO
+    NOTIFICADO
+  }
+
+  enum RecomendacionEvaluacion {
+    APROBADO
+    APROBADO_CON_CORRECCIONES
+    RECHAZADO
+  }
+
+  class Trabajo {
+    -id: UUID
+    -titulo: String
+    -resumen: String
+    -ejeTematico: String
+    -tipo: TipoTrabajo
+    -estado: EstadoTrabajo
+    -documentoUrl: String
+    +enviar(): void
+    +pasarAEvaluacion(): void
+    +aplicarDecisionFinal(r: RecomendacionEvaluacion): void
+    +notificarDecision(): void
+  }
+
+  class Evaluacion {
+    -id: UUID
+    -comentario: String
+    -fecha: LocalDateTime
+    -recomendacion: RecomendacionEvaluacion
+  }
+
+  class AsignacionEvaluacion {
+    -id: UUID
+    -aceptada: boolean
+    -fechaRespuesta: LocalDateTime
+    +aceptar(): void
+    +rechazar(): void
+  }
+}
+
+package "Inscripcion y Pagos" {
+  enum EstadoInscripcion {
+    PENDIENTE
+    CONFIRMADA
+    RECHAZADA
+  }
+
+  enum EstadoPago {
+    PENDIENTE
+    APROBADO
+    RECHAZADO
+  }
+
+  enum MetodoPago {
+    TRANSFERENCIA
+    TARJETA
+    EFECTIVO
+  }
+
+  class InscripcionCongreso {
+    -id: UUID
+    -categoria: String
+    -estado: EstadoInscripcion
+    -fechaSolicitud: LocalDateTime
+    -motivoRechazo: String
+    +confirmar(): void
+    +rechazar(motivo: String): void
+  }
+
+  class Pago {
+    -id: UUID
+    -monto: BigDecimal
+    -metodo: MetodoPago
+    -estado: EstadoPago
+    -requiereFactura: boolean
+    -comprobanteUrl: String
+    -qrAcreditacion: String
+    +aprobar(qr: String): void
+    +rechazar(motivo: String): void
+    +reintentar(): void
+  }
+}
+
+package "Agenda y Congreso" {
+  enum EtapaProceso {
+    ENVIO_TRABAJOS
+    EVALUACION
+    NOTIFICACION
+    PAGO_TEMPRANO
+  }
+
+  class RangoFechas {
+    -desde: LocalDate
+    -hasta: LocalDate
+    +contiene(fecha: LocalDate): boolean
+  }
+
+  class Congreso {
+    -nombre: String
+    -edicion: String
+    +definirEtapa(etapa: EtapaProceso, desde: LocalDate, hasta: LocalDate): void
+    +estaEtapaHabilitada(etapa: EtapaProceso, fecha: LocalDate): boolean
+  }
+
+  class Actividad {
+    -id: UUID
+    -titulo: String
+    -tipo: String
+    -aula: String
+    -inicio: LocalDateTime
+    -fin: LocalDateTime
+    +seSuperponeCon(otra: Actividad): boolean
+  }
+
+  class CronogramaPersonal {
+    +agregarActividad(a: Actividad): void
+    +quitarActividad(a: Actividad): void
+  }
+}
+
+package "Comunicaciones" {
+  enum CanalNotificacion {
+    INTERNA
+    EMAIL
+  }
+
+  class Notificacion {
+    -id: UUID
+    -asunto: String
+    -mensaje: String
+    -canal: CanalNotificacion
+    -leida: boolean
+    +marcarLeida(): void
+  }
+
+  class EnvioEmail {
+    -id: UUID
+    -destinatario: String
+    -asunto: String
+    -cuerpo: String
+    -enviado: boolean
+    -error: String
+    +marcarEnviado(): void
+    +marcarError(error: String): void
+  }
+
+  class PlantillaEmail {
+    -id: UUID
+    -nombre: String
+    -asunto: String
+    -cuerpo: String
+    +renderizar(titulo: String, estado: String): String
+  }
+
+  class Circular
+  class Anuncio
+  class Certificado
+}
+
+class SistemaGestionCongreso {
+  +registrarUsuario(u: Usuario): void
+  +postularTrabajo(t: Trabajo): void
+  +asignarTrabajoAEvaluador(t: Trabajo, e: Evaluador): void
+  +registrarInscripcion(i: InscripcionCongreso): void
+  +registrarPago(p: Pago): void
+  +crearActividad(a: Actividad): void
+  +enviarNotificacionInterna(u: Usuario, asunto: String, mensaje: String): void
+  +registrarEnvioEmail(destinatario: String, asunto: String, cuerpo: String): void
+}
+
+' Asociaciones con multiplicidad y tipo de relacion
+Autor "1" -- "0..2" Trabajo : postula >
+Trabajo "1" -- "0..*" Evaluacion
+Evaluador "1" -- "0..*" Evaluacion : realiza >
+OrganizadorCientifico "1" -- "0..*" AsignacionEvaluacion : asigna >
+AsignacionEvaluacion "*" -- "1" Trabajo
+AsignacionEvaluacion "*" -- "1" Evaluador
+
+Participante "1" -- "0..1" InscripcionCongreso
+InscripcionCongreso "1" -- "0..1" Pago
+Participante "1" -- "0..*" Pago
+Participante "1" *-- "1" CronogramaPersonal
+CronogramaPersonal "1" *-- "0..*" Actividad
+
+Congreso "1" *-- "1..*" RangoFechas
+Congreso "1" -- "0..*" Actividad
+
+Notificacion "*" --> "1" Usuario : destinatario
+EnvioEmail "*" --> "1" Usuario : origen/destino logico
+Certificado "*" --> "1" Usuario : destinatario
+
+SistemaGestionCongreso "1" o-- "1" Congreso
+SistemaGestionCongreso "1" o-- "0..*" Usuario
+SistemaGestionCongreso "1" o-- "0..*" Trabajo
+SistemaGestionCongreso "1" o-- "0..*" InscripcionCongreso
+SistemaGestionCongreso "1" o-- "0..*" Pago
+SistemaGestionCongreso "1" o-- "0..*" Actividad
+SistemaGestionCongreso "1" o-- "0..*" Notificacion
+SistemaGestionCongreso "1" o-- "0..*" EnvioEmail
+SistemaGestionCongreso "1" o-- "0..*" Circular
+SistemaGestionCongreso "1" o-- "0..*" Anuncio
+SistemaGestionCongreso "1" o-- "0..*" PlantillaEmail
+SistemaGestionCongreso "1" o-- "0..*" Certificado
+
+note bottom
+Restricciones del alcance reflejadas:
+- Maximo 2 trabajos por autor
+- Flujo: postulacion -> evaluacion -> decision -> notificacion
+- Validacion de superposicion en agenda personal
+- Inscripcion y pago con QR de acreditacion
+end note
+
+@enduml

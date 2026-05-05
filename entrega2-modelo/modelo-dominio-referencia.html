@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Modelo de dominio — referencia</title>
+<style>
+  @page { size: A4; margin: 18mm; }
+  body { font-family: "Segoe UI", Ubuntu, Helvetica, Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #222; }
+  h1 { font-size: 17pt; border-bottom: 2px solid #2d5016; padding-bottom: 6px; }
+  h2 { font-size: 13pt; margin-top: 1.2em; color: #1a1a1a; }
+  h3 { font-size: 11.5pt; margin-top: 0.9em; color: #2d5016; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: 9.5pt; background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }
+  ul { margin: 0.4em 0; padding-left: 1.2em; }
+  li { margin: 0.25em 0; }
+  table { border-collapse: collapse; width: 100%; margin: 0.6em 0 1em; font-size: 9.8pt; }
+  th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f0f4ec; font-weight: 600; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 1.2em 0; }
+  .sub { color: #555; font-size: 10pt; margin-bottom: 1em; }
+  strong { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Modelo de dominio — referencia</h1>
+<p class="sub">Paquete <code>ar.unlp.agroecologia.modelo</code> · <code>entrega2-modelo</code> — 2026-05-04</p>
+
+<p>Este documento resume las clases del dominio Java en <code>entrega2-modelo</code>: atributos, operaciones y relaciones.</p>
+
+<h2>Enumeraciones (tipos de valor; se relacionan por uso)</h2>
+<table>
+<thead><tr><th>Tipo</th><th>Literales</th></tr></thead>
+<tbody>
+<tr><td><strong>Rol</strong></td><td>PARTICIPANTE, AUTOR, EVALUADOR, ORGANIZADOR_CIENTIFICO, ADMINISTRADOR</td></tr>
+<tr><td><strong>EstadoTrabajo</strong></td><td>BORRADOR, ENVIADO, EN_EVALUACION, APROBADO, APROBADO_CON_CORRECCIONES, RECHAZADO, NOTIFICADO</td></tr>
+<tr><td><strong>TipoTrabajo</strong></td><td>TRABAJO_CIENTIFICO, RELATO_DE_EXPERIENCIA, PROPUESTA_TALLER</td></tr>
+<tr><td><strong>EstadoInscripcion</strong></td><td>PENDIENTE, CONFIRMADA, RECHAZADA</td></tr>
+<tr><td><strong>EstadoPago</strong></td><td>PENDIENTE, APROBADO, RECHAZADO</td></tr>
+<tr><td><strong>MetodoPago</strong></td><td>TRANSFERENCIA, TARJETA, EFECTIVO</td></tr>
+<tr><td><strong>RecomendacionEvaluacion</strong></td><td>APROBADO, APROBADO_CON_CORRECCIONES, RECHAZADO</td></tr>
+<tr><td><strong>EtapaProceso</strong></td><td>ENVIO_TRABAJOS, EVALUACION, NOTIFICACION, PAGO_TEMPRANO</td></tr>
+<tr><td><strong>CanalNotificacion</strong></td><td>INTERNA, EMAIL</td></tr>
+</tbody>
+</table>
+
+<hr/>
+
+<h2>Clases y objetos de dominio</h2>
+
+<h3>Usuario</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code> (UUID), <code>nombre</code>, <code>apellido</code>, <code>email</code>, <code>activo</code>, <code>roles</code> (Set&amp;lt;Rol&amp;gt;).</li>
+<li><strong>Métodos:</strong> constructor, getters (<code>getId</code>, <code>getNombre</code>, <code>getApellido</code>, <code>getEmail</code>, <code>isActivo</code>, <code>getRoles</code>), <code>desactivar()</code>, <code>activar()</code>, <code>agregarRol(Rol)</code>, <code>quitarRol(Rol)</code>, <code>tieneRol(Rol)</code>.</li>
+<li><strong>Relaciones:</strong> agrega/quita <strong>Rol</strong>; referenciado por <strong>Trabajo</strong> (autor), <strong>Pago</strong>, <strong>InscripcionCongreso</strong>, <strong>Evaluacion</strong>, <strong>AsignacionEvaluacion</strong>, <strong>Notificacion</strong>, <strong>Certificado</strong>.</li>
+</ul>
+
+<h3>Congreso</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>nombre</code>, <code>edicion</code>, <code>etapas</code> (Map EtapaProceso → RangoFechas).</li>
+<li><strong>Métodos:</strong> constructor, <code>definirEtapa(EtapaProceso, LocalDate, LocalDate)</code>, <code>estaEtapaHabilitada(EtapaProceso, LocalDate)</code>.</li>
+<li><strong>Relaciones:</strong> usa <strong>EtapaProceso</strong> y <strong>RangoFechas</strong>; una instancia es contenida por <strong>SistemaGestionCongreso</strong>.</li>
+</ul>
+
+<h3>RangoFechas</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>desde</code>, <code>hasta</code> (LocalDate).</li>
+<li><strong>Métodos:</strong> constructor, <code>contiene(LocalDate)</code>.</li>
+<li><strong>Relaciones:</strong> valor embebido en el mapa de <strong>Congreso</strong>.</li>
+</ul>
+
+<h3>Trabajo</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>autorPrincipal</code> (Usuario), <code>coautores</code> (List String), <code>titulo</code>, <code>resumen</code>, <code>ejeTematico</code>, <code>tipo</code> (TipoTrabajo), <code>estado</code> (EstadoTrabajo), <code>documentoUrl</code>, <code>fechaCreacion</code>, <code>evaluaciones</code> (List Evaluacion).</li>
+<li><strong>Métodos:</strong> constructor; getters (<code>getId</code>, <code>getAutorPrincipal</code>, <code>getTitulo</code>, <code>getEjeTematico</code>, <code>getTipo</code>, <code>getEstado</code>, <code>getFechaCreacion</code>, <code>getEvaluaciones</code>, <code>getCoautores</code>), <code>agregarCoautor(String)</code>, <code>enviar()</code>, <code>pasarAEvaluacion()</code>, <code>registrarEvaluacion(Evaluacion)</code>, <code>aplicarDecisionFinal(RecomendacionEvaluacion)</code>, <code>notificarDecision()</code>.</li>
+<li><strong>Relaciones:</strong> → <strong>Usuario</strong> (1); contiene muchas <strong>Evaluacion</strong>; usa <strong>TipoTrabajo</strong>, <strong>EstadoTrabajo</strong>, <strong>RecomendacionEvaluacion</strong>; enlazado en <strong>AsignacionEvaluacion</strong> y listas del sistema.</li>
+</ul>
+
+<h3>Evaluacion</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>evaluador</code> (Usuario), <code>recomendacion</code> (RecomendacionEvaluacion), <code>comentario</code>, <code>fecha</code>.</li>
+<li><strong>Métodos:</strong> constructor; getters (<code>getId</code>, <code>getEvaluador</code>, <code>getRecomendacion</code>, <code>getComentario</code>, <code>getFecha</code>).</li>
+<li><strong>Relaciones:</strong> → <strong>Usuario</strong> (evaluador); pertenece a <strong>Trabajo</strong> vía su lista.</li>
+</ul>
+
+<h3>AsignacionEvaluacion</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>trabajo</code> (Trabajo), <code>evaluador</code> (Usuario), <code>aceptada</code>, <code>fechaRespuesta</code>.</li>
+<li><strong>Métodos:</strong> constructor; getters (<code>getId</code>, <code>getTrabajo</code>, <code>getEvaluador</code>, <code>isAceptada</code>, <code>getFechaRespuesta</code>), <code>aceptar()</code>, <code>rechazar()</code>.</li>
+<li><strong>Relaciones:</strong> → <strong>Trabajo</strong> (1), → <strong>Usuario</strong> (1, evaluador).</li>
+</ul>
+
+<h3>InscripcionCongreso</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>participante</code> (Usuario), <code>categoria</code>, <code>estado</code> (EstadoInscripcion), <code>fechaSolicitud</code>, <code>motivoRechazo</code>, <code>pago</code> (Pago, opcional).</li>
+<li><strong>Métodos:</strong> constructor; getters (<code>getId</code>, <code>getEstado</code>), <code>asociarPago(Pago)</code>, <code>confirmar()</code>, <code>rechazar(String)</code>.</li>
+<li><strong>Relaciones:</strong> → <strong>Usuario</strong>; opcionalmente → <strong>Pago</strong>; <code>confirmar()</code> invoca <code>participante.agregarRol(PARTICIPANTE)</code>.</li>
+</ul>
+
+<h3>Pago</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>participante</code> (Usuario), <code>monto</code>, <code>metodo</code> (MetodoPago), <code>requiereFactura</code>, <code>comprobanteUrl</code>, <code>estado</code> (EstadoPago), <code>motivoRechazo</code>, <code>qrAcreditacion</code>, <code>fechaRegistro</code>.</li>
+<li><strong>Métodos:</strong> constructor; getters (<code>getId</code>, <code>getEstado</code>, <code>getQrAcreditacion</code>), <code>aprobar(String qr)</code>, <code>rechazar(String)</code>, <code>reintentar()</code>.</li>
+<li><strong>Relaciones:</strong> → <strong>Usuario</strong>; asociado desde <strong>InscripcionCongreso</strong>.</li>
+</ul>
+
+<h3>Actividad</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>titulo</code>, <code>tipo</code>, <code>aula</code>, <code>inicio</code>, <code>fin</code>.</li>
+<li><strong>Métodos:</strong> constructor; getters (<code>getId</code>, <code>getAula</code>, <code>getInicio</code>, <code>getFin</code>), <code>reprogramar(...)</code>, <code>seSuperponeCon(Actividad)</code>.</li>
+<li><strong>Relaciones:</strong> compuesta en <strong>CronogramaPersonal</strong>; comparada con otras <strong>Actividad</strong> en <strong>SistemaGestionCongreso</strong> (conflicto aula/horario).</li>
+</ul>
+
+<h3>CronogramaPersonal</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>actividades</code> (List Actividad).</li>
+<li><strong>Métodos:</strong> constructor, <code>getActividades()</code>, <code>agregarActividad(Actividad)</code>, <code>quitarActividad(Actividad)</code>.</li>
+<li><strong>Relaciones:</strong> agrega muchas <strong>Actividad</strong> (valida solapamiento).</li>
+</ul>
+
+<h3>Circular</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>titulo</code>, <code>contenido</code>, <code>publicada</code>, <code>fechaPublicacion</code>.</li>
+<li><strong>Métodos:</strong> constructor, <code>publicar()</code>, <code>despublicar()</code>.</li>
+<li><strong>Relaciones:</strong> registrada en <strong>SistemaGestionCongreso</strong> (no referencia Usuario en el código actual).</li>
+</ul>
+
+<h3>Anuncio</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>titulo</code>, <code>mensaje</code>, <code>fechaCreacion</code>, <code>activo</code>.</li>
+<li><strong>Métodos:</strong> constructor, <code>desactivar()</code>.</li>
+<li><strong>Relaciones:</strong> registrado en <strong>SistemaGestionCongreso</strong>.</li>
+</ul>
+
+<h3>Notificacion</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>destinatario</code> (Usuario), <code>asunto</code>, <code>mensaje</code>, <code>canal</code> (CanalNotificacion), <code>fechaCreacion</code>, <code>leida</code>.</li>
+<li><strong>Métodos:</strong> constructor, <code>marcarLeida()</code>.</li>
+<li><strong>Relaciones:</strong> → <strong>Usuario</strong>; usa <strong>CanalNotificacion</strong>.</li>
+</ul>
+
+<h3>EnvioEmail</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>destinatario</code> (String email), <code>asunto</code>, <code>cuerpo</code>, <code>fechaEnvio</code>, <code>enviado</code>, <code>error</code>.</li>
+<li><strong>Métodos:</strong> constructor, <code>marcarEnviado()</code>, <code>marcarError(String)</code>.</li>
+<li><strong>Relaciones:</strong> no enlaza Usuario por objeto; solo email como texto.</li>
+</ul>
+
+<h3>Certificado</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>destinatario</code> (Usuario), <code>rolCertificado</code> (Rol), <code>archivoUrl</code>, <code>fechaEmision</code>.</li>
+<li><strong>Métodos:</strong> constructor (sin otros métodos públicos en el archivo).</li>
+<li><strong>Relaciones:</strong> → <strong>Usuario</strong>, <strong>Rol</strong>.</li>
+</ul>
+
+<h3>PlantillaEmail</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>id</code>, <code>nombre</code>, <code>asunto</code>, <code>cuerpo</code>.</li>
+<li><strong>Métodos:</strong> constructor, <code>renderizar(String variableTitulo, String variableEstado)</code>.</li>
+<li><strong>Relaciones:</strong> independiente en el código actual (no asociada a otras clases por campo).</li>
+</ul>
+
+<h3>SistemaGestionCongreso</h3>
+<ul>
+<li><strong>Atributos:</strong> <code>congreso</code> (Congreso), listas: <code>usuarios</code>, <code>trabajos</code>, <code>asignaciones</code>, <code>actividades</code>, <code>circulares</code>, <code>anuncios</code>, <code>pagos</code>, <code>inscripciones</code>, <code>notificaciones</code>, <code>emails</code>.</li>
+<li><strong>Métodos:</strong> constructor, <code>registrarUsuario(Usuario)</code>, <code>postularTrabajo(Trabajo)</code>, <code>asignarTrabajoAEvaluador(Trabajo, Usuario)</code>, <code>registrarPago(Pago)</code>, <code>registrarInscripcion(InscripcionCongreso)</code>, <code>registrarCircular(Circular)</code>, <code>registrarAnuncio(Anuncio)</code>, <code>enviarNotificacionInterna(Usuario, String, String)</code>, <code>registrarEnvioEmail(String, String, String)</code>, <code>crearActividad(Actividad)</code>.</li>
+<li><strong>Relaciones:</strong> aglutina <strong>Congreso</strong> y colecciones de las entidades anteriores; orquesta reglas (etapas, límites de trabajos, roles, conflictos de agenda).</li>
+</ul>
+
+<hr/>
+
+<h2>Resumen de relaciones entre clases</h2>
+<ul>
+<li><strong>Usuario</strong> — composición con <strong>Rol</strong> (conjunto de roles).</li>
+<li><strong>Congreso</strong> — mapa <strong>EtapaProceso</strong> → <strong>RangoFechas</strong>.</li>
+<li><strong>Trabajo</strong> — referencia <strong>Usuario</strong> (autor); lista de <strong>Evaluacion</strong>; enums <strong>TipoTrabajo</strong>, <strong>EstadoTrabajo</strong>.</li>
+<li><strong>Evaluacion</strong> — referencia <strong>Usuario</strong> (evaluador); <strong>RecomendacionEvaluacion</strong>; contenida en <strong>Trabajo</strong>.</li>
+<li><strong>AsignacionEvaluacion</strong> — <strong>Trabajo</strong> + <strong>Usuario</strong> (evaluador).</li>
+<li><strong>InscripcionCongreso</strong> — <strong>Usuario</strong> + opcional <strong>Pago</strong>; <strong>EstadoInscripcion</strong>.</li>
+<li><strong>Pago</strong> — <strong>Usuario</strong>; <strong>MetodoPago</strong>; <strong>EstadoPago</strong>.</li>
+<li><strong>CronogramaPersonal</strong> — lista de <strong>Actividad</strong>.</li>
+<li><strong>Actividad</strong> — sin referencia a Usuario en esta clase; conflictos vía <strong>SistemaGestionCongreso</strong> y <strong>CronogramaPersonal</strong>.</li>
+<li><strong>Notificacion</strong> — <strong>Usuario</strong> + <strong>CanalNotificacion</strong>.</li>
+<li><strong>Certificado</strong> — <strong>Usuario</strong> + <strong>Rol</strong>.</li>
+<li><strong>SistemaGestionCongreso</strong> — contiene <strong>Congreso</strong> y gestiona colecciones de: Usuario, Trabajo, AsignacionEvaluacion, Actividad, Circular, Anuncio, Pago, InscripcionCongreso, Notificacion, EnvioEmail.</li>
+</ul>
+
+<p><strong>Nota:</strong> <strong>CronogramaPersonal</strong> no está referenciado desde <strong>SistemaGestionCongreso</strong> en el código actual; puede modelarse como uso por otro contexto o ampliarse en una iteración futura.</p>
+
+<p><strong>Nota:</strong> Para el diagrama UML exacto, conviene cruzar cada sección con el archivo <code>.java</code> correspondiente (incluidos getters si la cátedra los exige en el diagrama).</p>
+
+</body>
+</html>

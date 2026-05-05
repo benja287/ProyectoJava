@@ -1,0 +1,200 @@
+@startuml
+skinparam classAttributeIconSize 0
+title Sistema de gestion del V Congreso - Modelo de dominio completo
+
+enum Rol
+enum EstadoTrabajo
+enum TipoTrabajo
+enum RecomendacionEvaluacion
+enum EstadoPago
+enum MetodoPago
+enum EtapaProceso
+enum EstadoInscripcion
+enum CanalNotificacion
+
+class Usuario {
+  - id: UUID
+  - nombre: String
+  - apellido: String
+  - email: String
+  - activo: boolean
+  - roles: Set<Rol>
+  + agregarRol(rol: Rol)
+  + quitarRol(rol: Rol)
+  + tieneRol(rol: Rol): boolean
+}
+
+class Trabajo {
+  - id: UUID
+  - titulo: String
+  - resumen: String
+  - ejeTematico: String
+  - tipo: TipoTrabajo
+  - estado: EstadoTrabajo
+  - documentoUrl: String
+  - coautores: List<String>
+  + enviar()
+  + pasarAEvaluacion()
+  + registrarEvaluacion(e: Evaluacion)
+  + aplicarDecisionFinal(r: RecomendacionEvaluacion)
+  + notificarDecision()
+}
+
+class Evaluacion {
+  - id: UUID
+  - recomendacion: RecomendacionEvaluacion
+  - comentario: String
+  - fecha: LocalDateTime
+}
+
+class AsignacionEvaluacion {
+  - id: UUID
+  - aceptada: boolean
+  - fechaRespuesta: LocalDateTime
+  + aceptar()
+  + rechazar()
+}
+
+class InscripcionCongreso {
+  - id: UUID
+  - categoria: String
+  - estado: EstadoInscripcion
+  - fechaSolicitud: LocalDateTime
+  - motivoRechazo: String
+  + asociarPago(pago: Pago)
+  + confirmar()
+  + rechazar(motivo: String)
+}
+
+class Pago {
+  - id: UUID
+  - monto: BigDecimal
+  - metodo: MetodoPago
+  - estado: EstadoPago
+  - requiereFactura: boolean
+  - comprobanteUrl: String
+  - qrAcreditacion: String
+  + aprobar(qr: String)
+  + rechazar(motivo: String)
+  + reintentar()
+}
+
+class Actividad {
+  - id: UUID
+  - titulo: String
+  - tipo: String
+  - aula: String
+  - inicio: LocalDateTime
+  - fin: LocalDateTime
+  + seSuperponeCon(otra: Actividad): boolean
+}
+
+class CronogramaPersonal {
+  - actividades: List<Actividad>
+  + agregarActividad(a: Actividad)
+  + quitarActividad(a: Actividad)
+}
+
+class Notificacion {
+  - id: UUID
+  - asunto: String
+  - mensaje: String
+  - canal: CanalNotificacion
+  - leida: boolean
+  + marcarLeida()
+}
+
+class EnvioEmail {
+  - id: UUID
+  - destinatario: String
+  - asunto: String
+  - cuerpo: String
+  - enviado: boolean
+  - error: String
+  + marcarEnviado()
+  + marcarError(error: String)
+}
+
+class PlantillaEmail {
+  - id: UUID
+  - nombre: String
+  - asunto: String
+  - cuerpo: String
+  + renderizar(titulo: String, estado: String): String
+}
+
+class Circular
+class Anuncio
+class Certificado
+
+class RangoFechas {
+  - desde: LocalDate
+  - hasta: LocalDate
+  + contiene(fecha: LocalDate): boolean
+}
+
+class Congreso {
+  - nombre: String
+  - edicion: String
+  - etapas: Map<EtapaProceso, RangoFechas>
+  + definirEtapa(etapa: EtapaProceso, desde: LocalDate, hasta: LocalDate)
+  + estaEtapaHabilitada(etapa: EtapaProceso, fecha: LocalDate): boolean
+}
+
+class SistemaGestionCongreso {
+  - usuarios: List<Usuario>
+  - trabajos: List<Trabajo>
+  - asignaciones: List<AsignacionEvaluacion>
+  - actividades: List<Actividad>
+  - inscripciones: List<InscripcionCongreso>
+  - pagos: List<Pago>
+  - notificaciones: List<Notificacion>
+  - emails: List<EnvioEmail>
+  - circulares: List<Circular>
+  - anuncios: List<Anuncio>
+  + registrarUsuario(u: Usuario)
+  + postularTrabajo(t: Trabajo)
+  + asignarTrabajoAEvaluador(t: Trabajo, e: Usuario)
+  + registrarInscripcion(i: InscripcionCongreso)
+  + registrarPago(p: Pago)
+  + crearActividad(a: Actividad)
+  + enviarNotificacionInterna(u: Usuario, asunto: String, mensaje: String)
+  + registrarEnvioEmail(destinatario: String, asunto: String, cuerpo: String)
+}
+
+Usuario "1" --> "0..*" Trabajo : autorPrincipal
+Trabajo "1" --> "0..*" Evaluacion
+AsignacionEvaluacion "*" --> "1" Trabajo
+AsignacionEvaluacion "*" --> "1" Usuario : evaluador
+Evaluacion "*" --> "1" Usuario : evaluador
+InscripcionCongreso "*" --> "1" Usuario : participante
+InscripcionCongreso "0..1" --> "1" Pago
+Pago "*" --> "1" Usuario : participante
+CronogramaPersonal "1" --> "0..*" Actividad
+Notificacion "*" --> "1" Usuario : destinatario
+Congreso "1" --> "0..*" RangoFechas
+Certificado "*" --> "1" Usuario : destinatario
+SistemaGestionCongreso "1" --> "1" Congreso
+SistemaGestionCongreso "1" --> "0..*" Usuario
+SistemaGestionCongreso "1" --> "0..*" Trabajo
+SistemaGestionCongreso "1" --> "0..*" AsignacionEvaluacion
+SistemaGestionCongreso "1" --> "0..*" Actividad
+SistemaGestionCongreso "1" --> "0..*" InscripcionCongreso
+SistemaGestionCongreso "1" --> "0..*" Pago
+SistemaGestionCongreso "1" --> "0..*" Notificacion
+SistemaGestionCongreso "1" --> "0..*" EnvioEmail
+SistemaGestionCongreso "1" --> "0..*" Circular
+SistemaGestionCongreso "1" --> "0..*" Anuncio
+SistemaGestionCongreso "1" --> "0..*" PlantillaEmail
+SistemaGestionCongreso "1" --> "0..*" Certificado
+
+note right of SistemaGestionCongreso
+Incluye alcance y devoluciones:
+- Flujo completo de trabajos
+- Inscripcion + pago + validacion
+- Agenda personal sin superposicion
+- Comunicaciones y emails
+- Roles multiples y cambio de perfil
+end note
+
+@enduml

@@ -1,0 +1,164 @@
+<mxfile host="app.diagrams.net" agent="Codex">
+  <diagram id="uml-final" name="UML Final">
+    <mxGraphModel dx="4823" dy="2828" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontSize=18;fontStyle=1;" value="V Congreso Agroecologia - Diagrama de clases UML final" vertex="1">
+          <mxGeometry height="40" width="700" x="-90" y="-80" as="geometry" />
+        </mxCell>
+        <mxCell id="u" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;Usuario (abstract)&lt;/b&gt;&#xa;----------------&#xa;- id: UUID&#xa;- nombre: String&#xa;- apellido: String&#xa;- email: String&#xa;- activo: boolean&#xa;----------------&#xa;+ activar(): void&#xa;+ desactivar(): void" vertex="1">
+          <mxGeometry height="190" width="260" x="60" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="adm" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Administrador" vertex="1">
+          <mxGeometry height="45" width="120" x="-20" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="oc" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="OrganizadorCientifico" vertex="1">
+          <mxGeometry height="45" width="170" x="175" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="ev" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Evaluador" vertex="1">
+          <mxGeometry height="45" width="110" x="370" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="au" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Autor" vertex="1">
+          <mxGeometry height="45" width="90" x="450" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="pa" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Participante" vertex="1">
+          <mxGeometry height="45" width="120" x="650" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="tr" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;b&gt;Trabajo&lt;/b&gt;&#xa;----------------&#xa;- id: UUID&#xa;- titulo: String&#xa;- resumen: String&#xa;- ejeTematico: String&#xa;- tipo: TipoTrabajo&#xa;- estado: EstadoTrabajo&#xa;----------------&#xa;+ enviar()&#xa;+ pasarAEvaluacion()&#xa;+ aplicarDecisionFinal()&#xa;+ notificarDecision()" vertex="1">
+          <mxGeometry height="250" width="300" x="660" y="-150" as="geometry" />
+        </mxCell>
+        <mxCell id="eval" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;b&gt;Evaluacion&lt;/b&gt;&#xa;----------------&#xa;- id: UUID&#xa;- recomendacion: RecomendacionEvaluacion&#xa;- comentario: String&#xa;- fecha: LocalDateTime" vertex="1">
+          <mxGeometry height="170" width="280" x="1100" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="asg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="&lt;b&gt;AsignacionEvaluacion&lt;/b&gt;&#xa;----------------&#xa;- id: UUID&#xa;- aceptada: boolean&#xa;- fechaRespuesta: LocalDateTime&#xa;----------------&#xa;+ aceptar()&#xa;+ rechazar()" vertex="1">
+          <mxGeometry height="190" width="280" x="1140" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="ins" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;b&gt;InscripcionCongreso&lt;/b&gt;&#xa;----------------&#xa;- id: UUID&#xa;- categoria: String&#xa;- estado: EstadoInscripcion&#xa;- fechaSolicitud: LocalDateTime&#xa;----------------&#xa;+ confirmar()&#xa;+ rechazar(motivo: String)" vertex="1">
+          <mxGeometry height="220" width="300" x="550" y="565" as="geometry" />
+        </mxCell>
+        <mxCell id="pg" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="&lt;b&gt;Pago&lt;/b&gt;&#xa;----------------&#xa;- id: UUID&#xa;- monto: BigDecimal&#xa;- metodo: MetodoPago&#xa;- estado: EstadoPago&#xa;- qrAcreditacion: String&#xa;----------------&#xa;+ aprobar()&#xa;+ rechazar()&#xa;+ reintentar()" vertex="1">
+          <mxGeometry height="210" width="280" x="980" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="act" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="&lt;b&gt;Actividad&lt;/b&gt;&#xa;----------------&#xa;- id: UUID&#xa;- titulo: String&#xa;- aula: String&#xa;- inicio: LocalDateTime&#xa;- fin: LocalDateTime&#xa;----------------&#xa;+ seSuperponeCon()" vertex="1">
+          <mxGeometry height="200" width="280" x="1470" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ag" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="&lt;b&gt;CronogramaPersonal&lt;/b&gt;&#xa;----------------&#xa;+ agregarActividad()&#xa;+ quitarActividad()" vertex="1">
+          <mxGeometry height="120" width="280" x="1550" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="cong" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;b&gt;Congreso&lt;/b&gt;&#xa;----------------&#xa;- nombre: String&#xa;- edicion: String&#xa;----------------&#xa;+ definirEtapa()&#xa;+ estaEtapaHabilitada()" vertex="1">
+          <mxGeometry height="170" width="280" x="1460" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="rf" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="RangoFechas&#xa;- desde&#xa;- hasta&#xa;+ contiene(fecha)" vertex="1">
+          <mxGeometry height="120" width="180" x="1780" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="not" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;b&gt;Notificacion&lt;/b&gt;&#xa;----------------&#xa;- asunto: String&#xa;- mensaje: String&#xa;- canal: CanalNotificacion&#xa;- leida: boolean&#xa;----------------&#xa;+ marcarLeida()" vertex="1">
+          <mxGeometry height="190" width="280" x="-330" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="mail" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;b&gt;EnvioEmail&lt;/b&gt;&#xa;----------------&#xa;- destinatario: String&#xa;- asunto: String&#xa;- cuerpo: String&#xa;- enviado: boolean&#xa;----------------&#xa;+ marcarEnviado()&#xa;+ marcarError()" vertex="1">
+          <mxGeometry height="210" width="300" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="core" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;SistemaGestionCongreso&lt;/b&gt;&#xa;----------------&#xa;+ registrarUsuario()&#xa;+ postularTrabajo()&#xa;+ asignarTrabajoAEvaluador()&#xa;+ registrarInscripcion()&#xa;+ registrarPago()&#xa;+ crearActividad()&#xa;+ enviarNotificacionInterna()&#xa;+ registrarEnvioEmail()" vertex="1">
+          <mxGeometry height="260" width="420" x="690" y="990" as="geometry" />
+        </mxCell>
+        <mxCell id="n1" parent="1" style="shape=note;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Multiplicidades clave:&#xa;Autor 1 -- 0..2 Trabajo&#xa;Trabajo 1 -- 0..* Evaluacion&#xa;Participante 1 -- 0..1 Inscripcion&#xa;Inscripcion 1 -- 0..1 Pago" vertex="1">
+          <mxGeometry height="130" width="430" x="-160" y="990" as="geometry" />
+        </mxCell>
+        <mxCell id="h1" edge="1" parent="1" source="adm" style="endArrow=blockThin;endFill=0;html=1;strokeWidth=1.5;" target="u">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="h2" edge="1" parent="1" source="oc" style="endArrow=blockThin;endFill=0;html=1;strokeWidth=1.5;" target="u">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="h3" edge="1" parent="1" source="ev" style="endArrow=blockThin;endFill=0;html=1;strokeWidth=1.5;" target="u">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="h4" edge="1" parent="1" source="au" style="endArrow=blockThin;endFill=0;html=1;strokeWidth=1.5;" target="u">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="h5" edge="1" parent="1" source="pa" style="endArrow=blockThin;endFill=0;html=1;strokeWidth=1.5;" target="u">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" edge="1" parent="1" source="au" style="endArrow=none;html=1;strokeWidth=1.5;" target="tr" value="1..0..2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" edge="1" parent="1" source="tr" style="endArrow=none;html=1;strokeWidth=1.5;" target="eval" value="1..0..*">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" edge="1" parent="1" source="ev" style="endArrow=none;html=1;strokeWidth=1.5;" target="eval" value="1..0..*">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" edge="1" parent="1" source="oc" style="endArrow=none;html=1;strokeWidth=1.5;" target="asg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a5" edge="1" parent="1" source="asg" style="endArrow=none;html=1;strokeWidth=1.5;" target="tr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a6" edge="1" parent="1" source="asg" style="endArrow=none;html=1;strokeWidth=1.5;" target="ev">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a7" edge="1" parent="1" source="pa" style="endArrow=none;html=1;strokeWidth=1.5;" target="ins" value="1..0..1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a8" edge="1" parent="1" source="ins" style="endArrow=none;html=1;strokeWidth=1.5;" target="pg" value="1..0..1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a9" edge="1" parent="1" source="pa" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;strokeWidth=1.5;" target="ag">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1450" y="350" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a10" edge="1" parent="1" source="ag" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;strokeWidth=1.5;" target="act">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a11" edge="1" parent="1" source="cong" style="startArrow=diamondThin;startFill=1;endArrow=none;html=1;strokeWidth=1.5;" target="rf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a12" edge="1" parent="1" source="not" style="endArrow=none;html=1;strokeWidth=1.5;" target="u">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-30" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a13" edge="1" parent="1" source="mail" style="endArrow=none;html=1;strokeWidth=1.5;" target="u">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" edge="1" parent="1" source="core" style="startArrow=diamondThin;startFill=0;endArrow=none;html=1;strokeWidth=1.5;" target="cong">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" edge="1" parent="1" source="core" style="startArrow=diamondThin;startFill=0;endArrow=none;html=1;strokeWidth=1.5;" target="u">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="540" y="810" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s3" edge="1" parent="1" source="core" style="startArrow=diamondThin;startFill=0;endArrow=none;html=1;strokeWidth=1.5;" target="tr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" edge="1" parent="1" source="core" style="startArrow=diamondThin;startFill=0;endArrow=none;html=1;strokeWidth=1.5;" target="ins">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" edge="1" parent="1" source="core" style="startArrow=diamondThin;startFill=0;endArrow=none;html=1;strokeWidth=1.5;" target="pg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" edge="1" parent="1" source="core" style="startArrow=diamondThin;startFill=0;endArrow=none;html=1;strokeWidth=1.5;" target="act">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1420" y="730" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s7" edge="1" parent="1" source="core" style="startArrow=diamondThin;startFill=0;endArrow=none;html=1;strokeWidth=1.5;" target="not">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s8" edge="1" parent="1" source="core" style="startArrow=diamondThin;startFill=0;endArrow=none;html=1;strokeWidth=1.5;" target="mail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
