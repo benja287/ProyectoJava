@@ -45,6 +45,8 @@ const INSCRIPTION_CATEGORIES = [
   { value: 'extranjero', label: 'Extranjero/a' },
 ] as const;
 
+const MAX_EVALUATORS_PER_AXIS = 3;
+
 function categoryLabel(category?: string): string {
   if (!category) return 'Sin categoría';
   const found = INSCRIPTION_CATEGORIES.find((c) => c.value === category);
@@ -202,8 +204,12 @@ export function PanelComiteAcademico() {
   const matchingEvaluators = useMemo(() => {
     const axis = selectedWork ? getWorkAxis(selectedWork) : '';
     if (!axis) return [];
+    const workOwnerId = selectedWork?.userId ? String(selectedWork.userId) : '';
     return evaluators
       .filter((ev: any) => Array.isArray(ev.axes) && ev.axes.includes(axis))
+      // Un evaluador no puede evaluar su propio trabajo (cuenta multirol).
+      // Lo ocultamos para evitar selecciones inválidas.
+      .filter((ev: any) => !workOwnerId || String(ev.id) !== workOwnerId)
       .sort((a: any, b: any) => `${a.lastName || ''} ${a.name || ''}`.localeCompare(`${b.lastName || ''} ${b.name || ''}`));
   }, [evaluators, selectedWork]);
 
@@ -248,7 +254,7 @@ export function PanelComiteAcademico() {
   const setEvaluatorAxes = (userId: string, axes: string[]) => {
     setUserFeedback('');
     const all = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-    // Regla: máximo 2 evaluadores por eje temático.
+    // Regla: máximo 3 evaluadores por eje temático.
     const target = all.find((u: any) => u.id === userId);
     const prevAxes: string[] = Array.isArray(target?.axes) ? target.axes : [];
 
@@ -266,7 +272,7 @@ export function PanelComiteAcademico() {
     const allowed = normalized.filter((ax) => {
       // si ya lo tenía, lo puede mantener aunque el eje esté “lleno”
       if (prevAxes.includes(ax)) return true;
-      return (counts.get(ax) || 0) < 2;
+      return (counts.get(ax) || 0) < MAX_EVALUATORS_PER_AXIS;
     });
 
     const removed = normalized.filter((ax) => !allowed.includes(ax));
@@ -275,7 +281,7 @@ export function PanelComiteAcademico() {
     persistUsers(next);
     setUserFeedback(
       removed.length > 0
-        ? `Ejes actualizados. No se asignaron estos ejes porque ya tienen 2 evaluadores: ${removed.join(', ')}.`
+        ? `Ejes actualizados. No se asignaron estos ejes porque ya tienen ${MAX_EVALUATORS_PER_AXIS} evaluadores: ${removed.join(', ')}.`
         : 'Ejes del evaluador actualizados.'
     );
   };
@@ -295,9 +301,9 @@ export function PanelComiteAcademico() {
       setUserFeedback('Elegí un eje temático antes de hacer evaluador.');
       return;
     }
-    // aplica regla de máximo 2 por eje
-    if ((axisToEvaluatorIds.get(axis)?.size || 0) >= 2) {
-      setUserFeedback('Ese eje ya tiene 2 evaluadores. Elegí otro eje.');
+    // aplica regla de máximo 3 por eje
+    if ((axisToEvaluatorIds.get(axis)?.size || 0) >= MAX_EVALUATORS_PER_AXIS) {
+      setUserFeedback(`Ese eje ya tiene ${MAX_EVALUATORS_PER_AXIS} evaluadores. Elegí otro eje.`);
       return;
     }
     makeEvaluator(userId);
@@ -478,6 +484,9 @@ export function PanelComiteAcademico() {
       return;
     }
 
+    const confirmed = window.confirm('¿Confirmás marcar este trabajo como APTO (precheck OK)?');
+    if (!confirmed) return;
+
     const precheck = {
       byAdminId: user.id,
       at: new Date().toISOString(),
@@ -528,6 +537,10 @@ export function PanelComiteAcademico() {
       setError('Este trabajo agotó sus 3 intentos y quedó observado. No se puede volver a observar ni cambiar su estado.');
       return;
     }
+
+    const confirmed = window.confirm('¿Confirmás marcar este trabajo como OBSERVADO (precheck NO)?');
+    if (!confirmed) return;
+
     const precheck = {
       byAdminId: user.id,
       at: new Date().toISOString(),
@@ -895,7 +908,7 @@ export function PanelComiteAcademico() {
                             Quitar del eje temático
                           </button>
                           <div className="mt-2 text-[11px] text-gray-500">
-                            Regla: máximo 2 evaluadores por eje. Si quitás a uno del eje, liberás cupo para asignar otro.
+                            Regla: máximo {MAX_EVALUATORS_PER_AXIS} evaluadores por eje. Si quitás a uno del eje, liberás cupo para asignar otro.
                           </div>
                         </div>
                       )}
@@ -1149,7 +1162,7 @@ export function PanelComiteAcademico() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <div className="text-xs text-gray-500 mb-2">
-                        Seleccioná <span className="font-medium">2 evaluadores</span> del eje.
+                        Seleccioná <span className="font-medium">2 evaluadores</span> del eje (el autor del trabajo no aparece en la lista).
                       </div>
 
                       {/* “Eje temático” como selector (solo informativo, bloqueado para que coincida con el trabajo) */}
@@ -1191,9 +1204,9 @@ export function PanelComiteAcademico() {
                         if (options.length < 2) {
                           return (
                             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                              No hay suficientes evaluadores configurados para este eje (mínimo 2).
+                              No hay suficientes evaluadores configurados para este eje (mínimo 2 disponibles).
                               <div className="mt-1 text-[11px] text-amber-800">
-                                Primero asigná evaluadores a este eje en “Evaluadores por eje temático”.
+                                Primero asigná evaluadores a este eje en “Evaluadores por eje temático” (máximo {MAX_EVALUATORS_PER_AXIS} por eje).
                               </div>
                             </div>
                           );

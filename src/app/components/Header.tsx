@@ -54,6 +54,7 @@ export function Header() {
           {/* Navigation Links — sin cambios */}
           <nav className="hidden lg:flex items-center gap-1">
             <Link to="/" className="px-3 py-2 text-sm hover:bg-white/10 rounded-lg transition">Inicio</Link>
+            <Link to="/historia" className="px-3 py-2 text-sm hover:bg-white/10 rounded-lg transition">Historia</Link>
             <Link to="/circulares" className="px-3 py-2 text-sm hover:bg-white/10 rounded-lg transition">Circulares</Link>
             <Link to="/actividades" className="px-3 py-2 text-sm hover:bg-white/10 rounded-lg transition">Actividades</Link>
             <Link to="/mapas" className="px-3 py-2 text-sm hover:bg-white/10 rounded-lg transition">Mapas</Link>

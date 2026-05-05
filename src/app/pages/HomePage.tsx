@@ -9,9 +9,9 @@ export function HomePage() {
   const { user } = useAuth();
   const editions = [
     { year: 2019, location: 'Mendoza', attendees: 800, papers: 350 },
-    { year: 2021, location: 'Buenos Aires', attendees: 1000, papers: 450 },
-    { year: 2023, location: 'Córdoba', attendees: 1200, papers: 500 },
-    { year: 2025, location: 'Rosario', attendees: 1400, papers: 550 },
+    { year: 2021, location: 'Resistencia (virtual)', attendees: 1000, papers: 450 },
+    { year: 2023, location: 'El Bolsón', attendees: 1200, papers: 500 },
+    { year: 2025, location: 'San Salvador de Jujuy', attendees: 1400, papers: 550 },
     { year: 2027, location: 'La Plata', attendees: 1500, papers: 600 },
   ];
   const navigate = useNavigate();
@@ -91,13 +91,17 @@ export function HomePage() {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-md hover:shadow-lg transition">
+            <Link
+              to="/historia"
+              className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-md hover:shadow-lg transition block"
+            >
               <TrendingUp className="w-12 h-12 text-[#2d5016] mb-4" />
               <h3 className="text-xl mb-3 text-gray-800">Ediciones Anteriores</h3>
               <p className="text-gray-700 text-sm">
                 Conoce la trayectoria del congreso desde 2019 hasta hoy
               </p>
-            </div>
+              <p className="text-sm text-[#2d5016] font-medium mt-3">Ver historia →</p>
+            </Link>
 
             <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl shadow-md hover:shadow-lg transition">
               <BookOpen className="w-12 h-12 text-amber-700 mb-4" />
@@ -152,49 +156,46 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Timeline */}
+      {/* Sección histórica (banner clickeable) */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <h2 className="text-4xl text-center mb-4 text-gray-800">
-            Evolución del Congreso
-          </h2>
-          <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
-            Desde la primera edición en 2019, el congreso ha crecido de manera constante, 
-            consolidándose como el principal evento agroecológico del país.
-          </p>
-          
           <div className="max-w-5xl mx-auto">
-            <div className="relative">
-              {/* Timeline line */}
-              <div className="absolute left-0 md:left-1/2 transform md:-translate-x-px h-full w-0.5 bg-gradient-to-b from-[#2d5016] to-[#8b9b5c]"></div>
-              
-              {editions.map((edition, index) => (
-                <div key={edition.year} className={`relative mb-12 ${index % 2 === 0 ? 'md:pr-1/2' : 'md:pl-1/2 md:ml-auto'}`}>
-                  <div className={`md:w-1/2 ${index % 2 === 0 ? 'md:pr-8' : 'md:pl-8'}`}>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-md hover:shadow-lg transition">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-2xl font-bold text-[#2d5016]">{edition.year}</span>
-                        <MapPin className="w-6 h-6 text-[#6b7c3a]" />
-                      </div>
-                      <h3 className="text-xl mb-3 text-gray-800">{edition.location}</h3>
-                      <div className="flex gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Asistentes</p>
-                          <p className="text-lg font-semibold text-[#2d5016]">{edition.attendees}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Trabajos</p>
-                          <p className="text-lg font-semibold text-[#2d5016]">{edition.papers}</p>
-                        </div>
-                      </div>
+            <Link
+              to="/historia"
+              className="group block rounded-2xl overflow-hidden shadow-lg border border-green-100 hover:shadow-xl transition"
+              aria-label="Ir a Historia del Congreso"
+            >
+              <div
+                className="relative h-[320px] sm:h-[360px] bg-cover bg-center"
+                style={{
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'%3E%3Cdefs%3E%3CradialGradient id='g1' cx='20%25' cy='25%25' r='75%25'%3E%3Cstop offset='0%25' stop-color='%232d5016' stop-opacity='0.35'/%3E%3Cstop offset='60%25' stop-color='%23ffffff' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='g2' cx='80%25' cy='70%25' r='70%25'%3E%3Cstop offset='0%25' stop-color='%238b9b5c' stop-opacity='0.45'/%3E%3Cstop offset='55%25' stop-color='%23ffffff' stop-opacity='0'/%3E%3C/radialGradient%3E%3ClinearGradient id='bg' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23f8fafc'/%3E%3Cstop offset='100%25' stop-color='%23f1f5f9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23bg)'/%3E%3Crect width='100%25' height='100%25' fill='url(%23g1)'/%3E%3Crect width='100%25' height='100%25' fill='url(%23g2)'/%3E%3Cpath d='M0 650 C 250 600 350 720 600 680 C 850 640 1050 540 1300 600 C 1450 640 1520 700 1600 680 L1600 900 L0 900 Z' fill='%232d5016' opacity='0.08'/%3E%3Cpath d='M0 720 C 220 690 380 790 620 740 C 860 690 1060 610 1320 670 C 1460 705 1525 760 1600 740 L1600 900 L0 900 Z' fill='%238b9b5c' opacity='0.10'/%3E%3C/svg%3E\")",
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/35 to-transparent" />
+                <div className="absolute inset-0 p-8 sm:p-10 flex items-end">
+                  <div className="max-w-xl">
+                    <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wide uppercase bg-white/15 text-white border border-white/20 px-3 py-1 rounded-full mb-3">
+                      Historia del congreso
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
+                      Evolución y memorias de las ediciones anteriores
+                    </h2>
+                    <p className="text-white/90 mt-3 text-sm sm:text-base">
+                      Línea de tiempo con información breve, enlaces a los sitios oficiales y (cuando corresponde) a las memorias/actas.
+                    </p>
+                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-white">
+                      Ver historia
+                      <span className="transition-transform group-hover:translate-x-1">→</span>
                     </div>
                   </div>
-                  
-                  {/* Timeline dot */}
-                  <div className={`absolute top-6 left-0 md:left-1/2 transform ${index % 2 === 0 ? 'md:-translate-x-1/2' : 'md:-translate-x-1/2'} w-4 h-4 rounded-full ${edition.year === 2027 ? 'bg-[#2d5016] ring-4 ring-[#8b9b5c]/30' : 'bg-[#6b7c3a]'}`}></div>
                 </div>
-              ))}
-            </div>
+              </div>
+            </Link>
+
+            <p className="text-center text-xs text-gray-500 mt-4">
+              Sugerencia del docente: incorporar enlaces a memorias y sitios oficiales de ediciones anteriores.
+            </p>
           </div>
         </div>
       </section>

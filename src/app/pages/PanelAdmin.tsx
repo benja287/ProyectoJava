@@ -551,71 +551,96 @@ export function PanelAdmin() {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 
-    const updatedUsers = users.map((u: any) =>
-      u.id === userId ? { ...u, inscriptionStatus: 'rejected' } : u
-    );
-    localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
-    setUsers(updatedUsers);
-    setInscriptions(inscriptions.filter((i) => i.id !== userId));
-
-    const currentStored = JSON.parse(localStorage.getItem('current_user') || '{}');
-    if (currentStored?.id === userId) {
-      const fresh = updatedUsers.find((x: any) => x.id === userId);
-      if (fresh) {
-        const { password: _, ...withoutPwd } = fresh;
-        localStorage.setItem('current_user', JSON.stringify(withoutPwd));
-      }
-    }
-
-    const displayName = `${subject.name || ''} ${subject.lastName || ''}`.trim();
-    sendNotificationToUser(
-      userId,
-      'Inscripción no aprobada',
-      `Hola ${displayName}. Tu solicitud de inscripción al congreso no fue aprobada. Podés comunicarte con la organización si necesitás más información o volver a intentar la inscripción cuando corresponda.`,
-      'Administración'
-    );
-
+    const displayName = `${String(subject.name || '')} ${String(subject.lastName || '')}`.trim();
+    const recipientEmail = String(subject.email ?? '').trim();
     const baseUrl = getPublicAppOrigin();
-    const homeUrl = baseUrl ? `${baseUrl}/` : '/';
+    const homeUrl = baseUrl ? `${baseUrl.replace(/\/$/, '')}/` : '/';
+    const homeUrlForAttr = homeUrl.startsWith('http') ? homeUrl : homeUrl;
 
-    if (subject.email) {
-      const plainMessage = [
-        `Hola ${displayName},`,
-        '',
-        `Lamentamos informarte que tu solicitud de inscripción al congreso no fue aprobada en esta instancia.`,
-        '',
-        `Si creés que hubo un error o necesitás más información, escribí al equipo organizador.`,
-        '',
-        `Sitio del congreso: ${homeUrl}`,
-      ].join('\n');
-
-      const htmlBody = `
-        <div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;max-width:560px;">
-          <h2 style="color:#7f1d1d;">Inscripción no aprobada</h2>
-          <p>Hola ${escapeHtml(displayName)},</p>
-          <p>Lamentamos informarte que tu solicitud de inscripci&oacute;n al congreso <strong>no fue aprobada</strong> en esta instancia.</p>
-          <p>Si cre&eacute;s que hubo un error o necesit&aacute;s m&aacute;s informaci&oacute;n, contact&aacute; al equipo organizador.</p>
-          <p style="margin-top:20px;"><a href="${escapeHtml(homeUrl)}" style="display:inline-block;background:#2d5016;color:white;padding:10px 18px;text-decoration:none;border-radius:8px;">Ir al sitio del congreso</a></p>
-        </div>`;
-
-      const emailResult = await sendTransactionalEmail({
-        toEmail: subject.email,
-        toName: displayName || subject.email,
-        subject: '[Congreso Agroecología] Inscripción no aprobada',
-        message: plainMessage,
-        messageHtml: htmlBody,
-      });
-
-      const localhostHint = baseUrl.includes('localhost')
-        ? ' El enlace al sitio en el mail puede usar localhost: definí VITE_PUBLIC_APP_URL en producción.'
-        : '';
-      setInscriptionInvoiceFeedback(
-        (emailResult.sent
-          ? 'Rechazo registrado; correo enviado al usuario.'
-          : `Rechazo registrado; no se pudo enviar el correo (${emailResult.reason || 'error'}).`) + localhostHint
+    try {
+      const updatedUsers = users.map((u: any) =>
+        u.id === userId ? { ...u, inscriptionStatus: 'rejected' } : u
       );
-    } else {
-      setInscriptionInvoiceFeedback('Rechazo registrado; el usuario no tiene email cargado para envío automático.');
+      localStorage.setItem('congress_users', JSON.stringify(updatedUsers));
+      setUsers(updatedUsers);
+      setInscriptions(inscriptions.filter((i) => i.id !== userId));
+
+      let currentStored: Record<string, unknown> = {};
+      try {
+        currentStored = JSON.parse(localStorage.getItem('current_user') || '{}') as Record<string, unknown>;
+      } catch {
+        currentStored = {};
+      }
+      if (currentStored?.id === userId) {
+        const fresh = updatedUsers.find((x: any) => x.id === userId);
+        if (fresh) {
+          const { password: _, ...withoutPwd } = fresh;
+          localStorage.setItem('current_user', JSON.stringify(withoutPwd));
+        }
+      }
+
+      // Correo primero: si el HTML/texto usara template literals con datos del usuario,
+      // caracteres como `${` en el nombre podían romper el JS y este bloque no se ejecutaba.
+      if (recipientEmail) {
+        const plainMessage = [
+          'Hola ' + displayName + ',',
+          '',
+          'Lamentamos informarte que tu solicitud de inscripción al congreso no fue aprobada en esta instancia.',
+          '',
+          'Si creés que hubo un error o necesitás más información, escribí al equipo organizador.',
+          '',
+          'Sitio del congreso: ' + homeUrl,
+        ].join('\n');
+
+        const htmlBody =
+          '<div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;max-width:560px;">' +
+          '<h2 style="color:#7f1d1d;">Inscripción no aprobada</h2>' +
+          '<p>Hola ' +
+          escapeHtml(displayName) +
+          ',</p>' +
+          '<p>Lamentamos informarte que tu solicitud de inscripci&oacute;n al congreso <strong>no fue aprobada</strong> en esta instancia.</p>' +
+          '<p>Si cre&eacute;s que hubo un error o necesit&aacute;s m&aacute;s informaci&oacute;n, contact&aacute; al equipo organizador.</p>' +
+          '<p style="margin-top:20px;"><a href="' +
+          escapeHtml(homeUrlForAttr) +
+          '" style="display:inline-block;background:#2d5016;color:white;padding:10px 18px;text-decoration:none;border-radius:8px;">Ir al sitio del congreso</a></p>' +
+          '</div>';
+
+        const emailResult = await sendTransactionalEmail({
+          toEmail: recipientEmail,
+          toName: displayName || recipientEmail,
+          subject: '[Congreso Agroecología] Inscripción no aprobada',
+          message: plainMessage,
+          messageHtml: htmlBody,
+        });
+
+        const localhostHint = baseUrl.includes('localhost')
+          ? ' El enlace al sitio en el mail puede usar localhost: definí VITE_PUBLIC_APP_URL en producción.'
+          : '';
+        setInscriptionInvoiceFeedback(
+          (emailResult.sent
+            ? 'Rechazo registrado; correo enviado al usuario.'
+            : `Rechazo registrado; no se pudo enviar el correo (${emailResult.reason || 'error'}).`) + localhostHint
+        );
+      } else {
+        setInscriptionInvoiceFeedback(
+          'Rechazo registrado; el usuario no tiene email cargado para envío automático.'
+        );
+      }
+
+      // Notificación in-app después del correo (misma app; texto sin template literals con datos crudos)
+      sendNotificationToUser(
+        userId,
+        'Inscripción no aprobada',
+        'Hola ' +
+          displayName +
+          '. Tu solicitud de inscripción al congreso no fue aprobada. Podés comunicarte con la organización si necesitás más información o volver a intentar la inscripción cuando corresponda.',
+        'Administración'
+      );
+    } catch (e) {
+      console.error(e);
+      setInscriptionInvoiceFeedback(
+        'Error al rechazar la inscripción: ' + (e instanceof Error ? e.message : 'desconocido')
+      );
     }
   };
 
