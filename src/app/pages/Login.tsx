@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, AlertCircle } from 'lucide-react';
+import { LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -97,7 +98,16 @@ if (currentUser.currentRole === 'admin') {
               <p className="text-red-800 text-sm">{error}</p>
             </div>
           )}
-
+          <fieldset>
+          <legend><h3>Usuarios de prueba</h3></legend>
+            <p className="text-sm text-gray-600 mb-6">
+              <strong>alexisadmin@gmail.com</strong><br />
+              <strong>lucasbudnik@hotmail.com.ar</strong><br />
+              <strong>rodriguezmantilla123@gmail.com</strong><br />
+              <strong>alci0483@gmail.com</strong><br />
+              <strong>admin2@gmail.com</strong><br />
+            </p>
+          </fieldset>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -117,14 +127,25 @@ if (currentUser.currentRole === 'admin') {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Contraseña
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b7c3a] focus:border-transparent bg-white"
-                placeholder="Tu contraseña"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  className="w-full px-4 py-2 pr-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6b7c3a] focus:border-transparent bg-white"
+                  placeholder="Tu contraseña"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
 
             <div className="text-right">

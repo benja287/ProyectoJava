@@ -168,43 +168,43 @@ export function VerPresentacionesGenerales() {
                 </div>
               ))}
 
-<h3 className="text-xl mt-8 mb-4 text-yellow-700">Sesiones de Pósters</h3>
+              <h3 className="text-xl mt-8 mb-4 text-yellow-700">Sesiones de Pósters</h3>
 
-{posterSessions.length === 0 ? (
-  <p>No hay sesiones de pósters</p>
-) : (
-  posterSessions.map((p) => (
-    <div key={p.id} className="border p-4 mb-4 rounded bg-yellow-50">
-      
-      <h3>{p.name}</h3>
+              {posterSessions.length === 0 ? (
+                <p>No hay sesiones de pósters</p>
+              ) : (
+                posterSessions.map((p) => (
+                  <div key={p.id} className="border p-4 mb-4 rounded bg-yellow-50">
+                    
+                    <h3>{p.name}</h3>
 
-      <p>
-        📅 {p.date} | 🕒 {p.startTime} - {p.endTime} | 📍 {p.location}
-      </p>
+                    <p>
+                      📅 {p.date} | 🕒 {p.startTime} - {p.endTime} | 📍 {p.location}
+                    </p>
 
-      <ul className="ml-4 list-disc">
-        {p.works.map((w: any) => {
-          const work = works.find((wk: any) => wk.id === w.workId);
+                    <ul className="ml-4 list-disc">
+                      {p.works.map((w: any) => {
+                        const work = works.find((wk: any) => wk.id === w.workId);
 
-          return (
-            <li key={w.workId}>
-              <span className="font-medium">
-                {work?.title}
-              </span>
-              <div className="text-sm text-gray-600">
-                Autor: {getAuthor(work?.userId)} | Panel: {w.stand}
-              </div>
-              <div className="text-sm text-gray-600">
-             Tipo: {(work?.axis)}
-            </div>
-            </li>
-          );
-        })}
-      </ul>
+                        return (
+                          <li key={w.workId}>
+                            <span className="font-medium">
+                              {work?.title}
+                            </span>
+                            <div className="text-sm text-gray-600">
+                              Autor: {getAuthor(work?.userId)} | Panel: {w.stand}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                          Tipo: {(work?.axis)}
+                          </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
 
-    </div>
-  ))
-)}
+                  </div>
+                ))
+              )}
             </div>
           )}
 

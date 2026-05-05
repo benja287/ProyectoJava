@@ -1,12 +1,9 @@
 *.class
 *.log
 *.jar
-dist/
 bin/
 target/
 out/
 .idea/
 .vscode/
-.env
-.env.*
-!.env.example
+node_modules/

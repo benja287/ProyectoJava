@@ -17,7 +17,11 @@ import {
   hasTimeOverlap,
   isCongressDate,
   isValidTimeRange,
+  getCertificatesAvailableFromDate,
+  setCertificatesAvailableFromDate,
+  formatCertificatesAvailableFromEsAR,
 } from '../constants/congressEvent';
+import { CertificateView } from './Certificaciones';
 import type { StoredCircular, CircularStatus } from '../constants/congressEvent';
 import type { TallerProgramado } from './AdminCrearTaller';
 import type { ConferenciaPrograma } from './AdminCrearConferencia';
@@ -152,8 +156,14 @@ export function PanelAdmin() {
 
   const [circulares, setCirculares] = useState<StoredCircular[]>([]);
   const [circularesFeedback, setCircularesFeedback] = useState('');
+<<<<<<< HEAD
+  /** Valor del input fecha certificados (YYYY-MM-DD); la verdad persistida está en localStorage. */
+  const [certificatesAvailableFromInput, setCertificatesAvailableFromInput] = useState('');
+  const [, setCertificateAdminUiTick] = useState(0);
+=======
   const [authorRequestsFeedback, setAuthorRequestsFeedback] = useState('');
   const [inscriptionInvoiceFeedback, setInscriptionInvoiceFeedback] = useState('');
+>>>>>>> origin/version1
 
   // ─── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -183,6 +193,7 @@ export function PanelAdmin() {
     const published = localStorage.getItem(PROGRAM_PUBLISHED_KEY);
     setProgramPublished(published ? JSON.parse(published) : true);
     setCirculares(JSON.parse(localStorage.getItem(CIRCULARES_KEY) || '[]'));
+    setCertificatesAvailableFromInput(getCertificatesAvailableFromDate() ?? '');
   }, [user, navigate]);
 
   useEffect(() => {
@@ -1278,7 +1289,11 @@ export function PanelAdmin() {
           <button onClick={() => navigate('/admin/mesas-redondas')}   className="bg-purple-600 text-white px-4 py-2 rounded">Crear Mesa Redonda</button>
           <button onClick={() => navigate('/admin/posters')}          className="bg-yellow-600 text-white px-4 py-2 rounded">Crear Sesión de Pósters</button>
           <button onClick={() => navigate('/admin/crear-taller')}     className="bg-teal-700 text-white px-4 py-2 rounded hover:bg-teal-800 transition">Crear Taller</button>
-          <button onClick={() => navigate('/admin/crear-conferencia')} className="bg-indigo-700 text-white px-4 py-2 rounded hover:bg-indigo-800 transition">Crear Conferencia</button>
+          <button onClick={() => navigate('/admin/crear-conferencia')}className="bg-indigo-700 text-white px-4 py-2 rounded hover:bg-indigo-800 transition">Crear Conferencia</button>
+          <button onClick={() => navigate("/certificado")} className="bg-indigo-700 text-white px-4 py-2 rounded hover:bg-indigo-800 transition">
+            Generar Certificado
+          </button>
+     
         </div>
 
         {/* PUBLICACIÓN */}
@@ -1302,6 +1317,59 @@ export function PanelAdmin() {
             </p>
           )}
         </div>
+
+        <div id="admin-certificados-config" className="bg-white rounded-xl shadow-md p-6 mb-8 border-l-4 border-l-emerald-700">
+          <h2 className="text-xl font-semibold text-gray-800 mb-1">Certificados de asistencia</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Definí la fecha (inclusive) desde la cual los participantes podrán ver el certificado en su panel e imprimir o
+            guardar PDF. Antes de esa fecha verán un aviso con el día de habilitación en la barra superior y en la sección
+            de certificado.
+          </p>
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label htmlFor="certificates-from-date" className="block text-xs font-medium text-gray-600 mb-1">
+                Habilitar descarga desde
+              </label>
+              <input
+                id="certificates-from-date"
+                type="date"
+                value={certificatesAvailableFromInput}
+                onChange={(e) => setCertificatesAvailableFromInput(e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setCertificatesAvailableFromDate(certificatesAvailableFromInput.trim() || null);
+                setCertificateAdminUiTick((n) => n + 1);
+              }}
+              className="bg-emerald-700 text-white px-4 py-2 rounded text-sm font-medium hover:bg-emerald-800 transition"
+            >
+              Guardar fecha
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCertificatesAvailableFromInput('');
+                setCertificatesAvailableFromDate(null);
+                setCertificateAdminUiTick((n) => n + 1);
+              }}
+              className="text-sm text-gray-600 underline hover:text-gray-900"
+            >
+              Sin fecha (descarga deshabilitada)
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-3">
+            Fecha guardada en el sistema:{' '}
+            {getCertificatesAvailableFromDate()
+              ? formatCertificatesAvailableFromEsAR(getCertificatesAvailableFromDate()!)
+              : 'ninguna — nadie puede descargar hasta que definas una fecha.'}
+          </p>
+        </div>
+
+        {/*NO DESCOMENTAR ÉSTA LINEA */}
+        {/* <CertificateView sectionTitle="Certificado de asistencia (organización)" /> */}
 
         {tallerOkBanner && (
           <div className="mb-6 bg-teal-50 border border-teal-200 text-teal-900 px-4 py-3 rounded-lg text-sm">

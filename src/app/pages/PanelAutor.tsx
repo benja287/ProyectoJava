@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { Calendar, Clock, MapPin, BookOpen, Image } from 'lucide-react';
+import { Calendar, Clock, MapPin, BookOpen, Image, BadgeCheck } from 'lucide-react';
+import { CertificateView } from './Certificaciones';
 
 interface Presentation {
   workId: string;
@@ -114,6 +115,11 @@ export function PanelAutor() {
           Enviar nuevo trabajo
         </button>
 
+         
+            
+
+        {/* <CertificateView sectionTitle="Certificado de asistencia (rol autor/a)" /> */}
+
         {presentations.length === 0 ? (
           <div className="bg-white p-10 text-center rounded-xl shadow">
             <p className="text-gray-500">Aún no tenés presentaciones programadas.</p>
@@ -170,7 +176,17 @@ export function PanelAutor() {
             ))}
           </div>
         )}
-
+        <br />{/*By Benja*/}
+        {/* Certificado (solo autor/a) */}
+        <div>
+            <Link
+                      to="/Certificado"
+                      className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition font-semibold text-base focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    >
+                      <BadgeCheck className="w-5 h-5 mr-2" />
+                      Generar Certificado de Presentación
+            </Link> 
+       </div>
       </div>
     </div>
   );
