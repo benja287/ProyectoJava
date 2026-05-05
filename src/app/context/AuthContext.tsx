@@ -107,6 +107,37 @@ const DEMO_SEED_USERS: Record<string, unknown>[] = [
     roles: ['comite'] as UserRole[],
     accountActive: true,
   },
+  {
+    id: 'asistLucas',
+    email: 'lucasbudnik@hotmail.com.ar',
+    password: '12345678',
+    name: 'Asistente',
+    lastName: 'Principal',
+    roles: ['asistente'] as UserRole[],
+    currentRole: 'asistente',
+    inscriptionStatus: 'confirmed',
+    institution: 'Instituto de Agroecología',
+    province: 'Buenos Aires',
+    accountActive: true,
+  },
+  {
+    id: 'evaluadorAlci',
+    email: 'alci0483@gmail.com',
+    password: '12345678',
+    name: 'Evaluador',
+    lastName: 'Principal',
+    roles: ['evaluador'] as UserRole[],
+    accountActive: true,
+  },
+  {
+    id: 'admin-2',
+    email: 'admin2@gmail.com',
+    password: '12345678',
+    name: 'Admin',
+    lastName: 'Secondary',
+    roles: ['admin', 'asistente', 'autor', 'evaluador'] as UserRole[],
+    accountActive: true,
+  },
 ];
 
 function ensureDemoSeedUsers(list: any[]): { next: any[]; changed: boolean } {
@@ -167,58 +198,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (changed) {
       localStorage.setItem(USERS_KEY, JSON.stringify(next));
     }
-      // Generamos un asistente sin log
-      const asistUser = {
-        id: 'asistLucas',
-        email: 'lucasbudnik@hotmail.com.ar',
-        password: '12345678',
-        name: 'Asistente',
-        lastName: 'Principal',
-        roles: ['asistente'],
-        currentRole: 'asistente',
-        inscriptionStatus: 'confirmed',
-        institution: 'Instituto de Agroecología',
-        province: 'Buenos Aires',
-      };
-      users.push(asistUser);
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-      const autorUser = {
-        id: 'autorBenja',
-        email: 'rodriguezmantilla123@gmail.com',
-        name: 'Autor',  
-        password: '12345678',
-        lastName: 'Principal',
-        roles: ['autor'],
-        currentRole: 'autor',
-        inscriptionStatus: 'confirmed',
-      };
-      users.push(autorUser);
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-      const evaluadorUser = {
-        id: 'evaluadorAlci',
-        email: 'alci0483@gmail.com',
-        password: '12345678',
-        name: 'Evaluador',
-        lastName: 'Principal',
-        roles: ['evaluador'],
-      };
-
-      users.push(evaluadorUser);
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-      const admin2User = {
-        id: 'admin-2',
-        email: 'admin2@gmail.com',
-        password: '12345678',
-        name: 'Admin',
-        lastName: 'Secondary',
-        roles: ['admin', 'asistente', 'autor', 'evaluador'],
-      };
-
-      users.push(admin2User);
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    // Importante: no volver a pushear usuarios demo acá.
+    // Las cuentas de demo/equipo se gestionan por `DEMO_SEED_USERS` + `ensureDemoSeedUsers`,
+    // que es idempotente (no duplica registros al reiniciar el servidor).
 
     // Cargar usuario logueado — sin cambios
     const savedUser = localStorage.getItem('current_user');

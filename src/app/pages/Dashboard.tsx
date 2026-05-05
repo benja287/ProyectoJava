@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -16,6 +16,9 @@ import {
 export function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const WORKS_SUBMISSION_DEADLINE_KEY = 'congress_works_submission_deadline';
+  const [submissionDeadline, setSubmissionDeadline] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -40,6 +43,37 @@ export function Dashboard() {
   if (!user) return null;
 
   const isLoggedOnly = !user.roles || user.roles.length === 0;
+
+  useEffect(() => {
+    const readDeadline = () =>
+      setSubmissionDeadline(localStorage.getItem(WORKS_SUBMISSION_DEADLINE_KEY) || '');
+    readDeadline();
+    window.addEventListener('focus', readDeadline);
+    return () => window.removeEventListener('focus', readDeadline);
+  }, []);
+
+  const { blockNewSubmission, blockReason, resubmissions } = useMemo(() => {
+    if (!submissionDeadline) return { blockNewSubmission: false, blockReason: '', resubmissions: [] as any[] };
+    const deadlineDate = new Date(`${submissionDeadline}T23:59:59`);
+    const deadlinePassed = Date.now() > deadlineDate.getTime();
+    if (!deadlinePassed) return { blockNewSubmission: false, blockReason: '', resubmissions: [] as any[] };
+
+    const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
+    const myWorks = Array.isArray(allWorks) ? allWorks.filter((w: any) => w?.userId === user.id) : [];
+    const getPrecheckAttempts = (w: any) => (typeof w?.precheckAttempts === 'number' ? w.precheckAttempts : (typeof w?.attempts === 'number' ? w.attempts : 0));
+    const getReviewAttempts = (w: any) => (typeof w?.reviewAttempts === 'number' ? w.reviewAttempts : 0);
+    const resubs = myWorks.filter((w: any) => {
+      if (w?.status === 'prechecked_failed' && getPrecheckAttempts(w) < 3) return true;
+      if (w?.status === 'rejected' && getReviewAttempts(w) < 2) return true;
+      return false;
+    });
+
+    return {
+      blockNewSubmission: true, // bloquea SIEMPRE el acceso desde Acciones disponibles cuando venció la fecha
+      blockReason: `Ya no es posible enviar trabajos nuevos (fecha límite: ${submissionDeadline}).`,
+      resubmissions: resubs,
+    };
+  }, [submissionDeadline, user.id]);
 
   const getStatusBadge = (status?: string) => {
     if (!status) return null;
@@ -156,17 +190,42 @@ export function Dashboard() {
                 </div>
               </Link>
 
-              <Link
-                to="/envio-trabajos"
-                className="bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition group"
-              >
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="p-3 bg-amber-100 rounded-lg">
-                    <FileText className="w-8 h-8 text-amber-600" />
+              <div className="relative group">
+                <button
+                  type="button"
+                  disabled={blockNewSubmission}
+                  onClick={() => {
+                    if (blockNewSubmission) return;
+                    navigate('/envio-trabajos');
+                  }}
+                  className={`bg-white p-6 rounded-xl shadow-md transition group w-full text-left relative ${
+                    blockNewSubmission ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-xl'
+                  }`}
+                >
+                  <div className="flex items-center gap-4 mb-3">
+                    <div className="p-3 bg-amber-100 rounded-lg">
+                      <FileText className="w-8 h-8 text-amber-600" />
+                    </div>
+                    <h3 className="text-xl text-gray-800">Enviar Trabajo</h3>
                   </div>
-                  <h3 className="text-xl text-gray-800">Enviar Trabajo</h3>
-                </div>
-              </Link>
+                  <p className="text-gray-600 text-sm">
+                    Presenta tu trabajo científico o relato de experiencia.
+                  </p>
+
+                  {blockNewSubmission && (
+                    <div className="absolute inset-0 rounded-xl bg-gray-900/5 pointer-events-none" />
+                  )}
+                </button>
+
+                {blockNewSubmission && (
+                  <div className="pointer-events-none opacity-0 group-hover:opacity-100 transition absolute left-1/2 -translate-x-1/2 -top-3 -translate-y-full z-10">
+                    <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
+                      {blockReason}
+                    </div>
+                    <div className="mx-auto w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
+                  </div>
+                )}
+              </div>
             </>
           )}
 
@@ -185,6 +244,38 @@ export function Dashboard() {
             </Link>
           )}
         </div>
+
+        {/* Reenvíos disponibles cuando venció la fecha */}
+        {blockNewSubmission && resubmissions.length > 0 && (user.currentRole === 'asistente' || user.currentRole === 'autor') && (
+          <div className="mt-8 bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-xl text-gray-800 mb-2">Trabajos con reenvío disponible</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              La fecha límite para envíos nuevos ya venció. Si tu trabajo fue observado/rechazado, podés reenviarlo desde acá.
+            </p>
+            <div className="space-y-3">
+              {resubmissions
+                .sort((a: any, b: any) => Number(b.id) - Number(a.id))
+                .map((w: any) => (
+                  <div key={w.id} className="border border-gray-200 rounded-lg p-4 flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="font-medium text-gray-900 truncate">{w.title || 'Sin título'}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Estado: <span className="font-medium">{w.status}</span>
+                        {w.axis ? ` • Eje: ${w.axis}` : ''}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/envio-trabajos?resubmit=${encodeURIComponent(w.id)}`)}
+                      className="shrink-0 px-4 py-2 rounded-lg bg-[#2d5016] text-white text-sm font-medium hover:bg-[#3d6b23] transition"
+                    >
+                      Reenviar
+                    </button>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         {/* Estado */}
         <div className="mt-8 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl p-8">

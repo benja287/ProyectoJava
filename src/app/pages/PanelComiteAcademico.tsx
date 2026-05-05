@@ -46,6 +46,7 @@ const INSCRIPTION_CATEGORIES = [
 ] as const;
 
 const MAX_EVALUATORS_PER_AXIS = 3;
+const WORKS_SUBMISSION_DEADLINE_KEY = 'congress_works_submission_deadline';
 
 function categoryLabel(category?: string): string {
   if (!category) return 'Sin categoría';
@@ -106,6 +107,7 @@ export function PanelComiteAcademico() {
   const [userFeedback, setUserFeedback] = useState<string>('');
   const [emailLog, setEmailLog] = useState<any[]>([]);
   const [axisDraftByUserId, setAxisDraftByUserId] = useState<Record<string, string>>({});
+  const [submissionDeadline, setSubmissionDeadline] = useState<string>('');
 
   const [selectedWorkId, setSelectedWorkId] = useState<string>('');
   const selectedWork = useMemo(
@@ -136,9 +138,11 @@ export function PanelComiteAcademico() {
     const storedWorks = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
     const storedUsers = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
     const storedEmailLog = JSON.parse(localStorage.getItem(EMAIL_LOG_KEY) || '[]');
+    const storedDeadline = localStorage.getItem(WORKS_SUBMISSION_DEADLINE_KEY) || '';
     setWorks(storedWorks);
     setUsers(storedUsers);
     setEmailLog(storedEmailLog);
+    setSubmissionDeadline(storedDeadline);
   }, [user, navigate]);
 
   useEffect(() => {
@@ -309,6 +313,19 @@ export function PanelComiteAcademico() {
     makeEvaluator(userId);
     setEvaluatorAxes(userId, [axis]);
     setAxisDraftByUserId((p) => ({ ...p, [userId]: '' }));
+  };
+
+  const saveSubmissionDeadline = (value: string) => {
+    const v = (value || '').trim();
+    if (!v) {
+      localStorage.removeItem(WORKS_SUBMISSION_DEADLINE_KEY);
+      setSubmissionDeadline('');
+      setUserFeedback('Se quitó la fecha límite. Se permiten envíos nuevos.');
+      return;
+    }
+    localStorage.setItem(WORKS_SUBMISSION_DEADLINE_KEY, v);
+    setSubmissionDeadline(v);
+    setUserFeedback(`Fecha límite guardada: ${v}.`);
   };
 
   const updateWork = (workId: string, patch: any) => {
@@ -800,6 +817,49 @@ export function PanelComiteAcademico() {
                 <span className="font-medium">Pasos:</span>{' '}
                 1) Seleccioná un trabajo → 2) completá el precheck (OK u observado) → 3) asigná 2 evaluadores del eje → 4) si hay empate 1/1, asigná un 3er evaluador.
               </div>
+
+              <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="min-w-[220px]">
+                    <div className="text-sm font-medium text-gray-900">
+                      Límite para envíos nuevos de trabajos
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      Después de esta fecha, <strong>no</strong> se podrán enviar trabajos nuevos (sí reenvíos por corrección).
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={submissionDeadline}
+                      onChange={(e) => setSubmissionDeadline(e.target.value)}
+                      className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => saveSubmissionDeadline(submissionDeadline)}
+                      className="px-4 py-2 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => saveSubmissionDeadline('')}
+                      className="px-4 py-2 rounded border border-gray-300 text-gray-700 text-sm hover:bg-white transition"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-gray-600">
+                  Estado actual:{' '}
+                  {submissionDeadline ? (
+                    <span className="font-medium text-gray-900">hasta {submissionDeadline} (inclusive)</span>
+                  ) : (
+                    <span className="font-medium text-emerald-800">sin fecha límite configurada</span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -882,7 +942,7 @@ export function PanelComiteAcademico() {
                             value={ax}
                             disabled={
                               !isEval &&
-                              (axisToEvaluatorIds.get(ax)?.size || 0) >= 2
+                              (axisToEvaluatorIds.get(ax)?.size || 0) >= MAX_EVALUATORS_PER_AXIS
                             }
                           >
                             {ax}
