@@ -87,7 +87,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const USERS_KEY = 'congress_users';
-
 function upsertSeedUsers(list: any[], seeds: Record<string, unknown>[]): { next: any[]; changed: boolean } {
   let changed = false;
   const next = [...list];
@@ -150,6 +149,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (afterDemo.changed || afterExtra.changed) {
       localStorage.setItem(USERS_KEY, JSON.stringify(afterExtra.next));
     }
+    // Importante: no volver a pushear usuarios demo acá.
+    // Las cuentas de demo/equipo se gestionan por `DEMO_SEED_USERS` + `ensureDemoSeedUsers`,
+    // que es idempotente (no duplica registros al reiniciar el servidor).
 
     // Cargar usuario logueado — sin cambios
     const savedUser = localStorage.getItem('current_user');

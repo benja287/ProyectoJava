@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { Calendar, Clock, MapPin, BookOpen, Image, BadgeCheck } from 'lucide-react';
@@ -22,6 +22,8 @@ export function PanelAutor() {
   const navigate = useNavigate();
 
   const [presentations, setPresentations] = useState<Presentation[]>([]);
+  const WORKS_SUBMISSION_DEADLINE_KEY = 'congress_works_submission_deadline';
+  const [submissionDeadline, setSubmissionDeadline] = useState('');
 
   useEffect(() => {
     if (!user || user.currentRole !== 'autor') {
@@ -94,6 +96,49 @@ export function PanelAutor() {
 
   if (!user) return null;
 
+  useEffect(() => {
+    const readDeadline = () => setSubmissionDeadline(localStorage.getItem(WORKS_SUBMISSION_DEADLINE_KEY) || '');
+    readDeadline();
+    window.addEventListener('focus', readDeadline);
+    return () => window.removeEventListener('focus', readDeadline);
+  }, []);
+
+  const myAuthorWorks = useMemo(() => {
+    const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
+    const mine = Array.isArray(allWorks) ? allWorks.filter((w: any) => w?.userId === user.id) : [];
+    return mine.filter((w: any) => (w?.submittedByRole || 'autor') === 'autor');
+  }, [user.id]);
+
+  const getPrecheckAttempts = (w: any) =>
+    typeof w?.precheckAttempts === 'number' ? w.precheckAttempts : (typeof w?.attempts === 'number' ? w.attempts : 0);
+  const getReviewAttempts = (w: any) => (typeof w?.reviewAttempts === 'number' ? w.reviewAttempts : 0);
+
+  const workStatusLabel = (st?: string) => {
+    if (st === 'submitted') return 'Enviado';
+    if (st === 'prechecked_ok') return 'Precheck OK';
+    if (st === 'prechecked_failed') return 'Observado (reenvío)';
+    if (st === 'prechecked_final') return 'No prevalidado final';
+    if (st === 'assigned') return 'Asignado a evaluadores';
+    if (st === 'under_review') return 'En revisión';
+    if (st === 'pending_committee_final') return 'Pendiente confirmación comité';
+    if (st === 'approved') return 'Aprobado';
+    if (st === 'rejected') return 'Rechazado (reenvío)';
+    if (st === 'rejected_final') return 'Rechazado final';
+    return st || 'Sin estado';
+  };
+
+  const canResubmit = (w: any): boolean => {
+    if (w?.status === 'prechecked_failed' && getPrecheckAttempts(w) < 3) return true;
+    if (w?.status === 'rejected' && getReviewAttempts(w) < 2) return true;
+    return false;
+  };
+
+  const blockNewSubmission = useMemo(() => {
+    if (!submissionDeadline) return false;
+    const deadlineDate = new Date(`${submissionDeadline}T23:59:59`);
+    return Date.now() > deadlineDate.getTime();
+  }, [submissionDeadline]);
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '—';
     const [y, m, d] = dateStr.split('-');
@@ -108,12 +153,79 @@ export function PanelAutor() {
           <h1 className="text-4xl">Mis Presentaciones</h1>
         </div>
 
-        <button
-          onClick={() => navigate('/envio-trabajos')}
-          className="mb-6 bg-[#2d5016] text-white px-4 py-2 rounded"
-        >
-          Enviar nuevo trabajo
-        </button>
+        <div className="mb-6 relative group inline-block">
+          <button
+            type="button"
+            disabled={blockNewSubmission}
+            onClick={() => {
+              if (blockNewSubmission) return;
+              navigate('/envio-trabajos');
+            }}
+            className="bg-[#2d5016] text-white px-4 py-2 rounded disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            Enviar nuevo trabajo
+          </button>
+          {blockNewSubmission && submissionDeadline && (
+            <div className="pointer-events-none opacity-0 group-hover:opacity-100 transition absolute left-1/2 -translate-x-1/2 -top-3 -translate-y-full z-10">
+              <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
+                Ya no es posible enviar trabajos nuevos (fecha límite: {submissionDeadline}).
+              </div>
+              <div className="mx-auto w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-xl shadow p-6 mb-8 border border-gray-100">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-xl text-gray-800">Mis trabajos en proceso</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Estado del circuito (precheck, evaluación y reenvíos). Si corresponde, podés reenviar desde acá.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/envio-trabajos')}
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 transition"
+            >
+              Ver detalle
+            </button>
+          </div>
+
+          {myAuthorWorks.length === 0 ? (
+            <p className="text-sm text-gray-500 mt-4">Todavía no enviaste trabajos como autor.</p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {[...myAuthorWorks]
+                .sort((a: any, b: any) => Number(b.id) - Number(a.id))
+                .map((w: any) => (
+                  <div key={w.id} className="border border-gray-200 rounded-lg p-4 flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="font-medium text-gray-900 truncate">{w.title || 'Sin título'}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Estado: <span className="font-medium">{workStatusLabel(w.status)}</span>
+                        {w.axis ? ` • Eje: ${w.axis}` : ''}
+                      </div>
+                      <div className="text-[11px] text-gray-500 mt-1">
+                        Precheck {Math.min(getPrecheckAttempts(w), 3)}/3 • Revisión {Math.min(getReviewAttempts(w), 2)}/2
+                      </div>
+                    </div>
+                    {canResubmit(w) ? (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/envio-trabajos?resubmit=${encodeURIComponent(w.id)}`)}
+                        className="shrink-0 px-4 py-2 rounded-lg bg-[#2d5016] text-white text-sm font-medium hover:bg-[#3d6b23] transition"
+                      >
+                        Reenviar
+                      </button>
+                    ) : (
+                      <span className="shrink-0 text-xs text-gray-400 mt-1">Sin reenvío</span>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
 
          
             

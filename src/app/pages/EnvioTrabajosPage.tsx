@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { CheckCircle } from 'lucide-react';
 import { saveBrowserFile, deleteBrowserFile } from '../lib/browserFiles';
@@ -7,10 +7,14 @@ import { saveBrowserFile, deleteBrowserFile } from '../lib/browserFiles';
 export function EnvioTrabajosPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const WORKS_SUBMISSION_DEADLINE_KEY = 'congress_works_submission_deadline';
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError]         = useState('');
   const [uploading, setUploading] = useState(false);
+  const [submissionDeadline, setSubmissionDeadline] = useState<string>('');
 
   const thematicAxes = [
     'Diseño y manejo de sistemas productivos agroecológicos',
@@ -40,6 +44,13 @@ export function EnvioTrabajosPage() {
     const allWorks = JSON.parse(localStorage.getItem('congress_works') || '[]');
     setMyWorks(allWorks.filter((w: any) => w.userId === user.id));
   }, [user, navigate]);
+
+  useEffect(() => {
+    const readDeadline = () => setSubmissionDeadline(localStorage.getItem(WORKS_SUBMISSION_DEADLINE_KEY) || '');
+    readDeadline();
+    window.addEventListener('focus', readDeadline);
+    return () => window.removeEventListener('focus', readDeadline);
+  }, []);
 
   if (!user) return null;
 
@@ -96,6 +107,34 @@ export function EnvioTrabajosPage() {
   );
   const authorLimit = cuentaTieneAutor && cuentaTieneAsistente ? 1 : 2;
 
+  const isResubmission = availableResubmissions.length > 0;
+  const isNewSubmission = !isResubmission;
+  const deadlineConfigured = Boolean(submissionDeadline);
+  const deadlineDate = submissionDeadline ? new Date(`${submissionDeadline}T23:59:59`) : null;
+  const deadlinePassed = Boolean(deadlineDate && Date.now() > deadlineDate.getTime());
+  const newSubmissionBlockedByDeadline = isNewSubmission && deadlineConfigured && deadlinePassed;
+
+  const deadlineInfoText = !deadlineConfigured
+    ? 'El Comité Académico aún no definió fecha límite de entrega: por ahora se permiten envíos nuevos.'
+    : `Fecha límite para enviar trabajos nuevos: ${submissionDeadline} (inclusive).`;
+
+  const deadlineBlockedText =
+    deadlineConfigured && deadlinePassed
+      ? `No se permiten envíos nuevos: se superó la fecha límite (${submissionDeadline}).`
+      : '';
+
+  const hasAnyWorkEver = myWorks.length > 0;
+  const blockedByDeadlineOnly =
+    newSubmissionBlockedByDeadline &&
+    !bloqueadoPorDobleRol &&
+    worksUnderReview.length === 0 &&
+    exhaustedPrecheckWorks.length === 0 &&
+    exhaustedReviewWorks.length === 0 &&
+    ((isAutor && activeWorks.length < authorLimit) ||
+      (isAsistente && !cuentaTieneAutor && activeWorks.length < 1) ||
+      // asistente con rol autor en la cuenta ya se bloquea por doble rol, pero lo dejamos seguro
+      (isAsistente && cuentaTieneAutor));
+
   useEffect(() => {
     if (!workToResubmit) {
       setSelectedResubmitWorkId('');
@@ -105,6 +144,17 @@ export function EnvioTrabajosPage() {
       setSelectedResubmitWorkId(workToResubmit.id);
     }
   }, [workToResubmit, selectedResubmitWorkId]);
+
+  // Permite abrir directo un reenvío desde Dashboard: /envio-trabajos?resubmit=<id>
+  useEffect(() => {
+    const sp = new URLSearchParams(location.search || '');
+    const id = sp.get('resubmit');
+    if (!id) return;
+    if (availableResubmissions.some((w) => String(w.id) === String(id))) {
+      setSelectedResubmitWorkId(String(id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, availableResubmissions.length]);
 
   useEffect(() => {
     if (!workToResubmit) return;
@@ -120,7 +170,10 @@ export function EnvioTrabajosPage() {
   const canSubmit = () => {
     if (!isAutor && !isAsistente) return false;
     if (bloqueadoPorDobleRol) return false;
+    // Si hay reenvíos disponibles, siempre se permite reenviar aunque haya pasado la fecha.
     if (availableResubmissions.length > 0) return true;
+    // Envíos nuevos bloqueados por fecha límite (si existe).
+    if (newSubmissionBlockedByDeadline) return false;
     if (isAutor) return activeWorks.length < authorLimit;
     // Solo asistente (sin rol autor en la cuenta): 1 trabajo
     if (isAsistente && !cuentaTieneAutor) return activeWorks.length < 1;
@@ -134,6 +187,11 @@ export function EnvioTrabajosPage() {
       return `Tu cuenta tiene rol autor y asistente. Cambiá a rol autor desde el menú de usuario y enviá tus trabajos desde el panel Autor (hasta ${authorLimit} trabajo${authorLimit > 1 ? 's' : ''} activo${authorLimit > 1 ? 's' : ''}).`;
     }
     if (availableResubmissions.length > 0) return '';
+    if (newSubmissionBlockedByDeadline) {
+      return hasAnyWorkEver
+        ? `La fecha límite para enviar trabajos nuevos fue ${submissionDeadline}. Si ya enviaste un trabajo y quedó observado/rechazado, los reenvíos siguen habilitados dentro de los intentos disponibles.`
+        : `La fecha límite para enviar trabajos nuevos fue ${submissionDeadline}. Ya no es posible enviar tu primer trabajo.`;
+    }
     if (worksUnderReview.length > 0) {
       return 'Tenés trabajo/s en revisión o pendientes de confirmación final del comité. En ese estado no podés usar el cupo para otro envío hasta que cambie el estado (por ejemplo, si queda rechazado con posibilidad de reenvío).';
     }
@@ -391,11 +449,24 @@ export function EnvioTrabajosPage() {
             Trabajos enviados ({isAutor ? 'autor' : 'asistente'}): {currentRoleWorks.length} | Total histórico: {myWorks.length}
           </div>
 
+          <div className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
+            newSubmissionBlockedByDeadline ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+          }`}>
+            <div className="font-medium">Límite de envíos</div>
+            <div className="mt-1">{deadlineInfoText}</div>
+            {deadlineBlockedText && <div className="mt-1 text-sm font-medium">{deadlineBlockedText}</div>}
+            {isResubmission && (
+              <div className="mt-2 text-xs text-emerald-800">
+                Estás en modo <strong>reenvío</strong>: esto sigue permitido aunque haya pasado la fecha límite.
+              </div>
+            )}
+          </div>
+
           {error && (
             <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>
           )}
 
-          {!canSubmit() ? (
+          {!canSubmit() && !blockedByDeadlineOnly ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-center">
               <p className="text-amber-900 font-medium">
                 No podés enviar un nuevo trabajo en este momento.
@@ -525,13 +596,24 @@ export function EnvioTrabajosPage() {
                 </ul>
               </div>
 
-              <button
-                type="submit"
-                disabled={uploading}
-                className="w-full bg-[#2d5016] text-white py-2 rounded hover:bg-[#3d6b23] transition disabled:opacity-60"
-              >
-                {uploading ? 'Enviando...' : 'Enviar trabajo'}
-              </button>
+              <div className="relative group">
+                <button
+                  type="submit"
+                  disabled={uploading || (!isResubmission && newSubmissionBlockedByDeadline)}
+                  className="w-full bg-[#2d5016] text-white py-2 rounded hover:bg-[#3d6b23] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {uploading ? 'Enviando...' : 'Enviar trabajo'}
+                </button>
+                {/* Tooltip tipo “globito” cuando está bloqueado por fecha */}
+                {!uploading && !isResubmission && newSubmissionBlockedByDeadline && (
+                  <div className="pointer-events-none opacity-0 group-hover:opacity-100 transition absolute left-1/2 -translate-x-1/2 -top-3 -translate-y-full">
+                    <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
+                      Ya no es posible enviar trabajos nuevos (fecha límite: {submissionDeadline}).
+                    </div>
+                    <div className="mx-auto w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
+                  </div>
+                )}
+              </div>
 
             </form>
           )}
