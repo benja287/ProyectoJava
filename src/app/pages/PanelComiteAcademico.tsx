@@ -169,8 +169,6 @@ export function PanelComiteAcademico() {
     setCommitteeFinalNotes('');
   }, [selectedWorkId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!user) return null;
-
   const thematicAxes = [
     'Diseño y manejo de sistemas productivos agroecológicos',
     'Formación y construcción de saberes agroecológicos',
@@ -394,7 +392,7 @@ export function PanelComiteAcademico() {
       status: 'approved',
       committeeFinal: {
         decision: 'accepted' as const,
-        byUserId: user.id,
+        byUserId: user?.id || '',
         decidedAt: now,
         notes: notes || undefined,
       },
@@ -431,7 +429,7 @@ export function PanelComiteAcademico() {
       status: 'rejected_final',
       committeeFinal: {
         decision: 'rejected' as const,
-        byUserId: user.id,
+        byUserId: user?.id || '',
         decidedAt: now,
         notes,
       },
@@ -488,7 +486,7 @@ export function PanelComiteAcademico() {
     if (!confirmed) return;
 
     const precheck = {
-      byAdminId: user.id,
+      byAdminId: user?.id || '',
       at: new Date().toISOString(),
       checks: { ...checks },
       notes: notes.trim() || '',
@@ -542,7 +540,7 @@ export function PanelComiteAcademico() {
     if (!confirmed) return;
 
     const precheck = {
-      byAdminId: user.id,
+      byAdminId: user?.id || '',
       at: new Date().toISOString(),
       checks: { ...checks },
       notes: notes.trim() || '',
@@ -784,6 +782,8 @@ export function PanelComiteAcademico() {
     if (st === 'rejected_final') return <span className={`${base} bg-gray-100 text-gray-800`}>Rechazado final</span>;
     return <span className={`${base} bg-gray-100 text-gray-700`}>{st}</span>;
   };
+
+  if (!user) return null;
 
   return (
     <div className="min-h-[calc(100vh-80px)] py-12 px-4 bg-gradient-to-br from-[#faf8f5] to-[#f3f1ed]">
@@ -1427,6 +1427,17 @@ export function PanelComiteAcademico() {
                 )}
               </>
             )}
+          </div>
+          <div className="mt-6">
+            <fieldset>
+              <button
+                type="button"
+                onClick={() => navigate("/certificado")}
+                className="bg-indigo-700 text-white px-4 py-2 rounded hover:bg-indigo-800 transition"
+              >
+                Generar Certificado
+              </button>
+            </fieldset>
           </div>
         </div>
       </div>
