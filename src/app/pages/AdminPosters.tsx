@@ -15,6 +15,7 @@ export function AdminPosters() {
 
   const [approvedWorks, setApprovedWorks] = useState<any[]>([]);
   const [selectedWorks, setSelectedWorks] = useState<any[]>([]);
+  const [selectedAxis, setSelectedAxis] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState<{
@@ -66,6 +67,18 @@ export function AdminPosters() {
       )
     );
   };
+
+  const availableAxes = Array.from(
+    new Set(
+      approvedWorks
+        .map((w: any) => (typeof w?.axis === 'string' ? w.axis.trim() : ''))
+        .filter((ax: string) => ax.length > 0)
+    )
+  ).sort((a, b) => a.localeCompare(b, 'es'));
+
+  const filteredApprovedWorks = selectedAxis
+    ? approvedWorks.filter((w: any) => (w?.axis || '').trim() === selectedAxis)
+    : approvedWorks;
 
   const handleSubmit = () => {
     setError(null);
@@ -172,12 +185,41 @@ export function AdminPosters() {
           value={form.endTime}
           onChange={(e) => setForm({ ...form, endTime: e.target.value })}
         />
+
+        <div className="rounded border p-3 bg-gray-50">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Eje temático para filtrar pósters aprobados
+          </label>
+          <select
+            value={selectedAxis}
+            onChange={(e) => {
+              setSelectedAxis(e.target.value);
+              setSelectedWorks([]);
+            }}
+            className="border p-2 rounded w-full"
+          >
+            <option value="">Todos los ejes</option>
+            {availableAxes.map((ax) => (
+              <option key={ax} value={ax}>
+                {ax}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            Al cambiar el eje, se limpia la selección para no mezclar trabajos de distintos ejes.
+          </p>
+        </div>
       </div>
 
       {/* LISTA */}
       <h2 className="text-xl mb-4">Seleccionar pósters</h2>
 
-      {approvedWorks.map((w) => {
+      {filteredApprovedWorks.length === 0 && (
+        <p className="text-sm text-gray-500 mb-3">
+          No hay pósters aprobados para el eje seleccionado.
+        </p>
+      )}
+      {filteredApprovedWorks.map((w) => {
         const selected = selectedWorks.find(sw => sw.workId === w.id);
 
         return (

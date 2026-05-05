@@ -183,17 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       users.push(asistUser);
       localStorage.setItem(USERS_KEY, JSON.stringify(users));
 
-      const autorUser = {
-        id: 'autorBenja',
-        email: 'rodriguezmantilla123@gmail.com',
-        name: 'Autor',  
-        password: '12345678',
-        lastName: 'Principal',
-        roles: ['autor'],
-        currentRole: 'autor',
-        inscriptionStatus: 'confirmed',
-      };
-      users.push(autorUser);
+     
       localStorage.setItem(USERS_KEY, JSON.stringify(users));
 
       const evaluadorUser = {
