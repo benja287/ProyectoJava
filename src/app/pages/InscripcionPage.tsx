@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { CreditCard, Upload, CheckCircle } from 'lucide-react';
+import { Banknote, CreditCard, Upload, CheckCircle, Landmark } from 'lucide-react';
 import { saveBrowserFile } from '../lib/browserFiles';
 import { buildComprobanteSearchParamsFromUser } from '../lib/inscriptionComprobantePayload';
 import type { InscriptionCategory } from '../context/AuthContext';
@@ -50,6 +50,11 @@ export function InscripcionPage() {
     categoryCertificate: null as File | null,
   });
 
+  const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'cash'>(
+    user?.inscriptionPaymentMethod === 'cash' ? 'cash' : 'transfer'
+  );
+  const [requiresInvoice, setRequiresInvoice] = useState(!!user?.inscriptionRequiresInvoice);
+
   const [submitted, setSubmitted]   = useState(false);
   const [fileError, setFileError]   = useState('');
   const [categoryError, setCategoryError] = useState('');
@@ -83,7 +88,9 @@ export function InscripcionPage() {
           <p className="text-gray-600 mb-6">
             {user.inscriptionStatus === 'confirmed'
               ? 'Ya estás inscripto/a al congreso.'
-              : 'Será validada por el equipo organizador. Te notificaremos cuando sea aprobada.'}
+              : user.inscriptionPaymentMethod === 'cash'
+                ? 'Declaraste pago en efectivo / presencial. La organización validará el cobro (en caja o acreditación durante el congreso) y te confirmará la inscripción. No hace falta comprobante digital.'
+                : 'Enviaste comprobante de transferencia. Será validado por el equipo organizador. Te notificaremos cuando sea aprobada.'}
           </p>
           {user.inscriptionStatus === 'confirmed' && user.inscriptionAccreditationToken && (
             <div className="mb-6 rounded-lg border border-[#2d5016]/30 bg-[#f6faf3] px-4 py-3 text-left text-sm text-gray-700">
@@ -163,8 +170,8 @@ export function InscripcionPage() {
       return;
     }
 
-    if (!formData.receipt) {
-      setFileError('Debés subir un comprobante válido.');
+    if (paymentMethod === 'transfer' && !formData.receipt) {
+      setFileError('Debés subir un comprobante de transferencia (PDF, JPG o PNG).');
       return;
     }
     if (
@@ -178,13 +185,14 @@ export function InscripcionPage() {
 
     setUploading(true);
 
-    // ── Guardar comprobante en IndexedDB ───────────────────────────────────
-    // Si falla, igual procesamos la inscripción sin archivo
+    // ── Guardar comprobante en IndexedDB (solo transferencia) ───────────────
     let storedFile = null;
-    try {
-      storedFile = await saveBrowserFile(formData.receipt);
-    } catch {
-      console.warn('No se pudo guardar el comprobante en IndexedDB');
+    if (paymentMethod === 'transfer' && formData.receipt) {
+      try {
+        storedFile = await saveBrowserFile(formData.receipt);
+      } catch {
+        console.warn('No se pudo guardar el comprobante en IndexedDB');
+      }
     }
     let storedCategoryFile = null;
     if (formData.categoryCertificate) {
@@ -201,13 +209,22 @@ export function InscripcionPage() {
       province:          formData.province,
       inscriptionStatus: 'pending',
       category:          formData.category,
-      receipt:           formData.receipt.name, // solo el nombre, como antes
+      inscriptionPaymentMethod: paymentMethod,
+      inscriptionRequiresInvoice: requiresInvoice,
     };
 
-    if (storedFile) {
-      updates.receiptFileId   = storedFile.fileId;
-      updates.receiptFileSize = storedFile.fileSize;
-      updates.receiptMimeType = storedFile.fileType;
+    if (paymentMethod === 'transfer') {
+      updates.receipt = formData.receipt ? formData.receipt.name : '';
+      if (storedFile) {
+        updates.receiptFileId = storedFile.fileId;
+        updates.receiptFileSize = storedFile.fileSize;
+        updates.receiptMimeType = storedFile.fileType;
+      }
+    } else {
+      updates.receipt = '';
+      updates.receiptFileId = undefined;
+      updates.receiptFileSize = undefined;
+      updates.receiptMimeType = undefined;
     }
     if (storedCategoryFile) {
       updates.categoryCertificate = storedCategoryFile.fileName;
@@ -250,12 +267,109 @@ export function InscripcionPage() {
             <div>
               <h1 className="text-3xl text-gray-800">Inscripción al Congreso</h1>
               <p className="text-gray-600">
-                Completá tus datos y adjuntá el comprobante de pago
+                {paymentMethod === 'cash'
+                  ? 'Efectivo: no subís comprobante de pago. Completá datos y certificados que correspondan a tu categoría.'
+                  : 'Transferencia: adjuntá el comprobante de pago y completá el resto de los datos.'}
               </p>
             </div>
           </div>
 
+          {user.inscriptionStatus === 'rejected' && (
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+              Tu inscripción anterior fue <strong>rechazada</strong>. Podés enviar una nueva solicitud: revisá el método
+              de pago (transferencia con comprobante o efectivo presencial) y los archivos requeridos.
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
+
+            <div className="rounded-xl border border-[#2d5016]/25 bg-[#f7faf5] p-5 space-y-4">
+              <p className="text-sm font-semibold text-gray-900">Forma de pago</p>
+              <div className="flex flex-col gap-3">
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 bg-white p-3 has-[:checked]:border-[#2d5016] has-[:checked]:ring-2 has-[:checked]:ring-[#2d5016]/20">
+                  <input
+                    type="radio"
+                    name="inscriptionPayMethod"
+                    checked={paymentMethod === 'transfer'}
+                    onChange={() => {
+                      setPaymentMethod('transfer');
+                      setFileError('');
+                    }}
+                    className="mt-1"
+                  />
+                  <div>
+                    <span className="flex items-center gap-2 font-medium text-gray-900">
+                      <Landmark className="w-4 h-4 shrink-0 text-[#2d5016]" />
+                      Transferencia u otro pago con comprobante
+                    </span>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Subís el comprobante (captura, PDF o imagen) para que administración lo valide.
+                    </p>
+                  </div>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 bg-white p-3 has-[:checked]:border-[#2d5016] has-[:checked]:ring-2 has-[:checked]:ring-[#2d5016]/20">
+                  <input
+                    type="radio"
+                    name="inscriptionPayMethod"
+                    checked={paymentMethod === 'cash'}
+                    onChange={() => {
+                      setPaymentMethod('cash');
+                      setFormData((fd) => ({ ...fd, receipt: null }));
+                      setFileError('');
+                    }}
+                    className="mt-1"
+                  />
+                  <div>
+                    <span className="flex items-center gap-2 font-medium text-gray-900">
+                      <Banknote className="w-4 h-4 shrink-0 text-[#2d5016]" />
+                      Efectivo / inscripción presencial (durante el congreso)
+                    </span>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Sin archivo de pago: la confirmación la hace administración en el panel (ver texto debajo).
+                    </p>
+                  </div>
+                </label>
+              </div>
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-800">
+                <input
+                  type="checkbox"
+                  checked={requiresInvoice}
+                  onChange={(e) => setRequiresInvoice(e.target.checked)}
+                  className="rounded border-gray-300 text-[#2d5016] focus:ring-[#2d5016]"
+                />
+                Solicito factura (fiscal)
+              </label>
+            </div>
+
+            {paymentMethod === 'transfer' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Comprobante de pago (obligatorio)
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <input
+                    type="file"
+                    required
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFileChange}
+                    className="w-full"
+                  />
+                  {fileError && <p className="text-red-600 text-sm mt-2">{fileError}</p>}
+                  {formData.receipt && (
+                    <p className="text-green-600 text-sm mt-2">Archivo cargado: {formData.receipt.name}</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+                <p className="font-semibold text-amber-950 mb-2">Pago en efectivo — sin comprobante digital</p>
+                <p className="text-amber-950/95 leading-relaxed">
+                  La inscripción queda pendiente hasta que un administrador valide en el panel que registraste el pago
+                  en efectivo (por ejemplo en caja o acreditación durante el congreso).
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -344,7 +458,8 @@ export function InscripcionPage() {
             {requiresCategoryCertificate && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Certificado de categoría (obligatorio)
+                  Certificado de categoría (obligatorio){' '}
+                  <span className="font-normal text-gray-500">— no es el comprobante de pago</span>
                 </label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                   <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
@@ -367,30 +482,6 @@ export function InscripcionPage() {
                 </div>
               </div>
             )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Comprobante de Pago
-              </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <input
-                  type="file"
-                  required
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={handleFileChange}
-                  className="w-full"
-                />
-                {fileError && (
-                  <p className="text-red-600 text-sm mt-2">{fileError}</p>
-                )}
-                {formData.receipt && (
-                  <p className="text-green-600 text-sm mt-2">
-                    Archivo cargado: {formData.receipt.name}
-                  </p>
-                )}
-              </div>
-            </div>
 
             <button
               type="submit"

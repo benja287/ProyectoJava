@@ -4,6 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { ClipboardList, Users, CheckCircle, XCircle, UserPlus, FileDown } from 'lucide-react';
 import { deleteBrowserFile, openOrDownloadFile } from '../lib/browserFiles';
 import { sendTransactionalEmail } from '../lib/emailSender';
+import {
+  isActiveAssignmentSlot,
+  isAssignmentDeclined,
+  isAssignmentEvaluationDone,
+  isAssignmentInvitePending,
+} from '../lib/workAssignments';
 
 type PrecheckChecks = {
   pdfOk: boolean;
@@ -107,13 +113,17 @@ export function PanelComiteAcademico() {
   const selectedWorkStatus = selectedWork ? getWorkStatus(selectedWork) : '';
   const selectedWorkAttempts = selectedWork ? getPrecheckAttempts(selectedWork) : 1;
   const isCommitteeFlowClosed = selectedWorkStatus === 'approved' || selectedWorkStatus === 'rejected_final';
+  const isAwaitingCommitteeFinal = selectedWorkStatus === 'pending_committee_final';
   const isPrecheckFinalRejected = selectedWorkStatus === 'prechecked_final';
   const isObservedAttemptsExhausted =
     selectedWorkStatus === 'prechecked_final' || (selectedWorkStatus === 'prechecked_failed' && selectedWorkAttempts >= 3);
+  const cannotMutatePrecheckOrAssign =
+    isCommitteeFlowClosed || isAwaitingCommitteeFinal || isObservedAttemptsExhausted;
 
   const [checks, setChecks] = useState<PrecheckChecks>(defaultChecks);
   const [notes, setNotes] = useState<string>('');
   const [assignedEvaluatorIds, setAssignedEvaluatorIds] = useState<string[]>([]);
+  const [committeeFinalNotes, setCommitteeFinalNotes] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -150,9 +160,11 @@ export function PanelComiteAcademico() {
       setNotes('');
     }
     const prevAssign = getWorkAssignments(selectedWork)
+      .filter(isActiveAssignmentSlot)
       .map((a: any) => a?.evaluatorId)
       .filter(Boolean);
     setAssignedEvaluatorIds(prevAssign);
+    setCommitteeFinalNotes('');
   }, [selectedWorkId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user) return null;
@@ -341,6 +353,93 @@ export function PanelComiteAcademico() {
     return u?.email || '';
   };
 
+  const notifyAuthorCommitteeFinal = (
+    work: any,
+    subject: string,
+    bodyLines: string[]
+  ) => {
+    const authorEmail = getUserEmailById(work.userId);
+    sendNotificationToUser(
+      work.userId,
+      subject,
+      bodyLines.join('\n'),
+      'Comité Académico'
+    );
+    if (authorEmail) {
+      const body = `${bodyLines.join('\n')}\n\nComité Académico`;
+      logEmailToUser(authorEmail, subject, body, work.userName);
+    }
+  };
+
+  const handleCommitteeFinalAccept = () => {
+    setError('');
+    setUserFeedback('');
+    if (!selectedWork) return;
+    if (!isAwaitingCommitteeFinal) return;
+    const now = new Date().toISOString();
+    const notes = committeeFinalNotes.trim();
+    const reviews = getWorkReviews(selectedWork);
+    const reviewComments = reviews
+      .filter((r: any) => typeof r?.comment === 'string' && r.comment.trim())
+      .map((r: any, i: number) => `Eval ${i + 1}: ${r.comment.trim()}`);
+    const reviewCommentsText = reviewComments.length ? reviewComments.join(' | ') : '';
+
+    updateWork(selectedWork.id, {
+      status: 'approved',
+      committeeFinal: {
+        decision: 'accepted' as const,
+        byUserId: user.id,
+        decidedAt: now,
+        notes: notes || undefined,
+      },
+    });
+
+    const msgLines = [
+      `Tu trabajo "${selectedWork.title}" fue aprobado por el Comité Académico (confirmación final tras las evaluaciones).`,
+      ...(notes ? [`Observaciones del comité: ${notes}`] : []),
+      ...(reviewCommentsText ? [`Comentarios de evaluadores: ${reviewCommentsText}`] : []),
+      'Ingresá a la plataforma para ver el estado actualizado.',
+    ];
+    notifyAuthorCommitteeFinal(selectedWork, '[APROBADO] Confirmación final del Comité Académico', msgLines);
+    setUserFeedback('Confirmación final registrada: trabajo aprobado.');
+    setCommitteeFinalNotes('');
+  };
+
+  const handleCommitteeFinalReject = () => {
+    setError('');
+    setUserFeedback('');
+    if (!selectedWork) return;
+    if (!isAwaitingCommitteeFinal) return;
+    const ok = window.confirm(
+      '¿Confirmar que el Comité Académico rechaza definitivamente este trabajo? El autor verá el rechazo como final por comité (no por reenvío de evaluación).'
+    );
+    if (!ok) return;
+    const now = new Date().toISOString();
+    const notes = committeeFinalNotes.trim();
+    if (!notes) {
+      setError('Indicá el motivo del rechazo en el cuadro de observaciones (se enviará al autor).');
+      return;
+    }
+
+    updateWork(selectedWork.id, {
+      status: 'rejected_final',
+      committeeFinal: {
+        decision: 'rejected' as const,
+        byUserId: user.id,
+        decidedAt: now,
+        notes,
+      },
+    });
+
+    notifyAuthorCommitteeFinal(selectedWork, '[RECHAZO FINAL] Decisión del Comité Académico', [
+      `El Comité Académico rechazó definitivamente tu trabajo "${selectedWork.title}" tras las evaluaciones.`,
+      `Motivo u observaciones: ${notes}`,
+      'Podés consultar el estado en la plataforma.',
+    ]);
+    setUserFeedback('Confirmación final registrada: trabajo rechazado por el comité.');
+    setCommitteeFinalNotes('');
+  };
+
   const getEmailStatusText = (log: any): string => {
     if (log?.status === 'sent') return 'Enviado';
     if (log?.status === 'queued') return 'En cola';
@@ -360,6 +459,10 @@ export function PanelComiteAcademico() {
     }
     if (isCommitteeFlowClosed) {
       setError('Este trabajo ya tiene dictamen final. No se puede volver a prevalidar.');
+      return;
+    }
+    if (isAwaitingCommitteeFinal) {
+      setError('Este trabajo espera la confirmación final del comité; no se puede alterar la prevalidación.');
       return;
     }
     if (isPrecheckFinalRejected) {
@@ -411,6 +514,10 @@ export function PanelComiteAcademico() {
     }
     if (isCommitteeFlowClosed) {
       setError('Este trabajo ya tiene dictamen final. No se puede volver a prevalidar.');
+      return;
+    }
+    if (isAwaitingCommitteeFinal) {
+      setError('Este trabajo espera la confirmación final del comité; no se puede alterar la prevalidación.');
       return;
     }
     if (isPrecheckFinalRejected) {
@@ -471,6 +578,10 @@ export function PanelComiteAcademico() {
       setError('Este trabajo fue rechazado por evaluación y espera corrección/reenvío del autor.');
       return;
     }
+    if (status === 'pending_committee_final') {
+      setError('Este trabajo está pendiente de confirmación final del comité; no se modifican asignaciones hasta decidir.');
+      return;
+    }
     if (status === 'approved' || status === 'rejected_final') {
       setError('Este trabajo ya tiene dictamen final. No se puede reasignar a evaluación.');
       return;
@@ -494,15 +605,30 @@ export function PanelComiteAcademico() {
       return;
     }
 
-    const unique = Array.from(new Set(assignedEvaluatorIds.filter(Boolean)));
-    if (unique.length < 2) {
-      setError('Seleccioná 2 evaluadores para asignar el trabajo.');
+    const reviews = getWorkReviews(selectedWork);
+    const tie = approvalsCount(reviews) === 1 && rejectsCount(reviews) === 1;
+    const required = tie ? 3 : 2;
+
+    const uniqueSelected = Array.from(new Set(assignedEvaluatorIds.filter(Boolean)));
+    if (uniqueSelected.length < required) {
+      setError(
+        tie
+          ? 'Seleccioná 3 evaluadores (empate 1/1: tercer evaluador).'
+          : 'Seleccioná 2 evaluadores, o si uno rechazó la asignación mantené al que sigue y sumá al reemplazo.'
+      );
+      return;
+    }
+    if (!tie && uniqueSelected.length > 2) {
+      setError('Seleccioná sólo 2 evaluadores (salvo empate 1/1 con tercer evaluador).');
+      return;
+    }
+    if (tie && uniqueSelected.length > 3) {
+      setError('En empate 1/1 podés seleccionar hasta 3 evaluadores.');
       return;
     }
 
-    // Validación: los evaluadores seleccionados deben pertenecer al eje del trabajo
     const evaluatorById = new Map<string, any>(evaluators.map((e: any) => [e.id, e]));
-    const invalid = unique.filter((id) => {
+    const invalid = uniqueSelected.filter((id) => {
       const ev = evaluatorById.get(id);
       return !(Array.isArray(ev?.axes) && ev.axes.includes(axis));
     });
@@ -511,43 +637,72 @@ export function PanelComiteAcademico() {
       return;
     }
 
-    // Evitamos duplicar asignaciones ya hechas
     const existing = getWorkAssignments(selectedWork);
-    const existingIds = new Set(existing.map((a: any) => a?.evaluatorId).filter(Boolean));
+    const activeSlots = existing.filter(isActiveAssignmentSlot);
+
+    for (const a of activeSlots) {
+      if (!uniqueSelected.includes(a.evaluatorId)) {
+        setError(
+          'No podés sacar de la selección a un evaluador con invitación pendiente o ya aceptada. Si rechazó la asignación, mantené al resto y sumá otro evaluador del eje hasta completar 2 cupos.'
+        );
+        return;
+      }
+    }
+
+    const shouldAddEvaluatorSlot = (evaluatorId: string): boolean => {
+      if (existing.some((a: any) => a.evaluatorId === evaluatorId && isActiveAssignmentSlot(a))) {
+        return false;
+      }
+      if (tie && existing.some((a: any) => a.evaluatorId === evaluatorId && isAssignmentEvaluationDone(a))) {
+        return false;
+      }
+      return true;
+    };
 
     const now = new Date().toISOString();
-    const add = unique
-      .filter((id) => !existingIds.has(id))
+    const add = uniqueSelected
+      .filter((id) => shouldAddEvaluatorSlot(id))
       .map((evaluatorId) => ({
         evaluatorId,
         axis,
         assignedAt: now,
         status: 'assigned' as const,
+        inviteStatus: 'pending' as const,
       }));
 
+    if (add.length === 0) {
+      setUserFeedback('No hay evaluadores nuevos para invitar: los cupos activos ya están cubiertos con la selección actual.');
+      return;
+    }
+
     const nextAssignments = [...existing, ...add];
-    const nextStatus = nextAssignments.length >= 2 ? 'assigned' : status;
+    const activeAfter = nextAssignments.filter(isActiveAssignmentSlot);
+    let nextStatus = status;
+    if (activeAfter.length >= 2) {
+      if (status === 'prechecked_ok') nextStatus = 'assigned';
+    }
     updateWork(selectedWork.id, { assignments: nextAssignments, status: nextStatus });
 
     const evaluatorDataById = new Map<string, any>(evaluators.map((e: any) => [e.id, e]));
     const emailedTo: string[] = [];
-    unique.forEach((evaluatorId) => {
+    add.forEach((row) => {
+      const evaluatorId = row.evaluatorId;
       const evaluator = evaluatorDataById.get(evaluatorId);
       sendNotificationToUser(
         evaluatorId,
         'Nuevo trabajo asignado',
-        `Se te asignó el trabajo "${selectedWork.title}" (eje: ${axis}).`,
+        `Se te asignó el trabajo "${selectedWork.title}" (eje: ${axis}). Entrá al panel de evaluador y aceptá o rechazá la asignación.`,
         'Comité Académico'
       );
 
       if (evaluator?.email) {
-        const subject = '[ASIGNADO A EVALUACIÓN] Nuevo trabajo asignado';
+        const subject = '[ASIGNADO A EVALUACIÓN] Nuevo trabajo — confirmá la asignación';
         const body =
           `Hola ${evaluator.name || ''},\n\n` +
-          `Se te asignó un nuevo trabajo para evaluar.\n` +
+          `Se te asignó un trabajo para evaluar.\n` +
           `Título: ${selectedWork.title}\n` +
           `Eje temático: ${axis}\n\n` +
-          `Por favor ingresá al panel de evaluador para revisarlo.\n\n` +
+          `Ingresá al panel de evaluador y elegí si aceptás o rechazás la asignación. Si la rechazás, el comité académico podrá invitar a otro evaluador.\n\n` +
           `Comité Académico`;
         logEmailToUser(evaluator.email, subject, body, `${evaluator.name || ''} ${evaluator.lastName || ''}`.trim());
         emailedTo.push(evaluator.email);
@@ -555,9 +710,9 @@ export function PanelComiteAcademico() {
     });
 
     if (emailedTo.length > 0) {
-      setUserFeedback(`Asignación realizada. Aviso por email enviado a: ${emailedTo.join(', ')}`);
+      setUserFeedback(`Invitación enviada (${add.length} evaluador/es). Email: ${emailedTo.join(', ')}`);
     } else {
-      setUserFeedback('Asignación realizada. No se encontraron emails de evaluadores para avisar.');
+      setUserFeedback(`Se registró la invitación a ${add.length} evaluador/es (sin email para aviso).`);
     }
   };
 
@@ -608,6 +763,9 @@ export function PanelComiteAcademico() {
     if (st === 'prechecked_final') return <span className={`${base} bg-red-200 text-red-900`}>No prevalidado final</span>;
     if (st === 'assigned') return <span className={`${base} bg-indigo-100 text-indigo-800`}>Asignado</span>;
     if (st === 'under_review') return <span className={`${base} bg-purple-100 text-purple-800`}>En revisión</span>;
+    if (st === 'pending_committee_final') {
+      return <span className={`${base} bg-sky-100 text-sky-900`}>Pendiente confirmación comité</span>;
+    }
     if (st === 'approved') return <span className={`${base} bg-green-100 text-green-800`}>Aprobado</span>;
     if (st === 'rejected') return <span className={`${base} bg-orange-100 text-orange-800`}>Rechazado (reenvío)</span>;
     if (st === 'rejected_final') return <span className={`${base} bg-gray-100 text-gray-800`}>Rechazado final</span>;
@@ -893,6 +1051,8 @@ export function PanelComiteAcademico() {
                   </div>
                 )}
 
+                {!isAwaitingCommitteeFinal && (
+                <>
                 {/* Precheck */}
                 <div className="border border-gray-200 rounded-lg p-4 mb-6">
                   <div className="flex items-center gap-2 mb-3">
@@ -934,7 +1094,7 @@ export function PanelComiteAcademico() {
                         <input
                           type="checkbox"
                           checked={checks[key]}
-                          disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
+                          disabled={cannotMutatePrecheckOrAssign}
                           onChange={(e) => setChecks({ ...checks, [key]: e.target.checked })}
                         />
                         <span className="text-gray-800">{label}</span>
@@ -946,7 +1106,7 @@ export function PanelComiteAcademico() {
                     <label className="block text-xs text-gray-500 mb-1">Observaciones (se envían al autor)</label>
                     <textarea
                       value={notes}
-                      disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
+                      disabled={cannotMutatePrecheckOrAssign}
                       onChange={(e) => setNotes(e.target.value)}
                       rows={3}
                       className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700"
@@ -958,7 +1118,7 @@ export function PanelComiteAcademico() {
                     <button
                       type="button"
                       onClick={handlePrecheckOk}
-                      disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
+                      disabled={cannotMutatePrecheckOrAssign}
                       className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm"
                     >
                       Marcar apto (precheck OK)
@@ -966,7 +1126,7 @@ export function PanelComiteAcademico() {
                     <button
                       type="button"
                       onClick={handlePrecheckFail}
-                      disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
+                      disabled={cannotMutatePrecheckOrAssign}
                       className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm"
                     >
                       Observar (precheck NO)
@@ -1063,7 +1223,7 @@ export function PanelComiteAcademico() {
                                     <input
                                       type="checkbox"
                                       checked={checked}
-                                      disabled={disabled || isCommitteeFlowClosed || isObservedAttemptsExhausted}
+                                      disabled={disabled || cannotMutatePrecheckOrAssign}
                                       onChange={() => toggle(ev.id)}
                                     />
                                   </label>
@@ -1092,11 +1252,39 @@ export function PanelComiteAcademico() {
                     </div>
                   </div>
 
+                  {getWorkAssignments(selectedWork).length > 0 && (
+                    <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs">
+                      <div className="font-medium text-gray-800 mb-2">Estado por evaluador</div>
+                      <ul className="space-y-1.5">
+                        {getWorkAssignments(selectedWork).map((a: any, i: number) => {
+                          const ev = users.find((u: any) => u.id === a.evaluatorId);
+                          const name = ev ? `${ev.name} ${ev.lastName}` : a.evaluatorId;
+                          let label = '—';
+                          if (a.inviteStatus === 'declined') {
+                            label = 'Rechazó la asignación — sumá otro evaluador del eje y volvé a “Asignar evaluadores”.';
+                          } else if (a.inviteStatus === 'pending') {
+                            label = 'Invitación pendiente (debe aceptar o rechazar en su panel).';
+                          } else if (isAssignmentEvaluationDone(a)) {
+                            label = 'Evaluación cargada.';
+                          } else {
+                            label = 'Asignación aceptada — pendiente de dictamen.';
+                          }
+                          return (
+                            <li key={`${a.evaluatorId}-${i}`} className="text-gray-700">
+                              <span className="font-medium text-gray-900">{name}</span>
+                              <span className="text-gray-600"> — {label}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-3 mt-4">
                     <button
                       type="button"
                       onClick={handleAssignEvaluators}
-                      disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
+                      disabled={cannotMutatePrecheckOrAssign}
                       className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition text-sm flex items-center gap-2"
                     >
                       <UserPlus className="w-4 h-4" />
@@ -1105,7 +1293,7 @@ export function PanelComiteAcademico() {
                     <button
                       type="button"
                       onClick={handleAssignThirdEvaluator}
-                      disabled={isCommitteeFlowClosed || isObservedAttemptsExhausted}
+                      disabled={cannotMutatePrecheckOrAssign}
                       className="px-4 py-2 border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-50 transition text-sm flex items-center gap-2"
                     >
                       <XCircle className="w-4 h-4" />
@@ -1114,9 +1302,12 @@ export function PanelComiteAcademico() {
                   </div>
 
                   <div className="mt-4 text-xs text-gray-500">
-                    Nota: un trabajo se considera <span className="font-medium">Aprobado</span> cuando tiene 2 evaluaciones “approve”.
-                    Si queda 1/1, el comité asigna un tercer evaluador.
+                    Cada evaluador debe <span className="font-medium">aceptar la asignación</span> en su panel antes de cargar el dictamen.
+                    Si rechaza, mantené al otro evaluador en la lista, sumá un reemplazo del mismo eje y pulsá otra vez “Asignar evaluadores”.
+                    Con 2 evaluaciones “approve” el trabajo pasa a <span className="font-medium">pendiente de confirmación final</span> del comité; recién ahí queda
+                    <span className="font-medium"> Aprobado</span> al congreso. Si queda empate 1/1 en evaluación, asigná un tercer evaluador.
                   </div>
+
                   {getWorkReviews(selectedWork).length > 0 && (
                     <div className="mt-4 border-t border-gray-100 pt-3">
                       <div className="text-xs font-medium text-gray-700 mb-2">Devoluciones de evaluadores</div>
@@ -1137,6 +1328,90 @@ export function PanelComiteAcademico() {
                     </div>
                   )}
                 </div>
+                </>
+                )}
+
+                {isAwaitingCommitteeFinal && (
+                  <>
+                    <div className="mb-6 rounded-xl border-2 border-sky-400 bg-gradient-to-br from-sky-50 to-white p-6 shadow-md">
+                      <h3 className="text-lg font-semibold text-gray-900 tracking-tight">Confirmación final del comité</h3>
+                      <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+                        Los evaluadores recomendaron aprobar. Registrá observaciones opcionales para el autor al confirmar la aceptación; si rechazás de forma
+                        definitiva, el motivo es obligatorio.
+                      </p>
+                      <p className="text-xs text-sky-900/80 mt-2 rounded-md bg-sky-100/80 border border-sky-200 px-3 py-2">
+                        En esta etapa ya no corresponde prevalidación ni nuevas asignaciones de evaluadores: solo la decisión formal del comité académico.
+                      </p>
+
+                      <div className="mt-4 mb-5">
+                        {selectedWork.fileId || selectedWork.filePdfBase64 ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openOrDownloadFile({
+                                fileId: selectedWork.fileId,
+                                fileName: selectedWork.fileName,
+                                filePdfBase64: selectedWork.filePdfBase64,
+                              })
+                            }
+                            className="inline-flex items-center gap-2 text-sm text-teal-700 border border-teal-300 bg-teal-50 hover:bg-teal-100 px-3 py-2 rounded-lg transition"
+                          >
+                            <FileDown className="w-4 h-4" />
+                            Ver / descargar PDF del trabajo
+                          </button>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic">Sin PDF adjunto en el envío.</p>
+                        )}
+                      </div>
+
+                      <label className="block text-sm font-medium text-gray-800 mb-1">Observaciones para el autor</label>
+                      <p className="text-xs text-gray-500 mb-2">Opcional al aceptar; obligatorio al rechazar definitivo.</p>
+                      <textarea
+                        value={committeeFinalNotes}
+                        onChange={(e) => setCommitteeFinalNotes(e.target.value)}
+                        rows={4}
+                        className="w-full border border-sky-200 rounded-lg p-3 text-sm text-gray-800 mb-4 shadow-sm"
+                        placeholder="Opcional al aceptar; obligatorio al rechazar definitivo."
+                      />
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={handleCommitteeFinalAccept}
+                          className="px-5 py-2.5 bg-emerald-700 text-white rounded-lg text-sm font-medium hover:bg-emerald-800 transition shadow-sm"
+                        >
+                          Confirmar aceptación al congreso
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCommitteeFinalReject}
+                          className="px-5 py-2.5 bg-red-800 text-white rounded-lg text-sm font-medium hover:bg-red-900 transition shadow-sm"
+                        >
+                          Rechazo definitivo por comité
+                        </button>
+                      </div>
+                    </div>
+
+                    {getWorkReviews(selectedWork).length > 0 && (
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-5 mb-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3">Devoluciones de evaluadores</h4>
+                        <div className="space-y-2">
+                          {getWorkReviews(selectedWork).map((r: any, idx: number) => (
+                            <div key={`${r?.evaluatorId || 'ev'}-${idx}`} className="text-sm border border-gray-200 rounded-lg p-3 bg-white">
+                              <div className="text-gray-800">
+                                Dictamen: <span className="font-medium">{r?.decision === 'approve' ? 'Aprobar' : 'Rechazar'}</span>
+                              </div>
+                              {r?.comment ? (
+                                <div className="text-gray-600 mt-2 text-sm">Comentario: {r.comment}</div>
+                              ) : (
+                                <div className="text-gray-400 mt-2 text-sm italic">Sin comentario del evaluador.</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </>
             )}
           </div>

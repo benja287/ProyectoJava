@@ -10,6 +10,14 @@ export interface User {
   roles: UserRole[];
   currentRole?: UserRole;
   inscriptionStatus?: 'pending' | 'confirmed' | 'rejected';
+  /** Transferencia con comprobante, o efectivo / presencial (sin archivo; valida admin). */
+  inscriptionPaymentMethod?: 'transfer' | 'cash';
+  /** Si el asistente pidió factura al inscribirse. */
+  inscriptionRequiresInvoice?: boolean;
+  /** Solo efectivo: fecha ISO en que un admin aprobó constando el cobro en caja/recepción. */
+  inscriptionCashValidatedAt?: string;
+  /** Solo efectivo: nombre o email del admin que confirmó el cobro (texto libre). */
+  inscriptionCashValidatedByLabel?: string;
   category?: InscriptionCategory;
   institution?: string;
   province?: string;
@@ -209,7 +217,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string
   ): Promise<{ success: boolean; needsRoleSelection?: boolean; accountDisabled?: boolean }> => {
     const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-    const foundUser = users.find((u: any) => u.email === email && u.password === password);
+    const norm = email.trim().toLowerCase();
+    const foundUser = users.find(
+      (u: any) => u.email?.toLowerCase?.() === norm && u.password === password
+    );
 
     if (foundUser) {
       if (foundUser.accountActive === false) {
@@ -248,7 +259,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     category: InscriptionCategory
   ): Promise<boolean> => {
     const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-    if (users.some((u: any) => u.email === email)) return false;
+    if (users.some((u: any) => u.email?.toLowerCase?.() === email.trim().toLowerCase())) return false;
 
     const newUser = {
       id: Date.now().toString(),

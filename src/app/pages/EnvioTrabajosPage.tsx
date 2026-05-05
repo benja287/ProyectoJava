@@ -91,7 +91,9 @@ export function EnvioTrabajosPage() {
   const exhaustedReviewWorks = currentRoleWorks.filter(
     (w) => w.status === 'rejected_final' || (w.status === 'rejected' && getReviewAttempts(w) >= 2)
   );
-  const worksUnderReview = currentRoleWorks.filter((w) => w.status === 'under_review');
+  const worksUnderReview = currentRoleWorks.filter(
+    (w) => w.status === 'under_review' || w.status === 'pending_committee_final'
+  );
   const authorLimit = cuentaTieneAutor && cuentaTieneAsistente ? 1 : 2;
 
   useEffect(() => {
@@ -133,7 +135,7 @@ export function EnvioTrabajosPage() {
     }
     if (availableResubmissions.length > 0) return '';
     if (worksUnderReview.length > 0) {
-      return 'Tenés trabajo/s en revisión. Mientras esté en "En revisión" no se puede reenviar. El reenvío se habilita solo si queda "Rechazado final".';
+      return 'Tenés trabajo/s en revisión o pendientes de confirmación final del comité. En ese estado no podés usar el cupo para otro envío hasta que cambie el estado (por ejemplo, si queda rechazado con posibilidad de reenvío).';
     }
     if (exhaustedPrecheckWorks.length > 0 || exhaustedReviewWorks.length > 0) {
       if (isAutor) {
@@ -155,6 +157,7 @@ export function EnvioTrabajosPage() {
     if (status === 'prechecked_final') return 'No prevalidado final';
     if (status === 'assigned') return 'Asignado';
     if (status === 'under_review') return 'En revisión';
+    if (status === 'pending_committee_final') return 'Pendiente confirmación del comité';
     if (status === 'approved') return 'Aprobado';
     if (status === 'rejected') return 'Rechazado (reenvío habilitado)';
     if (status === 'rejected_final') return 'Rechazado final';
@@ -185,12 +188,17 @@ export function EnvioTrabajosPage() {
     }
 
     if (status === 'rejected' || status === 'rejected_final') {
+      const com = work?.committeeFinal;
+      const comRej =
+        status === 'rejected_final' && com?.decision === 'rejected' && typeof com?.notes === 'string' && com.notes.trim()
+          ? ` Motivo del Comité Académico: ${com.notes.trim()}`
+          : '';
       return {
         tone: 'error',
         text: status === 'rejected_final'
           ? (reviewComments.length > 0
-              ? `Rechazado final por evaluación: ${reviewComments.join(' | ')}`
-              : 'Rechazado final por evaluación. No se registraron comentarios detallados de evaluadores.')
+              ? `Rechazado final: ${reviewComments.join(' | ')}.${comRej}`
+              : `Rechazado final.${comRej || ' No se registraron comentarios detallados de evaluadores.'}`)
           : (reviewComments.length > 0
               ? `Rechazado por evaluación (podés reenviar): ${reviewComments.join(' | ')}`
               : 'Rechazado por evaluación (podés reenviar). No se registraron comentarios detallados de evaluadores.'),
@@ -201,8 +209,18 @@ export function EnvioTrabajosPage() {
       return {
         tone: 'ok',
         text: reviewComments.length > 0
-          ? `Aprobado por evaluadores. Comentarios: ${reviewComments.join(' | ')}`
-          : 'Aprobado por evaluadores.',
+          ? `Aprobado por el Comité Académico (confirmación final). Comentarios de evaluadores: ${reviewComments.join(' | ')}`
+          : 'Aprobado por el Comité Académico (confirmación final).',
+      };
+    }
+
+    if (status === 'pending_committee_final') {
+      return {
+        tone: 'warn',
+        text:
+          reviewComments.length > 0
+            ? `Evaluaciones favorables; falta la confirmación final del Comité Académico. Comentarios: ${reviewComments.join(' | ')}`
+            : 'Evaluaciones favorables; falta la confirmación final del Comité Académico.',
       };
     }
 

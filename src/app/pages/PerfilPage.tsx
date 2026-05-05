@@ -159,6 +159,29 @@ export function PerfilPage() {
                 <BadgeCheck className="w-4 h-4 text-gray-500" />
                 {user.inscriptionStatus ? inscriptionLabel[user.inscriptionStatus] : 'Sin inscripción enviada'}
               </p>
+              {user.inscriptionStatus && user.inscriptionPaymentMethod && (
+                <p className="text-xs text-gray-600 mt-2 pl-6">
+                  Forma de pago declarada:{' '}
+                  <span className="font-medium text-gray-800">
+                    {user.inscriptionPaymentMethod === 'cash' ? 'Efectivo / presencial' : 'Transferencia u otro con comprobante'}
+                  </span>
+                </p>
+              )}
+              {user.inscriptionStatus === 'confirmed' &&
+                user.inscriptionPaymentMethod === 'cash' &&
+                user.inscriptionCashValidatedAt && (
+                  <p className="text-xs text-emerald-800 mt-2 pl-6 rounded border border-emerald-200 bg-emerald-50/80 px-2 py-1.5">
+                    Cobro en efectivo registrado el{' '}
+                    {new Date(user.inscriptionCashValidatedAt).toLocaleString('es-AR')}
+                    {user.inscriptionCashValidatedByLabel
+                      ? ` por ${user.inscriptionCashValidatedByLabel}`
+                      : ''}
+                    .
+                  </p>
+                )}
+              {user.inscriptionRequiresInvoice && (
+                <p className="text-xs text-violet-800 mt-1 pl-6">Solicitaste factura fiscal — coordiná con administración.</p>
+              )}
             </div>
             <div className="border rounded-lg p-4 bg-gray-50">
               <p className="text-xs text-gray-500 mb-2">Categoría de inscripción</p>

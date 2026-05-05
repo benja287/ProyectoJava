@@ -4,6 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { ClipboardCheck, FileText, MessageSquare, Presentation, FileDown } from 'lucide-react';
 import { openOrDownloadFile } from '../lib/browserFiles';
 import { sendTransactionalEmail } from '../lib/emailSender';
+import {
+  allActiveInvitesAccepted,
+  canEvaluatorSubmitReview,
+  canRespondToAssignmentInvite,
+  isActiveAssignmentSlot,
+} from '../lib/workAssignments';
 
 const TALLERES_KEY = 'congress_talleres_propuestos';
 const WORKS_KEY = 'congress_works';
@@ -28,9 +34,11 @@ export function PanelEvaluador() {
     const storedWorks = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
     const assignedToMe = storedWorks.filter((w: any) => {
       const assignments = Array.isArray(w.assignments) ? w.assignments : [];
-      const mine = assignments.find((a: any) => a?.evaluatorId === user.id && a?.status !== 'done');
+      const mine = assignments.some(
+        (a: any) => a?.evaluatorId === user.id && isActiveAssignmentSlot(a)
+      );
       if (!mine) return false;
-      return ['assigned', 'under_review'].includes(w.status) || (!w.status && true);
+      return ['assigned', 'under_review'].includes(w.status) || !w.status;
     });
     setWorks(assignedToMe);
 
@@ -77,8 +85,10 @@ export function PanelEvaluador() {
     localStorage.setItem(WORKS_KEY, JSON.stringify(next));
     const assignedToMe = next.filter((w: any) => {
       const assignments = Array.isArray(w.assignments) ? w.assignments : [];
-      const mine = assignments.find((a: any) => a?.evaluatorId === user.id && a?.status !== 'done');
-      return Boolean(mine) && ['assigned', 'under_review'].includes(w.status);
+      const mine = assignments.some(
+        (a: any) => a?.evaluatorId === user.id && isActiveAssignmentSlot(a)
+      );
+      return mine && (['assigned', 'under_review'].includes(w.status) || !w.status);
     });
     setWorks(assignedToMe);
   };
@@ -90,6 +100,11 @@ export function PanelEvaluador() {
 
     const now = new Date().toISOString();
     const comment = (feedbacks[workId] || '').trim();
+
+    const mineAssignment = (Array.isArray(work.assignments) ? work.assignments : []).find(
+      (a: any) => a?.evaluatorId === user.id
+    );
+    if (!canEvaluatorSubmitReview(mineAssignment, user.id)) return;
 
     const prevReviews = Array.isArray(work.reviews) ? work.reviews : [];
     const alreadyReviewed = prevReviews.some((r: any) => r?.evaluatorId === user.id);
@@ -116,7 +131,7 @@ export function PanelEvaluador() {
       nextReviewAttempts = prevReviewAttempts + 1;
       nextStatus = nextReviewAttempts >= 2 ? 'rejected_final' : 'rejected';
     } else if (approvals >= 2) {
-      nextStatus = 'approved';
+      nextStatus = 'pending_committee_final';
     } else if (rejects >= 1) {
       // si ya hubo rechazo previo, mantiene el estado de rechazo
       nextStatus = prevReviewAttempts >= 2 ? 'rejected_final' : 'rejected';
@@ -148,26 +163,34 @@ export function PanelEvaluador() {
     const allUsers = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
     const author = allUsers.find((u: any) => u.id === updatedWork.userId);
 
-    // Notificar autor
-    if (nextStatus === 'approved') {
+    if (nextStatus === 'pending_committee_final') {
       sendNotificationToUser(
         updatedWork.userId,
-        'Trabajo aprobado por evaluadores',
+        'Evaluaciones favorables — pendiente del comité',
         reviewCommentsText
-          ? `Tu trabajo "${updatedWork.title}" fue aprobado por los evaluadores. Comentarios: ${reviewCommentsText}.`
-          : `Tu trabajo "${updatedWork.title}" fue aprobado por los evaluadores.`,
-        'Comité Evaluador'
+          ? `Tu trabajo "${updatedWork.title}" recibió 2 evaluaciones favorables. Comentarios de evaluadores: ${reviewCommentsText}. El Comité Académico debe confirmar el resultado final.`
+          : `Tu trabajo "${updatedWork.title}" recibió 2 evaluaciones favorables. El Comité Académico debe confirmar el resultado final.`,
+        'Comité Académico'
       );
       if (author?.email) {
-        const subject = '[APROBADO] Trabajo aprobado por evaluadores';
+        const subject = '[EN CURSO] Evaluaciones favorables — confirmación del comité';
         const body =
           `Hola ${author.name || ''},\n\n` +
-          `Tu trabajo "${updatedWork.title}" fue aprobado por evaluadores.\n` +
+          `Tu trabajo "${updatedWork.title}" tiene recomendación favorable de los evaluadores.\n` +
           `${reviewCommentsText ? `Comentarios: ${reviewCommentsText}\n` : ''}` +
-          `\nIngresá a la plataforma para ver el estado actualizado.\n\n` +
-          `Comité Evaluador`;
+          `El Comité Académico confirmará la aceptación oficial al congreso. Te avisaremos cuando esté resuelto.\n\n` +
+          `Comité Académico`;
         logEmailToUser(author.email, subject, body);
       }
+      const committeeUsers = allUsers.filter((u: any) => Array.isArray(u.roles) && u.roles.includes('comite'));
+      committeeUsers.forEach((comite: any) => {
+        sendNotificationToUser(
+          comite.id,
+          'Confirmar trabajo tras evaluaciones',
+          `El trabajo "${updatedWork.title}" tiene 2 aprobaciones de evaluadores. Confirmá la aceptación (o rechazo definitivo) desde el panel del comité académico.`,
+          'Sistema'
+        );
+      });
     } else if (nextStatus === 'rejected' || nextStatus === 'rejected_final') {
       sendNotificationToUser(
         updatedWork.userId,
@@ -220,6 +243,62 @@ export function PanelEvaluador() {
 
   const handleApprove = (workId: string) => handleDecision(workId, 'approve');
   const handleReject = (workId: string) => handleDecision(workId, 'reject');
+
+  const handleAcceptInvite = (workId: string) => {
+    if (!user) return;
+    const allWorks = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
+    const work = allWorks.find((w: any) => w.id === workId);
+    if (!work) return;
+
+    const prevAssignments = Array.isArray(work.assignments) ? work.assignments : [];
+    const nextAssignments = prevAssignments.map((a: any) => {
+      if (a?.evaluatorId !== user.id) return a;
+      if (!canRespondToAssignmentInvite(a, user.id)) return a;
+      return { ...a, inviteStatus: 'accepted' };
+    });
+
+    let nextStatus: string = work.status || 'assigned';
+    if (allActiveInvitesAccepted(nextAssignments) && (nextStatus === 'assigned' || nextStatus === 'under_review')) {
+      nextStatus = 'under_review';
+    }
+
+    const updatedWork = { ...work, assignments: nextAssignments, status: nextStatus };
+    const updatedWorks = allWorks.map((w: any) => (w.id === workId ? updatedWork : w));
+    persistAllWorks(updatedWorks);
+  };
+
+  const handleDeclineInvite = (workId: string) => {
+    if (!user) return;
+    const allWorks = JSON.parse(localStorage.getItem(WORKS_KEY) || '[]');
+    const work = allWorks.find((w: any) => w.id === workId);
+    if (!work) return;
+
+    const prevAssignments = Array.isArray(work.assignments) ? work.assignments : [];
+    const nextAssignments = prevAssignments.map((a: any) => {
+      if (a?.evaluatorId !== user.id) return a;
+      if (!canRespondToAssignmentInvite(a, user.id)) return a;
+      return {
+        ...a,
+        inviteStatus: 'declined',
+        declinedAt: new Date().toISOString(),
+      };
+    });
+
+    const updatedWork = { ...work, assignments: nextAssignments };
+    const updatedWorks = allWorks.map((w: any) => (w.id === workId ? updatedWork : w));
+    persistAllWorks(updatedWorks);
+
+    const allUsers = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+    const committeeUsers = allUsers.filter((u: any) => Array.isArray(u.roles) && u.roles.includes('comite'));
+    committeeUsers.forEach((c: any) => {
+      sendNotificationToUser(
+        c.id,
+        'Evaluador rechazó una asignación',
+        `El evaluador rechazó evaluar el trabajo "${work.title}". Podés invitar a otro evaluador del mismo eje desde el panel del comité académico.`,
+        'Comité Académico'
+      );
+    });
+  };
 
   // ── Talleres ─────────────────────────────────────────────────────────────────
   const handleApproveTaller = (tallerId: string) => {
@@ -274,7 +353,9 @@ export function PanelEvaluador() {
             <ClipboardCheck className="w-12 h-12 text-purple-600" />
             <div>
               <h1 className="text-3xl text-gray-800">Panel de Evaluador</h1>
-              <p className="text-gray-600">Evaluación de trabajos científicos y propuestas de taller</p>
+              <p className="text-gray-600">
+                Evaluación de trabajos científicos y propuestas de taller. Las nuevas asignaciones requieren que aceptes o rechaces la convocatoria antes del dictamen.
+              </p>
             </div>
           </div>
         </div>
@@ -317,7 +398,14 @@ export function PanelEvaluador() {
                 No hay trabajos pendientes de evaluación
               </div>
             ) : (
-              works.map((work) => (
+              works.map((work) => {
+                const mineA = (Array.isArray(work.assignments) ? work.assignments : []).find(
+                  (a: any) => a?.evaluatorId === user.id && isActiveAssignmentSlot(a)
+                );
+                const invitePending = Boolean(
+                  mineA && user && canRespondToAssignmentInvite(mineA, user.id)
+                );
+                return (
                 <div key={work.id} className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
@@ -358,6 +446,30 @@ export function PanelEvaluador() {
                     <FileText className="w-8 h-8 text-gray-400 shrink-0 ml-4" />
                   </div>
 
+                  {invitePending ? (
+                    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                      <p className="text-sm text-amber-950 mb-3">
+                        El comité te invitó a evaluar este trabajo. Aceptá la asignación para cargar tu dictamen, o rechazala para que puedan convocar a otro evaluador del mismo eje.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleAcceptInvite(work.id)}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm"
+                        >
+                          Aceptar asignación
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeclineInvite(work.id)}
+                          className="px-4 py-2 border border-amber-700 text-amber-900 rounded-lg hover:bg-amber-100 transition text-sm"
+                        >
+                          Rechazar asignación
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
                   {/* Comentario opcional */}
                   <button
                     onClick={() => setShowFeedback(p => ({ ...p, [work.id]: !p[work.id] }))}
@@ -391,8 +503,11 @@ export function PanelEvaluador() {
                       Rechazar
                     </button>
                   </div>
+                    </>
+                  )}
                 </div>
-              ))
+              );
+              })
             )}
           </div>
         </div>

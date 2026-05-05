@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { Settings, Bell, Pencil, X, Trash2, FileDown, FileText, Plus } from 'lucide-react';
-import { UserRole } from '../context/AuthContext';
+import { Settings, Bell, Pencil, X, Trash2, FileDown, FileText, Plus, UserPlus } from 'lucide-react';
+import { type InscriptionCategory, UserRole } from '../context/AuthContext';
 import {
   openStoredBrowserFile,
   openOrDownloadFile,
@@ -63,9 +63,37 @@ interface RoundTable {
   description: string;
 }
 
+/** Roles asignables desde admin (mismos que en selección de rol). */
+const ADMIN_ROLE_OPTIONS: { role: UserRole; label: string }[] = [
+  { role: 'asistente', label: 'Asistente' },
+  { role: 'autor', label: 'Autor' },
+  { role: 'evaluador', label: 'Evaluador' },
+  { role: 'comite', label: 'Administrador Comité académico' },
+  { role: 'admin', label: 'Administrador' },
+];
+
+const CATEGORY_OPTIONS: { value: InscriptionCategory; label: string }[] = [
+  { value: 'socio_saae', label: 'Socio/a SAAE' },
+  { value: 'no_socio', label: 'No socio/a' },
+  { value: 'estudiante', label: 'Estudiante' },
+  { value: 'productor', label: 'Productor/a' },
+  { value: 'investigador', label: 'Investigador/a' },
+  { value: 'extensionista', label: 'Extensionista' },
+  { value: 'docente', label: 'Docente' },
+  { value: 'extranjero', label: 'Extranjero/a' },
+];
+
+const emptyRoleFlags = (): Record<UserRole, boolean> => ({
+  asistente: false,
+  autor: false,
+  evaluador: false,
+  comite: false,
+  admin: false,
+});
+
 // ─── Componente ───────────────────────────────────────────────────────────────
 export function PanelAdmin() {
-  const { user, sendNotificationToAll, sendNotificationToUser, logout } = useAuth();
+  const { user, sendNotificationToAll, sendNotificationToUser, logout, updateUser } = useAuth();
   const navigate  = useNavigate();
   const location  = useLocation();
 
@@ -108,6 +136,20 @@ export function PanelAdmin() {
   const [userDeleteFeedback, setUserDeleteFeedback] = useState('');
   const [userAccountFeedback, setUserAccountFeedback] = useState('');
 
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [userModalMode, setUserModalMode] = useState<'create' | 'edit'>('create');
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [userFormError, setUserFormError] = useState('');
+  const [userForm, setUserForm] = useState({
+    name: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    category: '' as InscriptionCategory | '',
+    roles: emptyRoleFlags(),
+  });
+
   const [circulares, setCirculares] = useState<StoredCircular[]>([]);
   const [circularesFeedback, setCircularesFeedback] = useState('');
   const [authorRequestsFeedback, setAuthorRequestsFeedback] = useState('');
@@ -122,7 +164,13 @@ export function PanelAdmin() {
     const sesiones = JSON.parse(localStorage.getItem('congress_sessions')    || '[]');
     const mesas    = JSON.parse(localStorage.getItem('congress_roundtables') || '[]');
     const posters  = JSON.parse(localStorage.getItem('congress_posters')     || '[]');
-    const pending  = allUsers.filter((u: any) => u.inscriptionStatus === 'pending');
+    const pending = allUsers
+      .filter((u: any) => u.inscriptionStatus === 'pending')
+      .sort((a: any, b: any) => {
+        const ac = a.inscriptionPaymentMethod === 'cash' ? 0 : 1;
+        const bc = b.inscriptionPaymentMethod === 'cash' ? 0 : 1;
+        return ac - bc;
+      });
 
     setInscriptions(pending);
     setUsers(allUsers);
@@ -308,6 +356,13 @@ export function PanelAdmin() {
     const subjectUser = users.find((u: any) => u.id === userId);
     if (!subjectUser) return;
 
+    if (subjectUser.inscriptionPaymentMethod === 'cash') {
+      const ok = window.confirm(
+        'Pago en efectivo / presencial: ¿confirmás que consta el cobro verificado en recepción, caja o acreditación? Se aprobará la inscripción, se emitirá el comprobante y se notificará al asistente.'
+      );
+      if (!ok) return;
+    }
+
     const escapeHtml = (s: string) =>
       s
         .replace(/&/g, '&amp;')
@@ -320,6 +375,9 @@ export function PanelAdmin() {
     const issuedAt = new Date().toISOString();
     const { categoryLabel: catLab, amountLabel: amtLab } = getInscriptionInvoiceLines(subjectUser.category);
     const baseUrl = getPublicAppOrigin();
+
+    const adminValidatorLabel =
+      `${user?.name || ''} ${user?.lastName || ''}`.trim() || user?.email || 'Administración';
 
     const updatedUsers = users.map((u: any) => {
       if (u.id !== userId) return u;
@@ -334,6 +392,12 @@ export function PanelAdmin() {
         inscriptionAccreditationToken: token,
         inscriptionInvoiceAmountLabel: amtLab,
         inscriptionInvoiceCategoryLabel: catLab,
+        ...(subjectUser.inscriptionPaymentMethod === 'cash'
+          ? {
+              inscriptionCashValidatedAt: issuedAt,
+              inscriptionCashValidatedByLabel: adminValidatorLabel,
+            }
+          : {}),
       };
     });
 
@@ -393,6 +457,16 @@ export function PanelAdmin() {
         '',
         `Tu inscripción al congreso fue APROBADA. Ya podés entrar como asistente (iniciá sesión y elegí ese perfil si tenés más de uno).`,
         '',
+        subjectUser.inscriptionPaymentMethod === 'cash'
+          ? 'Modalidad de pago: efectivo / presencial (registrada como abonada por administración).'
+          : 'Modalidad de pago: transferencia u otro medio con comprobante.',
+        ...(subjectUser.inscriptionRequiresInvoice
+          ? [
+              '',
+              'Solicitaste factura fiscal: coordiná el trámite con la administración del congreso (presentá este comprobante o tus datos de facturación según indiquen).',
+            ]
+          : []),
+        '',
         `── Comprobante ${invoiceId} ──`,
         `Categoría / tarifa: ${catLab}`,
         `Monto referencia:   ${amtLab}`,
@@ -413,6 +487,16 @@ export function PanelAdmin() {
           <h2 style="color:#2d5016;">Inscripci&oacute;n confirmada</h2>
           <p>Hola ${escapeHtml(displayName)},</p>
           <p>Tu inscripci&oacute;n al congreso fue <strong>aprobada</strong>. Ya ten&eacute;s el rol <strong>asistente</strong>: inici&aacute; sesi&oacute;n y eleg&iacute; ese perfil si ten&eacute;s m&aacute;s de uno.</p>
+          <p style="font-size:14px;color:#444;">${
+            subjectUser.inscriptionPaymentMethod === 'cash'
+              ? '<strong>Pago:</strong> efectivo / presencial (validado por administraci&oacute;n).'
+              : '<strong>Pago:</strong> transferencia u otro medio con comprobante.'
+          }</p>
+          ${
+            subjectUser.inscriptionRequiresInvoice
+              ? '<p style="font-size:14px;color:#5b21b6;background:#f5f3ff;padding:10px 12px;border-radius:8px;border:1px solid #ddd6fe;"><strong>Factura:</strong> solicitaste factura fiscal &mdash; coordin&aacute; el tr&aacute;mite con la administraci&oacute;n del congreso.</p>'
+              : ''
+          }
           <hr style="border:none;border-top:1px solid #e5e5e5;margin:20px 0;" />
           <h3 style="margin-bottom:8px;">Comprobante (${escapeHtml(invoiceId)})</h3>
           <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px;">
@@ -681,6 +765,201 @@ export function PanelAdmin() {
       logout();
       navigate('/login');
     }
+  };
+
+  const closeUserModal = () => {
+    setUserModalOpen(false);
+    setUserFormError('');
+    setEditingUserId(null);
+    setUserForm({
+      name: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      category: '',
+      roles: emptyRoleFlags(),
+    });
+  };
+
+  const openCreateUserModal = () => {
+    setUserModalMode('create');
+    setEditingUserId(null);
+    setUserFormError('');
+    setUserForm({
+      name: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      category: '',
+      roles: emptyRoleFlags(),
+    });
+    setUserModalOpen(true);
+  };
+
+  const openEditUserModal = (u: any) => {
+    setUserModalMode('edit');
+    setEditingUserId(u.id);
+    setUserFormError('');
+    const rf = emptyRoleFlags();
+    for (const r of u.roles || []) {
+      if (r in rf) rf[r as UserRole] = true;
+    }
+    setUserForm({
+      name: u.name || '',
+      lastName: u.lastName || '',
+      email: u.email || '',
+      password: '',
+      confirmPassword: '',
+      category: (u.category as InscriptionCategory) || '',
+      roles: rf,
+    });
+    setUserModalOpen(true);
+  };
+
+  const saveAdminUser = () => {
+    setUserFormError('');
+    const email = userForm.email.trim().toLowerCase();
+    const name = userForm.name.trim();
+    const lastName = userForm.lastName.trim();
+
+    if (!name || !lastName) {
+      setUserFormError('Completá nombre y apellido.');
+      return;
+    }
+    if (!email) {
+      setUserFormError('Completá el correo electrónico.');
+      return;
+    }
+    if (!userForm.category) {
+      setUserFormError('Seleccioná una categoría de inscripción.');
+      return;
+    }
+
+    const selectedRoles = ADMIN_ROLE_OPTIONS.map((o) => o.role).filter((r) => userForm.roles[r]);
+    if (selectedRoles.length === 0) {
+      setUserFormError('Seleccioná al menos un rol.');
+      return;
+    }
+
+    if (users.some((u: any) => u.email?.toLowerCase?.() === email && u.id !== editingUserId)) {
+      setUserFormError('Ese correo ya está registrado.');
+      return;
+    }
+
+    if (userModalMode === 'create') {
+      if (userForm.password.length < 8) {
+        setUserFormError('La contraseña debe tener al menos 8 caracteres.');
+        return;
+      }
+      if (userForm.password !== userForm.confirmPassword) {
+        setUserFormError('Las contraseñas no coinciden.');
+        return;
+      }
+    } else {
+      if (userForm.password && userForm.password.length < 8) {
+        setUserFormError('La contraseña debe tener al menos 8 caracteres.');
+        return;
+      }
+      if (userForm.password && userForm.password !== userForm.confirmPassword) {
+        setUserFormError('Las contraseñas no coinciden.');
+        return;
+      }
+    }
+
+    if (userModalMode === 'edit' && editingUserId) {
+      const subject = users.find((x: any) => x.id === editingUserId);
+      const hadAdmin = subject?.roles?.includes('admin');
+      const keepsAdmin = selectedRoles.includes('admin');
+      if (hadAdmin && !keepsAdmin) {
+        const otherAdmins = users.filter(
+          (x: any) => x.id !== editingUserId && x.roles?.includes('admin')
+        );
+        if (otherAdmins.length === 0) {
+          setUserFormError('Tiene que quedar al menos un usuario con rol Administrador.');
+          return;
+        }
+      }
+    }
+
+    const roleOrder: UserRole[] = ['asistente', 'autor', 'evaluador', 'comite', 'admin'];
+    const currentRole = roleOrder.find((r) => selectedRoles.includes(r))!;
+
+    if (userModalMode === 'create') {
+      const newUser: Record<string, unknown> = {
+        id: Date.now().toString(),
+        email,
+        password: userForm.password,
+        name,
+        lastName,
+        category: userForm.category,
+        roles: selectedRoles,
+        currentRole,
+        accountActive: true,
+      };
+      if (selectedRoles.includes('evaluador')) {
+        newUser.axes = [];
+      }
+      if (selectedRoles.includes('asistente')) {
+        newUser.inscriptionStatus = 'confirmed';
+      }
+      const next = [...users, newUser];
+      localStorage.setItem('congress_users', JSON.stringify(next));
+      setUsers(next);
+      setInscriptions(next.filter((u: any) => u.inscriptionStatus === 'pending'));
+      setUserAccountFeedback(`Se creó la cuenta de ${name} ${lastName}.`);
+      closeUserModal();
+      return;
+    }
+
+    const idx = users.findIndex((u: any) => u.id === editingUserId);
+    if (idx === -1) {
+      setUserFormError('Usuario no encontrado.');
+      return;
+    }
+    const prev = users[idx];
+    const updated: any = {
+      ...prev,
+      email,
+      name,
+      lastName,
+      category: userForm.category,
+      roles: selectedRoles,
+      currentRole,
+    };
+    if (userForm.password) {
+      updated.password = userForm.password;
+    }
+    if (selectedRoles.includes('evaluador')) {
+      updated.axes = Array.isArray(prev.axes) ? prev.axes : [];
+    } else {
+      delete updated.axes;
+    }
+    if (selectedRoles.includes('asistente') && prev.inscriptionStatus == null) {
+      updated.inscriptionStatus = 'confirmed';
+    }
+
+    const next = [...users];
+    next[idx] = updated;
+    localStorage.setItem('congress_users', JSON.stringify(next));
+    setUsers(next);
+    setInscriptions(next.filter((u: any) => u.inscriptionStatus === 'pending'));
+
+    if (user?.id === editingUserId) {
+      updateUser({
+        name: updated.name,
+        lastName: updated.lastName,
+        email: updated.email,
+        category: updated.category,
+        roles: updated.roles,
+        currentRole: updated.currentRole,
+        ...(updated.inscriptionStatus != null ? { inscriptionStatus: updated.inscriptionStatus } : {}),
+      });
+    }
+
+    setUserAccountFeedback(`Se actualizó la cuenta de ${name} ${lastName}.`);
+    closeUserModal();
   };
 
   // =========================
@@ -1014,7 +1293,14 @@ export function PanelAdmin() {
 
         {/* ══ INSCRIPCIONES ══ */}
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
-          <h2 className="text-2xl mb-6">Validación de Inscripciones</h2>
+          <h2 className="text-2xl mb-2">Validación de Inscripciones</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            <strong>Transferencia:</strong> revisá el comprobante adjunto y aprobá o rechazá.
+            <span className="mx-1">·</span>
+            <strong>Efectivo / presencial:</strong> no hay archivo: el asistente declaró pagar en caja o durante el
+            congreso. <strong>Aprobá solo si ya verificaste el cobro en efectivo</strong> (recepción, caja o acreditación).
+            Si el usuario pidió factura, figura el aviso debajo del nombre.
+          </p>
           {inscriptionInvoiceFeedback && (
             <div
               className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
@@ -1041,6 +1327,22 @@ export function PanelAdmin() {
             <div key={i.id} className="flex justify-between border p-3 mb-2 rounded">
               <div>
                 <p className="font-medium">{i.name} {i.lastName}</p>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {i.inscriptionPaymentMethod === 'cash' ? (
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-950 border border-amber-200">
+                      Efectivo / presencial — validar cobro antes de aprobar
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-800 border border-slate-200">
+                      Transferencia (comprobante)
+                    </span>
+                  )}
+                  {i.inscriptionRequiresInvoice && (
+                    <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-900 border border-violet-200">
+                      Solicita factura
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-600 mt-1">
                   Categoría: {i.category || 'Sin categoría'}
                 </p>
@@ -1055,6 +1357,10 @@ export function PanelAdmin() {
                     <FileDown className="w-3 h-3" />
                     Ver comprobante
                   </button>
+                ) : i.inscriptionPaymentMethod === 'cash' ? (
+                  <span className="block text-xs text-amber-900 mt-1 rounded border border-amber-200 bg-amber-50/80 px-2 py-1">
+                    Sin archivo (correcto para efectivo). Aprobá cuando conste el pago en caja / acreditación.
+                  </span>
                 ) : (
                   <span className="text-xs text-gray-400 italic">Sin comprobante</span>
                 )}
@@ -1073,8 +1379,19 @@ export function PanelAdmin() {
                   <span className="block text-xs text-gray-400 italic mt-1">Sin certificado de categoría</span>
                 )}
               </div>
-              <div className="flex gap-2 items-start">
-                <button onClick={() => handleApprove(i.id)} className="bg-green-600 text-white px-2 py-1 rounded">Aprobar</button>
+              <div className="flex flex-col gap-2 items-end">
+                <button
+                  type="button"
+                  onClick={() => void handleApprove(i.id)}
+                  title={
+                    i.inscriptionPaymentMethod === 'cash'
+                      ? 'Usá este botón cuando ya verificaste el cobro en efectivo (recepción, caja o acreditación).'
+                      : 'Aprobar tras revisar el comprobante de transferencia.'
+                  }
+                  className="bg-green-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-green-700 transition whitespace-nowrap"
+                >
+                  {i.inscriptionPaymentMethod === 'cash' ? 'Aprobar (cobro efectivo OK)' : 'Aprobar'}
+                </button>
                 <button
                   type="button"
                   onClick={() => void handleReject(i.id)}
@@ -1089,7 +1406,17 @@ export function PanelAdmin() {
 
         {/* ══ USUARIOS ══ */}
         <div className="bg-white rounded-xl shadow-md p-8 mb-8">
-          <h2 className="text-2xl mb-2">Usuarios registrados</h2>
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-2">
+            <h2 className="text-2xl">Usuarios registrados</h2>
+            <button
+              type="button"
+              onClick={openCreateUserModal}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition"
+            >
+              <UserPlus className="w-4 h-4" />
+              Crear usuario
+            </button>
+          </div>
           <p className="text-sm text-gray-600 mb-4">
             Podés <strong>habilitar o deshabilitar</strong> cuentas: si están deshabilitadas no pueden iniciar sesión ni
             usar el sistema hasta que las reactives. Los registros nuevos quedan habilitados por defecto. También podés
@@ -1158,6 +1485,14 @@ export function PanelAdmin() {
                       </td>
                       <td className="px-3 py-2 text-right">
                         <div className="flex flex-wrap items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditUserModal(u)}
+                            className="inline-flex items-center gap-1 text-xs text-indigo-800 border border-indigo-300 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded transition"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            Editar
+                          </button>
                           {u.id !== user?.id ? (
                             <button
                               type="button"
@@ -1592,6 +1927,137 @@ export function PanelAdmin() {
         </div>
 
       </div>
+
+      {/* ══ MODAL CREAR / EDITAR USUARIO ══ */}
+      {userModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeUserModal();
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[min(90vh,640px)] overflow-y-auto">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-gray-100 bg-white px-6 py-4">
+              <h2 className="text-xl font-semibold text-gray-800">
+                {userModalMode === 'create' ? 'Crear usuario' : 'Editar usuario'}
+              </h2>
+              <button type="button" onClick={closeUserModal} className="text-gray-400 hover:text-gray-600" aria-label="Cerrar">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              {userFormError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{userFormError}</div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nombre</label>
+                  <input
+                    value={userForm.name}
+                    onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    autoComplete="off"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Apellido</label>
+                  <input
+                    value={userForm.lastName}
+                    onChange={(e) => setUserForm({ ...userForm, lastName: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Correo electrónico</label>
+                <input
+                  type="email"
+                  value={userForm.email}
+                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Categoría de inscripción</label>
+                <select
+                  value={userForm.category}
+                  onChange={(e) =>
+                    setUserForm({ ...userForm, category: e.target.value as InscriptionCategory | '' })
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                >
+                  <option value="">Seleccioná…</option>
+                  {CATEGORY_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Contraseña {userModalMode === 'edit' && <span className="font-normal text-gray-400">(opcional)</span>}
+                  </label>
+                  <input
+                    type="password"
+                    value={userForm.password}
+                    onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    autoComplete="new-password"
+                    placeholder={userModalMode === 'edit' ? 'Dejar vacío para no cambiar' : ''}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Confirmar contraseña</label>
+                  <input
+                    type="password"
+                    value={userForm.confirmPassword}
+                    onChange={(e) => setUserForm({ ...userForm, confirmPassword: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-2">Roles en el sistema</p>
+                <div className="rounded-lg border border-gray-200 bg-gray-50/80 p-3 space-y-2">
+                  {ADMIN_ROLE_OPTIONS.map(({ role, label }) => (
+                    <label key={role} className="flex items-start gap-2 cursor-pointer text-sm text-gray-800">
+                      <input
+                        type="checkbox"
+                        checked={userForm.roles[role]}
+                        onChange={(e) =>
+                          setUserForm({
+                            ...userForm,
+                            roles: { ...userForm.roles, [role]: e.target.checked },
+                          })
+                        }
+                        className="mt-0.5 rounded border-gray-300"
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                <button type="button" onClick={closeUserModal} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={saveAdminUser}
+                  className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                >
+                  {userModalMode === 'create' ? 'Crear' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══ MODAL CONFIRMAR ELIMINACIÓN ══ */}
       {confirmDelete && (
