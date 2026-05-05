@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { Settings, Bell, Pencil, X, Trash2, FileDown, FileText, Plus, UserPlus } from 'lucide-react';
+import { Settings, Bell, Pencil, X, Trash2, FileDown, FileText, Plus, UserPlus, BarChart3, Download } from 'lucide-react';
 import { type InscriptionCategory, UserRole } from '../context/AuthContext';
 import {
   openStoredBrowserFile,
@@ -160,6 +160,7 @@ export function PanelAdmin() {
   const [, setCertificateAdminUiTick] = useState(0);
   const [authorRequestsFeedback, setAuthorRequestsFeedback] = useState('');
   const [inscriptionInvoiceFeedback, setInscriptionInvoiceFeedback] = useState('');
+  const statsSectionRef = useRef<HTMLDivElement | null>(null);
 
   // ─── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -239,6 +240,95 @@ export function PanelAdmin() {
       })
       .map((u: any) => ({ user: u, works: byUser.get(u.id) || [] }));
   })();
+
+  const normalizedWorks = Array.isArray(works) ? works : [];
+  const normalizedUsers = Array.isArray(users) ? users : [];
+  const enrolledUsers = normalizedUsers.filter((u: any) => typeof u?.inscriptionStatus === 'string');
+  const confirmedInscriptions = enrolledUsers.filter((u: any) => u.inscriptionStatus === 'confirmed');
+  const pendingInscriptions = enrolledUsers.filter((u: any) => u.inscriptionStatus === 'pending');
+  const rejectedInscriptions = enrolledUsers.filter((u: any) => u.inscriptionStatus === 'rejected');
+  const cashPending = pendingInscriptions.filter((u: any) => u.inscriptionPaymentMethod === 'cash');
+  const cashConfirmed = confirmedInscriptions.filter((u: any) => u.inscriptionPaymentMethod === 'cash');
+  const transferPending = pendingInscriptions.filter((u: any) => u.inscriptionPaymentMethod !== 'cash');
+  const transferConfirmed = confirmedInscriptions.filter((u: any) => u.inscriptionPaymentMethod !== 'cash');
+
+  const workTypeLabel = (value: string) => {
+    if (value === 'cientifico') return 'Científico';
+    if (value === 'experiencia') return 'Relato de experiencia';
+    return 'Sin especificar';
+  };
+  const modalityLabel = (value: string) => {
+    if (value === 'oral') return 'Oral';
+    if (value === 'poster') return 'Póster';
+    return 'Sin especificar';
+  };
+
+  const workTypeCount = normalizedWorks.reduce<Record<string, number>>((acc, w: any) => {
+    const key = workTypeLabel(w?.workType || '');
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const modalityCount = normalizedWorks.reduce<Record<string, number>>((acc, w: any) => {
+    const key = modalityLabel((w?.modality ?? w?.type ?? '') as string);
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const workStatusCount = normalizedWorks.reduce<Record<string, number>>((acc, w: any) => {
+    const key = (w?.status as string) || 'sin_estado';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const worksByInstitution = normalizedWorks.reduce<Record<string, number>>((acc, w: any) => {
+    const owner = normalizedUsers.find((u: any) => u.id === w?.userId);
+    const institution = owner?.institution?.trim() || 'Sin institución declarada';
+    acc[institution] = (acc[institution] || 0) + 1;
+    return acc;
+  }, {});
+  const topInstitutions = Object.entries(worksByInstitution)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'))
+    .slice(0, 10);
+
+  const workTypeRows = Object.entries(workTypeCount).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'));
+  const modalityRows = Object.entries(modalityCount).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'));
+  const statusRows = Object.entries(workStatusCount).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'));
+  const totalWorks = normalizedWorks.length || 1;
+  const totalEnrollments = enrolledUsers.length || 1;
+
+  const downloadStatsReport = () => {
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      kpi: {
+        usuariosTotales: normalizedUsers.length,
+        inscripcionesTotales: enrolledUsers.length,
+        inscripcionesPendientes: pendingInscriptions.length,
+        inscripcionesConfirmadas: confirmedInscriptions.length,
+        pagosEfectivoPendientes: cashPending.length,
+        pagosEfectivoConfirmados: cashConfirmed.length,
+        trabajosTotales: normalizedWorks.length,
+      },
+      trabajosPorTipo: workTypeRows.map(([label, count]) => ({ label, count })),
+      trabajosPorModalidad: modalityRows.map(([label, count]) => ({ label, count })),
+      trabajosPorEstado: statusRows.map(([label, count]) => ({ label, count })),
+      trabajosPorInstitucionTop10: topInstitutions.map(([institution, count]) => ({ institution, count })),
+      deudores: pendingInscriptions.map((u: any) => ({
+        id: u.id,
+        nombre: `${u.name || ''} ${u.lastName || ''}`.trim(),
+        email: u.email || '',
+        metodoPago: u.inscriptionPaymentMethod === 'cash' ? 'efectivo' : 'transferencia',
+        categoria: u.category || '',
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reporte-admin-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const grantAuthorRole = (userId: string) => {
     setAuthorRequestsFeedback('');
@@ -1289,6 +1379,13 @@ export function PanelAdmin() {
           <button onClick={() => navigate("/certificado")} className="bg-indigo-700 text-white px-4 py-2 rounded hover:bg-indigo-800 transition">
             Generar Certificado
           </button>
+          <button
+            type="button"
+            onClick={() => statsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-800 transition"
+          >
+            Ir a Estadísticas y reportes
+          </button>
      
         </div>
 
@@ -1491,6 +1588,194 @@ export function PanelAdmin() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* ══ ESTADÍSTICAS Y REPORTES ══ */}
+        <div ref={statsSectionRef} className="bg-white rounded-xl shadow-md p-8 mb-8">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-2xl flex items-center gap-2">
+                <BarChart3 className="w-6 h-6 text-indigo-700" />
+                Estadísticas y reportes
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Vista ejecutiva de inscripciones y trabajos para seguimiento operativo y toma de decisiones.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={downloadStatsReport}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition"
+            >
+              <Download className="w-4 h-4" />
+              Descargar reporte JSON
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-gray-500">Usuarios</p>
+              <p className="text-2xl font-semibold text-gray-900">{normalizedUsers.length}</p>
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-amber-800">Inscriptos adeudando pago</p>
+              <p className="text-2xl font-semibold text-amber-900">{pendingInscriptions.length}</p>
+            </div>
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-emerald-800">Inscriptos confirmados</p>
+              <p className="text-2xl font-semibold text-emerald-900">{confirmedInscriptions.length}</p>
+            </div>
+            <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3">
+              <p className="text-xs uppercase tracking-wide text-indigo-800">Trabajos presentados</p>
+              <p className="text-2xl font-semibold text-indigo-900">{normalizedWorks.length}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+            <div className="rounded-lg border border-gray-200 p-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Trabajos por tipo</h3>
+              {workTypeRows.length === 0 ? (
+                <p className="text-sm text-gray-500">Sin trabajos cargados.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {workTypeRows.map(([label, count]) => (
+                    <div key={label} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{label}</span>
+                      <span className="font-medium text-gray-900">
+                        {count} ({Math.round((count / totalWorks) * 100)}%)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Trabajos por modalidad</h3>
+              {modalityRows.length === 0 ? (
+                <p className="text-sm text-gray-500">Sin trabajos cargados.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {modalityRows.map(([label, count]) => (
+                    <div key={label} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{label}</span>
+                      <span className="font-medium text-gray-900">
+                        {count} ({Math.round((count / totalWorks) * 100)}%)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+            <div className="rounded-lg border border-gray-200 p-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Trabajos por institución (top 10)</h3>
+              {topInstitutions.length === 0 ? (
+                <p className="text-sm text-gray-500">Sin datos de institución.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {topInstitutions.map(([institution, count]) => (
+                    <div key={institution} className="flex items-center justify-between text-sm gap-3">
+                      <span className="text-gray-700 truncate">{institution}</span>
+                      <span className="font-medium text-gray-900">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Inscripciones por estado y método</h3>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Pendientes (transferencia)</span>
+                  <span className="font-medium text-gray-900">
+                    {transferPending.length} ({Math.round((transferPending.length / totalEnrollments) * 100)}%)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Pendientes (efectivo)</span>
+                  <span className="font-medium text-gray-900">
+                    {cashPending.length} ({Math.round((cashPending.length / totalEnrollments) * 100)}%)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Confirmadas (transferencia)</span>
+                  <span className="font-medium text-gray-900">
+                    {transferConfirmed.length} ({Math.round((transferConfirmed.length / totalEnrollments) * 100)}%)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Confirmadas (efectivo)</span>
+                  <span className="font-medium text-gray-900">
+                    {cashConfirmed.length} ({Math.round((cashConfirmed.length / totalEnrollments) * 100)}%)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Rechazadas</span>
+                  <span className="font-medium text-gray-900">
+                    {rejectedInscriptions.length} ({Math.round((rejectedInscriptions.length / totalEnrollments) * 100)}%)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4">
+              <h3 className="text-sm font-semibold text-amber-900 mb-2">Listado: inscriptos que adeudan pago</h3>
+              {pendingInscriptions.length === 0 ? (
+                <p className="text-sm text-amber-900/80">No hay deudores pendientes en este momento.</p>
+              ) : (
+                <ul className="space-y-1.5 text-sm">
+                  {pendingInscriptions.slice(0, 20).map((u: any) => (
+                    <li key={u.id} className="flex items-center justify-between gap-3">
+                      <span className="text-gray-800 truncate">
+                        {u.name} {u.lastName} · {u.email}
+                      </span>
+                      <span className="text-xs rounded border border-amber-300 bg-amber-100 px-2 py-0.5 text-amber-950">
+                        {u.inscriptionPaymentMethod === 'cash' ? 'Efectivo' : 'Transferencia'}
+                      </span>
+                    </li>
+                  ))}
+                  {pendingInscriptions.length > 20 && (
+                    <li className="text-xs text-amber-900/80">
+                      Mostrando 20 de {pendingInscriptions.length} deudores. Usá el reporte JSON para el listado completo.
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-4">
+              <h3 className="text-sm font-semibold text-emerald-900 mb-2">Listado: pagos en efectivo (confirmados)</h3>
+              {cashConfirmed.length === 0 ? (
+                <p className="text-sm text-emerald-900/80">Aún no hay pagos en efectivo validados.</p>
+              ) : (
+                <ul className="space-y-1.5 text-sm">
+                  {cashConfirmed.slice(0, 20).map((u: any) => (
+                    <li key={u.id} className="text-gray-800">
+                      <span className="font-medium">{u.name} {u.lastName}</span>
+                      {' · '}
+                      {u.email}
+                      {u.inscriptionCashValidatedAt ? (
+                        <span className="text-emerald-800">
+                          {' '}
+                          — validado {new Date(u.inscriptionCashValidatedAt).toLocaleString('es-AR')}
+                          {u.inscriptionCashValidatedByLabel ? ` por ${u.inscriptionCashValidatedByLabel}` : ''}
+                        </span>
+                      ) : null}
+                    </li>
+                  ))}
+                  {cashConfirmed.length > 20 && (
+                    <li className="text-xs text-emerald-900/80">
+                      Mostrando 20 de {cashConfirmed.length}. Usá el reporte JSON para el detalle completo.
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* ══ USUARIOS ══ */}
