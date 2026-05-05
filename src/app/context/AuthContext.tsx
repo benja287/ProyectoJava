@@ -140,12 +140,49 @@ const DEMO_SEED_USERS: Record<string, unknown>[] = [
   },
 ];
 
-function ensureDemoSeedUsers(list: any[]): { next: any[]; changed: boolean } {
+const EXTRA_SEED_USERS: Record<string, unknown>[] = [
+  {
+    id: 'asistLucas',
+    email: 'lucasbudnik@hotmail.com.ar',
+    password: '12345678',
+    name: 'Asistente',
+    lastName: 'Principal',
+    roles: ['asistente'] as UserRole[],
+    currentRole: 'asistente' as UserRole,
+    inscriptionStatus: 'confirmed' as const,
+    institution: 'Instituto de Agroecologia',
+    province: 'Buenos Aires',
+    accountActive: true,
+  },
+  {
+    id: 'evaluadorAlci',
+    email: 'alci0483@gmail.com',
+    password: '12345678',
+    name: 'Evaluador',
+    lastName: 'Principal',
+    roles: ['evaluador'] as UserRole[],
+    accountActive: true,
+  },
+  {
+    id: 'admin-2',
+    email: 'admin2@gmail.com',
+    password: '12345678',
+    name: 'Admin',
+    lastName: 'Secondary',
+    roles: ['admin', 'asistente', 'autor', 'evaluador'] as UserRole[],
+    accountActive: true,
+  },
+];
+
+function upsertSeedUsers(list: any[], seeds: Record<string, unknown>[]): { next: any[]; changed: boolean } {
   let changed = false;
   const next = [...list];
-  for (const seed of DEMO_SEED_USERS) {
+  for (const seed of seeds) {
     const id = seed.id as string;
-    const i = next.findIndex((u: any) => u?.id === id);
+    const email = String(seed.email || '').toLowerCase();
+    const i = next.findIndex(
+      (u: any) => u?.id === id || String(u?.email || '').toLowerCase() === email
+    );
     if (i === -1) {
       next.push({ ...seed });
       changed = true;
@@ -194,9 +231,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       users = [];
     }
 
-    const { next, changed } = ensureDemoSeedUsers(users);
-    if (changed) {
-      localStorage.setItem(USERS_KEY, JSON.stringify(next));
+    const afterDemo = upsertSeedUsers(users, DEMO_SEED_USERS);
+    const afterExtra = upsertSeedUsers(afterDemo.next, EXTRA_SEED_USERS);
+    if (afterDemo.changed || afterExtra.changed) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(afterExtra.next));
     }
     // Importante: no volver a pushear usuarios demo acá.
     // Las cuentas de demo/equipo se gestionan por `DEMO_SEED_USERS` + `ensureDemoSeedUsers`,
