@@ -7,8 +7,23 @@
   <persistence-unit name="jyaaPU" transaction-type="RESOURCE_LOCAL">
     <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 
-    <!-- Sin listar <class>: Hibernate/JPA detecta @Entity en el classpath (evita falsos errores del IDE) -->
-    <exclude-unlisted-classes>false</exclude-unlisted-classes>
+    <!-- Listado explícito: necesario en WAR/Tomcat (auto-scan solo no alcanza en deploy) -->
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.Congreso</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.Usuario</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.Trabajo</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.Evaluacion</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.Pago</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.Actividad</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.CronogramaPersonal</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.Circular</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.Notificacion</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.EnvioEmail</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.PlantillaEmail</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.Anuncio</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.Certificado</class>
+    <!-- RangoFechas y EtapaCongreso son @Embeddable, no se listan -->
 
     <properties>
       <property name="jakarta.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
