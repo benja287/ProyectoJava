@@ -1,0 +1,110 @@
+================================================================================
+  JYAA 2026 — Grupo 1 — Capa de persistencia
+  Sistema de gestión del V Congreso Argentino de Agroecología
+  Instrucciones para montar el ambiente de prueba
+================================================================================
+
+1. REQUISITOS DE SOFTWARE
+-------------------------
+  - JDK 21 (Java Development Kit)
+  - Eclipse IDE for Enterprise Java and Web Developers (o similar con m2e)
+  - Apache Maven 3.8+ (incluido en Eclipse o instalado en el sistema)
+  - Apache Tomcat 10.1 o superior (Jakarta EE — NO usar Tomcat 8/9)
+  - Acceso de red a la base MySQL del curso (VPN UNLP si aplica)
+
+2. BASE DE DATOS (GRUPO 1)
+--------------------------
+  Servidor:  mysql.java.linti.unlp.edu.ar
+  Puerto:    3306
+  Base:      jyaa2026_bd1
+  Usuario:   jyaa2026_usr1
+  Clave:     jyaa2026_pwd1
+
+  phpMyAdmin (opcional): https://dbadmin.jyaa-ci.linti.unlp.edu.ar/
+
+  La configuración JDBC está en:
+    src/main/resources/META-INF/persistence.xml
+  Unidad de persistencia: jyaaPU
+
+3. IMPORTAR EL PROYECTO EN ECLIPSE
+----------------------------------
+  a) Iniciar Eclipse (./eclipse desde la carpeta del curso).
+  b) File → Import → Maven → Existing Maven Projects.
+  c) Root Directory: carpeta "backend" de este repositorio.
+  d) Seleccionar el pom.xml (artifact jyaa2026-grupo1) → Finish.
+  e) Clic derecho en el proyecto → Maven → Update Project (Force Update).
+
+4. CONFIGURAR JAVA Y TOMCAT EN ECLIPSE
+--------------------------------------
+  - Window → Preferences → Java → Installed JREs → agregar JDK 21.
+  - Proyecto → Properties → Java Compiler → 21.
+  - Proyecto → Properties → Project Facets → Java 21, Dynamic Web Module 6.0.
+  - Window → Preferences → Server → Runtime Environments → Tomcat 10.1.
+  - Vista Servers → New → Server → Tomcat → agregar el proyecto al servidor.
+
+5. COMPILAR
+-----------
+  Clic derecho en el proyecto → Run As → Maven build…
+  Goals: clean package
+  Resultado esperado: target/jyaa2026-grupo1.war
+
+6. EJECUTAR Y PROBAR LA PERSISTENCIA
+------------------------------------
+  a) Iniciar el servidor Tomcat desde Eclipse (Run en la vista Servers).
+  b) Esperar que arranque JPA (listener JpaBootstrapListener crea/actualiza tablas).
+  c) Abrir en el navegador:
+
+     http://localhost:8080/<contexto>/test-persistencia
+
+     (<contexto> suele ser jyaa2026-grupo1 o ROOT según configuración de deploy)
+
+  d) Debe mostrarse la página "Pruebas ABM — DAO + JPA/Hibernate" con todos los
+     tests en OK si la conexión a MySQL es correcta.
+
+  e) Otros endpoints de referencia:
+     - /api/health
+     - /api/login  (POST JSON email/password)
+     - index.html
+
+7. ESTRUCTURA ENTREGABLE (CARPETA backend)
+------------------------------------------
+  - pom.xml                          → Maven, Hibernate, MySQL, Servlet API
+  - src/main/java/.../modelo/        → Entidades JPA (diagrama 2da entrega)
+  - src/main/java/.../dao/           → Interfaces DAO + GenericDAO + AbstractJpaDAO
+  - src/main/java/.../test/          → PersistenciaAbmTests
+  - src/main/java/.../servlet/       → PersistenciaTestServlet (casos de prueba)
+  - src/main/resources/META-INF/persistence.xml
+  - AMBIENTE-PRUEBA.txt              → Este archivo
+
+8. PATRÓN DAO — OPERACIONES ABM
+--------------------------------
+  Cada DAO implementa:
+    alta(entidad)           → INSERT (persist)
+    baja(id)                → DELETE
+    modificar(entidad)      → UPDATE (merge)
+    recuperarPorId(id)      → SELECT por PK
+    listarTodos()           → SELECT de la entidad
+
+9. GITLAB (REPOSITORIO DEL GRUPO)
+---------------------------------
+  Subir la carpeta backend dentro del repo jyaa2026_grupo1 junto con Dockerfile
+  y .gitlab-ci.yml en la raíz (automation del curso).
+  URL del sitio desplegado: https://grupo1.jyaa-ci.linti.unlp.edu.ar/
+
+10. PROBLEMAS FRECUENTES
+------------------------
+  - ClassNotFoundException Servlet → usar Tomcat 10+, no versiones antiguas.
+  - Error de conexión MySQL → verificar red/VPN y credenciales del grupo 1.
+  - Tests FALLO en /test-persistencia → revisar consola de Tomcat (SQL/log Hibernate).
+  - Dependencias Maven sin descargar → Maven → Update Project.
+
+  - "JPA facet but no JPA project could be created":
+      a) Refresh (F5) + Maven → Update Project + Project → Clean.
+      b) Verificar que exista src/main/resources/META-INF/persistence.xml.
+      c) Si persiste: clic derecho proyecto → Properties → Project Facets
+         → desmarcar "JPA" (jpt.jpa) → Apply. La app igual funciona con Hibernate
+         por Maven; solo se desactiva el validador visual de Eclipse.
+
+================================================================================
+  Fin del documento — Grupo 1 — Tercera entrega persistencia
+================================================================================

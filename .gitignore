@@ -3,6 +3,7 @@
 *.jar
 bin/
 target/
+backend/target/
 out/
 .idea/
 .vscode/

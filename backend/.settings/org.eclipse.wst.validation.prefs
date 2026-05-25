@@ -1,0 +1,6 @@
+disabled=06target
+eclipse.preferences.version=1
+override=true
+suspend=false
+vf.org.eclipse.jpt.jpa.validation=ignore
+vf.org.eclipse.jpt.jpa.validation.connection=ignore
