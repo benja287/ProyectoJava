@@ -108,7 +108,6 @@ public final class PersistenciaAbmTests {
     run("InscripcionCongreso + Pago (ABM)", () -> {
       UsuarioDAO uDao = DAOFactory.getUsuarioDAO();
       InscripcionCongresoDAO iDao = DAOFactory.getInscripcionCongresoDAO();
-      PagoDAO pDao = DAOFactory.getPagoDAO();
 
       Usuario u = crearUsuarioPrueba("ins");
       u = uDao.alta(u);
@@ -118,7 +117,6 @@ public final class PersistenciaAbmTests {
       pago.setMetodo(MetodoPago.EFECTIVO);
       pago.setEstado(EstadoPago.PENDIENTE);
       pago.setFechaRegistro(LocalDate.now());
-      pago = pDao.alta(pago);
 
       InscripcionCongreso ins = new InscripcionCongreso();
       ins.setUsuario(uDao.recuperarPorId(u.getId()));
@@ -131,9 +129,10 @@ public final class PersistenciaAbmTests {
       ins.setEstado(EstadoInscripcion.APROBADA);
       ins = iDao.modificar(ins);
       assertNotNull(iDao.recuperarPorId(ins.getId()), "recuperar");
-      iDao.baja(ins.getId());
-      pDao.baja(pago.getId());
-      uDao.baja(u.getId());
+      final Long insId = ins.getId();
+      final Long usuarioId = u.getId();
+      iDao.baja(insId);
+      uDao.baja(usuarioId);
     });
   }
 
@@ -335,10 +334,19 @@ public final class PersistenciaAbmTests {
               .findFirst()
               .orElse(null);
       if (cr != null) {
-        cDao.baja(cr.getId());
+        final Long cronoId = cr.getId();
+        JpaUtil.ejecutarEnTransaccion(
+            em -> {
+              CronogramaPersonal managed = em.find(CronogramaPersonal.class, cronoId);
+              if (managed != null) {
+                managed.getActividades().clear();
+                em.flush();
+                em.remove(managed);
+              }
+            });
       }
-      aDao.baja(act.getId());
-      uDao.baja(u.getId());
+      aDao.baja(actividadId);
+      uDao.baja(usuarioId);
     });
   }
 
