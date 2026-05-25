@@ -350,8 +350,12 @@ public final class PersistenciaAbmTests {
     });
   }
 
+  /**
+   * Prueba ABM y deja datos de demo en MySQL (no hace baja al final) para ver en phpMyAdmin el flujo:
+   * trabajo enviado → asignación → evaluación APROBADO → trabajo APROBADO.
+   */
   private void testAsignacionYEvaluacion() {
-    run("AsignacionEvaluacion + Evaluacion (ABM)", () -> {
+    run("AsignacionEvaluacion + Evaluacion (ABM, datos persisten en BD)", () -> {
       UsuarioDAO uDao = DAOFactory.getUsuarioDAO();
       TrabajoDAO tDao = DAOFactory.getTrabajoDAO();
       AsignacionEvaluacionDAO aDao = DAOFactory.getAsignacionEvaluacionDAO();
@@ -360,33 +364,47 @@ public final class PersistenciaAbmTests {
       Usuario autor = uDao.alta(crearUsuarioPrueba("asig-autor"));
       Usuario evaluador = uDao.alta(crearUsuarioPrueba("asig-eval"));
       Trabajo trabajo = new Trabajo();
-      trabajo.setTitulo("Eval " + stamp);
+      trabajo.setTitulo("Trabajo demo evaluacion " + stamp);
+      trabajo.setResumen("Resumen demo persistido en BD");
+      trabajo.setEjeTematico("Agroecologia");
       trabajo.setTipo(TipoTrabajo.TRABAJO_CIENTIFICO);
-      trabajo.setEstado(EstadoTrabajo.EN_EVALUACION);
+      trabajo.setEstado(EstadoTrabajo.ENVIADO);
       trabajo.setFechaCreacion(LocalDate.now());
       trabajo.setAutor(uDao.recuperarPorId(autor.getId()));
       trabajo = tDao.alta(trabajo);
+      final Long trabajoId = trabajo.getId();
 
       AsignacionEvaluacion asig = new AsignacionEvaluacion();
-      asig.setTrabajo(tDao.recuperarPorId(trabajo.getId()));
+      asig.setTrabajo(tDao.recuperarPorId(trabajoId));
       asig.setEvaluador(uDao.recuperarPorId(evaluador.getId()));
-      asig.setAceptada(false);
+      asig.setAceptada(true);
       asig = aDao.alta(asig);
+      final Long asigId = asig.getId();
 
       Evaluacion ev = new Evaluacion();
-      ev.setAsignacion(aDao.recuperarPorId(asig.getId()));
+      ev.setAsignacion(aDao.recuperarPorId(asigId));
       ev.setRecomendacion(RecomendacionEvaluacion.APROBADO);
-      ev.setComentario("OK");
+      ev.setComentario("Aprobado en evaluacion demo");
       ev.setFecha(LocalDate.now());
       ev = eDao.alta(ev);
 
-      ev.setComentario("OK modificado");
+      ev.setComentario("Aprobado en evaluacion demo (modificado)");
       eDao.modificar(ev);
-      eDao.baja(ev.getId());
-      aDao.baja(asig.getId());
-      tDao.baja(trabajo.getId());
-      uDao.baja(evaluador.getId());
-      uDao.baja(autor.getId());
+
+      trabajo = tDao.recuperarPorId(trabajoId);
+      trabajo.setEstado(EstadoTrabajo.APROBADO);
+      tDao.modificar(trabajo);
+
+      assertNotNull(eDao.recuperarPorId(ev.getId()), "evaluacion persistida");
+      assertTrue(
+          EstadoTrabajo.APROBADO.equals(tDao.recuperarPorId(trabajoId).getEstado()),
+          "trabajo APROBADO");
+
+      log.append("  -> Datos DEMO guardados en BD (no se borran):\n");
+      log.append("     trabajo id=").append(trabajoId).append(" estado=APROBADO\n");
+      log.append("     asignacion id=").append(asigId).append("\n");
+      log.append("     evaluacion id=").append(ev.getId()).append(" recomendacion=APROBADO\n");
+      log.append("     autor id=").append(autor.getId()).append(" evaluador id=").append(evaluador.getId()).append("\n");
     });
   }
 
