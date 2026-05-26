@@ -4,13 +4,51 @@
   Instrucciones para montar el ambiente de prueba
 ================================================================================
 
+Este archivo cumple con la consigna de la tercera entrega: explicar qué se
+necesita para probar la capa de persistencia (DAO + JPA/Hibernate + MySQL).
+
+IMPORTANTE — DÓNDE SE PERSISTEN LOS DATOS
+-----------------------------------------
+  Los datos se guardan en el servidor MySQL del curso (jyaa2026_bd1), NO en
+  GitLab ni en el repositorio Git. GitLab solo compila y despliega la aplicación.
+
+  Hay dos formas de probar:
+
+  A) AMBIENTE RECOMENDADO (servidor del curso, vía GitLab CI)
+     - Push a la rama main del repo jyaa2026_grupo1.
+     - El pipeline construye Docker + Tomcat y despliega la app.
+     - Desde Internet: https://grupo1.jyaa-ci.linti.unlp.edu.ar/
+     - El contenedor corre en la misma red que MySQL → la conexión JDBC funciona.
+     - Los tests ABM y el seed escriben filas reales en jyaa2026_bd1.
+     - Se pueden ver en phpMyAdmin (ver sección 11).
+
+  B) AMBIENTE LOCAL (Eclipse + Tomcat en su PC)
+     - Sirve para compilar, depurar código y ver que el WAR arranca.
+     - La base MySQL (mysql.java.linti.unlp.edu.ar:3306) suele NO ser alcanzable
+       desde una red doméstica o sin VPN UNLP: el puerto 3306 hace timeout.
+     - Síntomas: /api/health con "jpa": false; /test-persistencia con tests FALLO;
+       en consola de Tomcat: error de conexión JDBC.
+     - Eso NO significa que la persistencia esté mal implementada: significa que
+       la PC no tiene ruta de red hasta el servidor MySQL del curso.
+     - Para probar persistencia en local hace falta VPN/red UNLP o usar el
+       ambiente desplegado (opción A).
+
+  Resumen para el corrector: la prueba definitiva de persistencia es en el sitio
+  desplegado (sección 10), no obligatoriamente desde Eclipse en casa.
+
+
 1. REQUISITOS DE SOFTWARE
 -------------------------
+  Para desarrollo local (compilar y opcionalmente correr Tomcat):
   - JDK 21 (Java Development Kit)
   - Eclipse IDE for Enterprise Java and Web Developers (o similar con m2e)
   - Apache Maven 3.8+ (incluido en Eclipse o instalado en el sistema)
   - Apache Tomcat 10.1 o superior (Jakarta EE — NO usar Tomcat 8/9)
-  - Acceso de red a la base MySQL del curso (VPN UNLP si aplica)
+
+  Para que la persistencia funcione contra MySQL del curso:
+  - Acceso de red al host mysql.java.linti.unlp.edu.ar puerto 3306
+    (en el servidor LINTI tras deploy GitLab: sí; desde muchas redes locales: no)
+
 
 2. BASE DE DATOS (GRUPO 1)
 --------------------------
@@ -20,90 +58,186 @@
   Usuario:   jyaa2026_usr1
   Clave:     jyaa2026_pwd1
 
-  phpMyAdmin (opcional): https://dbadmin.jyaa-ci.linti.unlp.edu.ar/
+  phpMyAdmin (ver tablas después de probar):
+    https://dbadmin.jyaa-ci.linti.unlp.edu.ar/
+    (elegir base jyaa2026_bd1, usuario del grupo)
 
-  La configuración JDBC está en:
-    src/main/resources/META-INF/persistence.xml
-  Unidad de persistencia: jyaaPU
+  Configuración JDBC en el proyecto:
+    backend/src/main/resources/META-INF/persistence.xml
+  Unidad de persistencia JPA: jyaaPU
+  Hibernate hbm2ddl.auto=update → crea/actualiza tablas al conectar (no borra datos).
+
 
 3. IMPORTAR EL PROYECTO EN ECLIPSE
 ----------------------------------
-  a) Iniciar Eclipse (./eclipse desde la carpeta del curso).
-  b) File → Import → Maven → Existing Maven Projects.
-  c) Root Directory: carpeta "backend" de este repositorio.
-  d) Seleccionar el pom.xml (artifact jyaa2026-grupo1) → Finish.
-  e) Clic derecho en el proyecto → Maven → Update Project (Force Update).
+  a) File → Import → Maven → Existing Maven Projects.
+  b) Root Directory: carpeta "backend" de este repositorio.
+  c) Seleccionar el pom.xml (artifact jyaa2026-grupo1) → Finish.
+  d) Clic derecho en el proyecto → Maven → Update Project (Force Update).
+
 
 4. CONFIGURAR JAVA Y TOMCAT EN ECLIPSE
 --------------------------------------
-  - Window → Preferences → Java → Installed JREs → agregar JDK 21.
+  - Window → Preferences → Java → Installed JREs → JDK 21.
   - Proyecto → Properties → Java Compiler → 21.
   - Proyecto → Properties → Project Facets → Java 21, Dynamic Web Module 6.0.
   - Window → Preferences → Server → Runtime Environments → Tomcat 10.1.
   - Vista Servers → New → Server → Tomcat → agregar el proyecto al servidor.
 
+
 5. COMPILAR
 -----------
   Clic derecho en el proyecto → Run As → Maven build…
   Goals: clean package
-  Resultado esperado: target/jyaa2026-grupo1.war
+  Resultado esperado: backend/target/jyaa2026-grupo1.war
 
-6. EJECUTAR Y PROBAR LA PERSISTENCIA
-------------------------------------
-  a) Iniciar el servidor Tomcat desde Eclipse (Run en la vista Servers).
-  b) Esperar que arranque JPA (listener JpaBootstrapListener crea/actualiza tablas).
-  c) Abrir en el navegador:
 
+6. EJECUTAR EN LOCAL (ECLIPSE + TOMCAT) — OPCIONAL
+--------------------------------------------------
+  a) Iniciar Tomcat desde Eclipse (vista Servers).
+  b) Esperar logs del listener JpaBootstrapListener (inicializa jyaaPU).
+  c) Abrir en el navegador (ajustar <contexto> según deploy en Eclipse):
+
+     http://localhost:8080/<contexto>/api/health
      http://localhost:8080/<contexto>/test-persistencia
+     http://localhost:8080/<contexto>/index.html
 
-     (<contexto> suele ser jyaa2026-grupo1 o ROOT según configuración de deploy)
+     <contexto> suele ser jyaa2026-grupo1 (nombre del WAR).
 
-  d) Debe mostrarse la página "Pruebas ABM — DAO + JPA/Hibernate" con todos los
-     tests en OK si la conexión a MySQL es correcta.
+  d) Si la red local NO alcanza MySQL:
+     - /api/health → "jpa": false
+     - /test-persistencia → tests FALLO (conexión)
+     → Usar el ambiente desplegado (sección 10).
 
-  e) Otros endpoints de referencia:
-     - /api/health
-     - /api/login  (POST JSON email/password)
-     - index.html
+  e) Si la red SÍ alcanza MySQL (VPN UNLP, red facultad):
+     - /api/health → "jpa": true
+     - /test-persistencia → 14 tests OK (o ver detalle de fallos)
+     - Datos quedan en jyaa2026_bd1 (misma base que en servidor).
+
 
 7. ESTRUCTURA ENTREGABLE (CARPETA backend)
 ------------------------------------------
-  - pom.xml                          → Maven, Hibernate, MySQL, Servlet API
-  - src/main/java/.../modelo/        → Entidades JPA (diagrama 2da entrega)
-  - src/main/java/.../dao/           → Interfaces DAO + GenericDAO + AbstractJpaDAO
-  - src/main/java/.../test/          → PersistenciaAbmTests
-  - src/main/java/.../servlet/       → PersistenciaTestServlet (casos de prueba)
+  - pom.xml
+  - src/main/java/ar/edu/unlp/jyaa/grupo1/
+      modelo/     → Entidades JPA (15 entidades + enums + embeddables)
+      dao/        → GenericDAO, AbstractJpaDAO, *DAO/*DAOImpl, DAOFactory
+      config/     → JpaUtil (EntityManagerFactory jyaaPU)
+      listener/   → JpaBootstrapListener (arranque JPA al iniciar Tomcat)
+      seed/       → DatosInicialesService (usuarios/congreso si BD vacía)
+      servicio/   → SistemaGestionCongresoService (lógica de negocio)
+      servlet/    → Health, Login, Trabajos, Circulares, PersistenciaTest
+      test/       → PersistenciaAbmTests (14 casos ABM)
+      web/        → JsonResponse, DTOs
   - src/main/resources/META-INF/persistence.xml
-  - AMBIENTE-PRUEBA.txt              → Este archivo
+  - src/main/webapp/          → index.html, WEB-INF/web.xml
+  - AMBIENTE-PRUEBA.txt       → Este archivo
+
 
 8. PATRÓN DAO — OPERACIONES ABM
 --------------------------------
   Cada DAO implementa:
-    alta(entidad)           → INSERT (persist)
-    baja(id)                → DELETE
-    modificar(entidad)      → UPDATE (merge)
-    recuperarPorId(id)      → SELECT por PK
+    alta(entidad)           → INSERT (EntityManager.persist)
+    baja(id)                → DELETE (EntityManager.remove)
+    modificar(entidad)      → UPDATE (EntityManager.merge)
+    recuperarPorId(id)      → SELECT por clave primaria
     listarTodos()           → SELECT de la entidad
 
-9. GITLAB (REPOSITORIO DEL GRUPO)
----------------------------------
-  Subir la carpeta backend dentro del repo jyaa2026_grupo1 junto con Dockerfile
-  y .gitlab-ci.yml en la raíz (automation del curso).
-  URL del sitio desplegado: https://grupo1.jyaa-ci.linti.unlp.edu.ar/
+  Servlet de prueba: GET /test-persistencia ejecuta PersistenciaAbmTests sobre
+  todos los DAOs (consigna tercera entrega).
 
-10. PROBLEMAS FRECUENTES
+
+9. DATOS INICIALES Y DATOS DE DEMO EN LA BASE
+---------------------------------------------
+  Al primer arranque con BD vacía de usuarios, DatosInicialesService inserta:
+  - Congreso, etapas, usuarios demo (mismos emails que el frontend React).
+  - Contraseña demo: 12345678
+  - NO crea trabajos de evaluación por defecto.
+
+  Tras ejecutar /test-persistencia en el servidor desplegado:
+  - La mayoría de tests hacen alta → modificar → baja (no dejan basura).
+  - El test "AsignacionEvaluacion + Evaluacion" DEJA datos en la BD:
+    trabajo APROBADO, asignación, evaluación, usuarios asig-autor / asig-eval.
+  - El log HTML de /test-persistencia imprime los IDs para buscar en phpMyAdmin.
+
+
+10. GITLAB — DESPLIEGUE Y PRUEBA RECOMENDADA (PERSISTENCIA REAL)
+---------------------------------------------------------------
+  Repositorio: jyaa2026_grupo1 (GitLab cátedras LINTI).
+  En la raíz del repo: Dockerfile + .gitlab-ci.yml + carpeta backend/.
+  Push a rama main → pipeline (build Docker → deploy contenedor grupo1).
+
+  URL pública de la aplicación (WAR como ROOT, sin prefijo en la URL):
+    https://grupo1.jyaa-ci.linti.unlp.edu.ar/
+
+  Pasos para el corrector / profesor:
+
+  1) Verificar que el servicio está vivo:
+       GET https://grupo1.jyaa-ci.linti.unlp.edu.ar/api/health
+       Respuesta esperada: {"status":"ok","grupo":1,"jpa":true,...}
+
+  2) Ejecutar pruebas ABM de persistencia:
+       GET https://grupo1.jyaa-ci.linti.unlp.edu.ar/test-persistencia
+       Respuesta esperada: "TODOS LOS TESTS PASARON" y listado de 14 casos OK.
+
+  3) Ver datos persistidos en MySQL (opcional):
+       - Abrir phpMyAdmin (sección 2).
+       - Base jyaa2026_bd1 → tablas usuarios, trabajos, asignaciones_evaluacion,
+         evaluaciones (filas del test de evaluación y del seed).
+
+  4) Otros endpoints:
+       - GET  /api/trabajos
+       - POST /api/login  (JSON: email + password)
+       - GET  /api/circulares
+       - GET  /index.html
+
+  Índice de ayuda en el servidor:
+    https://grupo1.jyaa-ci.linti.unlp.edu.ar/index.html
+
+
+11. CÓMO SABER SI LOS DATOS QUEDARON GUARDADOS (NO EN GIT)
+----------------------------------------------------------
+  Git guarda código fuente. Los trabajos/usuarios/evaluaciones quedan en MySQL.
+
+  - Tras /test-persistencia OK en el servidor desplegado, en el log buscar:
+      "Datos DEMO guardados en BD"
+      trabajo id=...  asignacion id=...  evaluacion id=...
+
+  - En phpMyAdmin → jyaa2026_bd1:
+      SELECT * FROM trabajos ORDER BY id DESC LIMIT 5;
+      SELECT * FROM evaluaciones ORDER BY id DESC LIMIT 5;
+
+  - Cada nueva ejecución de /test-persistencia puede agregar otro lote de prueba
+    (emails con timestamp); no sobrescribe filas anteriores.
+
+
+12. PROBLEMAS FRECUENTES
 ------------------------
-  - ClassNotFoundException Servlet → usar Tomcat 10+, no versiones antiguas.
-  - Error de conexión MySQL → verificar red/VPN y credenciales del grupo 1.
-  - Tests FALLO en /test-persistencia → revisar consola de Tomcat (SQL/log Hibernate).
-  - Dependencias Maven sin descargar → Maven → Update Project.
+  - Eclipse/Tomcat local: tests FALLO o jpa:false, timeout MySQL
+      → Probar en https://grupo1.jyaa-ci.linti.unlp.edu.ar/ (sección 10).
+      → O conectar VPN/red que permita puerto 3306 al host del curso.
 
-  - "JPA facet but no JPA project could be created":
-      a) Refresh (F5) + Maven → Update Project + Project → Clean.
-      b) Verificar que exista src/main/resources/META-INF/persistence.xml.
-      c) Si persiste: clic derecho proyecto → Properties → Project Facets
-         → desmarcar "JPA" (jpt.jpa) → Apply. La app igual funciona con Hibernate
-         por Maven; solo se desactiva el validador visual de Eclipse.
+  - ClassNotFoundException Servlet → Tomcat 10+, no Tomcat 8/9.
+
+  - Unknown entity type en servidor → verificar las 15 clases <class> en
+      persistence.xml (necesario en deploy WAR).
+
+  - Tests FALLO en inscripción o cronograma → revisar log en /test-persistencia
+      y consola Tomcat (SQL Hibernate si show_sql=true).
+
+  - Dependencias Maven → Maven → Update Project en Eclipse.
+
+  - "JPA facet but no JPA project could be created" en Eclipse:
+      Refresh + Maven Update; o desmarcar facet JPA en Project Facets (la app
+      funciona igual con Hibernate por Maven).
+
+
+13. RELACIÓN CON EL FRONTEND REACT
+----------------------------------
+  El frontend (carpeta src/ en la raíz del repo) usa localStorage en muchas
+  pantallas. El backend persiste el mismo dominio en MySQL. La integración
+  completa React→API es evolución; la entrega 3 se evalúa sobre DAO, entidades,
+  persistence.xml y /test-persistencia en el servidor desplegado.
+
 
 ================================================================================
   Fin del documento — Grupo 1 — Tercera entrega persistencia
