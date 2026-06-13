@@ -1,0 +1,150 @@
+================================================================================
+  JYAA 2026 — Grupo 1 — Cuarta entrega: API REST + CDI + Swagger
+  Sistema de gestión del V Congreso Argentino de Agroecología
+================================================================================
+
+Este archivo explica cómo montar y probar la entrega 4 en el servidor del curso
+(GitLab CI → https://grupo1.jyaa-ci.linti.unlp.edu.ar/).
+
+IMPORTANTE — DÓNDE SE GUARDAN LOS DATOS
+---------------------------------------
+  • Metadatos (usuarios, trabajos, pagos, actividades…): MySQL jyaa2026_bd1
+  • Archivos PDF (trabajos) y comprobantes de pago: FILESYSTEM del contenedor
+    Tomcat, carpeta uploads/grupo1/ (NO en GitLab, NO como BLOB en MySQL)
+  • En la base solo se guarda documentoUrl / comprobanteUrl (ruta HTTP)
+
+  Ejemplo en tabla trabajos:
+    documento_url = /api/archivos/trabajos/trabajos-uuid.pdf
+
+  El binario está en:
+    $CATALINA_BASE/uploads/grupo1/trabajos/trabajos-uuid.pdf
+
+  Variable opcional: JYAA_UPLOAD_DIR=/ruta/custom
+
+
+1. REQUISITOS
+-------------
+  • JDK 21, Maven 3.8+, Tomcat 10.1+ (local opcional)
+  • Push a GitLab rama main → pipeline despliega Docker + Tomcat
+  • MySQL: jyaa2026_bd1 en mysql.java.linti.unlp.edu.ar:3306
+
+
+2. STACK ENTREGA 4
+------------------
+  • JAX-RS: Jersey 3.1.9
+  • CDI: Weld 6.0.4 (beans.xml + @RequestScoped)
+  • JSON: Jackson (jersey-media-json-jackson)
+  • OpenAPI/Swagger: swagger-jaxrs2-jakarta + Swagger UI en /swagger-ui/
+  • Persistencia: misma capa DAO/JPA de entrega 3
+
+
+3. COMPILAR LOCAL (opcional)
+----------------------------
+  cd backend
+  mvn clean package
+  → target/jyaa2026-grupo1.war
+
+
+4. SUBIR A GITLAB
+-----------------
+  git add backend/
+  git commit -m "Entrega 4: API REST Jersey + CDI + Swagger"
+  git push gitlab main
+
+  Esperar pipeline verde. URL:
+    https://grupo1.jyaa-ci.linti.unlp.edu.ar/
+
+
+5. PROBAR CON SWAGGER UI (recomendado para el coloquio)
+------------------------------------------------------
+  1) Abrir:
+       https://grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/index.html
+
+  2) Verificar health:
+       GET /api/health  →  "jpa": true
+
+  3) Flujo participante + autor:
+       POST /api/registro  (nombre, apellido, email, password)
+       POST /api/login
+       POST /api/trabajos  (titulo, resumen, tipo, autorId…)
+       POST /api/trabajos/{id}/documento  (multipart, archivo PDF)
+       PUT  /api/trabajos/{id}/enviar
+
+  4) Flujo admin usuarios:
+       GET  /api/usuarios
+       PUT  /api/usuarios/{id}/roles
+       PUT  /api/usuarios/{id}/activo
+
+  5) Flujo admin pagos:
+       POST /api/pagos  (usuarioId, monto, metodo, requiereFactura…)
+       GET  /api/pagos/pendientes
+       PUT  /api/pagos/{id}/validacion  (aprobar/rechazar + motivo)
+
+  6) Flujo admin actividades:
+       POST /api/actividades  (titulo, sala, inicio, fin, tipoActividad)
+       (intentar otra en mismo aula/horario → 400 conflicto)
+
+  7) Flujo OC:
+       PUT  /api/usuarios/{id}/promover-evaluador
+       POST /api/asignaciones-evaluacion  (trabajoId, evaluadorId)
+
+  8) Flujo evaluador:
+       PUT  /api/asignaciones-evaluacion/{id}/respuesta  (aceptar: true/false)
+
+  9) Flujo participante — pago:
+       POST /api/pagos  (usuarioId, monto, metodo: EFECTIVO|TRANSFERENCIA|TARJETA, requiereFactura)
+       POST /api/pagos/{id}/comprobante  (multipart, archivo comprobante)
+       GET  /api/pagos/usuario/{usuarioId}/estado  (Pendiente/Aprobado/Rechazado)
+
+  10) Flujo cronograma personal:
+       POST /api/cronograma/{usuarioId}/actividades/{actividadId}
+       GET  /api/cronograma/{usuarioId}
+       DELETE /api/cronograma/{usuarioId}/actividades/{actividadId}
+
+
+6. VERIFICAR PERSISTENCIA EN MySQL (phpMyAdmin)
+-----------------------------------------------
+  https://dbadmin.jyaa-ci.linti.unlp.edu.ar/  → base jyaa2026_bd1
+
+  Tras POST /api/trabajos:
+    SELECT id, titulo, documento_url, estado FROM trabajos ORDER BY id DESC LIMIT 5;
+
+  Tras POST /api/pagos:
+    SELECT id, monto, estado, comprobante_url FROM pagos ORDER BY id DESC LIMIT 5;
+
+  documento_url apunta al filesystem; la fila del trabajo SÍ está en MySQL.
+
+
+7. ENTREGA 3 — SIGUE DISPONIBLE
+-------------------------------
+  GET /test-persistencia  — tests ABM automáticos de DAOs
+
+
+8. ALCANCE GRUPO DE 3 INTEGRANTES (PDF cuarta entrega)
+------------------------------------------------------
+  Implementado en backend/:
+  • Admin: ABML usuarios, roles, activar/desactivar
+  • Admin: validar pagos pendientes (aprobar/rechazar, motivo, ajuste monto)
+  • Admin: ABML actividades + validación conflictos sala/horario
+  • OC: asignar/desasignar evaluadores, promover evaluador
+  • Evaluador: aceptar/rechazar asignación
+  • Autor: crear/enviar trabajos + adjuntar documento PDF
+  • Participante: registro + crear trabajos (rol Autor automático)
+  • Cronograma personal: agregar/quitar/visualizar + validación superposición
+  • Pagos: registrar comprobante + consultar estado
+
+
+9. ESTRUCTURA CÓDIGO NUEVO
+--------------------------
+  backend/src/main/java/ar/edu/unlp/jyaa/grupo1/
+    config/EntityManagerProducer.java   — @Produces/@Disposes EntityManager
+    rest/                               — Resources Jersey + Swagger
+    servicio/                           — lógica de negocio @RequestScoped
+    dao/*Impl.java                      — @RequestScoped + EM inyectado
+  backend/src/main/webapp/
+    WEB-INF/beans.xml
+    swagger-ui/index.html
+
+================================================================================
+  Fin — Grupo 1 — Cuarta entrega REST
+================================================================================

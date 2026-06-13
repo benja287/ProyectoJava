@@ -1,10 +1,13 @@
 package ar.edu.unlp.jyaa.grupo1.dao;
 
+import jakarta.enterprise.context.RequestScoped;
+
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
 import ar.edu.unlp.jyaa.grupo1.modelo.Certificado;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 
+@RequestScoped
 public class CertificadoDAOImpl extends AbstractJpaDAO<Certificado> implements CertificadoDAO {
 
   public CertificadoDAOImpl() {

@@ -1,11 +1,13 @@
 package ar.edu.unlp.jyaa.grupo1.dao;
 
+import jakarta.enterprise.context.RequestScoped;
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
 
+@RequestScoped
 public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDAO {
 
   public UsuarioDAOImpl() {
@@ -14,19 +16,19 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
 
   @Override
   public List<Usuario> listarTodos() {
-    EntityManager em = JpaUtil.createEntityManager();
+    EntityManager em = entityManagerParaConsulta();
     try {
       return em.createQuery(
               "SELECT u FROM Usuario u LEFT JOIN FETCH u.roles ORDER BY u.apellido", Usuario.class)
           .getResultList();
     } finally {
-      em.close();
+      cerrarSiLegacy(em);
     }
   }
 
   @Override
   public Optional<Usuario> buscarPorEmail(String email) {
-    EntityManager em = JpaUtil.createEntityManager();
+    EntityManager em = entityManagerParaConsulta();
     try {
       List<Usuario> list =
           em.createQuery("SELECT u FROM Usuario u WHERE u.email = :email", Usuario.class)
@@ -34,6 +36,17 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
               .getResultList();
       return list.stream().findFirst();
     } finally {
+      cerrarSiLegacy(em);
+    }
+  }
+
+  private EntityManager entityManagerParaConsulta() {
+    EntityManager cdi = getEntityManager();
+    return cdi != null ? cdi : JpaUtil.createEntityManager();
+  }
+
+  private void cerrarSiLegacy(EntityManager em) {
+    if (getEntityManager() == null) {
       em.close();
     }
   }

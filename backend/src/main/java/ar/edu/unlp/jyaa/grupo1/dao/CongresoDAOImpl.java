@@ -1,10 +1,13 @@
 package ar.edu.unlp.jyaa.grupo1.dao;
 
+import jakarta.enterprise.context.RequestScoped;
+
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
 import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 
+@RequestScoped
 public class CongresoDAOImpl extends AbstractJpaDAO<Congreso> implements CongresoDAO {
 
   public CongresoDAOImpl() {
