@@ -19,12 +19,7 @@ import java.util.List;
 @Tag(name = "Circulares")
 public class CircularesResource {
 
-  private final CircularDAO circularDAO;
-
-  @Inject
-  public CircularesResource(CircularDAO circularDAO) {
-    this.circularDAO = circularDAO;
-  }
+  @Inject private CircularDAO circularDAO;
 
   @GET
   @Operation(summary = "Listar circulares publicadas")

@@ -34,12 +34,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 @Tag(name = "Pagos")
 public class PagoResource {
 
-  private final PagoService pagoService;
-
-  @Inject
-  public PagoResource(PagoService pagoService) {
-    this.pagoService = pagoService;
-  }
+  @Inject private PagoService pagoService;
 
   @GET
   @Path("/pendientes")

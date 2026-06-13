@@ -30,12 +30,7 @@ import java.util.List;
 @Tag(name = "Actividades")
 public class ActividadResource {
 
-  private final ActividadService actividadService;
-
-  @Inject
-  public ActividadResource(ActividadService actividadService) {
-    this.actividadService = actividadService;
-  }
+  @Inject private ActividadService actividadService;
 
   @GET
   @Operation(summary = "Listar actividades")

@@ -25,12 +25,7 @@ import java.net.URI;
 @Tag(name = "Registro")
 public class RegistroResource {
 
-  private final UsuarioService usuarioService;
-
-  @Inject
-  public RegistroResource(UsuarioService usuarioService) {
-    this.usuarioService = usuarioService;
-  }
+  @Inject private UsuarioService usuarioService;
 
   @POST
   @Operation(summary = "Registrar participante")

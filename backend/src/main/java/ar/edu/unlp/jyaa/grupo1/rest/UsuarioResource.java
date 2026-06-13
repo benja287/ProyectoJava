@@ -33,12 +33,7 @@ import java.util.List;
 @Tag(name = "Usuarios")
 public class UsuarioResource {
 
-  private final UsuarioService usuarioService;
-
-  @Inject
-  public UsuarioResource(UsuarioService usuarioService) {
-    this.usuarioService = usuarioService;
-  }
+  @Inject private UsuarioService usuarioService;
 
   @GET
   @Operation(summary = "Listar usuarios")

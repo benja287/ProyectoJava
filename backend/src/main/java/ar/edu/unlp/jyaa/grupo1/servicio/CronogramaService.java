@@ -12,19 +12,9 @@ import jakarta.inject.Inject;
 @RequestScoped
 public class CronogramaService {
 
-  private final CronogramaPersonalDAO cronogramaPersonalDAO;
-  private final ActividadDAO actividadDAO;
-  private final UsuarioDAO usuarioDAO;
-
-  @Inject
-  public CronogramaService(
-      CronogramaPersonalDAO cronogramaPersonalDAO,
-      ActividadDAO actividadDAO,
-      UsuarioDAO usuarioDAO) {
-    this.cronogramaPersonalDAO = cronogramaPersonalDAO;
-    this.actividadDAO = actividadDAO;
-    this.usuarioDAO = usuarioDAO;
-  }
+  @Inject private CronogramaPersonalDAO cronogramaPersonalDAO;
+  @Inject private ActividadDAO actividadDAO;
+  @Inject private UsuarioDAO usuarioDAO;
 
   public CronogramaPersonal obtenerCronograma(Long usuarioId) {
     return cronogramaPersonalDAO

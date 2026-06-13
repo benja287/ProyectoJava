@@ -19,12 +19,7 @@ import java.nio.file.Files;
 @Tag(name = "Archivos")
 public class ArchivoResource {
 
-  private final DocumentStorageService documentStorageService;
-
-  @Inject
-  public ArchivoResource(DocumentStorageService documentStorageService) {
-    this.documentStorageService = documentStorageService;
-  }
+  @Inject private DocumentStorageService documentStorageService;
 
   @GET
   @Path("/{carpeta}/{nombre}")

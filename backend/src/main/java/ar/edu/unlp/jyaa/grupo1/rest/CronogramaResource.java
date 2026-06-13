@@ -23,12 +23,7 @@ import jakarta.ws.rs.core.Response;
 @Tag(name = "Cronograma personal")
 public class CronogramaResource {
 
-  private final CronogramaService cronogramaService;
-
-  @Inject
-  public CronogramaResource(CronogramaService cronogramaService) {
-    this.cronogramaService = cronogramaService;
-  }
+  @Inject private CronogramaService cronogramaService;
 
   @GET
   @Path("/{usuarioId}")

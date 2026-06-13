@@ -18,22 +18,10 @@ import java.util.List;
 @RequestScoped
 public class PagoService {
 
-  private final PagoDAO pagoDAO;
-  private final InscripcionCongresoDAO inscripcionDAO;
-  private final UsuarioDAO usuarioDAO;
-  private final DocumentStorageService documentStorageService;
-
-  @Inject
-  public PagoService(
-      PagoDAO pagoDAO,
-      InscripcionCongresoDAO inscripcionDAO,
-      UsuarioDAO usuarioDAO,
-      DocumentStorageService documentStorageService) {
-    this.pagoDAO = pagoDAO;
-    this.inscripcionDAO = inscripcionDAO;
-    this.usuarioDAO = usuarioDAO;
-    this.documentStorageService = documentStorageService;
-  }
+  @Inject private PagoDAO pagoDAO;
+  @Inject private InscripcionCongresoDAO inscripcionDAO;
+  @Inject private UsuarioDAO usuarioDAO;
+  @Inject private DocumentStorageService documentStorageService;
 
   public Pago registrarPago(Long usuarioId, Pago pago) {
     Usuario usuario = usuarioDAO.recuperarPorId(usuarioId);

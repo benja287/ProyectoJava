@@ -30,12 +30,7 @@ import java.net.URI;
 @Tag(name = "Asignaciones de evaluación")
 public class AsignacionEvaluacionResource {
 
-  private final AsignacionEvaluacionService asignacionService;
-
-  @Inject
-  public AsignacionEvaluacionResource(AsignacionEvaluacionService asignacionService) {
-    this.asignacionService = asignacionService;
-  }
+  @Inject private AsignacionEvaluacionService asignacionService;
 
   @POST
   @Operation(summary = "Asignar evaluador a trabajo")

@@ -32,12 +32,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 @Tag(name = "Trabajos")
 public class TrabajoResource {
 
-  private final TrabajoService trabajoService;
-
-  @Inject
-  public TrabajoResource(TrabajoService trabajoService) {
-    this.trabajoService = trabajoService;
-  }
+  @Inject private TrabajoService trabajoService;
 
   @GET
   @Operation(summary = "Listar trabajos")

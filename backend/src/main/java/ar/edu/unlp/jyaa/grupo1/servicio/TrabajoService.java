@@ -16,19 +16,9 @@ import java.util.List;
 @RequestScoped
 public class TrabajoService {
 
-  private final TrabajoDAO trabajoDAO;
-  private final UsuarioDAO usuarioDAO;
-  private final DocumentStorageService documentStorageService;
-
-  @Inject
-  public TrabajoService(
-      TrabajoDAO trabajoDAO,
-      UsuarioDAO usuarioDAO,
-      DocumentStorageService documentStorageService) {
-    this.trabajoDAO = trabajoDAO;
-    this.usuarioDAO = usuarioDAO;
-    this.documentStorageService = documentStorageService;
-  }
+  @Inject private TrabajoDAO trabajoDAO;
+  @Inject private UsuarioDAO usuarioDAO;
+  @Inject private DocumentStorageService documentStorageService;
 
   public List<Trabajo> listar() {
     return trabajoDAO.listarTodos();

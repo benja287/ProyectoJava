@@ -15,19 +15,9 @@ import java.time.LocalDate;
 @RequestScoped
 public class AsignacionEvaluacionService {
 
-  private final AsignacionEvaluacionDAO asignacionEvaluacionDAO;
-  private final TrabajoDAO trabajoDAO;
-  private final UsuarioDAO usuarioDAO;
-
-  @Inject
-  public AsignacionEvaluacionService(
-      AsignacionEvaluacionDAO asignacionEvaluacionDAO,
-      TrabajoDAO trabajoDAO,
-      UsuarioDAO usuarioDAO) {
-    this.asignacionEvaluacionDAO = asignacionEvaluacionDAO;
-    this.trabajoDAO = trabajoDAO;
-    this.usuarioDAO = usuarioDAO;
-  }
+  @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
+  @Inject private TrabajoDAO trabajoDAO;
+  @Inject private UsuarioDAO usuarioDAO;
 
   public AsignacionEvaluacion asignar(Long trabajoId, Long evaluadorId) {
     Trabajo trabajo = trabajoDAO.recuperarPorId(trabajoId);

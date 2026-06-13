@@ -25,12 +25,7 @@ import java.util.Optional;
 @Tag(name = "Login")
 public class LoginResource {
 
-  private final UsuarioDAO usuarioDAO;
-
-  @Inject
-  public LoginResource(UsuarioDAO usuarioDAO) {
-    this.usuarioDAO = usuarioDAO;
-  }
+  @Inject private UsuarioDAO usuarioDAO;
 
   @POST
   @Operation(summary = "Iniciar sesión")

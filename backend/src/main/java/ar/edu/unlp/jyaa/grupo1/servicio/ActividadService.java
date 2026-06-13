@@ -9,12 +9,7 @@ import java.util.List;
 @RequestScoped
 public class ActividadService {
 
-  private final ActividadDAO actividadDAO;
-
-  @Inject
-  public ActividadService(ActividadDAO actividadDAO) {
-    this.actividadDAO = actividadDAO;
-  }
+  @Inject private ActividadDAO actividadDAO;
 
   public List<Actividad> listar() {
     return actividadDAO.listarTodos();

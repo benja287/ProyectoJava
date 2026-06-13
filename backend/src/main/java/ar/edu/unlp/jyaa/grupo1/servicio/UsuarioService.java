@@ -12,12 +12,7 @@ import java.util.Set;
 @RequestScoped
 public class UsuarioService {
 
-  private final UsuarioDAO usuarioDAO;
-
-  @Inject
-  public UsuarioService(UsuarioDAO usuarioDAO) {
-    this.usuarioDAO = usuarioDAO;
-  }
+  @Inject private UsuarioDAO usuarioDAO;
 
   public List<Usuario> listarTodos() {
     return usuarioDAO.listarTodos();
