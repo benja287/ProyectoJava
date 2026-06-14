@@ -32,6 +32,7 @@ public class UsuarioService {
     if (usuario.getRoles() == null || usuario.getRoles().isEmpty()) {
       usuario.setRoles(new HashSet<>(Set.of(Rol.PARTICIPANTE)));
     }
+    normalizarRolActual(usuario, usuario.getRolActual());
     return usuarioDAO.alta(usuario);
   }
 
@@ -47,6 +48,7 @@ public class UsuarioService {
     if (datos.getRoles() == null || datos.getRoles().isEmpty()) {
       datos.setRoles(existente.getRoles());
     }
+    normalizarRolActual(datos, datos.getRolActual());
     return usuarioDAO.modificar(datos);
   }
 
@@ -66,7 +68,7 @@ public class UsuarioService {
       throw new NegocioException("Debe indicar al menos un rol");
     }
     usuario.setRoles(new HashSet<>(roles));
-    usuario.setRolActual(rolActual != null && roles.contains(rolActual) ? rolActual : roles.iterator().next());
+    normalizarRolActual(usuario, rolActual);
     return usuarioDAO.modificar(usuario);
   }
 
@@ -97,6 +99,23 @@ public class UsuarioService {
     }
     usuario.setActivo(true);
     usuario.setRoles(new HashSet<>(Set.of(Rol.PARTICIPANTE)));
+    normalizarRolActual(usuario, Rol.PARTICIPANTE);
     return usuarioDAO.alta(usuario);
+  }
+
+  /**
+   * Asegura que {@code rolActual} apunte a un rol que el usuario tenga asignado. Si se indica
+   * {@code preferido} y está en la lista, se usa ese; si no, el primero disponible.
+   */
+  private void normalizarRolActual(Usuario usuario, Rol preferido) {
+    Set<Rol> roles = usuario.getRoles();
+    if (roles == null || roles.isEmpty()) {
+      return;
+    }
+    if (preferido != null && roles.contains(preferido)) {
+      usuario.setRolActual(preferido);
+    } else if (usuario.getRolActual() == null || !roles.contains(usuario.getRolActual())) {
+      usuario.setRolActual(roles.iterator().next());
+    }
   }
 }
