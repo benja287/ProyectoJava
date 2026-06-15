@@ -4,6 +4,9 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoCreateRequest;
 import ar.edu.unlp.jyaa.grupo1.servicio.TrabajoService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.enterprise.context.RequestScoped;
@@ -88,8 +91,17 @@ public class TrabajoResource {
   @ApiResponse(responseCode = "404", description = "Trabajo no encontrado")
   public Trabajo adjuntarDocumento(
       @PathParam("id") Long id,
-      @FormDataParam("file") java.io.InputStream file,
-      @FormDataParam("file") org.glassfish.jersey.media.multipart.FormDataContentDisposition fileDetail)
+      @Parameter(
+              description = "Documento del trabajo (PDF)",
+              required = true,
+              content =
+                  @Content(
+                      mediaType = MediaType.APPLICATION_OCTET_STREAM,
+                      schema = @Schema(type = "string", format = "binary")))
+          @FormDataParam("file")
+          java.io.InputStream file,
+      @Parameter(hidden = true) @FormDataParam("file")
+          org.glassfish.jersey.media.multipart.FormDataContentDisposition fileDetail)
       throws IOException {
     if (file == null) {
       throw new ar.edu.unlp.jyaa.grupo1.servicio.NegocioException("Debe adjuntar un archivo");
