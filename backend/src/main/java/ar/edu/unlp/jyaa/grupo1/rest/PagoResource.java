@@ -1,13 +1,14 @@
 package ar.edu.unlp.jyaa.grupo1.rest;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.ComprobanteUploadForm;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.PagoRegistroRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ValidacionPagoRequest;
 import ar.edu.unlp.jyaa.grupo1.servicio.PagoService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.enterprise.context.RequestScoped;
@@ -97,20 +98,20 @@ public class PagoResource {
   @POST
   @Path("/{id}/comprobante")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  @Operation(summary = "Adjuntar comprobante de pago")
-  @ApiResponse(responseCode = "200", description = "Comprobante registrado")
-  public Pago adjuntarComprobante(
-      @PathParam("id") Long id,
-      @Parameter(
-              description = "Comprobante de pago (PDF o imagen)",
+  @Operation(
+      summary = "Adjuntar comprobante de pago",
+      requestBody =
+          @RequestBody(
               required = true,
               content =
                   @Content(
-                      mediaType = MediaType.APPLICATION_OCTET_STREAM,
-                      schema = @Schema(type = "string", format = "binary")))
-          @FormDataParam("file")
-          java.io.InputStream file,
-      @Parameter(hidden = true) @FormDataParam("file")
+                      mediaType = MediaType.MULTIPART_FORM_DATA,
+                      schema = @Schema(implementation = ComprobanteUploadForm.class))))
+  @ApiResponse(responseCode = "200", description = "Comprobante registrado")
+  public Pago adjuntarComprobante(
+      @PathParam("id") Long id,
+      @FormDataParam("file") java.io.InputStream file,
+      @FormDataParam("file")
           org.glassfish.jersey.media.multipart.FormDataContentDisposition fileDetail)
       throws IOException {
     if (file == null) {

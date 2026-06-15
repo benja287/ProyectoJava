@@ -1,12 +1,13 @@
 package ar.edu.unlp.jyaa.grupo1.rest;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.DocumentoUploadForm;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoCreateRequest;
 import ar.edu.unlp.jyaa.grupo1.servicio.TrabajoService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.enterprise.context.RequestScoped;
@@ -86,21 +87,21 @@ public class TrabajoResource {
   @POST
   @Path("/{id}/documento")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  @Operation(summary = "Adjuntar documento al trabajo")
+  @Operation(
+      summary = "Adjuntar documento al trabajo",
+      requestBody =
+          @RequestBody(
+              required = true,
+              content =
+                  @Content(
+                      mediaType = MediaType.MULTIPART_FORM_DATA,
+                      schema = @Schema(implementation = DocumentoUploadForm.class))))
   @ApiResponse(responseCode = "200", description = "Documento adjuntado")
   @ApiResponse(responseCode = "404", description = "Trabajo no encontrado")
   public Trabajo adjuntarDocumento(
       @PathParam("id") Long id,
-      @Parameter(
-              description = "Documento del trabajo (PDF)",
-              required = true,
-              content =
-                  @Content(
-                      mediaType = MediaType.APPLICATION_OCTET_STREAM,
-                      schema = @Schema(type = "string", format = "binary")))
-          @FormDataParam("file")
-          java.io.InputStream file,
-      @Parameter(hidden = true) @FormDataParam("file")
+      @FormDataParam("file") java.io.InputStream file,
+      @FormDataParam("file")
           org.glassfish.jersey.media.multipart.FormDataContentDisposition fileDetail)
       throws IOException {
     if (file == null) {
