@@ -6,6 +6,29 @@
 Este archivo explica cómo montar y probar la entrega 4 en el servidor del curso
 (GitLab CI → https://grupo1.jyaa-ci.linti.unlp.edu.ar/).
 
+RAMA GITLAB DE ESTA ENTREGA
+---------------------------
+  Rama: entrega-4
+  Repositorio: https://gitlab.catedras.linti.unlp.edu.ar/jyaa_2026/jyaa2026_grupo1
+
+  Para subir la rama (si aún no está en GitLab):
+    git push -u gitlab entrega-4
+
+  El pipeline de GitLab CI despliega desde main; el código de entrega-4 es el
+  mismo estado probado (commits desde "Entrega 4: API REST Jersey + CDI + Swagger"
+  y fixes posteriores).
+
+GUÍA DETALLADA DE PRUEBAS CON SWAGGER
+-------------------------------------
+  Para pruebas paso a paso por rol (Try it out, bodies, códigos HTTP,
+  verificación phpMyAdmin), ver:
+
+    backend/GUIA-PRUEBAS-SWAGGER-ENTREGA4.txt
+
+  URL Swagger UI:
+    https://grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/index.html
+
+
 IMPORTANTE — DÓNDE SE GUARDAN LOS DATOS
 ---------------------------------------
   • Metadatos (usuarios, trabajos, pagos, actividades…): MySQL jyaa2026_bd1
@@ -50,13 +73,14 @@ IMPORTANTE — DÓNDE SE GUARDAN LOS DATOS
   git add backend/
   git commit -m "Entrega 4: API REST Jersey + CDI + Swagger"
   git push gitlab main
+  git push -u gitlab entrega-4
 
   Esperar pipeline verde. URL:
     https://grupo1.jyaa-ci.linti.unlp.edu.ar/
 
 
-5. PROBAR CON SWAGGER UI (recomendado para el coloquio)
-------------------------------------------------------
+5. PROBAR CON SWAGGER UI (resumen — detalle en GUIA-PRUEBAS-SWAGGER-ENTREGA4.txt)
+--------------------------------------------------------------------------------
   1) Abrir:
        https://grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/index.html
 
@@ -87,6 +111,7 @@ IMPORTANTE — DÓNDE SE GUARDAN LOS DATOS
   7) Flujo OC:
        PUT  /api/usuarios/{id}/promover-evaluador
        POST /api/asignaciones-evaluacion  (trabajoId, evaluadorId)
+       DELETE /api/asignaciones-evaluacion/{id}
 
   8) Flujo evaluador:
        PUT  /api/asignaciones-evaluacion/{id}/respuesta  (aceptar: true/false)
@@ -144,6 +169,10 @@ IMPORTANTE — DÓNDE SE GUARDAN LOS DATOS
   backend/src/main/webapp/
     WEB-INF/beans.xml
     swagger-ui/index.html
+
+  Documentación de entrega:
+    backend/AMBIENTE-PRUEBA-ENTREGA4.txt      — este archivo (montaje)
+    backend/GUIA-PRUEBAS-SWAGGER-ENTREGA4.txt — pruebas detalladas Swagger
 
 ================================================================================
   Fin — Grupo 1 — Cuarta entrega REST

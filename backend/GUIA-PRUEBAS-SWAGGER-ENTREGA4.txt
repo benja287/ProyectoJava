@@ -1,0 +1,503 @@
+================================================================================
+  JYAA 2026 — Grupo 1 — Guía de pruebas Entrega 4 (Swagger)
+  Sistema de gestión del V Congreso Argentino de Agroecología
+================================================================================
+
+URL Swagger UI:
+  https://grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/index.html
+
+URL API base:
+  https://grupo1.jyaa-ci.linti.unlp.edu.ar/api
+
+phpMyAdmin (verificar persistencia):
+  https://dbadmin.jyaa-ci.linti.unlp.edu.ar/  →  base jyaa2026_bd1
+
+Rama GitLab de esta entrega:
+  entrega-4
+
+Documento complementario (montaje del ambiente):
+  backend/AMBIENTE-PRUEBA-ENTREGA4.txt
+
+
+--------------------------------------------------------------------------------
+QUÉ EVALÚA LA ENTREGA 4
+--------------------------------------------------------------------------------
+  • API REST con Jersey + CDI + Swagger
+  • Endpoints por rol (Admin, OC, Evaluador, Autor, Participante)
+  • Persistencia en MySQL (jyaa2026_bd1)
+  • Archivos PDF en filesystem (trabajos y comprobantes de pago)
+
+QUÉ NO ES OBLIGATORIO PROBAR AHORA
+  El flujo completo del congreso (registro → pago → esperar aprobación admin →
+  participar → enviar trabajo → ganar rol autor) es del sistema completo, no del
+  alcance mínimo de esta entrega.
+
+  En la entrega 4 probamos que cada rol tiene sus endpoints y que persisten
+  en la base.
+
+
+--------------------------------------------------------------------------------
+CÓMO FUNCIONA EL LOGIN EN NUESTRA API
+--------------------------------------------------------------------------------
+  POST /api/login valida email/password y devuelve el usuario (UsuarioDTO).
+
+  No hay token JWT: Swagger no bloquea endpoints por rol. Vos simulás el rol
+  sabiendo qué endpoints le corresponden a cada uno.
+
+  En el coloquio: "como administrador haría X…", "como OC haría Y…", etc.
+
+
+--------------------------------------------------------------------------------
+CÓMO USAR SWAGGER (siempre igual)
+--------------------------------------------------------------------------------
+  1) Abrís la sección del endpoint (ej. Health, Usuarios, Login…)
+  2) Clic en "Try it out"
+  3) Completás parámetros y/o Request body
+  4) Clic en "Execute"
+  5) Mirás Server response → Code y Response body
+  6) (Opcional) Verificás en phpMyAdmin que la fila quedó en MySQL
+
+
+================================================================================
+PASO 0 — VERIFICAR QUE TODO ESTÁ LISTO
+================================================================================
+
+  #  Endpoint              Resultado esperado
+  1  GET /api/health        "status":"ok", "jpa":true, "grupo":1
+  2  GET /api/usuarios      Lista con usuarios demo (si vaciaste BD y redeployaste)
+
+
+0.1  GET /api/health
+  Try it out → Execute
+  Code: 200
+  Body: { "status": "ok", "jpa": true, "grupo": 1 }
+
+0.2  GET /api/usuarios
+  Try it out → Execute
+  Code: 200
+  Lista usuarios demo (ids aproximados según seed):
+
+  id   email                              roles
+  241  mantillabenja153@gmail.com         ADMINISTRADOR
+  242  rodriguezmantilla123@gmail.com     ORGANIZADOR_CIENTIFICO
+  243  lucasbudnik@hotmail.com.ar         PARTICIPANTE (+ EVALUADOR si promovido)
+  244  alci0483@gmail.com                 EVALUADOR
+  245  autor.demo@jyaa.unlp.edu.ar        AUTOR, PARTICIPANTE
+
+
+================================================================================
+PASO 1 — LOGIN POR ROL (solo verificar identidad)
+================================================================================
+  Swagger → Login → POST /api/login → Try it out → Request body → Execute
+
+1. Administrador
+  { "email": "mantillabenja153@gmail.com", "password": "12345678" }
+  Code: 200 | id: 241 | roles: ["ADMINISTRADOR"]
+
+2. Organizador científico (OC)
+  { "email": "rodriguezmantilla123@gmail.com", "password": "12345678" }
+  Code: 200 | id: 242 | roles: ["ORGANIZADOR_CIENTIFICO"]
+
+3. Evaluador
+  { "email": "alci0483@gmail.com", "password": "12345678" }
+  Code: 200 | id: 244 | roles: ["EVALUADOR"]
+
+4. Autor
+  { "email": "autor.demo@jyaa.unlp.edu.ar", "password": "12345678" }
+  Code: 200 | id: 245 | roles: ["AUTOR","PARTICIPANTE"]
+
+5. Participante
+  { "email": "lucasbudnik@hotmail.com.ar", "password": "12345678" }
+  Code: 200 | id: 243 | roles: ["PARTICIPANTE"] (+ EVALUADOR si fue promovido)
+
+
+================================================================================
+PASO 2 — QUÉ PROBAR CON CADA ROL
+================================================================================
+  Después del login, usamos los endpoints que le corresponden a ese rol.
+  Swagger deja llamar a todos; en el coloquio explicamos el rol que simulamos.
+
+
+################################################################################
+COMO ADMINISTRADOR
+################################################################################
+
+Resumen:
+  Acción                    Endpoint
+  Listar usuarios           GET  /api/usuarios
+  Alta usuario              POST /api/usuarios
+  Consultar por id          GET  /api/usuarios/{id}
+  Modificar                 PUT  /api/usuarios/{id}
+  Cambiar roles             PUT  /api/usuarios/{id}/roles
+  Activar/desactivar        PUT  /api/usuarios/{id}/activo
+  Baja                      DELETE /api/usuarios/{id}
+  Listar pagos pendientes   GET  /api/pagos/pendientes
+  Validar pago              PUT  /api/pagos/{id}/validacion
+  ABM actividades           GET/POST/PUT/DELETE /api/actividades
+
+
+--- GESTIÓN DE USUARIOS ---
+
+1. GET /api/usuarios → Try it out → Execute → Code 200 (listado)
+
+2. POST /api/usuarios (alta)
+  Request body:
+  {
+    "nombre": "Test",
+    "apellido": "Admin",
+    "email": "test.admin.nuevo@gmail.com",
+    "password": "12345678",
+    "activo": true
+  }
+  Code: 201 | id nuevo (ej. 246) | roles: ["PARTICIPANTE"] por defecto
+  Verificar: phpMyAdmin → tabla usuarios + usuario_roles
+
+3. GET /api/usuarios/{id}  id=246 → Code 200
+
+4. PUT /api/usuarios/{id}  id=246
+  {
+    "nombre": "Test",
+    "apellido": "Modificado",
+    "email": "test.admin.nuevo@gmail.com",
+    "activo": true
+  }
+  Code: 200 | apellido actualizado
+  Nota: no hace falta mandar password; el backend conserva la anterior.
+
+5. PUT /api/usuarios/{id}/roles  id=246
+  { "roles": ["PARTICIPANTE", "AUTOR"], "rolActual": "AUTOR" }
+  Code: 200 | Verificar usuario_roles en phpMyAdmin
+
+6. PUT /api/usuarios/{id}/activo  id=246
+  Desactivar: { "activo": false } → Code 200 | activo: false
+  Activar:    { "activo": true }  → Code 200 | activo: true
+  Probar login con cuenta desactivada:
+    POST /api/login con ese email → Code 403
+    { "error": "Cuenta deshabilitada", "accountDisabled": true }
+
+7. DELETE /api/usuarios/{id}  id=246 → Code 204 (sin body)
+
+
+--- GESTIÓN DE PAGOS — Validar pagos pendientes ---
+
+Requisitos PDF: aprobar/rechazar, motivo de rechazo, ajuste de monto.
+Tabla: pagos (estado, motivo_rechazo, monto) + inscripciones_congreso
+Estados: PENDIENTE, APROBADO, RECHAZADO
+Métodos: TRANSFERENCIA, TARJETA, EFECTIVO
+
+0. Preparación — Registrar pago pendiente
+  POST /api/pagos
+  {
+    "usuarioId": 243,
+    "pago": {
+      "monto": 5000,
+      "metodo": "TRANSFERENCIA",
+      "requiereFactura": false
+    }
+  }
+  Code: 201 | estado: PENDIENTE | id ej. 55 | header Location
+
+0.1 Adjuntar comprobante PDF
+  POST /api/pagos/{id}/comprobante  id=55 → seleccionar archivo PDF
+  Code: 200 | comprobanteUrl: /api/archivos/comprobantes/comprobantes-uuid.pdf
+  Verificar phpMyAdmin: columna comprobante_url en pagos
+  Descargar PDF:
+    Navegador: https://grupo1.jyaa-ci.linti.unlp.edu.ar/api/archivos/comprobantes/NOMBRE.pdf
+    Swagger Archivos → GET /api/archivos/{carpeta}/{nombre}
+      carpeta=comprobantes, nombre=comprobantes-uuid.pdf → Code 200
+
+  Dónde se guarda el PDF:
+    Bytes → filesystem Tomcat: $CATALINA_BASE/uploads/grupo1/comprobantes/
+    MySQL → solo comprobante_url (NO BLOB)
+
+1. GET /api/pagos/pendientes → Code 200 (lista con el pago 55 PENDIENTE)
+
+2. GET /api/pagos/{id}  id=55 → Code 200
+
+3. Aprobar pago (sin ajuste)
+  PUT /api/pagos/{id}/validacion  id=55
+  { "aprobar": true, "motivoRechazo": null, "montoAjustado": null }
+  Code: 200 | estado: APROBADO | mensaje: "Pago aprobado"
+
+4. Registrar otro pago para probar rechazo
+  POST /api/pagos  usuarioId=243, monto=8000, metodo=EFECTIVO, requiereFactura=true
+  Code: 201 | id ej. 56 | PENDIENTE
+
+5. Rechazar pago + motivo
+  PUT /api/pagos/{id}/validacion  id=56
+  {
+    "aprobar": false,
+    "motivoRechazo": "Comprobante ilegible o monto incorrecto",
+    "montoAjustado": null
+  }
+  Code: 200 | estado: RECHAZADO | motivoRechazo guardado
+  Verificar phpMyAdmin
+
+6. Aprobar con ajuste de monto
+  6a) POST /api/pagos → id ej. 57, monto declarado 5000
+  6b) PUT /api/pagos/57/validacion
+      { "aprobar": true, "motivoRechazo": null, "montoAjustado": 4500 }
+  Code: 200 | monto final: 4500 | mensaje con diferencia -500
+  Verificar phpMyAdmin: monto=4500, estado=APROBADO
+
+7. (Opcional participante) GET /api/pagos/usuario/243/estado
+  Code: 200 | último pago del usuario (APROBADO/RECHAZADO/PENDIENTE)
+
+
+--- GESTIÓN DE ACTIVIDADES ---
+
+Requisitos PDF: ABM actividades + validar conflictos de horario y lugar.
+Tabla: actividades | Tipos: MESA_TEMATICA, MESA_REDONDA, POSTER, TALLER, CONFERENCIA
+Regla: misma sala + horarios superpuestos → 400
+
+0. Crear actividad
+  POST /api/actividades
+  {
+    "titulo": "Mesa temática: Agroecología y suelos",
+    "sala": "Aula 101",
+    "inicio": "2026-09-15T10:00:00",
+    "fin": "2026-09-15T12:00:00",
+    "tipoActividad": "MESA_TEMATICA",
+    "codigo": "MT-01"
+  }
+  Code: 201 | id ej. 57
+
+1. GET /api/actividades → Code 200 (listado)
+
+2. GET /api/actividades/{id}  id=54 → Code 200
+
+3. PUT /api/actividades/{id}  id=57 (editar sin conflicto)
+  Cambiar título, sala Aula 102, fin 12:30 → Code 200
+
+4. Validar conflicto (rechazo)
+  4a) POST actividad en Auditorio 11:00–13:00 → Code 201 id=58
+  4b) POST otra en Auditorio 10:00–12:30 (superpone) → Code 400
+      { "error": "Conflicto de horario en la sala Auditorio" }
+
+5. PUT /api/actividades/58 mover a Aula 102 en horario que choca con 57
+  → Code 400 { "error": "Conflicto de horario en la sala Aula 102" }
+
+6. Otras validaciones
+  6a) fin anterior al inicio → 400 "El horario de fin debe ser posterior al de inicio"
+  6b) sala vacía → 400 "Debe indicar el aula/sala de la actividad"
+
+7. DELETE /api/actividades/{id}  id=58 → Code 204
+
+
+################################################################################
+COMO ORGANIZADOR CIENTÍFICO (OC)
+################################################################################
+
+Login: rodriguezmantilla123@gmail.com (id 242)
+
+Usuarios de prueba:
+  OC          242  rodriguezmantilla123@gmail.com
+  Evaluador   244  alci0483@gmail.com
+  Autor       245  autor.demo@jyaa.unlp.edu.ar
+  Participante 243 lucasbudnik@hotmail.com.ar (promover a evaluador)
+
+Resumen:
+  Promover evaluador     PUT  /api/usuarios/{id}/promover-evaluador
+  Asignar evaluador      POST /api/asignaciones-evaluacion
+  Desasignar             DELETE /api/asignaciones-evaluacion/{id}
+  Consultar trabajo      GET  /api/trabajos/{id}
+
+--- PREPARACIÓN: trabajo enviado (como Autor, pasos 0a–0b) ---
+
+0a. POST /api/trabajos
+  {
+    "autorId": 245,
+    "trabajo": {
+      "titulo": "Suelos salinos en tierra 1",
+      "resumen": "Estudio de caso en la región pampeana",
+      "ejeTematico": "Suelos y fertilidad",
+      "tipo": "TRABAJO_CIENTIFICO"
+    }
+  }
+  Code: 201 | id ej. 83 | estado: BORRADOR
+  NOTA SWAGGER: puede aparecer "can't parse JSON" — el POST SÍ creó la fila.
+  Verificar: header Location, phpMyAdmin tabla trabajos.
+
+  Por qué "can't parse JSON":
+    Trabajo → autor → trabajos → autor → … (referencia circular Jackson).
+    El backend respondió 201 antes de que Swagger falle al mostrar el body.
+
+0a.1 POST /api/trabajos/{id}/documento  id=83 → seleccionar PDF
+  Code: 200 | documentoUrl: /api/archivos/trabajos/trabajos-uuid.pdf
+  Descargar: https://grupo1.jyaa-ci.linti.unlp.edu.ar/api/archivos/trabajos/NOMBRE.pdf
+
+0b. PUT /api/trabajos/{id}/enviar  id=83 → Code 200 | estado: ENVIADO
+
+--- COMO OC ---
+
+1. PUT /api/usuarios/243/promover-evaluador (sin body)
+  Code: 200 | roles: ["PARTICIPANTE","EVALUADOR"]
+  Verificar usuario_roles en phpMyAdmin
+
+2. GET /api/trabajos/83 → Code 200 (ver estado, documentoUrl)
+
+3. POST /api/asignaciones-evaluacion
+  { "trabajoId": 83, "evaluadorId": 244 }
+  Code: 201 | id asignación ej. 30 | trabajo → EN_EVALUACION | aceptada: false
+  Verificar: asignaciones_evaluacion + trabajos.estado
+
+4. Error — mismo evaluador dos veces → 400
+  "El evaluador ya está asignado a este trabajo"
+
+5. Error — usuario sin rol evaluador (id 245) → 400
+  "El usuario no tiene rol de evaluador"
+
+6. Asignar usuario promovido (243) a trabajo 82 → Code 201
+
+7. DELETE /api/asignaciones-evaluacion/{id}  id=30 → Code 204
+  Verificar phpMyAdmin: fila eliminada
+
+
+################################################################################
+COMO EVALUADOR
+################################################################################
+
+Login: alci0483@gmail.com (id 244)
+
+Preparación: OC asignó trabajo 83 al evaluador 244 → asignación id ej. 35
+
+Resumen:
+  Consultar trabajo    GET  /api/trabajos/{id}
+  Descargar PDF        GET  /api/archivos/trabajos/{nombre}
+  Aceptar asignación   PUT  /api/asignaciones-evaluacion/{id}/respuesta  {"aceptar":true}
+  Rechazar             PUT  .../respuesta  {"aceptar":false}
+
+1. GET /api/trabajos/83 → Code 200 (documentoUrl para el PDF)
+
+2. Descargar PDF del trabajo (misma URL que documentoUrl)
+
+3. PUT /api/asignaciones-evaluacion/35/respuesta
+  { "aceptar": true }
+  Code: 200 | aceptada: true | fecha_respuesta registrada
+  Verificar phpMyAdmin
+
+4. Rechazar otra asignación (OC asigna trabajo 82 → id asignación 34)
+  PUT /api/asignaciones-evaluacion/34/respuesta  { "aceptar": false }
+  Code: 200 | aceptada: false | fecha_respuesta registrada
+
+
+################################################################################
+COMO AUTOR
+################################################################################
+
+Login: autor.demo@jyaa.unlp.edu.ar (id 245)
+
+Resumen:
+  Crear trabajo     POST /api/trabajos
+  Adjuntar PDF      POST /api/trabajos/{id}/documento
+  Enviar al comité  PUT  /api/trabajos/{id}/enviar
+  Consultar         GET  /api/trabajos/{id}
+  Listar mis trabajos GET /api/trabajos?autorId=245
+
+1. POST /api/login (verificar identidad) → Code 200
+
+2. POST /api/trabajos (mismo body que preparación OC paso 0a)
+  Code: 201 | BORRADOR | documentoUrl: null
+
+3. POST /api/trabajos/83/documento → PDF → Code 200
+
+4. PUT /api/trabajos/83/enviar → Code 200 | ENVIADO
+  Verificar: SELECT id, titulo, estado, documento_url FROM trabajos WHERE id=83;
+
+5. GET /api/trabajos/83 y GET /api/trabajos?autorId=245
+
+
+################################################################################
+COMO PARTICIPANTE
+################################################################################
+
+Login demo: lucasbudnik@hotmail.com.ar (id 243)
+
+Resumen:
+  Registrarse           POST /api/registro
+  Registrar pago        POST /api/pagos
+  Adjuntar comprobante  POST /api/pagos/{id}/comprobante
+  Estado pago           GET  /api/pagos/usuario/{usuarioId}/estado
+  Ver cronograma        GET  /api/cronograma/{usuarioId}
+  Agregar actividad     POST /api/cronograma/{usuarioId}/actividades/{actividadId}
+  Quitar actividad      DELETE /api/cronograma/{usuarioId}/actividades/{actividadId}
+
+Actividades para cronograma:
+  id 57  Mesa temática Aula 102    15/09/2026 10:00–12:30
+  id 56  Sesión de pósters         17/09/2026 15:00–18:00
+  id 59  Taller demo (choca con 57) 15/09/2026 11:00–13:00
+
+Tres tablas cronograma:
+  actividades            → programa del congreso (Admin las crea)
+  cronogramas_personales → agenda del usuario (id 27 → usuario 243)
+  cronograma_actividades → qué eligió (27,57) y (27,56)
+
+Orden de prueba cronograma: pasos 7 → 8 → 9 → 10 → 11 (no borrar antes del 10)
+
+1. POST /api/registro
+  {
+    "nombre": "Participante",
+    "apellido": "Nuevo",
+    "email": "participante.nuevo.test@gmail.com",
+    "password": "12345678"
+  }
+  Code: 201 | id 247 | roles: ["PARTICIPANTE"]
+
+1.1 Crear trabajo → rol AUTOR automático
+  POST /api/trabajos  autorId=247, tipo RELATO_DE_EXPERIENCIA
+  Code: 201 | id ej. 84
+  GET /api/usuarios/247 → roles: ["PARTICIPANTE","AUTOR"]
+  Verificar usuario_roles en phpMyAdmin
+
+  Relación con sección Autor:
+    Participante 247 → prueba promoción automática a AUTOR
+    Autor 245        → prueba flujo completo PDF + enviar
+
+2. POST /api/login participante demo → Code 200
+
+3. POST /api/pagos (ver sección Admin pagos paso 0)
+
+4. POST /api/pagos/{id}/comprobante (ver Admin paso 0.1)
+
+5. GET /api/pagos/usuario/243/estado → Code 200 (último estado del usuario)
+
+6. GET /api/cronograma/243 → Code 200 (cronograma id 27, actividades [])
+
+7. POST /api/cronograma/243/actividades/57 → Code 200
+   phpMyAdmin: cronograma_actividades (27, 57)
+
+8. POST /api/cronograma/243/actividades/56 → Code 200 (sin conflicto, otro día)
+   phpMyAdmin: filas (27,57) y (27,56)
+
+9. POST /api/cronograma/243/actividades/59 → Code 400
+   "Conflicto de horario con la actividad: Mesa temática…"
+   (precondición: 57 sigue en cronograma)
+
+10. POST /api/cronograma/243/actividades/57 otra vez → Code 400
+    "La actividad ya está en el cronograma"
+
+11. DELETE /api/cronograma/243/actividades/57 → Code 204
+    phpMyAdmin: solo queda (27, 56)
+
+
+================================================================================
+NOTAS PARA EL COLOQUIO
+================================================================================
+
+Swagger "can't parse JSON" en trabajos:
+  El POST creó la fila (201 + Location). Es referencia circular Jackson.
+  Verificar con phpMyAdmin o header Location.
+
+PDFs (trabajos y comprobantes):
+  MySQL guarda solo la URL. El binario está en filesystem Tomcat.
+  Descarga: GET /api/archivos/{carpeta}/{nombre}
+
+Sin JWT:
+  No hay bloqueo por rol en Swagger. Simulamos rol por contexto del coloquio.
+
+Persistencia:
+  Cada POST/PUT exitoso debe verse en phpMyAdmin (jyaa2026_bd1).
+
+================================================================================
+  Fin — Guía de pruebas Swagger — Grupo 1 — Entrega 4
+================================================================================
