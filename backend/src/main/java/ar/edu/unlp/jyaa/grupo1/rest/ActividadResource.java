@@ -2,6 +2,8 @@ package ar.edu.unlp.jyaa.grupo1.rest;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.servicio.ActividadService;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ActividadResumenDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaActividadesDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -9,6 +11,7 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
@@ -16,12 +19,12 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
-import java.util.List;
 
 @Path("/actividades")
 @Produces(MediaType.APPLICATION_JSON)
@@ -33,10 +36,14 @@ public class ActividadResource {
   @Inject private ActividadService actividadService;
 
   @GET
-  @Operation(summary = "Listar actividades")
-  @ApiResponse(responseCode = "200", description = "Listado de actividades")
-  public List<Actividad> listar() {
-    return actividadService.listar();
+  @Operation(
+      summary = "Listar actividades (paginado)",
+      description = "Parámetros: page (desde 1, default 1), size (default 20, máx 100).")
+  @ApiResponse(responseCode = "200", description = "Página de actividades")
+  public PaginaActividadesDTO listar(
+      @QueryParam("page") @DefaultValue("1") int page,
+      @QueryParam("size") @DefaultValue("20") int size) {
+    return actividadService.listar(page, size);
   }
 
   @GET
@@ -44,12 +51,12 @@ public class ActividadResource {
   @Operation(summary = "Buscar actividad por id")
   @ApiResponse(responseCode = "200", description = "Actividad encontrada")
   @ApiResponse(responseCode = "404", description = "Actividad no encontrada")
-  public Actividad buscar(@PathParam("id") Long id) {
+  public ActividadResumenDTO buscar(@PathParam("id") Long id) {
     Actividad actividad = actividadService.buscar(id);
     if (actividad == null) {
       throw new NotFoundException("Actividad no encontrada");
     }
-    return actividad;
+    return ActividadResumenDTO.from(actividad);
   }
 
   @POST
@@ -58,7 +65,7 @@ public class ActividadResource {
   public Response alta(Actividad actividad, @Context UriInfo uriInfo) {
     Actividad creada = actividadService.alta(actividad);
     URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
-    return Response.created(location).entity(creada).build();
+    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
   }
 
   @PUT
@@ -66,12 +73,12 @@ public class ActividadResource {
   @Operation(summary = "Modificar actividad")
   @ApiResponse(responseCode = "200", description = "Actividad actualizada")
   @ApiResponse(responseCode = "404", description = "Actividad no encontrada")
-  public Actividad modificar(@PathParam("id") Long id, Actividad actividad) {
+  public ActividadResumenDTO modificar(@PathParam("id") Long id, Actividad actividad) {
     Actividad actualizada = actividadService.modificar(id, actividad);
     if (actualizada == null) {
       throw new NotFoundException("Actividad no encontrada");
     }
-    return actualizada;
+    return ActividadResumenDTO.from(actualizada);
   }
 
   @DELETE

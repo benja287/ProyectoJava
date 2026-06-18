@@ -4,6 +4,8 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.DocumentoUploadForm;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoCreateRequest;
 import ar.edu.unlp.jyaa.grupo1.servicio.TrabajoService;
+import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaTrabajosDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoResumenDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
@@ -27,7 +30,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
 @Path("/trabajos")
@@ -39,13 +41,20 @@ public class TrabajoResource {
   @Inject private TrabajoService trabajoService;
 
   @GET
-  @Operation(summary = "Listar trabajos")
-  @ApiResponse(responseCode = "200", description = "Listado de trabajos")
-  public List<Trabajo> listar(@QueryParam("autorId") Long autorId) {
+  @Operation(
+      summary = "Listar trabajos (paginado)",
+      description =
+          "Devuelve una página de trabajos. Sin autorId lista todos; con autorId filtra por autor."
+              + " Parámetros: page (desde 1, default 1), size (default 20, máx 100).")
+  @ApiResponse(responseCode = "200", description = "Página de trabajos")
+  public PaginaTrabajosDTO listar(
+      @QueryParam("autorId") Long autorId,
+      @QueryParam("page") @DefaultValue("1") int page,
+      @QueryParam("size") @DefaultValue("20") int size) {
     if (autorId != null) {
-      return trabajoService.listarPorAutor(autorId);
+      return trabajoService.listarPorAutor(autorId, page, size);
     }
-    return trabajoService.listar();
+    return trabajoService.listar(page, size);
   }
 
   @GET
@@ -53,12 +62,12 @@ public class TrabajoResource {
   @Operation(summary = "Buscar trabajo por id")
   @ApiResponse(responseCode = "200", description = "Trabajo encontrado")
   @ApiResponse(responseCode = "404", description = "Trabajo no encontrado")
-  public Trabajo buscar(@PathParam("id") Long id) {
-    Trabajo trabajo = trabajoService.buscar(id);
-    if (trabajo == null) {
-      throw new NotFoundException("Trabajo no encontrado");
+  public TrabajoResumenDTO buscar(@PathParam("id") Long id) {
+    try {
+      return TrabajoResumenDTO.from(trabajoService.buscar(id));
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
     }
-    return trabajo;
   }
 
   @POST
@@ -68,7 +77,7 @@ public class TrabajoResource {
   public Response crear(TrabajoCreateRequest request, @Context UriInfo uriInfo) {
     Trabajo creado = trabajoService.crear(request.autorId(), request.trabajo());
     URI location = uriInfo.getAbsolutePathBuilder().path(creado.getId().toString()).build();
-    return Response.created(location).entity(creado).build();
+    return Response.created(location).entity(TrabajoResumenDTO.from(creado)).build();
   }
 
   @PUT
@@ -76,12 +85,16 @@ public class TrabajoResource {
   @Operation(summary = "Enviar trabajo a evaluación")
   @ApiResponse(responseCode = "200", description = "Trabajo enviado")
   @ApiResponse(responseCode = "404", description = "Trabajo no encontrado")
-  public Trabajo enviar(@PathParam("id") Long id) {
-    Trabajo trabajo = trabajoService.enviar(id);
-    if (trabajo == null) {
-      throw new NotFoundException("Trabajo no encontrado");
+  public TrabajoResumenDTO enviar(@PathParam("id") Long id) {
+    try {
+      Trabajo trabajo = trabajoService.enviar(id);
+      if (trabajo == null) {
+        throw new NotFoundException("Trabajo no encontrado");
+      }
+      return TrabajoResumenDTO.from(trabajo);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
     }
-    return trabajo;
   }
 
   @POST
@@ -98,7 +111,7 @@ public class TrabajoResource {
                       schema = @Schema(implementation = DocumentoUploadForm.class))))
   @ApiResponse(responseCode = "200", description = "Documento adjuntado")
   @ApiResponse(responseCode = "404", description = "Trabajo no encontrado")
-  public Trabajo adjuntarDocumento(
+  public TrabajoResumenDTO adjuntarDocumento(
       @PathParam("id") Long id,
       @FormDataParam("file") java.io.InputStream file,
       @FormDataParam("file")
@@ -108,10 +121,14 @@ public class TrabajoResource {
       throw new ar.edu.unlp.jyaa.grupo1.servicio.NegocioException("Debe adjuntar un archivo");
     }
     String nombre = fileDetail != null ? fileDetail.getFileName() : "documento.pdf";
-    Trabajo trabajo = trabajoService.adjuntarDocumento(id, file, nombre);
-    if (trabajo == null) {
-      throw new NotFoundException("Trabajo no encontrado");
+    try {
+      Trabajo trabajo = trabajoService.adjuntarDocumento(id, file, nombre);
+      if (trabajo == null) {
+        throw new NotFoundException("Trabajo no encontrado");
+      }
+      return TrabajoResumenDTO.from(trabajo);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
     }
-    return trabajo;
   }
 }

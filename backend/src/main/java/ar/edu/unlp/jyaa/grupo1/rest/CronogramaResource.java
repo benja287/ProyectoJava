@@ -2,6 +2,7 @@ package ar.edu.unlp.jyaa.grupo1.rest;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.CronogramaPersonal;
 import ar.edu.unlp.jyaa.grupo1.servicio.CronogramaService;
+import ar.edu.unlp.jyaa.grupo1.web.dto.CronogramaDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,12 +31,12 @@ public class CronogramaResource {
   @Operation(summary = "Obtener cronograma de un usuario")
   @ApiResponse(responseCode = "200", description = "Cronograma encontrado")
   @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
-  public CronogramaPersonal obtener(@PathParam("usuarioId") Long usuarioId) {
-    CronogramaPersonal cronograma = cronogramaService.obtenerCronograma(usuarioId);
-    if (cronograma == null) {
-      throw new NotFoundException("Usuario no encontrado");
+  public CronogramaDTO obtener(@PathParam("usuarioId") Long usuarioId) {
+    try {
+      return CronogramaDTO.from(cronogramaService.obtenerCronograma(usuarioId));
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
     }
-    return cronograma;
   }
 
   @POST
@@ -43,13 +44,17 @@ public class CronogramaResource {
   @Operation(summary = "Agregar actividad al cronograma")
   @ApiResponse(responseCode = "200", description = "Actividad agregada")
   @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
-  public CronogramaPersonal agregarActividad(
+  public CronogramaDTO agregarActividad(
       @PathParam("usuarioId") Long usuarioId, @PathParam("actividadId") Long actividadId) {
-    CronogramaPersonal cronograma = cronogramaService.agregarActividad(usuarioId, actividadId);
-    if (cronograma == null) {
-      throw new NotFoundException("Usuario no encontrado");
+    try {
+      CronogramaPersonal cronograma = cronogramaService.agregarActividad(usuarioId, actividadId);
+      return CronogramaDTO.from(cronograma);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      if (e.getMessage().contains("Usuario no encontrado")) {
+        throw new NotFoundException(e.getMessage());
+      }
+      throw e;
     }
-    return cronograma;
   }
 
   @DELETE
@@ -59,10 +64,11 @@ public class CronogramaResource {
   @ApiResponse(responseCode = "404", description = "Cronograma no encontrado")
   public Response quitarActividad(
       @PathParam("usuarioId") Long usuarioId, @PathParam("actividadId") Long actividadId) {
-    CronogramaPersonal cronograma = cronogramaService.quitarActividad(usuarioId, actividadId);
-    if (cronograma == null) {
-      throw new NotFoundException("Cronograma no encontrado");
+    try {
+      cronogramaService.quitarActividad(usuarioId, actividadId);
+      return Response.noContent().build();
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
     }
-    return Response.noContent().build();
   }
 }

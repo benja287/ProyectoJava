@@ -18,9 +18,31 @@ public class ActividadDAOImpl extends AbstractJpaDAO<Actividad> implements Activ
   public List<Actividad> listarTodos() {
     EntityManager em = emConsulta();
     try {
-      return em.createQuery(
-              "SELECT a FROM Actividad a LEFT JOIN FETCH a.trabajos ORDER BY a.inicio", Actividad.class)
+      return em.createQuery("SELECT a FROM Actividad a ORDER BY a.inicio", Actividad.class)
           .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public List<Actividad> listarPaginado(int offset, int limit) {
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery("SELECT a FROM Actividad a ORDER BY a.inicio", Actividad.class)
+          .setFirstResult(offset)
+          .setMaxResults(limit)
+          .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public long contar() {
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery("SELECT COUNT(a) FROM Actividad a", Long.class).getSingleResult();
     } finally {
       closeLegacy(em);
     }

@@ -11,4 +11,6 @@ public interface AsignacionEvaluacionDAO extends GenericDAO<AsignacionEvaluacion
   List<AsignacionEvaluacion> listarPorTrabajo(Long trabajoId);
 
   Optional<AsignacionEvaluacion> buscarActiva(Long trabajoId, Long evaluadorId);
+
+  Optional<AsignacionEvaluacion> recuperarPorIdConDetalle(Long id);
 }

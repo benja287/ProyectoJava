@@ -6,6 +6,8 @@ import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
+import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaTrabajosDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoResumenDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.io.IOException;
@@ -20,20 +22,44 @@ public class TrabajoService {
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private DocumentStorageService documentStorageService;
 
-  public List<Trabajo> listar() {
-    return trabajoDAO.listarTodos();
+  private static final int PAGE_DEFAULT = 1;
+  private static final int SIZE_DEFAULT = 20;
+  private static final int SIZE_MAX = 100;
+
+  public PaginaTrabajosDTO listar(int page, int size) {
+    return listarPaginado(page, size, null);
   }
 
-  public List<Trabajo> listarPorAutor(Long autorId) {
-    return trabajoDAO.listarPorAutor(autorId);
+  public PaginaTrabajosDTO listarPorAutor(Long autorId, int page, int size) {
+    if (usuarioDAO.recuperarPorId(autorId) == null) {
+      throw new NegocioException("Autor no encontrado: " + autorId);
+    }
+    return listarPaginado(page, size, autorId);
+  }
+
+  private PaginaTrabajosDTO listarPaginado(int page, int size, Long autorId) {
+    int safePage = Math.max(PAGE_DEFAULT, page);
+    int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
+    int offset = (safePage - 1) * safeSize;
+
+    long total =
+        autorId != null ? trabajoDAO.contarPorAutor(autorId) : trabajoDAO.contar();
+    List<TrabajoResumenDTO> items =
+        (autorId != null
+                ? trabajoDAO.listarPorAutorPaginado(autorId, offset, safeSize)
+                : trabajoDAO.listarPaginado(offset, safeSize))
+            .stream()
+            .map(TrabajoResumenDTO::from)
+            .toList();
+    int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
+
+    return new PaginaTrabajosDTO(items, safePage, safeSize, total, totalPages);
   }
 
   public Trabajo buscar(Long id) {
-    Trabajo trabajo = trabajoDAO.recuperarPorId(id);
-    if (trabajo == null) {
-      throw new NegocioException("Trabajo no encontrado: " + id);
-    }
-    return trabajo;
+    return trabajoDAO
+        .recuperarPorIdConAutor(id)
+        .orElseThrow(() -> new NegocioException("Trabajo no encontrado: " + id));
   }
 
   public Trabajo crear(Long autorId, Trabajo trabajo) {

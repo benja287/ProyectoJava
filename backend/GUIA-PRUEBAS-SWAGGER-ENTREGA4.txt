@@ -58,6 +58,45 @@ CÓMO USAR SWAGGER (siempre igual)
   6) (Opcional) Verificás en phpMyAdmin que la fila quedó en MySQL
 
 
+--------------------------------------------------------------------------------
+FORMATOS DE RESPUESTA (DTOs) — ACTUALIZADO POST-COLOQUIO
+--------------------------------------------------------------------------------
+  Para evitar JSON circular, lento y con datos sensibles (password), varios
+  endpoints ya NO devuelven la entidad JPA cruda. Devuelven DTOs:
+
+  TRABAJOS
+    GET  /api/trabajos              → PaginaTrabajosDTO (items + page + total)
+    GET  /api/trabajos?autorId=245   → PaginaTrabajosDTO filtrado por autor
+    GET  /api/trabajos/{id}         → TrabajoResumenDTO
+    POST /api/trabajos              → TrabajoResumenDTO (201)
+    PUT  /api/trabajos/{id}/enviar  → TrabajoResumenDTO
+    POST /api/trabajos/{id}/documento → TrabajoResumenDTO
+
+  Parámetros paginación trabajos: page (default 1), size (default 20, máx 100)
+
+  ACTIVIDADES
+    GET  /api/actividades           → PaginaActividadesDTO (items + page + total)
+    GET  /api/actividades/{id}      → ActividadResumenDTO
+    POST /api/actividades           → ActividadResumenDTO (201)
+    PUT  /api/actividades/{id}      → ActividadResumenDTO
+
+  Parámetros paginación actividades: page (default 1), size (default 20, máx 100)
+
+  CRONOGRAMA
+    GET  /api/cronograma/{usuarioId} → CronogramaDTO
+    POST /api/cronograma/.../actividades/{id} → CronogramaDTO
+
+  ASIGNACIONES EVALUACIÓN
+    POST /api/asignaciones-evaluacion → AsignacionEvaluacionDTO (201)
+    PUT  /api/asignaciones-evaluacion/{id}/respuesta → AsignacionEvaluacionDTO
+
+  USUARIOS (sin cambios)
+    GET/POST/PUT usuarios, login, registro → UsuarioDTO (sin password)
+
+  PAGOS (sin cambios — entidad plana, sin relaciones)
+    GET/POST pagos → Pago (campos simples, sin ciclo JSON)
+
+
 ================================================================================
 PASO 0 — VERIFICAR QUE TODO ESTÁ LISTO
 ================================================================================
@@ -250,6 +289,9 @@ Requisitos PDF: ABM actividades + validar conflictos de horario y lugar.
 Tabla: actividades | Tipos: MESA_TEMATICA, MESA_REDONDA, POSTER, TALLER, CONFERENCIA
 Regla: misma sala + horarios superpuestos → 400
 
+Respuesta listado: PaginaActividadesDTO (ya NO es un array suelto).
+Respuesta alta/consulta/modificar: ActividadResumenDTO (sin lista trabajos[]).
+
 0. Crear actividad
   POST /api/actividades
   {
@@ -260,14 +302,44 @@ Regla: misma sala + horarios superpuestos → 400
     "tipoActividad": "MESA_TEMATICA",
     "codigo": "MT-01"
   }
-  Code: 201 | id ej. 57
+  Code: 201
+  Response body (ActividadResumenDTO):
+  {
+    "id": 57,
+    "titulo": "Mesa temática: Agroecología y suelos",
+    "sala": "Aula 101",
+    "inicio": "2026-09-15T10:00:00",
+    "fin": "2026-09-15T12:00:00",
+    "tipoActividad": "MESA_TEMATICA",
+    "codigo": "MT-01"
+  }
 
-1. GET /api/actividades → Code 200 (listado)
+1. GET /api/actividades → Try it out → page=1, size=20 → Execute
+  Code: 200
+  Response body (PaginaActividadesDTO):
+  {
+    "items": [
+      {
+        "id": 57,
+        "titulo": "Mesa temática: Agroecología y suelos (actualizada)",
+        "sala": "Aula 102",
+        "inicio": "2026-09-15T10:00:00",
+        "fin": "2026-09-15T12:30:00",
+        "tipoActividad": "MESA_TEMATICA",
+        "codigo": "MT-02"
+      }
+    ],
+    "page": 1,
+    "size": 20,
+    "total": 3,
+    "totalPages": 1
+  }
+  Nota: ya NO aparece "trabajos": [] en cada actividad.
 
-2. GET /api/actividades/{id}  id=54 → Code 200
+2. GET /api/actividades/{id}  id=54 → Code 200 (ActividadResumenDTO)
 
 3. PUT /api/actividades/{id}  id=57 (editar sin conflicto)
-  Cambiar título, sala Aula 102, fin 12:30 → Code 200
+  Cambiar título, sala Aula 102, fin 12:30 → Code 200 (ActividadResumenDTO)
 
 4. Validar conflicto (rechazo)
   4a) POST actividad en Auditorio 11:00–13:00 → Code 201 id=58
@@ -314,19 +386,31 @@ Resumen:
       "tipo": "TRABAJO_CIENTIFICO"
     }
   }
-  Code: 201 | id ej. 83 | estado: BORRADOR
-  NOTA SWAGGER: puede aparecer "can't parse JSON" — el POST SÍ creó la fila.
-  Verificar: header Location, phpMyAdmin tabla trabajos.
-
-  Por qué "can't parse JSON":
-    Trabajo → autor → trabajos → autor → … (referencia circular Jackson).
-    El backend respondió 201 antes de que Swagger falle al mostrar el body.
+  Code: 201 | header Location: .../api/trabajos/83
+  Response body (TrabajoResumenDTO):
+  {
+    "id": 83,
+    "titulo": "Suelos salinos en tierra 1",
+    "resumen": "Estudio de caso en la región pampeana",
+    "ejeTematico": "Suelos y fertilidad",
+    "tipo": "TRABAJO_CIENTIFICO",
+    "estado": "BORRADOR",
+    "documentoUrl": null,
+    "fechaCreacion": "2026-06-15",
+    "coautores": [],
+    "autorId": 245,
+    "autorNombre": "Autor",
+    "autorApellido": "Demo"
+  }
+  Verificar: phpMyAdmin tabla trabajos.
 
 0a.1 POST /api/trabajos/{id}/documento  id=83 → seleccionar PDF
-  Code: 200 | documentoUrl: /api/archivos/trabajos/trabajos-uuid.pdf
+  Code: 200 (TrabajoResumenDTO con documentoUrl lleno)
+  documentoUrl: /api/archivos/trabajos/trabajos-uuid.pdf
   Descargar: https://grupo1.jyaa-ci.linti.unlp.edu.ar/api/archivos/trabajos/NOMBRE.pdf
 
-0b. PUT /api/trabajos/{id}/enviar  id=83 → Code 200 | estado: ENVIADO
+0b. PUT /api/trabajos/{id}/enviar  id=83
+  Code: 200 (TrabajoResumenDTO) | estado: ENVIADO
 
 --- COMO OC ---
 
@@ -334,11 +418,25 @@ Resumen:
   Code: 200 | roles: ["PARTICIPANTE","EVALUADOR"]
   Verificar usuario_roles en phpMyAdmin
 
-2. GET /api/trabajos/83 → Code 200 (ver estado, documentoUrl)
+2. GET /api/trabajos/83 → Code 200 (TrabajoResumenDTO)
+  Campos útiles: estado, documentoUrl, autorId, autorNombre
 
 3. POST /api/asignaciones-evaluacion
   { "trabajoId": 83, "evaluadorId": 244 }
-  Code: 201 | id asignación ej. 30 | trabajo → EN_EVALUACION | aceptada: false
+  Code: 201 | header Location: .../asignaciones-evaluacion/30
+  Response body (AsignacionEvaluacionDTO):
+  {
+    "id": 30,
+    "aceptada": false,
+    "fechaRespuesta": null,
+    "trabajoId": 83,
+    "trabajoTitulo": "Suelos salinos en tierra 1",
+    "trabajoEstado": "EN_EVALUACION",
+    "trabajoDocumentoUrl": "/api/archivos/trabajos/trabajos-....pdf",
+    "evaluadorId": 244,
+    "evaluadorNombre": "Evaluador",
+    "evaluadorApellido": "Principal"
+  }
   Verificar: asignaciones_evaluacion + trabajos.estado
 
 4. Error — mismo evaluador dos veces → 400
@@ -367,18 +465,31 @@ Resumen:
   Aceptar asignación   PUT  /api/asignaciones-evaluacion/{id}/respuesta  {"aceptar":true}
   Rechazar             PUT  .../respuesta  {"aceptar":false}
 
-1. GET /api/trabajos/83 → Code 200 (documentoUrl para el PDF)
+1. GET /api/trabajos/83 → Code 200 (TrabajoResumenDTO)
+  Usar documentoUrl para descargar el PDF
 
 2. Descargar PDF del trabajo (misma URL que documentoUrl)
 
 3. PUT /api/asignaciones-evaluacion/35/respuesta
   { "aceptar": true }
-  Code: 200 | aceptada: true | fecha_respuesta registrada
-  Verificar phpMyAdmin
+  Code: 200 (AsignacionEvaluacionDTO)
+  {
+    "id": 35,
+    "aceptada": true,
+    "fechaRespuesta": "2026-06-15",
+    "trabajoId": 83,
+    "trabajoTitulo": "...",
+    "trabajoEstado": "EN_EVALUACION",
+    "trabajoDocumentoUrl": "/api/archivos/trabajos/...",
+    "evaluadorId": 244,
+    "evaluadorNombre": "Evaluador",
+    "evaluadorApellido": "Principal"
+  }
+  Verificar phpMyAdmin: aceptada=true, fecha_respuesta
 
 4. Rechazar otra asignación (OC asigna trabajo 82 → id asignación 34)
   PUT /api/asignaciones-evaluacion/34/respuesta  { "aceptar": false }
-  Code: 200 | aceptada: false | fecha_respuesta registrada
+  Code: 200 (AsignacionEvaluacionDTO) | aceptada: false | fechaRespuesta registrada
 
 
 ################################################################################
@@ -397,14 +508,23 @@ Resumen:
 1. POST /api/login (verificar identidad) → Code 200
 
 2. POST /api/trabajos (mismo body que preparación OC paso 0a)
-  Code: 201 | BORRADOR | documentoUrl: null
+  Code: 201 (TrabajoResumenDTO) | estado: BORRADOR | documentoUrl: null
 
-3. POST /api/trabajos/83/documento → PDF → Code 200
+3. POST /api/trabajos/83/documento → PDF → Code 200 (TrabajoResumenDTO)
 
-4. PUT /api/trabajos/83/enviar → Code 200 | ENVIADO
+4. PUT /api/trabajos/83/enviar → Code 200 (TrabajoResumenDTO) | estado: ENVIADO
   Verificar: SELECT id, titulo, estado, documento_url FROM trabajos WHERE id=83;
 
-5. GET /api/trabajos/83 y GET /api/trabajos?autorId=245
+5. GET /api/trabajos/83 → TrabajoResumenDTO
+   GET /api/trabajos?autorId=245&page=1&size=20 → PaginaTrabajosDTO
+  Response listado:
+  {
+    "items": [ { "id": 83, "titulo": "...", "estado": "ENVIADO", "autorId": 245, ... } ],
+    "page": 1,
+    "size": 20,
+    "total": 1,
+    "totalPages": 1
+  }
 
 
 ################################################################################
@@ -445,7 +565,7 @@ Orden de prueba cronograma: pasos 7 → 8 → 9 → 10 → 11 (no borrar antes d
 
 1.1 Crear trabajo → rol AUTOR automático
   POST /api/trabajos  autorId=247, tipo RELATO_DE_EXPERIENCIA
-  Code: 201 | id ej. 84
+  Code: 201 (TrabajoResumenDTO) | id ej. 84 | estado: BORRADOR
   GET /api/usuarios/247 → roles: ["PARTICIPANTE","AUTOR"]
   Verificar usuario_roles en phpMyAdmin
 
@@ -461,12 +581,39 @@ Orden de prueba cronograma: pasos 7 → 8 → 9 → 10 → 11 (no borrar antes d
 
 5. GET /api/pagos/usuario/243/estado → Code 200 (último estado del usuario)
 
-6. GET /api/cronograma/243 → Code 200 (cronograma id 27, actividades [])
+6. GET /api/cronograma/243 → Code 200 (CronogramaDTO)
+  Response body:
+  {
+    "id": 27,
+    "usuarioId": 243,
+    "usuarioNombre": "Asistente",
+    "usuarioApellido": "Principal",
+    "actividades": []
+  }
+  Nota: ya NO devuelve Usuario completo con password ni relaciones anidadas.
 
-7. POST /api/cronograma/243/actividades/57 → Code 200
-   phpMyAdmin: cronograma_actividades (27, 57)
+7. POST /api/cronograma/243/actividades/57 → Code 200 (CronogramaDTO)
+  Response body:
+  {
+    "id": 27,
+    "usuarioId": 243,
+    "usuarioNombre": "Asistente",
+    "usuarioApellido": "Principal",
+    "actividades": [
+      {
+        "id": 57,
+        "titulo": "Mesa temática: Agroecología y suelos (actualizada)",
+        "sala": "Aula 102",
+        "inicio": "2026-09-15T10:00:00",
+        "fin": "2026-09-15T12:30:00",
+        "tipoActividad": "MESA_TEMATICA",
+        "codigo": "MT-02"
+      }
+    ]
+  }
+  phpMyAdmin: cronograma_actividades (27, 57)
 
-8. POST /api/cronograma/243/actividades/56 → Code 200 (sin conflicto, otro día)
+8. POST /api/cronograma/243/actividades/56 → Code 200 (CronogramaDTO, 2 actividades)
    phpMyAdmin: filas (27,57) y (27,56)
 
 9. POST /api/cronograma/243/actividades/59 → Code 400
@@ -484,9 +631,10 @@ Orden de prueba cronograma: pasos 7 → 8 → 9 → 10 → 11 (no borrar antes d
 NOTAS PARA EL COLOQUIO
 ================================================================================
 
-Swagger "can't parse JSON" en trabajos:
-  El POST creó la fila (201 + Location). Es referencia circular Jackson.
-  Verificar con phpMyAdmin o header Location.
+DTOs y paginación (mejora post-coloquio):
+  Listados grandes (trabajos, actividades) usan paginación + DTO resumido.
+  Cronograma, asignaciones y detalle de trabajos usan DTOs sin relaciones
+  circulares. Así Swagger responde rápido y sin "can't parse JSON".
 
 PDFs (trabajos y comprobantes):
   MySQL guarda solo la URL. El binario está en filesystem Tomcat.

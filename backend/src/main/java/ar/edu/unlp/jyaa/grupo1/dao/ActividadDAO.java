@@ -7,4 +7,8 @@ import java.util.List;
 public interface ActividadDAO extends GenericDAO<Actividad> {
 
   List<Actividad> buscarConflictos(String sala, LocalDateTime inicio, LocalDateTime fin, Long excluirId);
+
+  List<Actividad> listarPaginado(int offset, int limit);
+
+  long contar();
 }

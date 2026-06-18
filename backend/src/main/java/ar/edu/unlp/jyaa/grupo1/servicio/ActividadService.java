@@ -2,6 +2,8 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.ActividadDAO;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ActividadResumenDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaActividadesDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -9,10 +11,25 @@ import java.util.List;
 @RequestScoped
 public class ActividadService {
 
+  private static final int PAGE_DEFAULT = 1;
+  private static final int SIZE_DEFAULT = 20;
+  private static final int SIZE_MAX = 100;
+
   @Inject private ActividadDAO actividadDAO;
 
-  public List<Actividad> listar() {
-    return actividadDAO.listarTodos();
+  public PaginaActividadesDTO listar(int page, int size) {
+    int safePage = Math.max(PAGE_DEFAULT, page);
+    int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
+    int offset = (safePage - 1) * safeSize;
+
+    long total = actividadDAO.contar();
+    List<ActividadResumenDTO> items =
+        actividadDAO.listarPaginado(offset, safeSize).stream()
+            .map(ActividadResumenDTO::from)
+            .toList();
+    int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
+
+    return new PaginaActividadesDTO(items, safePage, safeSize, total, totalPages);
   }
 
   public Actividad buscar(Long id) {

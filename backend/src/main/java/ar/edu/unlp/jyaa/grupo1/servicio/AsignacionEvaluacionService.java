@@ -53,10 +53,10 @@ public class AsignacionEvaluacionService {
   }
 
   public AsignacionEvaluacion responder(Long id, boolean aceptar) {
-    AsignacionEvaluacion asignacion = asignacionEvaluacionDAO.recuperarPorId(id);
-    if (asignacion == null) {
-      throw new NegocioException("Asignación no encontrada: " + id);
-    }
+    AsignacionEvaluacion asignacion =
+        asignacionEvaluacionDAO
+            .recuperarPorIdConDetalle(id)
+            .orElseThrow(() -> new NegocioException("Asignación no encontrada: " + id));
     asignacion.setAceptada(aceptar);
     asignacion.setFechaRespuesta(LocalDate.now());
     return asignacionEvaluacionDAO.modificar(asignacion);

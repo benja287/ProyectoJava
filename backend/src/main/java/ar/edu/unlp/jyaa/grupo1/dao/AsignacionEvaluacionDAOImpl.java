@@ -73,6 +73,23 @@ public class AsignacionEvaluacionDAOImpl extends AbstractJpaDAO<AsignacionEvalua
     }
   }
 
+  @Override
+  public Optional<AsignacionEvaluacion> recuperarPorIdConDetalle(Long id) {
+    EntityManager em = emConsulta();
+    try {
+      List<AsignacionEvaluacion> list =
+          em.createQuery(
+                  "SELECT a FROM AsignacionEvaluacion a JOIN FETCH a.trabajo JOIN FETCH a.evaluador"
+                      + " WHERE a.id = :id",
+                  AsignacionEvaluacion.class)
+              .setParameter("id", id)
+              .getResultList();
+      return list.stream().findFirst();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
   private EntityManager emConsulta() {
     EntityManager cdi = getEntityManager();
     return cdi != null ? cdi : JpaUtil.createEntityManager();
