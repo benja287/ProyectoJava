@@ -651,9 +651,11 @@ DTOs y paginación (mejora post-coloquio):
   circulares. Así Swagger responde rápido y sin "can't parse JSON".
 
 PDFs (trabajos y comprobantes):
-  Bytes en MySQL tabla archivos (BLOB). trabajos.documento_url y pagos.comprobante_url
+  Bytes en MySQL tabla archivos (LONGBLOB). trabajos.documento_url y pagos.comprobante_url
   guardan solo /api/archivos/{id} para descargar.
   Descarga: GET /api/archivos/{id}
+  Si falla con "Data too long for column contenido": en phpMyAdmin ejecutar
+    ALTER TABLE archivos MODIFY contenido LONGBLOB NOT NULL;
 
 Sin JWT:
   No hay bloqueo por rol en Swagger. Simulamos rol por contexto del coloquio.

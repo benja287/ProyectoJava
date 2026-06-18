@@ -39,8 +39,13 @@ IMPORTANTE — DÓNDE SE GUARDAN LOS DATOS
   Ejemplo en tabla trabajos:
     documento_url = /api/archivos/8
 
-  El binario está en tabla archivos (id=8, columna contenido BLOB).
+  El binario está en tabla archivos (id=8, columna contenido LONGBLOB).
   phpMyAdmin: SELECT id, nombre_original, tipo, LENGTH(contenido) FROM archivos;
+
+  Si al subir PDF aparece "Data too long for column contenido" (error 500), la columna
+  quedó como BLOB chico (64 KB). Ejecutar UNA VEZ en phpMyAdmin:
+    ALTER TABLE archivos MODIFY contenido LONGBLOB NOT NULL;
+  Luego redeploy o reiniciar Tomcat y volver a subir el archivo.
 
 
 1. REQUISITOS

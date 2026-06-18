@@ -29,7 +29,7 @@ public class Archivo implements Serializable {
 
   @Lob
   @Basic(fetch = FetchType.LAZY)
-  @Column(name = "contenido", nullable = false)
+  @Column(name = "contenido", nullable = false, columnDefinition = "LONGBLOB NOT NULL")
   private byte[] contenido;
 
   @Column(name = "fecha_subida", nullable = false)
