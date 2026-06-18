@@ -5,6 +5,7 @@ import ar.edu.unlp.jyaa.grupo1.rest.dto.ComprobanteUploadForm;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.PagoRegistroRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ValidacionPagoRequest;
 import ar.edu.unlp.jyaa.grupo1.servicio.PagoService;
+import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaPagosDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
@@ -21,13 +23,13 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
@@ -43,9 +45,11 @@ public class PagoResource {
   @GET
   @Path("/pendientes")
   @Operation(summary = "Listar pagos pendientes")
-  @ApiResponse(responseCode = "200", description = "Listado de pagos pendientes")
-  public List<Pago> listarPendientes() {
-    return pagoService.listarPendientes();
+  @ApiResponse(responseCode = "200", description = "Listado paginado de pagos pendientes")
+  public PaginaPagosDTO listarPendientes(
+      @QueryParam("page") @DefaultValue("1") int page,
+      @QueryParam("size") @DefaultValue("20") int size) {
+    return pagoService.listarPendientes(page, size);
   }
 
   @GET

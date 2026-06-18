@@ -7,4 +7,8 @@ import java.util.List;
 public interface PagoDAO extends GenericDAO<Pago> {
 
   List<Pago> listarPorEstado(EstadoPago estado);
+
+  List<Pago> listarPorEstadoPaginado(EstadoPago estado, int offset, int limit);
+
+  long contarPorEstado(EstadoPago estado);
 }

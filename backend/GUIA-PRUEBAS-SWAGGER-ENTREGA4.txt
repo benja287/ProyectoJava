@@ -90,11 +90,22 @@ FORMATOS DE RESPUESTA (DTOs) — ACTUALIZADO POST-COLOQUIO
     POST /api/asignaciones-evaluacion → AsignacionEvaluacionDTO (201)
     PUT  /api/asignaciones-evaluacion/{id}/respuesta → AsignacionEvaluacionDTO
 
-  USUARIOS (sin cambios)
-    GET/POST/PUT usuarios, login, registro → UsuarioDTO (sin password)
+  USUARIOS
+    GET  /api/usuarios              → PaginaUsuariosDTO (items + page + total)
+    GET/POST/PUT /api/usuarios/{id} → UsuarioDTO (sin password)
 
-  PAGOS (sin cambios — entidad plana, sin relaciones)
-    GET/POST pagos → Pago (campos simples, sin ciclo JSON)
+  Parámetros paginación usuarios: page (default 1), size (default 20, máx 100)
+
+  PAGOS
+    GET  /api/pagos/pendientes      → PaginaPagosDTO (items + page + total)
+    GET/POST/PUT pagos individuales → Pago (entidad plana, sin ciclo JSON)
+
+  Parámetros paginación pagos pendientes: page (default 1), size (default 20, máx 100)
+
+  CIRCULARES
+    GET  /api/circulares            → PaginaCircularesDTO (items + page + total)
+
+  Parámetros paginación circulares: page (default 1), size (default 20, máx 100)
 
 
 ================================================================================
@@ -112,9 +123,9 @@ PASO 0 — VERIFICAR QUE TODO ESTÁ LISTO
   Body: { "status": "ok", "jpa": true, "grupo": 1 }
 
 0.2  GET /api/usuarios
-  Try it out → Execute
+  Try it out → Execute (page y size opcionales, default 1 y 20)
   Code: 200
-  Lista usuarios demo (ids aproximados según seed):
+  Respuesta PaginaUsuariosDTO con items[] de usuarios demo (ids aproximados según seed):
 
   id   email                              roles
   241  mantillabenja153@gmail.com         ADMINISTRADOR
@@ -177,7 +188,8 @@ Resumen:
 
 --- GESTIÓN DE USUARIOS ---
 
-1. GET /api/usuarios → Try it out → Execute → Code 200 (listado)
+1. GET /api/usuarios → Try it out → Execute → Code 200
+   Response body (PaginaUsuariosDTO): items[], page, size, total, totalPages
 
 2. POST /api/usuarios (alta)
   Request body:
@@ -249,7 +261,8 @@ Métodos: TRANSFERENCIA, TARJETA, EFECTIVO
     Bytes → filesystem Tomcat: $CATALINA_BASE/uploads/grupo1/comprobantes/
     MySQL → solo comprobante_url (NO BLOB)
 
-1. GET /api/pagos/pendientes → Code 200 (lista con el pago 55 PENDIENTE)
+1. GET /api/pagos/pendientes → Code 200
+   Response body (PaginaPagosDTO): items[] con el pago 55 PENDIENTE, page, total, totalPages
 
 2. GET /api/pagos/{id}  id=55 → Code 200
 

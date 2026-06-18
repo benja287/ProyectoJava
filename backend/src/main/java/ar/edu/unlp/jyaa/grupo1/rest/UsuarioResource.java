@@ -4,6 +4,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ActivoRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.RolesRequest;
 import ar.edu.unlp.jyaa.grupo1.servicio.UsuarioService;
+import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaUsuariosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.UsuarioDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,6 +13,7 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
@@ -19,12 +21,12 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
-import java.util.List;
 
 @Path("/usuarios")
 @Produces(MediaType.APPLICATION_JSON)
@@ -37,9 +39,11 @@ public class UsuarioResource {
 
   @GET
   @Operation(summary = "Listar usuarios")
-  @ApiResponse(responseCode = "200", description = "Listado de usuarios")
-  public List<UsuarioDTO> listar() {
-    return usuarioService.listarTodos().stream().map(UsuarioDTO::from).toList();
+  @ApiResponse(responseCode = "200", description = "Listado paginado de usuarios")
+  public PaginaUsuariosDTO listar(
+      @QueryParam("page") @DefaultValue("1") int page,
+      @QueryParam("size") @DefaultValue("20") int size) {
+    return usuarioService.listar(page, size);
   }
 
   @GET

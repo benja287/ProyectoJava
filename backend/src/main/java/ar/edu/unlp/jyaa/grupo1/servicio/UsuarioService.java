@@ -3,6 +3,8 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
+import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaUsuariosDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.UsuarioDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.util.HashSet;
@@ -12,7 +14,24 @@ import java.util.Set;
 @RequestScoped
 public class UsuarioService {
 
+  private static final int PAGE_DEFAULT = 1;
+  private static final int SIZE_DEFAULT = 20;
+  private static final int SIZE_MAX = 100;
+
   @Inject private UsuarioDAO usuarioDAO;
+
+  public PaginaUsuariosDTO listar(int page, int size) {
+    int safePage = Math.max(PAGE_DEFAULT, page);
+    int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
+    int offset = (safePage - 1) * safeSize;
+
+    long total = usuarioDAO.contar();
+    List<UsuarioDTO> items =
+        usuarioDAO.listarPaginado(offset, safeSize).stream().map(UsuarioDTO::from).toList();
+    int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
+
+    return new PaginaUsuariosDTO(items, safePage, safeSize, total, totalPages);
+  }
 
   public List<Usuario> listarTodos() {
     return usuarioDAO.listarTodos();

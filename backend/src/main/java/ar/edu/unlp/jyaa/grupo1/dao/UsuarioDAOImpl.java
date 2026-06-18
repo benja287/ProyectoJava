@@ -27,6 +27,30 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
   }
 
   @Override
+  public List<Usuario> listarPaginado(int offset, int limit) {
+    EntityManager em = entityManagerParaConsulta();
+    try {
+      return em.createQuery(
+              "SELECT u FROM Usuario u LEFT JOIN FETCH u.roles ORDER BY u.apellido", Usuario.class)
+          .setFirstResult(offset)
+          .setMaxResults(limit)
+          .getResultList();
+    } finally {
+      cerrarSiLegacy(em);
+    }
+  }
+
+  @Override
+  public long contar() {
+    EntityManager em = entityManagerParaConsulta();
+    try {
+      return em.createQuery("SELECT COUNT(u) FROM Usuario u", Long.class).getSingleResult();
+    } finally {
+      cerrarSiLegacy(em);
+    }
+  }
+
+  @Override
   public Optional<Usuario> buscarPorEmail(String email) {
     EntityManager em = entityManagerParaConsulta();
     try {

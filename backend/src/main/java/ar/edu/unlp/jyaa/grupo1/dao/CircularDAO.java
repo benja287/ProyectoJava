@@ -6,4 +6,8 @@ import java.util.List;
 public interface CircularDAO extends GenericDAO<Circular> {
 
   List<Circular> listarPublicadas();
+
+  List<Circular> listarPublicadasPaginado(int offset, int limit);
+
+  long contarPublicadas();
 }
