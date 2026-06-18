@@ -32,17 +32,15 @@ GUÍA DETALLADA DE PRUEBAS CON SWAGGER
 IMPORTANTE — DÓNDE SE GUARDAN LOS DATOS
 ---------------------------------------
   • Metadatos (usuarios, trabajos, pagos, actividades…): MySQL jyaa2026_bd1
-  • Archivos PDF (trabajos) y comprobantes de pago: FILESYSTEM del contenedor
-    Tomcat, carpeta uploads/grupo1/ (NO en GitLab, NO como BLOB en MySQL)
-  • En la base solo se guarda documentoUrl / comprobanteUrl (ruta HTTP)
+  • Archivos PDF (trabajos) y comprobantes de pago: tabla archivos en MySQL (BLOB)
+    En trabajos/pagos solo se guarda documentoUrl / comprobanteUrl (/api/archivos/{id})
+  • Hibernate crea/actualiza la tabla archivos al deploy (hbm2ddl.auto=update)
 
   Ejemplo en tabla trabajos:
-    documento_url = /api/archivos/trabajos/trabajos-uuid.pdf
+    documento_url = /api/archivos/8
 
-  El binario está en:
-    $CATALINA_BASE/uploads/grupo1/trabajos/trabajos-uuid.pdf
-
-  Variable opcional: JYAA_UPLOAD_DIR=/ruta/custom
+  El binario está en tabla archivos (id=8, columna contenido BLOB).
+  phpMyAdmin: SELECT id, nombre_original, tipo, LENGTH(contenido) FROM archivos;
 
 
 1. REQUISITOS
@@ -137,7 +135,7 @@ IMPORTANTE — DÓNDE SE GUARDAN LOS DATOS
   Tras POST /api/pagos:
     SELECT id, monto, estado, comprobante_url FROM pagos ORDER BY id DESC LIMIT 5;
 
-  documento_url apunta al filesystem; la fila del trabajo SÍ está en MySQL.
+  documento_url apunta a /api/archivos/{id}; los bytes están en tabla archivos.
 
 
 7. ENTREGA 3 — SIGUE DISPONIBLE

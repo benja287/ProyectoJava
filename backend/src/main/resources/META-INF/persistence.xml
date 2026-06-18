@@ -23,6 +23,7 @@
     <class>ar.edu.unlp.jyaa.grupo1.modelo.PlantillaEmail</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Anuncio</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Certificado</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.Archivo</class>
     <!-- RangoFechas y EtapaCongreso son @Embeddable, no se listan -->
 
     <properties>

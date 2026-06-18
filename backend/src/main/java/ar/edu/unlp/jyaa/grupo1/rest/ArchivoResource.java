@@ -1,5 +1,6 @@
 package ar.edu.unlp.jyaa.grupo1.rest;
 
+import ar.edu.unlp.jyaa.grupo1.modelo.Archivo;
 import ar.edu.unlp.jyaa.grupo1.servicio.DocumentStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -11,8 +12,6 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
-import java.nio.file.Files;
 
 @Path("/archivos")
 @RequestScoped
@@ -22,22 +21,18 @@ public class ArchivoResource {
   @Inject private DocumentStorageService documentStorageService;
 
   @GET
-  @Path("/{carpeta}/{nombre}")
-  @Operation(summary = "Descargar archivo almacenado")
-  @ApiResponse(responseCode = "200", description = "Archivo servido")
+  @Path("/{id}")
+  @Operation(summary = "Descargar archivo almacenado en base de datos")
+  @ApiResponse(responseCode = "200", description = "Archivo servido desde BLOB")
   @ApiResponse(responseCode = "404", description = "Archivo no encontrado")
-  public Response descargar(
-      @PathParam("carpeta") String carpeta, @PathParam("nombre") String nombre)
-      throws IOException {
+  public Response descargar(@PathParam("id") Long id) {
     try {
-      java.nio.file.Path path = documentStorageService.resolver(carpeta, nombre);
-      String contentType = Files.probeContentType(path);
-      if (contentType == null) {
-        contentType = "application/octet-stream";
-      }
-      return Response.ok(Files.newInputStream(path))
-          .type(contentType)
-          .header("Content-Disposition", "inline; filename=\"" + nombre + "\"")
+      Archivo archivo = documentStorageService.obtener(id);
+      return Response.ok(archivo.getContenido())
+          .type(archivo.getContentType())
+          .header(
+              "Content-Disposition",
+              "inline; filename=\"" + archivo.getNombreOriginal() + "\"")
           .build();
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());

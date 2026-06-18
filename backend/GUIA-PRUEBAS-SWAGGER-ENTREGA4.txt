@@ -25,7 +25,7 @@ QUÉ EVALÚA LA ENTREGA 4
   • API REST con Jersey + CDI + Swagger
   • Endpoints por rol (Admin, OC, Evaluador, Autor, Participante)
   • Persistencia en MySQL (jyaa2026_bd1)
-  • Archivos PDF en filesystem (trabajos y comprobantes de pago)
+  • Archivos PDF en tabla archivos (BLOB en MySQL; trabajos/pagos guardan solo la URL)
 
 QUÉ NO ES OBLIGATORIO PROBAR AHORA
   El flujo completo del congreso (registro → pago → esperar aprobación admin →
@@ -250,16 +250,17 @@ Métodos: TRANSFERENCIA, TARJETA, EFECTIVO
 
 0.1 Adjuntar comprobante PDF
   POST /api/pagos/{id}/comprobante  id=55 → seleccionar archivo PDF
-  Code: 200 | comprobanteUrl: /api/archivos/comprobantes/comprobantes-uuid.pdf
-  Verificar phpMyAdmin: columna comprobante_url en pagos
+  Code: 200 | comprobanteUrl: /api/archivos/12  (id numérico del registro en tabla archivos)
+  Verificar phpMyAdmin:
+    pagos.comprobante_url → /api/archivos/12
+    archivos → fila id=12 con columna contenido (BLOB)
   Descargar PDF:
-    Navegador: https://grupo1.jyaa-ci.linti.unlp.edu.ar/api/archivos/comprobantes/NOMBRE.pdf
-    Swagger Archivos → GET /api/archivos/{carpeta}/{nombre}
-      carpeta=comprobantes, nombre=comprobantes-uuid.pdf → Code 200
+    Navegador: https://grupo1.jyaa-ci.linti.unlp.edu.ar/api/archivos/12
+    Swagger Archivos → GET /api/archivos/{id}  id=12 → Code 200 (PDF inline)
 
   Dónde se guarda el PDF:
-    Bytes → filesystem Tomcat: $CATALINA_BASE/uploads/grupo1/comprobantes/
-    MySQL → solo comprobante_url (NO BLOB)
+    MySQL tabla archivos (columna contenido BLOB con @Lob)
+    pagos.comprobante_url solo guarda la URL de descarga (sin duplicar bytes)
 
 1. GET /api/pagos/pendientes → Code 200
    Response body (PaginaPagosDTO): items[] con el pago 55 PENDIENTE, page, total, totalPages
@@ -419,8 +420,8 @@ Resumen:
 
 0a.1 POST /api/trabajos/{id}/documento  id=83 → seleccionar PDF
   Code: 200 (TrabajoResumenDTO con documentoUrl lleno)
-  documentoUrl: /api/archivos/trabajos/trabajos-uuid.pdf
-  Descargar: https://grupo1.jyaa-ci.linti.unlp.edu.ar/api/archivos/trabajos/NOMBRE.pdf
+  documentoUrl: /api/archivos/8
+  Descargar: https://grupo1.jyaa-ci.linti.unlp.edu.ar/api/archivos/8
 
 0b. PUT /api/trabajos/{id}/enviar  id=83
   Code: 200 (TrabajoResumenDTO) | estado: ENVIADO
@@ -445,7 +446,7 @@ Resumen:
     "trabajoId": 83,
     "trabajoTitulo": "Suelos salinos en tierra 1",
     "trabajoEstado": "EN_EVALUACION",
-    "trabajoDocumentoUrl": "/api/archivos/trabajos/trabajos-....pdf",
+    "trabajoDocumentoUrl": "/api/archivos/8",
     "evaluadorId": 244,
     "evaluadorNombre": "Evaluador",
     "evaluadorApellido": "Principal"
@@ -474,7 +475,7 @@ Preparación: OC asignó trabajo 83 al evaluador 244 → asignación id ej. 35
 
 Resumen:
   Consultar trabajo    GET  /api/trabajos/{id}
-  Descargar PDF        GET  /api/archivos/trabajos/{nombre}
+  Descargar PDF        GET  /api/archivos/{id}
   Aceptar asignación   PUT  /api/asignaciones-evaluacion/{id}/respuesta  {"aceptar":true}
   Rechazar             PUT  .../respuesta  {"aceptar":false}
 
@@ -493,7 +494,7 @@ Resumen:
     "trabajoId": 83,
     "trabajoTitulo": "...",
     "trabajoEstado": "EN_EVALUACION",
-    "trabajoDocumentoUrl": "/api/archivos/trabajos/...",
+    "trabajoDocumentoUrl": "/api/archivos/8",
     "evaluadorId": 244,
     "evaluadorNombre": "Evaluador",
     "evaluadorApellido": "Principal"
@@ -650,8 +651,9 @@ DTOs y paginación (mejora post-coloquio):
   circulares. Así Swagger responde rápido y sin "can't parse JSON".
 
 PDFs (trabajos y comprobantes):
-  MySQL guarda solo la URL. El binario está en filesystem Tomcat.
-  Descarga: GET /api/archivos/{carpeta}/{nombre}
+  Bytes en MySQL tabla archivos (BLOB). trabajos.documento_url y pagos.comprobante_url
+  guardan solo /api/archivos/{id} para descargar.
+  Descarga: GET /api/archivos/{id}
 
 Sin JWT:
   No hay bloqueo por rol en Swagger. Simulamos rol por contexto del coloquio.
