@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "https://grupo1.jyaa-ci.linti.unlp.edu.ar",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

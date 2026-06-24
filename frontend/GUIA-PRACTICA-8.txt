@@ -1,0 +1,146 @@
+================================================================================
+GUÍA DE RESOLUCIÓN — PRÁCTICA 8 (Angular) — Gestión de usuarios
+JYAA 2026 — Grupo 1 — Congreso de Agroecología
+================================================================================
+
+IMPORTANTE
+----------
+  • Este proyecto Angular está en la carpeta frontend/ (no toca el React de la raíz).
+  • El backend REST de la Entrega 4 está en backend/ (Tomcat + Jersey).
+  • La Quinta Entrega extiende esta práctica con más pantallas contra la misma API.
+
+================================================================================
+REQUISITOS
+================================================================================
+  node -v    # Node.js LTS (18+)
+  npm -v
+  Backend corriendo en http://localhost:8080 (o servidor del curso)
+
+================================================================================
+ESTRUCTURA DEL PROYECTO ANGULAR (frontend/)
+================================================================================
+
+  src/app/
+    models/usuario.model.ts          — interfaces TypeScript (DTO cliente)
+    servicios/
+      usuario-mock.service.ts        — Etapa 1: métodos ESTÁTICOS + datos en memoria
+      usuario.service.ts             — Etapa 2: métodos de instancia + HttpClient REST
+    pages/
+      inicio/                        — Pantalla inicial con enlaces (ítem b)
+      registro/                      — Formulario nuevo usuario (ítem c)
+      perfil-home/                   — Home de cada perfil con menú (ítem b.ii)
+      admin/
+        usuarios-lista/              — Listado admin (ítem d)
+        usuario-detalle/             — Detalle + habilitar/inhabilitar (ítems e, f)
+    app.routes.ts                    — Routing SPA
+    app.config.ts                    — provideRouter + provideHttpClient
+
+  src/environments/environment.ts    — useMock: false → REST; true → mock
+  proxy.conf.json                    — /api → localhost:8080 (evita CORS en dev)
+
+================================================================================
+ETAPA 1 — CON DATOS DE PRUEBA (UsuarioMockService)
+================================================================================
+
+1) Crear proyecto (ya hecho):
+   cd frontend
+   npx @angular/cli@latest new jyaa-frontend --routing --style=css --skip-tests
+
+2) UsuarioMockService (usuario-mock.service.ts):
+   • Propiedad estática usuarios: Usuario[]
+   • Métodos estáticos: listar(), buscarPorId(), alta(), setActivo(), baja()
+
+3) Probar Etapa 1 sin backend:
+   En src/environments/environment.ts poner:
+     useMock: true
+   ng serve
+   Abrir http://localhost:4200
+
+4) Recorrer la práctica:
+   a) Inicio → enlaces a registro y homes de perfiles
+   b) Registro → completar DNI, apellido, nombres, domicilio, género, email → Guardar
+   c) Admin → Listado de usuarios → ver filas del mock
+   d) Click Detalle → ver datos → Habilitar / Inhabilitar
+
+================================================================================
+ETAPA 2 — CON CAPA DE SERVICIOS REST
+================================================================================
+
+1) UsuarioService (usuario.service.ts):
+   • @Injectable({ providedIn: 'root' })
+   • Misma firma que el mock pero métodos de instancia
+   • Inyecta HttpClient
+   • Si useMock === false llama a la API Java
+
+2) Componentes inyectan UsuarioService (no UsuarioMockService):
+   constructor(private usuarioService: UsuarioService) {}
+
+3) Endpoints REST usados (Entrega 4):
+   GET    /api/usuarios?page=1&size=50     → PaginaUsuariosDTO.items
+   GET    /api/usuarios/{id}               → UsuarioDTO
+   POST   /api/usuarios                    → alta (nombre, apellido, email, password)
+   PUT    /api/usuarios/{id}/activo        → { "activo": true|false }
+
+4) Configurar desarrollo con proxy:
+   proxy.conf.json ya apunta /api → http://localhost:8080
+   ng serve  (lee proxy desde angular.json)
+
+5) Probar Etapa 2 con backend:
+   En environment.ts: useMock: false
+   Levantar Tomcat con el WAR del backend
+   ng serve
+   Registro → POST crea usuario en MySQL
+   Admin → listado trae usuarios reales de jyaa2026_bd1
+
+================================================================================
+RUTAS IMPLEMENTADAS
+================================================================================
+
+  /                      Inicio (enlaces)
+  /registro              Formulario nuevo usuario
+  /admin                 Home administrador + menú
+  /admin/usuarios        Listado de usuarios
+  /admin/usuarios/:id    Detalle + habilitar/inhabilitar
+  /organizador           Home OC (menú placeholder Entrega 5)
+  /evaluador             Home evaluador
+  /autor                 Home autor
+  /participante          Home participante
+
+================================================================================
+COMANDOS ÚTILES
+================================================================================
+
+  cd frontend
+  npm install
+  npm start                    # ng serve en :4200 con proxy
+  npm run build                # dist/jyaa-frontend para producción
+
+================================================================================
+PUENTE CON LAS GUÍAS DE ANGULAR (Partes 1, 2 y 3)
+================================================================================
+
+  Concepto guía              Aplicado en Práctica 8
+  -------------------------  ------------------------------------------
+  Standalone components      Todos los componentes standalone: true
+  Routing + router-outlet    app.routes.ts + <router-outlet>
+  Template-driven forms      Registro con ngForm + [(ngModel)]
+  @Injectable + DI           UsuarioService en constructor de componentes
+  HttpClient + Observable    listar().subscribe({ next, error })
+  Interfaces = DTOs Java     Usuario, PaginaUsuarios, UsuarioApi
+  Proxy dev                  proxy.conf.json → sin CORS
+  environment.ts             useMock para alternar Etapa 1 / 2
+
+================================================================================
+QUINTA ENTREGA (próximo paso)
+================================================================================
+
+  Reutilizar el mismo frontend/ y agregar:
+  • LoginService + AuthGuard (Guía Angular 3)
+  • Pantallas de pagos, actividades, trabajos, cronograma
+  • Mismos patrones: Servicio + Componente + rutas por perfil
+
+  El React de la raíz del repo NO se modifica; la entrega Angular vive en frontend/.
+
+================================================================================
+  Fin — Guía Práctica 8 — Grupo 1
+================================================================================
