@@ -6,6 +6,7 @@ import { Usuario } from '../../../models/usuario.model';
   selector: 'app-usuario-fila',
   standalone: true,
   imports: [RouterLink],
+  host: { style: 'display: contents' },
   template: `
     <tr>
       <td>{{ usuario.id }}</td>

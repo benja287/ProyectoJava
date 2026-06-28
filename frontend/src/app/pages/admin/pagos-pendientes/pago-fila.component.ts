@@ -6,6 +6,7 @@ import { Pago } from '../../../models/pago.model';
   selector: 'app-pago-fila',
   standalone: true,
   imports: [DecimalPipe],
+  host: { style: 'display: contents' },
   template: `
     <tr>
       <td>{{ pago.id }}</td>
