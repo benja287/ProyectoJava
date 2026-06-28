@@ -20,6 +20,8 @@ public class JaxRsApplication extends Application {
     return Set.of(
         OpenApiResource.class,
         MultiPartFeature.class,
+        CorsRequestFilter.class,
+        CorsResponseFilter.class,
         NegocioExceptionMapper.class,
         NotFoundExceptionMapper.class,
         HealthResource.class,

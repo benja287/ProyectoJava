@@ -11,6 +11,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.time.LocalDate;
+import java.util.List;
 
 @RequestScoped
 public class AsignacionEvaluacionService {
@@ -50,6 +51,14 @@ public class AsignacionEvaluacionService {
       throw new NegocioException("Asignación no encontrada: " + id);
     }
     asignacionEvaluacionDAO.baja(id);
+  }
+
+  public List<AsignacionEvaluacion> listarPorEvaluador(Long evaluadorId) {
+    return asignacionEvaluacionDAO.listarPorEvaluador(evaluadorId);
+  }
+
+  public List<AsignacionEvaluacion> listarPorTrabajo(Long trabajoId) {
+    return asignacionEvaluacionDAO.listarPorTrabajo(trabajoId);
   }
 
   public AsignacionEvaluacion responder(Long id, boolean aceptar) {

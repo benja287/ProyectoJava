@@ -1,9 +1,15 @@
 <header class="app-header">
-  <a routerLink="/" class="brand">{{ title }}</a>
+  <a [routerLink]="irHome()" class="brand">{{ title }}</a>
   <nav>
     <a routerLink="/">Inicio</a>
-    <a routerLink="/registro">Nuevo usuario</a>
-    <a routerLink="/admin">Admin</a>
+    @if (usuario) {
+      <span class="user-info">{{ usuario.nombre }} {{ usuario.apellido }} ({{ usuario.rolActual }})</span>
+      <a [routerLink]="loginService.homeRoute()">Mi panel</a>
+      <button type="button" class="btn-header" (click)="logout()">Salir</button>
+    } @else {
+      <a routerLink="/login">Ingresar</a>
+      <a routerLink="/registro">Registrarme</a>
+    }
   </nav>
 </header>
 
@@ -12,5 +18,5 @@
 </main>
 
 <footer class="app-footer">
-  Práctica 8 — Gestión de usuarios · Carpeta <code>frontend/</code> (Angular). React del proyecto no se modifica.
+  Entrega 5 — Angular + REST Jersey · <code>frontend/</code>
 </footer>

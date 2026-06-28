@@ -1,14 +1,16 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { ROLES } from '../../../models/enums';
 import { Usuario } from '../../../models/usuario.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
 
 @Component({
   selector: 'app-usuario-detalle',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule],
   template: `
     <section class="card">
       @if (cargando) {
@@ -20,16 +22,10 @@ import { UsuarioService } from '../../../servicios/usuario.service';
         <h1>Detalle de usuario #{{ usuario.id }}</h1>
 
         <dl class="detalle">
-          <dt>DNI</dt>
-          <dd>{{ usuario.dni || '—' }}</dd>
           <dt>Apellido</dt>
           <dd>{{ usuario.apellido }}</dd>
-          <dt>Nombres</dt>
-          <dd>{{ usuario.nombres }}</dd>
-          <dt>Domicilio</dt>
-          <dd>{{ usuario.domicilio || '—' }}</dd>
-          <dt>Género</dt>
-          <dd>{{ usuario.genero || '—' }}</dd>
+          <dt>Nombre</dt>
+          <dd>{{ usuario.nombre }}</dd>
           <dt>Email</dt>
           <dd>{{ usuario.email }}</dd>
           <dt>Estado</dt>
@@ -38,7 +34,7 @@ import { UsuarioService } from '../../../servicios/usuario.service';
               {{ usuario.activo ? 'Activo' : 'Inactivo' }}
             </span>
           </dd>
-          <dt>Roles</dt>
+          <dt>Roles actuales</dt>
           <dd>{{ usuario.roles?.join(', ') || '—' }}</dd>
           <dt>Rol actual</dt>
           <dd>{{ usuario.rolActual || '—' }}</dd>
@@ -56,6 +52,29 @@ import { UsuarioService } from '../../../servicios/usuario.service';
           }
         </div>
 
+        <h2>Asignar roles</h2>
+        <form [formGroup]="rolesForm" (ngSubmit)="guardarRoles()" class="form-grid">
+          <fieldset class="roles-fieldset">
+            <legend>Roles</legend>
+            @for (rol of rolesDisponibles; track rol) {
+              <label class="checkbox-inline">
+                <input type="checkbox" [value]="rol" (change)="toggleRol(rol, $event)" [checked]="rolesSeleccionados.has(rol)" />
+                {{ rol }}
+              </label>
+            }
+          </fieldset>
+          <label>
+            Rol actual
+            <select formControlName="rolActual">
+              <option value="">Seleccionar...</option>
+              @for (rol of rolesDisponibles; track rol) {
+                <option [value]="rol">{{ rol }}</option>
+              }
+            </select>
+          </label>
+          <button type="submit" [disabled]="procesando || rolesSeleccionados.size === 0">Guardar roles</button>
+        </form>
+
         @if (mensaje) {
           <p class="ok">{{ mensaje }}</p>
         }
@@ -66,11 +85,16 @@ import { UsuarioService } from '../../../servicios/usuario.service';
   `,
 })
 export class UsuarioDetalleComponent implements OnInit, OnDestroy {
+  private fb = inject(FormBuilder);
+
   usuario?: Usuario;
   cargando = true;
   error = '';
   mensaje = '';
   procesando = false;
+  rolesDisponibles = [...ROLES];
+  rolesSeleccionados = new Set<string>();
+  rolesForm = this.fb.group({ rolActual: [''] });
   private sub?: Subscription;
 
   constructor(
@@ -94,6 +118,45 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
     this.sub?.unsubscribe();
   }
 
+  toggleRol(rol: string, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    if (checked) {
+      this.rolesSeleccionados.add(rol);
+    } else {
+      this.rolesSeleccionados.delete(rol);
+    }
+  }
+
+  guardarRoles(): void {
+    if (!this.usuario?.id) {
+      return;
+    }
+    const rolActual = this.rolesForm.value.rolActual;
+    if (!rolActual || this.rolesSeleccionados.size === 0) {
+      this.error = 'Seleccioná al menos un rol y el rol actual.';
+      return;
+    }
+    this.procesando = true;
+    this.mensaje = '';
+    this.error = '';
+    this.usuarioService
+      .asignarRoles(this.usuario.id, {
+        roles: [...this.rolesSeleccionados],
+        rolActual,
+      })
+      .subscribe({
+        next: (actualizado) => {
+          this.usuario = actualizado;
+          this.mensaje = 'Roles actualizados.';
+          this.procesando = false;
+        },
+        error: () => {
+          this.error = 'No se pudieron actualizar los roles.';
+          this.procesando = false;
+        },
+      });
+  }
+
   cambiarActivo(activo: boolean): void {
     if (!this.usuario?.id) {
       return;
@@ -102,12 +165,8 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
     this.mensaje = '';
     this.usuarioService.setActivo(this.usuario.id, activo).subscribe({
       next: (actualizado) => {
-        if (actualizado) {
-          this.usuario = actualizado;
-          this.mensaje = activo ? 'Cuenta habilitada.' : 'Cuenta inhabilitada.';
-        } else {
-          this.error = 'No se pudo actualizar el estado.';
-        }
+        this.usuario = actualizado;
+        this.mensaje = activo ? 'Cuenta habilitada.' : 'Cuenta inhabilitada.';
         this.procesando = false;
       },
       error: () => {
@@ -122,15 +181,13 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
     this.error = '';
     this.usuarioService.buscarPorId(id).subscribe({
       next: (u) => {
-        if (!u) {
-          this.error = 'Usuario no encontrado';
-        } else {
-          this.usuario = u;
-        }
+        this.usuario = u;
+        this.rolesSeleccionados = new Set(u!.roles ?? []);
+        this.rolesForm.patchValue({ rolActual: u!.rolActual ?? '' });
         this.cargando = false;
       },
       error: () => {
-        this.error = 'Error al cargar el usuario';
+        this.error = 'Usuario no encontrado';
         this.cargando = false;
       },
     });

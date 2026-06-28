@@ -3,15 +3,16 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Usuario } from '../../../models/usuario.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
+import { UsuarioFilaComponent } from './usuario-fila.component';
 
 @Component({
   selector: 'app-usuarios-lista',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, UsuarioFilaComponent],
   template: `
     <section class="card">
       <h1>Gestión de usuarios — Listado</h1>
-      <p>Perfil administrador (Práctica 8 — ítems d y e).</p>
+      <p>Perfil administrador (Entrega 5).</p>
 
       @if (cargando) {
         <p>Cargando usuarios...</p>
@@ -19,13 +20,16 @@ import { UsuarioService } from '../../../servicios/usuario.service';
       @if (error) {
         <p class="error">{{ error }}</p>
       }
+      @if (mensaje) {
+        <p class="ok">{{ mensaje }}</p>
+      }
 
       @if (!cargando && !error) {
         <table>
           <thead>
             <tr>
               <th>ID</th>
-              <th>Apellido y nombres</th>
+              <th>Apellido y nombre</th>
               <th>Email</th>
               <th>Estado</th>
               <th>Roles</th>
@@ -34,27 +38,14 @@ import { UsuarioService } from '../../../servicios/usuario.service';
           </thead>
           <tbody>
             @for (u of usuarios; track u.id) {
-              <tr>
-                <td>{{ u.id }}</td>
-                <td>{{ u.apellido }}, {{ u.nombres }}</td>
-                <td>{{ u.email }}</td>
-                <td>
-                  <span [class.badge-ok]="u.activo" [class.badge-off]="!u.activo">
-                    {{ u.activo ? 'Activo' : 'Inactivo' }}
-                  </span>
-                </td>
-                <td>{{ u.roles?.join(', ') }}</td>
-                <td>
-                  <a [routerLink]="['/admin/usuarios', u.id]">Detalle</a>
-                </td>
-              </tr>
+              <app-usuario-fila [usuario]="u" (eliminar)="confirmarBaja($event)" />
             }
           </tbody>
         </table>
       }
 
       <p class="actions-top">
-        <a routerLink="/registro">+ Nuevo usuario</a>
+        <a routerLink="/admin/usuarios/nuevo">+ Nuevo usuario</a>
         ·
         <a routerLink="/admin">← Menú admin</a>
       </p>
@@ -65,17 +56,39 @@ export class UsuariosListaComponent implements OnInit {
   usuarios: Usuario[] = [];
   cargando = true;
   error = '';
+  mensaje = '';
 
   constructor(private usuarioService: UsuarioService) {}
 
   ngOnInit(): void {
+    this.cargar();
+  }
+
+  confirmarBaja(usuario: Usuario): void {
+    if (!usuario.id || !confirm(`¿Dar de baja a ${usuario.email}?`)) {
+      return;
+    }
+    this.usuarioService.baja(usuario.id).subscribe({
+      next: () => {
+        this.mensaje = `Usuario ${usuario.id} eliminado.`;
+        this.cargar();
+      },
+      error: () => {
+        this.error = 'No se pudo eliminar el usuario.';
+      },
+    });
+  }
+
+  private cargar(): void {
+    this.cargando = true;
+    this.error = '';
     this.usuarioService.listar().subscribe({
       next: (data) => {
         this.usuarios = data;
         this.cargando = false;
       },
       error: () => {
-        this.error = 'No se pudo cargar el listado. ¿Está corriendo el backend en :8080?';
+        this.error = 'No se pudo cargar el listado. Verificá el backend.';
         this.cargando = false;
       },
     });

@@ -10,14 +10,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import java.util.List;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -32,6 +36,26 @@ import java.net.URI;
 public class AsignacionEvaluacionResource {
 
   @Inject private AsignacionEvaluacionService asignacionService;
+
+  @GET
+  @Operation(
+      summary = "Listar asignaciones",
+      description = "Filtrar por evaluadorId o trabajoId (uno de los dos es obligatorio).")
+  @ApiResponse(responseCode = "200", description = "Listado de asignaciones")
+  public List<AsignacionEvaluacionDTO> listar(
+      @QueryParam("evaluadorId") Long evaluadorId, @QueryParam("trabajoId") Long trabajoId) {
+    if (evaluadorId != null) {
+      return asignacionService.listarPorEvaluador(evaluadorId).stream()
+          .map(AsignacionEvaluacionDTO::from)
+          .toList();
+    }
+    if (trabajoId != null) {
+      return asignacionService.listarPorTrabajo(trabajoId).stream()
+          .map(AsignacionEvaluacionDTO::from)
+          .toList();
+    }
+    throw new BadRequestException("Indicar evaluadorId o trabajoId");
+  }
 
   @POST
   @Operation(summary = "Asignar evaluador a trabajo")

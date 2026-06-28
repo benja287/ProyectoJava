@@ -7,15 +7,16 @@ import { RouterLink } from '@angular/router';
   imports: [RouterLink],
   template: `
     <section class="card">
-      <h1>Congreso de Agroecología — Práctica 8</h1>
-      <p>Pantalla inicial con enlaces a registro y homes de cada perfil.</p>
+      <h1>Congreso de Agroecología — Entrega 5</h1>
+      <p>Angular integrado al REST de Entrega 4. Iniciá sesión para acceder a tu perfil.</p>
 
-      <h2>Registro</h2>
+      <h2>Acceso</h2>
       <ul class="menu">
-        <li><a routerLink="/registro">Nuevo usuario</a></li>
+        <li><a routerLink="/login">Iniciar sesión</a></li>
+        <li><a routerLink="/registro">Registrarme como participante</a></li>
       </ul>
 
-      <h2>Homes por perfil</h2>
+      <h2>Perfiles (requieren login)</h2>
       <ul class="menu">
         <li><a routerLink="/admin">Administrador</a></li>
         <li><a routerLink="/organizador">Organizador científico</a></li>

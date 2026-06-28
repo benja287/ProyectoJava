@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  useMock: false,
+  /** Prod: mismo host que Tomcat (Angular + /api en grupo1 → sin CORS). */
   apiUrl: '/api',
 };

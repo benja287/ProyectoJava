@@ -82,6 +82,17 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "cors": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.cors.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -93,13 +104,14 @@
               "buildTarget": "jyaa-frontend:build:production"
             },
             "development": {
-              "buildTarget": "jyaa-frontend:build:development"
+              "buildTarget": "jyaa-frontend:build:development",
+              "proxyConfig": "proxy.conf.json"
+            },
+            "cors": {
+              "buildTarget": "jyaa-frontend:build:cors"
             }
           },
-          "defaultConfiguration": "development",
-          "options": {
-            "proxyConfig": "proxy.conf.json"
-          }
+          "defaultConfiguration": "development"
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n"

@@ -1,34 +1,24 @@
-/** Modelo de la Práctica 8 (campos del formulario de registro). */
+/** Espejo de UsuarioDTO del backend Java. */
 export interface Usuario {
   id?: number;
-  dni: string;
-  apellido: string;
-  nombres: string;
-  domicilio: string;
-  genero: string;
   email: string;
+  nombre: string;
+  apellido: string;
   password?: string;
   activo?: boolean;
   roles?: string[];
-  rolActual?: string;
+  rolActual?: string | null;
 }
 
-/** Respuesta paginada de GET /api/usuarios (espejo de PaginaUsuariosDTO). */
 export interface PaginaUsuarios {
-  items: UsuarioApi[];
+  items: Usuario[];
   page: number;
   size: number;
   total: number;
   totalPages: number;
 }
 
-/** Espejo de UsuarioDTO del backend Java. */
-export interface UsuarioApi {
-  id: number;
-  email: string;
-  nombre: string;
-  apellido: string;
+export interface RolesRequest {
   roles: string[];
-  rolActual: string | null;
-  activo: boolean;
+  rolActual: string;
 }

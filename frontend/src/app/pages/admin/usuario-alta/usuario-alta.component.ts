@@ -1,16 +1,16 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { RegistroService } from '../../servicios/registro.service';
+import { UsuarioService } from '../../../servicios/usuario.service';
 
 @Component({
-  selector: 'app-registro',
+  selector: 'app-usuario-alta',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
   template: `
     <section class="card">
-      <h1>Registro de participante</h1>
-      <p>POST <code>/api/registro</code> — inscripción al congreso (Entrega 5).</p>
+      <h1>Alta de usuario (admin)</h1>
+      <p>POST <code>/api/usuarios</code> — distinto del registro de participante.</p>
 
       @if (mensaje) {
         <p class="ok">{{ mensaje }}</p>
@@ -37,14 +37,14 @@ import { RegistroService } from '../../servicios/registro.service';
           <input formControlName="password" type="password" minlength="8" />
         </label>
         <div class="actions">
-          <button type="submit" [disabled]="form.invalid || guardando">Registrarme</button>
-          <a routerLink="/login">Ya tengo cuenta — ingresar</a>
+          <button type="submit" [disabled]="form.invalid || guardando">Guardar</button>
+          <a routerLink="/admin/usuarios">Cancelar</a>
         </div>
       </form>
     </section>
   `,
 })
-export class RegistroComponent {
+export class UsuarioAltaComponent {
   private fb = inject(FormBuilder);
 
   form = this.fb.group({
@@ -59,7 +59,7 @@ export class RegistroComponent {
   guardando = false;
 
   constructor(
-    private registroService: RegistroService,
+    private usuarioService: UsuarioService,
     private router: Router
   ) {}
 
@@ -70,14 +70,14 @@ export class RegistroComponent {
     this.mensaje = '';
     this.error = '';
     this.guardando = true;
-    this.registroService.registrarParticipante(this.form.getRawValue() as never).subscribe({
+    this.usuarioService.alta(this.form.getRawValue() as never).subscribe({
       next: (creado) => {
-        this.mensaje = `Participante registrado (id ${creado.id}). Redirigiendo al login...`;
+        this.mensaje = `Usuario creado (id ${creado.id}).`;
         this.guardando = false;
-        setTimeout(() => this.router.navigate(['/login']), 1500);
+        setTimeout(() => this.router.navigate(['/admin/usuarios', creado.id]), 1000);
       },
       error: () => {
-        this.error = 'No se pudo completar el registro. Verificá el email.';
+        this.error = 'No se pudo crear el usuario.';
         this.guardando = false;
       },
     });
