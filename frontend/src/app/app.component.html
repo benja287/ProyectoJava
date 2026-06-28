@@ -3,29 +3,79 @@
   <nav>
     <a routerLink="/">Inicio</a>
     @if (usuario) {
-      <span class="user-info">{{ usuario.nombre }} {{ usuario.apellido }}</span>
-      @if (rolesDisponibles.length > 0) {
-        <label class="rol-select">
-          Rol
-          <select [value]="usuario.rolActual ?? ''" (change)="cambiarRol($event)">
-            @for (r of rolesDisponibles; track r) {
-              <option [value]="r">{{ r }}</option>
-            }
-          </select>
-        </label>
+      @if (loginService.tieneVariosRoles()) {
+        <a routerLink="/seleccion-rol" class="cambiar-perfil">Cambiar perfil</a>
       }
-      <a [routerLink]="loginService.homeRoute()">Mi panel</a>
-      <button type="button" class="btn-header" (click)="logout()">Salir</button>
+      <div class="user-menu" #userMenu>
+        <button
+          type="button"
+          class="user-menu-trigger"
+          (click)="toggleMenu($event)"
+          [attr.aria-expanded]="menuAbierto"
+        >
+          {{ usuario.nombre }} {{ usuario.apellido }}
+          <span class="user-menu-chevron" [class.abierto]="menuAbierto">▾</span>
+        </button>
+        @if (menuAbierto) {
+          <div class="user-menu-panel" (click)="$event.stopPropagation()">
+            <div class="user-menu-header">
+              <p class="user-menu-name">{{ usuario.nombre }} {{ usuario.apellido }}</p>
+              <p class="user-menu-email">{{ usuario.email }}</p>
+              @if (usuario.rolActual) {
+                <p class="user-menu-rol-actual">
+                  Perfil: {{ etiquetaRol(usuario.rolActual) }}
+                </p>
+              } @else if (loginService.tieneVariosRoles()) {
+                <p class="user-menu-rol-actual pendiente">Elegí un perfil para continuar</p>
+              }
+            </div>
+            <a
+              class="user-menu-item"
+              [routerLink]="loginService.rutaPanel()"
+              (click)="cerrarMenu()"
+            >
+              Mi panel
+            </a>
+            @if (loginService.tieneVariosRoles()) {
+              <div class="user-menu-roles">
+                <p class="user-menu-label">Perfiles disponibles</p>
+                @for (rol of usuario.roles; track rol) {
+                  <button
+                    type="button"
+                    class="user-menu-rol-btn"
+                    [class.activo]="rol === usuario.rolActual"
+                    [disabled]="cambiandoRol"
+                    (click)="elegirRol(rol, $event)"
+                  >
+                    {{ etiquetaRol(rol) }}
+                    @if (rol === usuario.rolActual) {
+                      <span class="user-menu-activo-badge">actual</span>
+                    }
+                  </button>
+                }
+                <a
+                  routerLink="/seleccion-rol"
+                  class="user-menu-item secundario"
+                  (click)="cerrarMenu()"
+                >
+                  Ver pantalla de perfiles
+                </a>
+              </div>
+            }
+            <div class="user-menu-footer">
+              <button type="button" class="user-menu-logout" (click)="logout()">
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        }
+      </div>
     } @else {
       <a routerLink="/login">Ingresar</a>
       <a routerLink="/registro">Registrarme</a>
     }
   </nav>
 </header>
-
-@if (rolError) {
-  <p class="rol-error">{{ rolError }}</p>
-}
 
 <main class="app-main">
   <router-outlet />

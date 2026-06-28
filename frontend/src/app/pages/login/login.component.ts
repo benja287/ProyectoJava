@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
@@ -10,7 +10,14 @@ import { LoginService } from '../../auth/login.service';
   template: `
     <section class="card">
       <h1>Iniciar sesión</h1>
-      <p>Entrega 5 — credenciales del congreso (REST <code>POST /api/login</code>).</p>
+      <p>
+        Ingresá con tu email y contraseña para acceder a tu panel.
+        Si tu cuenta tiene varios roles, vas a elegir el perfil después del login.
+      </p>
+      <p class="muted">
+        ¿Sos participante nuevo?
+        <a routerLink="/registro">Registrate acá</a>.
+      </p>
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -35,7 +42,7 @@ import { LoginService } from '../../auth/login.service';
     </section>
   `,
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private fb = inject(FormBuilder);
 
   form = this.fb.group({
@@ -51,6 +58,12 @@ export class LoginComponent {
     private router: Router
   ) {}
 
+  ngOnInit(): void {
+    if (this.loginService.isLogged()) {
+      this.router.navigateByUrl(this.loginService.rutaPanel());
+    }
+  }
+
   ingresar(): void {
     if (this.form.invalid) {
       return;
@@ -61,7 +74,10 @@ export class LoginComponent {
     this.loginService.login(email!, password!).subscribe({
       next: () => {
         this.cargando = false;
-        this.router.navigateByUrl(this.loginService.homeRoute());
+        if (this.loginService.tieneVariosRoles()) {
+          this.loginService.limpiarRolActualLocal();
+        }
+        this.router.navigateByUrl(this.loginService.rutaTrasLogin());
       },
       error: (err) => {
         this.cargando = false;

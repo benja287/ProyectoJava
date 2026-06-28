@@ -67,6 +67,32 @@ export class LoginService {
     }
   }
 
+  tieneVariosRoles(): boolean {
+    return (this.usuario?.roles?.length ?? 0) > 1;
+  }
+
+  /** Tras login: siempre pedir perfil si hay más de un rol (como React). */
+  rutaTrasLogin(): string {
+    return this.tieneVariosRoles() ? '/seleccion-rol' : this.homeRoute();
+  }
+
+  /** Panel según rolActual; si faltó elegir perfil, vuelve a la selección. */
+  rutaPanel(): string {
+    if (this.tieneVariosRoles() && !this.usuario?.rolActual) {
+      return '/seleccion-rol';
+    }
+    return this.homeRoute();
+  }
+
+  /** Borra rolActual solo en sesión para forzar elección tras login (como React). */
+  limpiarRolActualLocal(): void {
+    if (!this.usuario) {
+      return;
+    }
+    this.usuario = { ...this.usuario, rolActual: null };
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.usuario));
+  }
+
   /** Cambia rolActual usando PUT /api/usuarios/{id}/roles (sin endpoint nuevo). */
   cambiarRolActual(rol: string): Observable<Usuario> {
     const u = this.usuario;

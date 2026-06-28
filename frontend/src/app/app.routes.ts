@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './auth/auth.guard';
 import { roleGuard } from './auth/role.guard';
+import { seleccionRolGuard } from './auth/seleccion-rol.guard';
 import { InicioComponent } from './pages/inicio/inicio.component';
 import { LoginComponent } from './pages/login/login.component';
 import { RegistroComponent } from './pages/registro/registro.component';
@@ -17,6 +19,7 @@ import { AsignacionesEvaluadorComponent } from './pages/evaluador/asignaciones/a
 import { TrabajosAutorComponent } from './pages/autor/trabajos/trabajos-autor.component';
 import { CronogramaParticipanteComponent } from './pages/participante/cronograma/cronograma-participante.component';
 import { PagoParticipanteComponent } from './pages/participante/pago/pago-participante.component';
+import { SeleccionRolComponent } from './pages/seleccion-rol/seleccion-rol.component';
 
 const admin = roleGuard(['ADMINISTRADOR']);
 const organizador = roleGuard(['ORGANIZADOR_CIENTIFICO']);
@@ -27,6 +30,7 @@ const participante = roleGuard(['PARTICIPANTE']);
 export const routes: Routes = [
   { path: '', component: InicioComponent },
   { path: 'login', component: LoginComponent },
+  { path: 'seleccion-rol', component: SeleccionRolComponent, canActivate: [authGuard, seleccionRolGuard] },
   { path: 'registro', component: RegistroComponent },
 
   {

@@ -223,21 +223,216 @@ textarea {
   align-items: center;
 }
 
-.rol-select {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+.cambiar-perfil {
   margin-left: 0.75rem;
   font-size: 0.85rem;
   color: #fff;
+  text-decoration: underline;
 }
 
-.rol-select select {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.15);
+.user-menu {
+  position: relative;
+  display: inline-block;
+  margin-left: 0.75rem;
+}
+
+.user-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.user-menu-trigger:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.user-menu-chevron {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.user-menu-chevron.abierto {
+  transform: rotate(180deg);
+}
+
+.user-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 100;
+  min-width: 15rem;
+  background: #fff;
+  color: #1a1a1a;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.user-menu-header {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.user-menu-name {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.user-menu-email {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.user-menu-rol-actual {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: #2e7d32;
+}
+
+.user-menu-rol-actual.pendiente {
+  color: #e65100;
+}
+
+.user-menu-item {
+  display: block;
+  padding: 0.65rem 1rem;
+  color: #1a1a1a !important;
+  margin-left: 0 !important;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.user-menu-item:hover {
+  background: #f5f5f5;
+}
+
+.user-menu-item.secundario {
+  font-size: 0.8rem;
+  color: #1565c0 !important;
+}
+
+.user-menu-roles {
+  border-top: 1px solid #e8e8e8;
+  padding: 0.5rem 0;
+}
+
+.user-menu-label {
+  margin: 0;
+  padding: 0.35rem 1rem 0.25rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+}
+
+.user-menu-rol-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.55rem 1rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  color: #1a1a1a;
+}
+
+.user-menu-rol-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.user-menu-rol-btn.activo {
+  background: #e8f5e9;
+  color: #1b5e20;
+  font-weight: 600;
+}
+
+.user-menu-rol-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.user-menu-activo-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #2e7d32;
+}
+
+.user-menu-footer {
+  border-top: 1px solid #e8e8e8;
+  padding: 0.35rem 0;
+}
+
+.user-menu-logout {
+  display: block;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-size: 0.875rem;
+  color: #c62828;
+  cursor: pointer;
+}
+
+.user-menu-logout:hover {
+  background: #ffebee;
+}
+
+.seleccion-rol .rol-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+@media (min-width: 640px) {
+  .seleccion-rol .rol-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.rol-card {
+  text-align: left;
+  background: #f9fafb;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  cursor: pointer;
+  color: inherit;
+  width: 100%;
+}
+
+.rol-card:hover:not(:disabled) {
+  border-color: #2e7d32;
+  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.15);
+}
+
+.rol-card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  color: #1b5e20;
+}
+
+.rol-card-action {
+  display: inline-block;
+  margin-top: 0.75rem;
+  color: #1565c0;
+  font-size: 0.9rem;
 }
 
 .rol-error {
