@@ -1,0 +1,107 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { Trabajo } from '../../../models/trabajo.model';
+import { TrabajoService } from '../../../servicios/trabajo.service';
+
+@Component({
+  selector: 'app-trabajos-admin',
+  standalone: true,
+  imports: [CommonModule, RouterLink],
+  template: `
+    <section class="card">
+      <h1>Listado de trabajos</h1>
+      <p>Admin — limpieza y gestión. DELETE <code>/api/trabajos/{{ '{' }}id{{ '}' }}</code></p>
+
+      @if (error) {
+        <p class="error">{{ error }}</p>
+      }
+      @if (mensaje) {
+        <p class="ok">{{ mensaje }}</p>
+      }
+
+      @if (cargando) {
+        <p>Cargando...</p>
+      } @else if (trabajos.length === 0) {
+        <p>No hay trabajos registrados.</p>
+      } @else {
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Autor</th>
+              <th>Estado</th>
+              <th>Documento</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of trabajos; track t.id) {
+              <tr>
+                <td>{{ t.id }}</td>
+                <td>{{ t.titulo }}</td>
+                <td>{{ t.autorApellido }}, {{ t.autorNombre }}</td>
+                <td>{{ t.estado }}</td>
+                <td>
+                  @if (t.documentoUrl) {
+                    <a [href]="t.documentoUrl" target="_blank" rel="noopener">Ver</a>
+                  } @else {
+                    —
+                  }
+                </td>
+                <td>
+                  <button type="button" class="btn-warn" (click)="eliminar(t)">Eliminar</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+
+      <p><a routerLink="/admin">← Menú admin</a></p>
+    </section>
+  `,
+})
+export class TrabajosAdminComponent implements OnInit {
+  trabajos: Trabajo[] = [];
+  cargando = true;
+  error = '';
+  mensaje = '';
+
+  constructor(private trabajoService: TrabajoService) {}
+
+  ngOnInit(): void {
+    this.cargar();
+  }
+
+  eliminar(t: Trabajo): void {
+    if (!t.id || !confirm(`¿Eliminar trabajo #${t.id} "${t.titulo}"?`)) {
+      return;
+    }
+    this.trabajoService.baja(t.id).subscribe({
+      next: () => {
+        this.mensaje = `Trabajo #${t.id} eliminado.`;
+        this.cargar();
+      },
+      error: () => {
+        this.error = 'No se pudo eliminar el trabajo.';
+      },
+    });
+  }
+
+  private cargar(): void {
+    this.cargando = true;
+    this.error = '';
+    this.trabajoService.listar(1, 100).subscribe({
+      next: (items) => {
+        this.trabajos = items;
+        this.cargando = false;
+      },
+      error: () => {
+        this.error = 'Error al cargar trabajos.';
+        this.cargando = false;
+      },
+    });
+  }
+}

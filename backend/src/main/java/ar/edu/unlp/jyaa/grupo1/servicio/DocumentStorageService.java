@@ -55,6 +55,26 @@ public class DocumentStorageService {
     return archivo;
   }
 
+  /** Elimina el archivo referenciado por {@code /api/archivos/{id}} si existe. */
+  public void eliminarPorUrl(String url) {
+    Long id = extraerId(url);
+    if (id == null) {
+      return;
+    }
+    archivoDAO.baja(id);
+  }
+
+  private Long extraerId(String url) {
+    if (url == null || url.isBlank() || !url.contains("/api/archivos/")) {
+      return null;
+    }
+    try {
+      return Long.parseLong(url.substring(url.lastIndexOf('/') + 1).trim());
+    } catch (NumberFormatException e) {
+      return null;
+    }
+  }
+
   private String contentTypeDe(String nombreOriginal) {
     if (nombreOriginal == null) {
       return "application/pdf";

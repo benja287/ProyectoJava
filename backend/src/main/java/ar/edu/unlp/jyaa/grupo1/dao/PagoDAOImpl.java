@@ -52,6 +52,29 @@ public class PagoDAOImpl extends AbstractJpaDAO<Pago> implements PagoDAO {
     }
   }
 
+  @Override
+  public List<Pago> listarPaginado(int offset, int limit) {
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery("SELECT p FROM Pago p ORDER BY p.id DESC", Pago.class)
+          .setFirstResult(offset)
+          .setMaxResults(limit)
+          .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public long contar() {
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery("SELECT COUNT(p) FROM Pago p", Long.class).getSingleResult();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
   private EntityManager emConsulta() {
     EntityManager cdi = getEntityManager();
     return cdi != null ? cdi : JpaUtil.createEntityManager();

@@ -8,7 +8,9 @@ import { UsuariosListaComponent } from './pages/admin/usuarios-lista/usuarios-li
 import { UsuarioDetalleComponent } from './pages/admin/usuario-detalle/usuario-detalle.component';
 import { UsuarioAltaComponent } from './pages/admin/usuario-alta/usuario-alta.component';
 import { PagosPendientesComponent } from './pages/admin/pagos-pendientes/pagos-pendientes.component';
+import { PagosListaComponent } from './pages/admin/pagos-lista/pagos-lista.component';
 import { ActividadesAdminComponent } from './pages/admin/actividades/actividades-admin.component';
+import { TrabajosAdminComponent } from './pages/admin/trabajos/trabajos-admin.component';
 import { AsignacionesOcComponent } from './pages/organizador/asignaciones/asignaciones-oc.component';
 import { PromoverEvaluadorComponent } from './pages/organizador/promover-evaluador/promover-evaluador.component';
 import { AsignacionesEvaluadorComponent } from './pages/evaluador/asignaciones/asignaciones-evaluador.component';
@@ -38,7 +40,9 @@ export const routes: Routes = [
         { label: 'Listado de usuarios', route: '/admin/usuarios' },
         { label: 'Nuevo usuario', route: '/admin/usuarios/nuevo' },
         { label: 'Validar pagos pendientes', route: '/admin/pagos' },
+        { label: 'Listado de pagos (limpieza)', route: '/admin/pagos/todos' },
         { label: 'ABM actividades', route: '/admin/actividades' },
+        { label: 'Listado de trabajos (limpieza)', route: '/admin/trabajos' },
       ],
     },
   },
@@ -46,7 +50,9 @@ export const routes: Routes = [
   { path: 'admin/usuarios/nuevo', component: UsuarioAltaComponent, canActivate: [admin] },
   { path: 'admin/usuarios/:id', component: UsuarioDetalleComponent, canActivate: [admin] },
   { path: 'admin/pagos', component: PagosPendientesComponent, canActivate: [admin] },
+  { path: 'admin/pagos/todos', component: PagosListaComponent, canActivate: [admin] },
   { path: 'admin/actividades', component: ActividadesAdminComponent, canActivate: [admin] },
+  { path: 'admin/trabajos', component: TrabajosAdminComponent, canActivate: [admin] },
 
   {
     path: 'organizador',

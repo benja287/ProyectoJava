@@ -36,4 +36,8 @@ export class TrabajoService {
     form.append('file', file);
     return this.http.post<Trabajo>(`${this.baseUrl}/${id}/documento`, form);
   }
+
+  baja(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
 }

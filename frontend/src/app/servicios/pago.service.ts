@@ -17,6 +17,12 @@ export class PagoService {
       .pipe(map((p) => p.items));
   }
 
+  listar(page = 1, size = 50): Observable<Pago[]> {
+    return this.http
+      .get<PaginaPagos>(`${this.baseUrl}?page=${page}&size=${size}`)
+      .pipe(map((p) => p.items));
+  }
+
   consultarEstadoPorUsuario(usuarioId: number): Observable<Pago> {
     return this.http.get<Pago>(`${this.baseUrl}/usuario/${usuarioId}/estado`);
   }
@@ -36,5 +42,9 @@ export class PagoService {
     const form = new FormData();
     form.append('file', file);
     return this.http.post<Pago>(`${this.baseUrl}/${id}/comprobante`, form);
+  }
+
+  baja(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 }

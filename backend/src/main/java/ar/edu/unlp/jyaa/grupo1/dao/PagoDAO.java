@@ -11,4 +11,8 @@ public interface PagoDAO extends GenericDAO<Pago> {
   List<Pago> listarPorEstadoPaginado(EstadoPago estado, int offset, int limit);
 
   long contarPorEstado(EstadoPago estado);
+
+  List<Pago> listarPaginado(int offset, int limit);
+
+  long contar();
 }

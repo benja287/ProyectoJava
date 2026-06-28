@@ -98,4 +98,10 @@ public class TrabajoService {
       throw new NegocioException("No se pudo guardar el documento: " + e.getMessage());
     }
   }
+
+  public void baja(Long id) {
+    Trabajo trabajo = buscar(id);
+    documentStorageService.eliminarPorUrl(trabajo.getDocumentoUrl());
+    trabajoDAO.baja(id);
+  }
 }

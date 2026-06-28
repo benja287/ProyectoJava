@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
@@ -41,6 +42,17 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 public class PagoResource {
 
   @Inject private PagoService pagoService;
+
+  @GET
+  @Operation(
+      summary = "Listar todos los pagos (paginado)",
+      description = "Admin — todos los estados. Parámetros: page (default 1), size (default 20, máx 100).")
+  @ApiResponse(responseCode = "200", description = "Listado paginado de pagos")
+  public PaginaPagosDTO listar(
+      @QueryParam("page") @DefaultValue("1") int page,
+      @QueryParam("size") @DefaultValue("20") int size) {
+    return pagoService.listar(page, size);
+  }
 
   @GET
   @Path("/pendientes")
@@ -123,5 +135,19 @@ public class PagoResource {
     }
     String nombre = fileDetail != null ? fileDetail.getFileName() : "comprobante.pdf";
     return pagoService.adjuntarComprobante(id, file, nombre);
+  }
+
+  @DELETE
+  @Path("/{id}")
+  @Operation(summary = "Baja de pago (admin / limpieza)")
+  @ApiResponse(responseCode = "204", description = "Pago eliminado")
+  @ApiResponse(responseCode = "404", description = "Pago no encontrado")
+  public Response baja(@PathParam("id") Long id) {
+    try {
+      pagoService.baja(id);
+      return Response.noContent().build();
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
   }
 }

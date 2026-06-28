@@ -9,4 +9,6 @@ public interface InscripcionCongresoDAO extends GenericDAO<InscripcionCongreso> 
   List<InscripcionCongreso> listarPorUsuario(Long usuarioId);
 
   Optional<InscripcionCongreso> buscarUltimaPorUsuario(Long usuarioId);
+
+  List<InscripcionCongreso> listarPorPago(Long pagoId);
 }

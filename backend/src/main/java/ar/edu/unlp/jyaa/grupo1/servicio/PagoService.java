@@ -99,6 +99,28 @@ public class PagoService {
     return new PaginaPagosDTO(items, safePage, safeSize, total, totalPages);
   }
 
+  public PaginaPagosDTO listar(int page, int size) {
+    int safePage = Math.max(PAGE_DEFAULT, page);
+    int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
+    int offset = (safePage - 1) * safeSize;
+
+    long total = pagoDAO.contar();
+    List<Pago> items = pagoDAO.listarPaginado(offset, safeSize);
+    int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
+
+    return new PaginaPagosDTO(items, safePage, safeSize, total, totalPages);
+  }
+
+  public void baja(Long id) {
+    Pago pago = consultarPorId(id);
+    documentStorageService.eliminarPorUrl(pago.getComprobanteUrl());
+    for (InscripcionCongreso inscripcion : inscripcionDAO.listarPorPago(id)) {
+      inscripcion.setPago(null);
+      inscripcionDAO.modificar(inscripcion);
+    }
+    pagoDAO.baja(id);
+  }
+
   public ValidacionPagoResult validarPago(
       Long id, boolean aprobar, String motivoRechazo, Double montoAjustado) {
     Pago pago = pagoDAO.recuperarPorId(id);

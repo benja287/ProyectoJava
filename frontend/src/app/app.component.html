@@ -3,7 +3,17 @@
   <nav>
     <a routerLink="/">Inicio</a>
     @if (usuario) {
-      <span class="user-info">{{ usuario.nombre }} {{ usuario.apellido }} ({{ usuario.rolActual }})</span>
+      <span class="user-info">{{ usuario.nombre }} {{ usuario.apellido }}</span>
+      @if (rolesDisponibles.length > 0) {
+        <label class="rol-select">
+          Rol
+          <select [value]="usuario.rolActual ?? ''" (change)="cambiarRol($event)">
+            @for (r of rolesDisponibles; track r) {
+              <option [value]="r">{{ r }}</option>
+            }
+          </select>
+        </label>
+      }
       <a [routerLink]="loginService.homeRoute()">Mi panel</a>
       <button type="button" class="btn-header" (click)="logout()">Salir</button>
     } @else {
@@ -12,6 +22,10 @@
     }
   </nav>
 </header>
+
+@if (rolError) {
+  <p class="rol-error">{{ rolError }}</p>
+}
 
 <main class="app-main">
   <router-outlet />

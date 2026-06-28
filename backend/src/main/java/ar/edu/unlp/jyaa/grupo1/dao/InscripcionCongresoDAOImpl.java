@@ -60,6 +60,20 @@ public class InscripcionCongresoDAOImpl extends AbstractJpaDAO<InscripcionCongre
     }
   }
 
+  @Override
+  public List<InscripcionCongreso> listarPorPago(Long pagoId) {
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery(
+              "SELECT i FROM InscripcionCongreso i WHERE i.pago.id = :pagoId",
+              InscripcionCongreso.class)
+          .setParameter("pagoId", pagoId)
+          .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
   private EntityManager emConsulta() {
     EntityManager cdi = getEntityManager();
     return cdi != null ? cdi : JpaUtil.createEntityManager();

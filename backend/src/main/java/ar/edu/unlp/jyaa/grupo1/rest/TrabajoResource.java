@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
@@ -127,6 +128,20 @@ public class TrabajoResource {
         throw new NotFoundException("Trabajo no encontrado");
       }
       return TrabajoResumenDTO.from(trabajo);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @DELETE
+  @Path("/{id}")
+  @Operation(summary = "Baja de trabajo (admin / limpieza)")
+  @ApiResponse(responseCode = "204", description = "Trabajo eliminado")
+  @ApiResponse(responseCode = "404", description = "Trabajo no encontrado")
+  public Response baja(@PathParam("id") Long id) {
+    try {
+      trabajoService.baja(id);
+      return Response.noContent().build();
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }

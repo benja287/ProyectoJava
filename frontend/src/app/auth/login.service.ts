@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Usuario } from '../models/usuario.model';
+import { UsuarioService } from '../servicios/usuario.service';
 
 const STORAGE_KEY = 'jyaa_usuario';
 
@@ -10,7 +11,10 @@ const STORAGE_KEY = 'jyaa_usuario';
 export class LoginService {
   private usuario: Usuario | null = null;
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private usuarioService: UsuarioService
+  ) {
     this.usuario = this.loadFromStorage();
   }
 
@@ -61,6 +65,17 @@ export class LoginService {
       default:
         return '/';
     }
+  }
+
+  /** Cambia rolActual usando PUT /api/usuarios/{id}/roles (sin endpoint nuevo). */
+  cambiarRolActual(rol: string): Observable<Usuario> {
+    const u = this.usuario;
+    if (!u?.id || !u.roles?.includes(rol)) {
+      return throwError(() => new Error('Rol no permitido para este usuario'));
+    }
+    return this.usuarioService
+      .asignarRoles(u.id, { roles: [...u.roles], rolActual: rol })
+      .pipe(tap((actualizado) => this.setUser(actualizado)));
   }
 
   private setUser(u: Usuario): void {

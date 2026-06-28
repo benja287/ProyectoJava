@@ -11,6 +11,7 @@ import { LoginService } from './auth/login.service';
 })
 export class AppComponent {
   title = 'JYAA — Entrega 5';
+  rolError = '';
 
   constructor(
     public loginService: LoginService,
@@ -21,6 +22,10 @@ export class AppComponent {
     return this.loginService.getUser();
   }
 
+  get rolesDisponibles(): string[] {
+    return this.usuario?.roles ?? [];
+  }
+
   logout(): void {
     this.loginService.logout();
     this.router.navigate(['/login']);
@@ -28,5 +33,21 @@ export class AppComponent {
 
   irHome(): string {
     return this.loginService.isLogged() ? this.loginService.homeRoute() : '/';
+  }
+
+  cambiarRol(event: Event): void {
+    const rol = (event.target as HTMLSelectElement).value;
+    if (!rol || rol === this.usuario?.rolActual) {
+      return;
+    }
+    this.rolError = '';
+    this.loginService.cambiarRolActual(rol).subscribe({
+      next: () => {
+        this.router.navigateByUrl(this.loginService.homeRoute());
+      },
+      error: () => {
+        this.rolError = 'No se pudo cambiar el rol.';
+      },
+    });
   }
 }
