@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ROLES } from '../../../models/enums';
@@ -15,31 +15,51 @@ import { UsuarioService } from '../../../servicios/usuario.service';
     <section class="card">
       @if (cargando) {
         <p>Cargando usuario...</p>
-      } @else if (error) {
+      } @else if (error && !usuario) {
         <p class="error">{{ error }}</p>
         <a routerLink="/admin/usuarios">Volver al listado</a>
       } @else if (usuario) {
         <h1>Detalle de usuario #{{ usuario.id }}</h1>
 
-        <dl class="detalle">
-          <dt>Apellido</dt>
-          <dd>{{ usuario.apellido }}</dd>
-          <dt>Nombre</dt>
-          <dd>{{ usuario.nombre }}</dd>
-          <dt>Email</dt>
-          <dd>{{ usuario.email }}</dd>
-          <dt>Estado</dt>
-          <dd>
-            <span [class.badge-ok]="usuario.activo" [class.badge-off]="!usuario.activo">
-              {{ usuario.activo ? 'Activo' : 'Inactivo' }}
-            </span>
-          </dd>
-          <dt>Roles actuales</dt>
-          <dd>{{ usuario.roles?.join(', ') || '—' }}</dd>
-          <dt>Rol actual</dt>
-          <dd>{{ usuario.rolActual || '—' }}</dd>
-        </dl>
+        @if (error) {
+          <p class="error">{{ error }}</p>
+        }
+        @if (mensaje) {
+          <p class="ok">{{ mensaje }}</p>
+        }
 
+        <h2>Modificar datos</h2>
+        <p class="muted">PUT <code>/api/usuarios/{{ usuario.id }}</code> — dejá la contraseña vacía para no cambiarla.</p>
+        <form [formGroup]="datosForm" (ngSubmit)="guardarDatos()" class="form-grid">
+          <label>
+            Apellido
+            <input formControlName="apellido" />
+          </label>
+          <label>
+            Nombre
+            <input formControlName="nombre" />
+          </label>
+          <label>
+            Email
+            <input formControlName="email" type="email" />
+          </label>
+          <label>
+            Nueva contraseña (opcional)
+            <input formControlName="password" type="password" minlength="8" autocomplete="new-password" />
+          </label>
+          <div class="actions">
+            <button type="submit" [disabled]="datosForm.invalid || procesando">
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+
+        <h2>Estado de la cuenta</h2>
+        <p>
+          <span [class.badge-ok]="usuario.activo" [class.badge-off]="!usuario.activo">
+            {{ usuario.activo ? 'Activo' : 'Inactivo' }}
+          </span>
+        </p>
         <div class="actions">
           @if (usuario.activo) {
             <button type="button" class="btn-warn" (click)="cambiarActivo(false)" [disabled]="procesando">
@@ -53,6 +73,7 @@ import { UsuarioService } from '../../../servicios/usuario.service';
         </div>
 
         <h2>Asignar roles</h2>
+        <p class="muted">Roles actuales: {{ usuario.roles?.join(', ') || '—' }} · Rol en sesión: {{ usuario.rolActual || '—' }}</p>
         <form [formGroup]="rolesForm" (ngSubmit)="guardarRoles()" class="form-grid">
           <fieldset class="roles-fieldset">
             <legend>Roles</legend>
@@ -75,10 +96,6 @@ import { UsuarioService } from '../../../servicios/usuario.service';
           <button type="submit" [disabled]="procesando || rolesSeleccionados.size === 0">Guardar roles</button>
         </form>
 
-        @if (mensaje) {
-          <p class="ok">{{ mensaje }}</p>
-        }
-
         <p><a routerLink="/admin/usuarios">← Volver al listado</a></p>
       }
     </section>
@@ -94,6 +111,12 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
   procesando = false;
   rolesDisponibles = [...ROLES];
   rolesSeleccionados = new Set<string>();
+  datosForm = this.fb.group({
+    apellido: ['', Validators.required],
+    nombre: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    password: [''],
+  });
   rolesForm = this.fb.group({ rolActual: [''] });
   private sub?: Subscription;
 
@@ -116,6 +139,39 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
+  }
+
+  guardarDatos(): void {
+    if (!this.usuario?.id || this.datosForm.invalid) {
+      return;
+    }
+    const { apellido, nombre, email, password } = this.datosForm.getRawValue();
+    if (password && password.length < 8) {
+      this.error = 'La contraseña debe tener al menos 8 caracteres.';
+      return;
+    }
+    this.procesando = true;
+    this.mensaje = '';
+    this.error = '';
+    this.usuarioService
+      .modificar(this.usuario.id, {
+        apellido: apellido!,
+        nombre: nombre!,
+        email: email!,
+        password: password || undefined,
+      })
+      .subscribe({
+        next: (actualizado) => {
+          this.usuario = actualizado;
+          this.datosForm.patchValue({ password: '' });
+          this.mensaje = 'Datos del usuario actualizados.';
+          this.procesando = false;
+        },
+        error: () => {
+          this.error = 'No se pudieron guardar los datos del usuario.';
+          this.procesando = false;
+        },
+      });
   }
 
   toggleRol(rol: string, event: Event): void {
@@ -163,6 +219,7 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
     }
     this.procesando = true;
     this.mensaje = '';
+    this.error = '';
     this.usuarioService.setActivo(this.usuario.id, activo).subscribe({
       next: (actualizado) => {
         this.usuario = actualizado;
@@ -179,10 +236,17 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
   private cargar(id: number): void {
     this.cargando = true;
     this.error = '';
+    this.mensaje = '';
     this.usuarioService.buscarPorId(id).subscribe({
       next: (u) => {
         this.usuario = u;
         this.rolesSeleccionados = new Set(u!.roles ?? []);
+        this.datosForm.patchValue({
+          apellido: u!.apellido,
+          nombre: u!.nombre,
+          email: u!.email,
+          password: '',
+        });
         this.rolesForm.patchValue({ rolActual: u!.rolActual ?? '' });
         this.cargando = false;
       },

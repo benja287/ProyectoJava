@@ -35,11 +35,15 @@ export class UsuarioService {
   }
 
   modificar(id: number, usuario: Partial<Usuario>): Observable<Usuario> {
-    const body = {
-      nombre: usuario.nombre,
-      apellido: usuario.apellido,
-      email: usuario.email,
+    const body: Record<string, string> = {
+      nombre: usuario.nombre ?? '',
+      apellido: usuario.apellido ?? '',
+      email: usuario.email ?? '',
     };
+    const pwd = usuario.password?.trim();
+    if (pwd) {
+      body['password'] = pwd;
+    }
     return this.http.put<Usuario>(`${this.baseUrl}/${id}`, body);
   }
 
