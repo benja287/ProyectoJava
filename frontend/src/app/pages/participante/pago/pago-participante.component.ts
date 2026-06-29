@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { LoginService } from '../../../auth/login.service';
 import { METODOS_PAGO } from '../../../models/enums';
 import { Pago } from '../../../models/pago.model';
@@ -10,7 +11,7 @@ import { PagoService } from '../../../servicios/pago.service';
 @Component({
   selector: 'app-pago-participante',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, ArchivoLinkComponent],
   template: `
     <section class="card">
       <h1>Estado de pago</h1>
@@ -40,7 +41,7 @@ import { PagoService } from '../../../servicios/pago.service';
           <dt>Comprobante</dt>
           <dd>
             @if (pago.comprobanteUrl) {
-              <a [href]="pago.comprobanteUrl" target="_blank" rel="noopener">Ver comprobante</a>
+              <app-archivo-link [url]="pago.comprobanteUrl" label="Ver comprobante" />
             } @else {
               Sin comprobante
             }

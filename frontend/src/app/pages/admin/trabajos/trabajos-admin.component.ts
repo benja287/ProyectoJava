@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { Trabajo } from '../../../models/trabajo.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 
 @Component({
   selector: 'app-trabajos-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ArchivoLinkComponent],
   template: `
     <section class="card">
       <h1>Listado de trabajos</h1>
@@ -45,7 +46,7 @@ import { TrabajoService } from '../../../servicios/trabajo.service';
                 <td>{{ t.estado }}</td>
                 <td>
                   @if (t.documentoUrl) {
-                    <a [href]="t.documentoUrl" target="_blank" rel="noopener">Ver</a>
+                    <app-archivo-link [url]="t.documentoUrl" label="Ver" />
                   } @else {
                     —
                   }

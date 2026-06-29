@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { Pago } from '../../../models/pago.model';
 import { PagoService } from '../../../servicios/pago.service';
 
 @Component({
   selector: 'app-pagos-lista',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ArchivoLinkComponent],
   template: `
     <section class="card">
       <h1>Listado de pagos</h1>
@@ -47,7 +48,7 @@ import { PagoService } from '../../../servicios/pago.service';
                 <td>{{ p.fechaRegistro || '—' }}</td>
                 <td>
                   @if (p.comprobanteUrl) {
-                    <a [href]="p.comprobanteUrl" target="_blank" rel="noopener">Ver</a>
+                    <app-archivo-link [url]="p.comprobanteUrl" label="Ver" />
                   } @else {
                     —
                   }

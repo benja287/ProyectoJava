@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { LoginService } from '../../../auth/login.service';
 import { AsignacionEvaluacion } from '../../../models/asignacion.model';
 import { AsignacionService } from '../../../servicios/asignacion.service';
@@ -8,7 +9,7 @@ import { AsignacionService } from '../../../servicios/asignacion.service';
 @Component({
   selector: 'app-asignaciones-evaluador',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ArchivoLinkComponent],
   template: `
     <section class="card">
       <h1>Mis asignaciones de evaluación</h1>
@@ -46,7 +47,7 @@ import { AsignacionService } from '../../../servicios/asignacion.service';
                 <td>{{ a.aceptada ? 'Sí' : 'Pendiente' }}</td>
                 <td>
                   @if (a.trabajoDocumentoUrl) {
-                    <a [href]="a.trabajoDocumentoUrl" target="_blank" rel="noopener">PDF</a>
+                    <app-archivo-link [url]="a.trabajoDocumentoUrl" label="PDF" />
                   } @else {
                     —
                   }

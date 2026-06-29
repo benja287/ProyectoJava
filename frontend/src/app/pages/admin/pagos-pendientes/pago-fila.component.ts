@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { Pago } from '../../../models/pago.model';
 
 @Component({
   selector: 'app-pago-fila',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, ArchivoLinkComponent],
   host: { style: 'display: contents' },
   template: `
     <tr>
@@ -16,7 +17,7 @@ import { Pago } from '../../../models/pago.model';
       <td>{{ pago.fechaRegistro || '—' }}</td>
       <td>
         @if (pago.comprobanteUrl) {
-          <a [href]="pago.comprobanteUrl" target="_blank" rel="noopener">Ver</a>
+          <app-archivo-link [url]="pago.comprobanteUrl" label="Ver" />
         } @else {
           —
         }
