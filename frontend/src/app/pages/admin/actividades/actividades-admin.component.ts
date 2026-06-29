@@ -34,12 +34,16 @@ import { ActividadService } from '../../../servicios/actividad.service';
         </label>
         <label>
           Inicio
-          <input formControlName="inicio" type="datetime-local" />
+          <input formControlName="inicio" type="datetime-local" required />
         </label>
         <label>
           Fin
-          <input formControlName="fin" type="datetime-local" />
+          <input formControlName="fin" type="datetime-local" required />
         </label>
+        <p class="muted form-hint">
+          La hora de fin debe ser posterior al inicio (ej. inicio 10:00, fin 12:00 = mediodía).
+          Si la sala ya tiene otra actividad en ese horario, el servidor rechazará el alta.
+        </p>
         <label>
           Tipo
           <select formControlName="tipoActividad">
@@ -114,9 +118,9 @@ export class ActividadesAdminComponent implements OnInit {
 
   form = this.fb.group({
     titulo: ['', Validators.required],
-    sala: [''],
-    inicio: [''],
-    fin: [''],
+    sala: ['', Validators.required],
+    inicio: ['', Validators.required],
+    fin: ['', Validators.required],
     tipoActividad: [this.tipos[0] as string, Validators.required],
     codigo: [''],
   });
@@ -146,14 +150,22 @@ export class ActividadesAdminComponent implements OnInit {
 
   guardar(): void {
     if (this.form.invalid) {
+      this.error = 'Completá título, sala, inicio y fin.';
       return;
     }
     const raw = this.form.getRawValue();
+    const inicio = raw.inicio ? this.fromLocalInput(raw.inicio) : undefined;
+    const fin = raw.fin ? this.fromLocalInput(raw.fin) : undefined;
+    if (inicio && fin && fin <= inicio) {
+      this.error =
+        'La hora de fin debe ser posterior al inicio. Revisá que no hayas puesto 12:00 a.m. (medianoche) en lugar de mediodía.';
+      return;
+    }
     const body: Actividad = {
       titulo: raw.titulo ?? '',
       sala: raw.sala || undefined,
-      inicio: raw.inicio ? this.fromLocalInput(raw.inicio) : undefined,
-      fin: raw.fin ? this.fromLocalInput(raw.fin) : undefined,
+      inicio,
+      fin,
       tipoActividad: raw.tipoActividad ?? this.tipos[0],
       codigo: raw.codigo || undefined,
     };
@@ -170,8 +182,10 @@ export class ActividadesAdminComponent implements OnInit {
         this.cancelarEdicion();
         this.cargar();
       },
-      error: () => {
-        this.error = 'No se pudo guardar la actividad.';
+      error: (err) => {
+        this.error =
+          err?.error?.error ??
+          'No se pudo guardar la actividad. Verificá horarios y que la sala no tenga conflicto.';
         this.guardando = false;
       },
     });
@@ -210,7 +224,8 @@ export class ActividadesAdminComponent implements OnInit {
     if (!iso) {
       return '';
     }
-    return iso.length >= 16 ? iso.slice(0, 16) : iso;
+    const normalized = iso.replace(' ', 'T').slice(0, 19);
+    return normalized.length >= 16 ? normalized.slice(0, 16) : normalized;
   }
 
   private fromLocalInput(local: string): string {
