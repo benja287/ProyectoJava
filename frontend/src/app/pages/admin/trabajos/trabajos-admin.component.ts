@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { Trabajo } from '../../../models/trabajo.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
   selector: 'app-trabajos-admin',
@@ -85,8 +86,8 @@ export class TrabajosAdminComponent implements OnInit {
         this.mensaje = `Trabajo #${t.id} eliminado.`;
         this.cargar();
       },
-      error: () => {
-        this.error = 'No se pudo eliminar el trabajo.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo eliminar el trabajo.');
       },
     });
   }
@@ -99,8 +100,8 @@ export class TrabajosAdminComponent implements OnInit {
         this.trabajos = items;
         this.cargando = false;
       },
-      error: () => {
-        this.error = 'Error al cargar trabajos.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'Error al cargar trabajos.');
         this.cargando = false;
       },
     });

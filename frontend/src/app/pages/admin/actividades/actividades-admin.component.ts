@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { TIPOS_ACTIVIDAD } from '../../../models/enums';
 import { Actividad } from '../../../models/actividad.model';
 import { ActividadService } from '../../../servicios/actividad.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { formatFechaActividad } from '../../../utils/fecha.util';
 
 @Component({
   selector: 'app-actividades-admin',
@@ -89,7 +91,7 @@ import { ActividadService } from '../../../servicios/actividad.service';
                 <td>{{ a.id }}</td>
                 <td>{{ a.titulo }}</td>
                 <td>{{ a.sala || '—' }}</td>
-                <td>{{ a.inicio || '—' }}</td>
+                <td>{{ formatFecha(a.inicio) }}</td>
                 <td>{{ a.tipoActividad }}</td>
                 <td>
                   <button type="button" class="btn-link" (click)="editar(a)">Editar</button>
@@ -126,6 +128,10 @@ export class ActividadesAdminComponent implements OnInit {
   });
 
   constructor(private actividadService: ActividadService) {}
+
+  formatFecha(valor: unknown): string {
+    return formatFechaActividad(valor);
+  }
 
   ngOnInit(): void {
     this.cargar();
@@ -183,9 +189,10 @@ export class ActividadesAdminComponent implements OnInit {
         this.cargar();
       },
       error: (err) => {
-        this.error =
-          err?.error?.error ??
-          'No se pudo guardar la actividad. Verificá horarios y que la sala no tenga conflicto.';
+        this.error = mensajeErrorApi(
+          err,
+          'No se pudo guardar la actividad. Verificá horarios y que la sala no tenga conflicto.'
+        );
         this.guardando = false;
       },
     });
@@ -200,8 +207,8 @@ export class ActividadesAdminComponent implements OnInit {
         this.mensaje = 'Actividad eliminada.';
         this.cargar();
       },
-      error: () => {
-        this.error = 'No se pudo eliminar.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo eliminar.');
       },
     });
   }
@@ -213,8 +220,8 @@ export class ActividadesAdminComponent implements OnInit {
         this.actividades = items;
         this.cargando = false;
       },
-      error: () => {
-        this.error = 'Error al cargar actividades.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'Error al cargar actividades.');
         this.cargando = false;
       },
     });

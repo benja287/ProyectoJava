@@ -7,6 +7,7 @@ import { LoginService } from '../../../auth/login.service';
 import { TIPOS_TRABAJO } from '../../../models/enums';
 import { Trabajo } from '../../../models/trabajo.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
   selector: 'app-trabajos-autor',
@@ -201,7 +202,7 @@ export class TrabajosAutorComponent implements OnInit {
           });
         },
         error: (err) => {
-          this.error = err?.error?.error ?? 'No se pudo crear el trabajo.';
+          this.error = mensajeErrorApi(err, 'No se pudo crear el trabajo.');
           this.guardando = false;
         },
       });
@@ -221,7 +222,7 @@ export class TrabajosAutorComponent implements OnInit {
           this.trabajos[idx] = actualizado;
         }
       },
-      error: () => (this.error = 'No se pudo subir el PDF.'),
+      error: (err) => (this.error = mensajeErrorApi(err, 'No se pudo subir el PDF.')),
     });
   }
 
@@ -237,7 +238,7 @@ export class TrabajosAutorComponent implements OnInit {
           this.trabajos[idx] = actualizado;
         }
       },
-      error: () => (this.error = 'No se pudo enviar el trabajo.'),
+      error: (err) => (this.error = mensajeErrorApi(err, 'No se pudo enviar el trabajo.')),
     });
   }
 
@@ -251,8 +252,8 @@ export class TrabajosAutorComponent implements OnInit {
         this.trabajos = items;
         this.cargando = false;
       },
-      error: () => {
-        this.error = 'Error al cargar trabajos.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'Error al cargar trabajos.');
         this.cargando = false;
       },
     });

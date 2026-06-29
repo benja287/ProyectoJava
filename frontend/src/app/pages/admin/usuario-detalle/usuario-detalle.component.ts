@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { ROLES } from '../../../models/enums';
 import { Usuario } from '../../../models/usuario.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
   selector: 'app-usuario-detalle',
@@ -167,8 +168,8 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
           this.mensaje = 'Datos del usuario actualizados.';
           this.procesando = false;
         },
-        error: () => {
-          this.error = 'No se pudieron guardar los datos del usuario.';
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudieron guardar los datos del usuario.');
           this.procesando = false;
         },
       });
@@ -206,8 +207,8 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
           this.mensaje = 'Roles actualizados.';
           this.procesando = false;
         },
-        error: () => {
-          this.error = 'No se pudieron actualizar los roles.';
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudieron actualizar los roles.');
           this.procesando = false;
         },
       });
@@ -226,8 +227,8 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
         this.mensaje = activo ? 'Cuenta habilitada.' : 'Cuenta inhabilitada.';
         this.procesando = false;
       },
-      error: () => {
-        this.error = 'Error al cambiar el estado de la cuenta.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'Error al cambiar el estado de la cuenta.');
         this.procesando = false;
       },
     });
@@ -250,8 +251,8 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
         this.rolesForm.patchValue({ rolActual: u!.rolActual ?? '' });
         this.cargando = false;
       },
-      error: () => {
-        this.error = 'Usuario no encontrado';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'Usuario no encontrado');
         this.cargando = false;
       },
     });

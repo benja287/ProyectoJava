@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { Pago } from '../../../models/pago.model';
 import { PagoService } from '../../../servicios/pago.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
   selector: 'app-pagos-lista',
@@ -91,8 +92,8 @@ export class PagosListaComponent implements OnInit {
         this.mensaje = `Pago #${p.id} eliminado.`;
         this.cargar();
       },
-      error: () => {
-        this.error = 'No se pudo eliminar el pago.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo eliminar el pago.');
       },
     });
   }
@@ -105,8 +106,8 @@ export class PagosListaComponent implements OnInit {
         this.pagos = items;
         this.cargando = false;
       },
-      error: () => {
-        this.error = 'Error al cargar pagos.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'Error al cargar pagos.');
         this.cargando = false;
       },
     });

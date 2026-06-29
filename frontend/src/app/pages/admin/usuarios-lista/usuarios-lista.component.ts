@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Usuario } from '../../../models/usuario.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { UsuarioFilaComponent } from './usuario-fila.component';
 
 @Component({
@@ -73,8 +74,8 @@ export class UsuariosListaComponent implements OnInit {
         this.mensaje = `Usuario ${usuario.id} eliminado.`;
         this.cargar();
       },
-      error: () => {
-        this.error = 'No se pudo eliminar el usuario.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo eliminar el usuario.');
       },
     });
   }
@@ -87,8 +88,8 @@ export class UsuariosListaComponent implements OnInit {
         this.usuarios = data;
         this.cargando = false;
       },
-      error: () => {
-        this.error = 'No se pudo cargar el listado. Verificá el backend.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo cargar el listado. Verificá el backend.');
         this.cargando = false;
       },
     });

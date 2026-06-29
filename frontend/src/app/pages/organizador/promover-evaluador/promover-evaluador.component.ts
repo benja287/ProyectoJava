@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Usuario } from '../../../models/usuario.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
   selector: 'app-promover-evaluador',
@@ -72,8 +73,8 @@ export class PromoverEvaluadorComponent implements OnInit {
         this.usuarios = items;
         this.cargando = false;
       },
-      error: () => {
-        this.error = 'No se pudieron cargar usuarios.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudieron cargar usuarios.');
         this.cargando = false;
       },
     });
@@ -95,8 +96,8 @@ export class PromoverEvaluadorComponent implements OnInit {
           this.usuarios[idx] = actualizado;
         }
       },
-      error: () => {
-        this.error = 'No se pudo promover al usuario.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo promover al usuario.');
         this.procesandoId = undefined;
       },
     });

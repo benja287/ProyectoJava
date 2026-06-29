@@ -6,6 +6,7 @@ import { AsignacionEvaluacion } from '../../../models/asignacion.model';
 import { Trabajo } from '../../../models/trabajo.model';
 import { Usuario } from '../../../models/usuario.model';
 import { AsignacionService } from '../../../servicios/asignacion.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { UsuarioService } from '../../../servicios/usuario.service';
 
@@ -106,12 +107,12 @@ export class AsignacionesOcComponent implements OnInit {
   ngOnInit(): void {
     this.trabajoService.listar(1, 100).subscribe({
       next: (items) => (this.trabajos = items),
-      error: () => (this.error = 'No se pudieron cargar trabajos.'),
+      error: (err) => (this.error = mensajeErrorApi(err, 'No se pudieron cargar trabajos.')),
     });
     this.usuarioService.listar(1, 200).subscribe({
       next: (items) =>
         (this.evaluadores = items.filter((u) => u.roles?.includes('EVALUADOR'))),
-      error: () => (this.error = 'No se pudieron cargar evaluadores.'),
+      error: (err) => (this.error = mensajeErrorApi(err, 'No se pudieron cargar evaluadores.')),
     });
     this.form.get('trabajoId')?.valueChanges.subscribe((v) => {
       const id = Number(v);
@@ -139,7 +140,7 @@ export class AsignacionesOcComponent implements OnInit {
         this.trabajoService.listar(1, 100).subscribe((items) => (this.trabajos = items));
       },
       error: (err) => {
-        this.error = err?.error?.message ?? 'No se pudo asignar.';
+        this.error = mensajeErrorApi(err, 'No se pudo asignar.');
         this.procesando = false;
       },
     });
@@ -156,7 +157,7 @@ export class AsignacionesOcComponent implements OnInit {
           this.cargarAsignaciones(this.trabajoSeleccionado);
         }
       },
-      error: () => (this.error = 'No se pudo desasignar.'),
+      error: (err) => (this.error = mensajeErrorApi(err, 'No se pudo desasignar.')),
     });
   }
 

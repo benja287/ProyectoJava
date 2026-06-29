@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Pago } from '../../../models/pago.model';
 import { PagoService } from '../../../servicios/pago.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { PagoFilaComponent } from './pago-fila.component';
 
 @Component({
@@ -81,8 +82,8 @@ export class PagosPendientesComponent implements OnInit {
         this.mensaje = res.mensaje;
         this.cargar();
       },
-      error: () => {
-        this.error = 'No se pudo validar el pago.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo validar el pago.');
       },
     });
   }
@@ -95,8 +96,8 @@ export class PagosPendientesComponent implements OnInit {
         this.pagos = items;
         this.cargando = false;
       },
-      error: () => {
-        this.error = 'Error al cargar pagos pendientes.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'Error al cargar pagos pendientes.');
         this.cargando = false;
       },
     });

@@ -6,6 +6,8 @@ import { Actividad } from '../../../models/actividad.model';
 import { Cronograma } from '../../../models/cronograma.model';
 import { ActividadService } from '../../../servicios/actividad.service';
 import { CronogramaService } from '../../../servicios/cronograma.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { formatFechaActividad } from '../../../utils/fecha.util';
 
 @Component({
   selector: 'app-cronograma-participante',
@@ -32,7 +34,7 @@ import { CronogramaService } from '../../../servicios/cronograma.service';
         <ul class="menu">
           @for (a of cronograma!.actividades; track a.id) {
             <li>
-              <strong>{{ a.titulo }}</strong> — {{ a.inicio || 'sin fecha' }} ({{ a.sala || 'sin sala' }})
+              <strong>{{ a.titulo }}</strong> — {{ formatFecha(a.inicio) }} ({{ a.sala || 'sin sala' }})
               <button type="button" class="btn-link" (click)="quitar(a)">Quitar</button>
             </li>
           }
@@ -46,7 +48,7 @@ import { CronogramaService } from '../../../servicios/cronograma.service';
         <ul class="menu">
           @for (a of actividadesDisponibles; track a.id) {
             <li>
-              {{ a.titulo }} ({{ a.tipoActividad }})
+              {{ a.titulo }} ({{ a.tipoActividad }}) — {{ formatFecha(a.inicio) }}
               <button type="button" (click)="agregar(a)">Agregar</button>
             </li>
           }
@@ -89,16 +91,24 @@ export class CronogramaParticipanteComponent implements OnInit {
     this.cargarCronograma();
   }
 
+  formatFecha(valor: unknown): string {
+    return formatFechaActividad(valor);
+  }
+
   agregar(actividad: Actividad): void {
     if (!this.usuarioId || !actividad.id) {
       return;
     }
+    this.error = '';
+    this.mensaje = '';
     this.cronogramaService.agregarActividad(this.usuarioId, actividad.id).subscribe({
       next: (c) => {
         this.cronograma = c;
         this.mensaje = 'Actividad agregada.';
       },
-      error: () => (this.error = 'No se pudo agregar la actividad.'),
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo agregar la actividad.');
+      },
     });
   }
 
@@ -106,12 +116,16 @@ export class CronogramaParticipanteComponent implements OnInit {
     if (!this.usuarioId || !actividad.id) {
       return;
     }
+    this.error = '';
+    this.mensaje = '';
     this.cronogramaService.quitarActividad(this.usuarioId, actividad.id).subscribe({
       next: () => {
         this.mensaje = 'Actividad quitada.';
         this.cargarCronograma();
       },
-      error: () => (this.error = 'No se pudo quitar la actividad.'),
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo quitar la actividad.');
+      },
     });
   }
 
@@ -125,8 +139,8 @@ export class CronogramaParticipanteComponent implements OnInit {
         this.cronograma = c;
         this.cargando = false;
       },
-      error: () => {
-        this.error = 'No se pudo cargar el cronograma.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo cargar el cronograma.');
         this.cargando = false;
       },
     });

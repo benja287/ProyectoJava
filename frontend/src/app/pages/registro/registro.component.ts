@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { RegistroService } from '../../servicios/registro.service';
+import { mensajeErrorApi } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-registro',
@@ -76,8 +77,8 @@ export class RegistroComponent {
         this.guardando = false;
         setTimeout(() => this.router.navigate(['/login']), 1500);
       },
-      error: () => {
-        this.error = 'No se pudo completar el registro. Verificá el email.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo completar el registro. Verificá el email.');
         this.guardando = false;
       },
     });

@@ -394,6 +394,15 @@ textarea {
   background: #ffebee;
 }
 
+.user-menu-error {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  color: #c62828;
+  background: #ffebee;
+  border-top: 1px solid #ffcdd2;
+}
+
 .seleccion-rol .rol-grid {
   display: grid;
   gap: 1rem;

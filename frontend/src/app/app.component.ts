@@ -7,6 +7,7 @@ import {
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { LoginService } from './auth/login.service';
+import { mensajeErrorApi } from './utils/api-error.util';
 import { etiquetaRol } from './models/role-labels';
 
 @Component({
@@ -19,6 +20,7 @@ export class AppComponent {
   title = 'JYAA — Entrega 5';
   menuAbierto = false;
   cambiandoRol = false;
+  errorRol = '';
 
   @ViewChild('userMenu') userMenu?: ElementRef<HTMLElement>;
 
@@ -65,14 +67,16 @@ export class AppComponent {
       return;
     }
     this.cambiandoRol = true;
+    this.errorRol = '';
     this.loginService.cambiarRolActual(rol).subscribe({
       next: () => {
         this.cambiandoRol = false;
         this.cerrarMenu();
         this.router.navigateByUrl(this.loginService.homeRoute());
       },
-      error: () => {
+      error: (err) => {
         this.cambiandoRol = false;
+        this.errorRol = mensajeErrorApi(err, 'No se pudo cambiar el perfil.');
       },
     });
   }

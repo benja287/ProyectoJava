@@ -29,6 +29,9 @@
                 <p class="user-menu-rol-actual pendiente">Elegí un perfil para continuar</p>
               }
             </div>
+            @if (errorRol) {
+              <p class="user-menu-error">{{ errorRol }}</p>
+            }
             <a
               class="user-menu-item"
               [routerLink]="loginService.rutaPanel()"

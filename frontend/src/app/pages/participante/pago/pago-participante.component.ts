@@ -7,6 +7,7 @@ import { LoginService } from '../../../auth/login.service';
 import { METODOS_PAGO } from '../../../models/enums';
 import { Pago } from '../../../models/pago.model';
 import { PagoService } from '../../../servicios/pago.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
   selector: 'app-pago-participante',
@@ -141,8 +142,8 @@ export class PagoParticipanteComponent implements OnInit {
           this.mensaje = 'Pago registrado. Podés subir el comprobante.';
           this.guardando = false;
         },
-        error: () => {
-          this.error = 'No se pudo registrar el pago.';
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudo registrar el pago.');
           this.guardando = false;
         },
       });
@@ -158,7 +159,7 @@ export class PagoParticipanteComponent implements OnInit {
         this.pago = actualizado;
         this.mensaje = 'Comprobante subido.';
       },
-      error: () => (this.error = 'No se pudo subir el comprobante.'),
+      error: (err) => (this.error = mensajeErrorApi(err, 'No se pudo subir el comprobante.')),
     });
   }
 

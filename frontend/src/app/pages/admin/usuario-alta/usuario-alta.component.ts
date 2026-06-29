@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { UsuarioService } from '../../../servicios/usuario.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
   selector: 'app-usuario-alta',
@@ -76,8 +77,8 @@ export class UsuarioAltaComponent {
         this.guardando = false;
         setTimeout(() => this.router.navigate(['/admin/usuarios', creado.id]), 1000);
       },
-      error: () => {
-        this.error = 'No se pudo crear el usuario.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo crear el usuario.');
         this.guardando = false;
       },
     });

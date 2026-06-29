@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
+import { mensajeErrorApi } from '../../utils/api-error.util';
 import { ROLE_DESCRIPCIONES, etiquetaRol } from '../../models/role-labels';
 
 @Component({
@@ -69,9 +70,9 @@ export class SeleccionRolComponent implements OnInit {
         this.procesando = false;
         this.router.navigateByUrl(this.loginService.homeRoute());
       },
-      error: () => {
+      error: (err) => {
         this.procesando = false;
-        this.error = 'No se pudo cambiar el perfil.';
+        this.error = mensajeErrorApi(err, 'No se pudo cambiar el perfil.');
       },
     });
   }

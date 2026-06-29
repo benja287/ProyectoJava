@@ -2,6 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
+import { mensajeErrorApi } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-login',
@@ -81,13 +82,7 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.cargando = false;
-        if (err.status === 0) {
-          this.error =
-            'No se pudo conectar a la API. Con npm start usá apiUrl: \'/api\' en environment.ts (proxy).';
-        } else {
-          this.error =
-            err?.error?.error ?? 'Credenciales inválidas o cuenta deshabilitada.';
-        }
+        this.error = mensajeErrorApi(err, 'Credenciales inválidas o cuenta deshabilitada.');
       },
     });
   }

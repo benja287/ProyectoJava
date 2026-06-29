@@ -5,6 +5,7 @@ import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-l
 import { LoginService } from '../../../auth/login.service';
 import { AsignacionEvaluacion } from '../../../models/asignacion.model';
 import { AsignacionService } from '../../../servicios/asignacion.service';
+import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
   selector: 'app-asignaciones-evaluador',
@@ -93,8 +94,8 @@ export class AsignacionesEvaluadorComponent implements OnInit {
         this.asignaciones = items;
         this.cargando = false;
       },
-      error: () => {
-        this.error = 'No se pudieron cargar asignaciones.';
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudieron cargar asignaciones.');
         this.cargando = false;
       },
     });
@@ -109,7 +110,7 @@ export class AsignacionesEvaluadorComponent implements OnInit {
           this.asignaciones[idx] = actualizada;
         }
       },
-      error: () => (this.error = 'No se pudo registrar la respuesta.'),
+      error: (err) => (this.error = mensajeErrorApi(err, 'No se pudo registrar la respuesta.')),
     });
   }
 }
