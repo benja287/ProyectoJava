@@ -12,7 +12,7 @@ export function etiquetaRol(rol: string): string {
 }
 
 export const ROLE_DESCRIPCIONES: Record<string, string> = {
-  PARTICIPANTE: 'Cronograma personal, inscripción y pagos del congreso.',
+  PARTICIPANTE: 'Cronograma, pagos e inscripción de trabajos (promoción a Autor).',
   AUTOR: 'Crear y enviar trabajos científicos.',
   EVALUADOR: 'Aceptar o rechazar asignaciones de evaluación.',
   ORGANIZADOR_CIENTIFICO: 'Asignar trabajos a evaluadores y promover evaluadores.',

@@ -108,7 +108,7 @@ export const routes: Routes = [
       menu: [{ label: 'Mis trabajos', route: '/autor/trabajos' }],
     },
   },
-  { path: 'autor/trabajos', component: TrabajosAutorComponent, canActivate: [autor] },
+  { path: 'autor/trabajos', component: TrabajosAutorComponent, canActivate: [autor], data: { perfilTrabajos: 'autor' } },
 
   {
     path: 'participante',
@@ -116,10 +116,16 @@ export const routes: Routes = [
     canActivate: [participante],
     data: {
       titulo: 'Home — Participante',
-      descripcion: 'Cronograma personal y pagos de inscripción.',
+      descripcion:
+        'Cronograma personal, pagos de inscripción y envío de trabajos (con promoción automática a Autor).',
       menu: [
         { label: 'Mi cronograma', route: '/participante/cronograma' },
         { label: 'Estado de pago', route: '/participante/pago' },
+        {
+          label: 'Mis trabajos',
+          route: '/participante/trabajos',
+          nota: 'al crear uno se agrega el rol Autor',
+        },
       ],
     },
   },
@@ -129,6 +135,12 @@ export const routes: Routes = [
     canActivate: [participante],
   },
   { path: 'participante/pago', component: PagoParticipanteComponent, canActivate: [participante] },
+  {
+    path: 'participante/trabajos',
+    component: TrabajosAutorComponent,
+    canActivate: [participante],
+    data: { perfilTrabajos: 'participante' },
+  },
 
   { path: '**', redirectTo: '' },
 ];

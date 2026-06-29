@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, throwError } from 'rxjs';
+import { Observable, of, tap, throwError } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Usuario } from '../models/usuario.model';
 import { UsuarioService } from '../servicios/usuario.service';
@@ -91,6 +92,30 @@ export class LoginService {
     }
     this.usuario = { ...this.usuario, rolActual: null };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.usuario));
+  }
+
+  /** Recarga roles/datos desde GET /api/usuarios/{id} (ej. tras promoción a Autor). */
+  refreshUser(): Observable<Usuario> {
+    const id = this.usuario?.id;
+    if (!id) {
+      return throwError(() => new Error('Sin sesión'));
+    }
+    const rolActualPrevio = this.usuario?.rolActual;
+    return this.usuarioService.buscarPorId(id).pipe(
+      switchMap((u) => {
+        if (!u) {
+          return throwError(() => new Error('Usuario no encontrado'));
+        }
+        const roles = u.roles ?? [];
+        const rolActual =
+          rolActualPrevio && roles.includes(rolActualPrevio)
+            ? rolActualPrevio
+            : (u.rolActual ?? roles[0] ?? null);
+        const actualizado: Usuario = { ...u, rolActual };
+        this.setUser(actualizado);
+        return of(actualizado);
+      })
+    );
   }
 
   /** Cambia rolActual usando PUT /api/usuarios/{id}/roles (sin endpoint nuevo). */

@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { LoginService } from '../../../auth/login.service';
 import { TIPOS_TRABAJO } from '../../../models/enums';
@@ -15,7 +15,15 @@ import { TrabajoService } from '../../../servicios/trabajo.service';
   template: `
     <section class="card">
       <h1>Mis trabajos</h1>
-      <p>Autor — <code>/api/trabajos</code></p>
+      @if (perfilParticipante) {
+        <p>
+          Participante — al crear un trabajo el backend te asigna el rol
+          <strong>Autor</strong> automáticamente (<code>POST /api/trabajos</code>).
+          Podés subir el PDF y enviarlo igual que en el panel de autor.
+        </p>
+      } @else {
+        <p>Autor — <code>/api/trabajos</code></p>
+      }
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -97,7 +105,7 @@ import { TrabajoService } from '../../../servicios/trabajo.service';
         </table>
       }
 
-      <p><a routerLink="/autor">← Menú autor</a></p>
+      <p><a [routerLink]="menuVolver">← {{ etiquetaVolver }}</a></p>
     </section>
   `,
 })
@@ -111,6 +119,9 @@ export class TrabajosAutorComponent implements OnInit {
   error = '';
   mensaje = '';
   autorId?: number;
+  perfilParticipante = false;
+  menuVolver = '/autor';
+  etiquetaVolver = 'Menú autor';
 
   form = this.fb.group({
     titulo: ['', Validators.required],
@@ -122,10 +133,15 @@ export class TrabajosAutorComponent implements OnInit {
 
   constructor(
     private loginService: LoginService,
-    private trabajoService: TrabajoService
+    private trabajoService: TrabajoService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    this.perfilParticipante = this.route.snapshot.data['perfilTrabajos'] === 'participante';
+    this.menuVolver = this.perfilParticipante ? '/participante' : '/autor';
+    this.etiquetaVolver = this.perfilParticipante ? 'Menú participante' : 'Menú autor';
+
     this.autorId = this.loginService.getUser()?.id;
     if (!this.autorId) {
       this.error = 'Sesión inválida.';
@@ -143,7 +159,9 @@ export class TrabajosAutorComponent implements OnInit {
     const coautores = raw.coautoresTexto
       ? raw.coautoresTexto.split(',').map((s) => s.trim()).filter(Boolean)
       : [];
+    const rolesAntes = new Set(this.loginService.getUser()?.roles ?? []);
     this.guardando = true;
+    this.error = '';
     this.trabajoService
       .crear({
         autorId: this.autorId,
@@ -157,13 +175,33 @@ export class TrabajosAutorComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.mensaje = 'Trabajo creado en borrador.';
-          this.guardando = false;
-          this.form.reset({ tipo: this.tipos[0] });
-          this.cargar();
+          this.loginService.refreshUser().subscribe({
+            next: (u) => {
+              const rolesAhora = u.roles ?? [];
+              if (
+                this.perfilParticipante &&
+                !rolesAntes.has('AUTOR') &&
+                rolesAhora.includes('AUTOR')
+              ) {
+                this.mensaje =
+                  'Trabajo creado. Se te asignó el rol Autor automáticamente. Podés cambiar de perfil desde el header.';
+              } else {
+                this.mensaje = 'Trabajo creado en borrador.';
+              }
+              this.guardando = false;
+              this.form.reset({ tipo: this.tipos[0] });
+              this.cargar();
+            },
+            error: () => {
+              this.mensaje = 'Trabajo creado en borrador.';
+              this.guardando = false;
+              this.form.reset({ tipo: this.tipos[0] });
+              this.cargar();
+            },
+          });
         },
-        error: () => {
-          this.error = 'No se pudo crear el trabajo.';
+        error: (err) => {
+          this.error = err?.error?.error ?? 'No se pudo crear el trabajo.';
           this.guardando = false;
         },
       });
