@@ -36,4 +36,9 @@ public record AuthenticatedUser(Long userId, List<String> roles) {
   public boolean canListAllPagos() {
     return isAdmin();
   }
+
+  /** Catálogo de actividades visible para cualquier usuario autenticado. */
+  public boolean canListActividades() {
+    return true;
+  }
 }

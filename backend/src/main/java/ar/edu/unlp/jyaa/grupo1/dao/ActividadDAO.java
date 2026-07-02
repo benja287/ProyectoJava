@@ -1,5 +1,6 @@
 package ar.edu.unlp.jyaa.grupo1.dao;
 
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.ActividadFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,5 +11,9 @@ public interface ActividadDAO extends GenericDAO<Actividad> {
 
   List<Actividad> listarPaginado(int offset, int limit);
 
+  List<Actividad> listarFiltrado(ActividadFiltro filtro, int offset, int limit);
+
   long contar();
+
+  long contarFiltrado(ActividadFiltro filtro);
 }

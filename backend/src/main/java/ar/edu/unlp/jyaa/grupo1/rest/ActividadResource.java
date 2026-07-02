@@ -1,6 +1,7 @@
 package ar.edu.unlp.jyaa.grupo1.rest;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
+import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.servicio.ActividadService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.ActividadResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaActividadesDTO;
@@ -20,6 +21,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -38,12 +40,20 @@ public class ActividadResource {
   @GET
   @Operation(
       summary = "Listar actividades (paginado)",
-      description = "Parámetros: page (desde 1, default 1), size (default 20, máx 100).")
+      description =
+          "Parámetros: page (desde 1, default 1), size (default 20, máx 100),"
+              + " codigo, tipoActividad, titulo, sala.")
   @ApiResponse(responseCode = "200", description = "Página de actividades")
   public PaginaActividadesDTO listar(
       @QueryParam("page") @DefaultValue("1") int page,
-      @QueryParam("size") @DefaultValue("20") int size) {
-    return actividadService.listar(page, size);
+      @QueryParam("size") @DefaultValue("20") int size,
+      @QueryParam("codigo") String codigo,
+      @QueryParam("tipoActividad") String tipoActividad,
+      @QueryParam("titulo") String titulo,
+      @QueryParam("sala") String sala,
+      @Context ContainerRequestContext ctx) {
+    var filtro = ActividadService.parseFiltro(codigo, tipoActividad, titulo, sala);
+    return actividadService.listar(page, size, filtro, AuthenticatedUser.from(ctx));
   }
 
   @GET

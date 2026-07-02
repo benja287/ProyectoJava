@@ -1,7 +1,10 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.ActividadDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.ActividadFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
+import ar.edu.unlp.jyaa.grupo1.modelo.TipoActividad;
+import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.ActividadResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaActividadesDTO;
 import jakarta.enterprise.context.RequestScoped;
@@ -17,14 +20,38 @@ public class ActividadService {
 
   @Inject private ActividadDAO actividadDAO;
 
+  public PaginaActividadesDTO listar(int page, int size, ActividadFiltro filtro, AuthenticatedUser auth) {
+    if (!auth.canListActividades()) {
+      throw new NegocioException("No tiene permiso para listar actividades");
+    }
+    return listarFiltrado(page, size, filtro != null ? filtro : new ActividadFiltro(null, null, null, null));
+  }
+
   public PaginaActividadesDTO listar(int page, int size) {
+    return listarFiltrado(page, size, new ActividadFiltro(null, null, null, null));
+  }
+
+  public static ActividadFiltro parseFiltro(
+      String codigo, String tipoActividad, String titulo, String sala) {
+    TipoActividad tipoEnum = null;
+    if (tipoActividad != null && !tipoActividad.isBlank()) {
+      try {
+        tipoEnum = TipoActividad.valueOf(tipoActividad.trim().toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new NegocioException("Tipo de actividad inválido: " + tipoActividad);
+      }
+    }
+    return new ActividadFiltro(codigo, tipoEnum, titulo, sala);
+  }
+
+  private PaginaActividadesDTO listarFiltrado(int page, int size, ActividadFiltro filtro) {
     int safePage = Math.max(PAGE_DEFAULT, page);
     int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
     int offset = (safePage - 1) * safeSize;
 
-    long total = actividadDAO.contar();
+    long total = actividadDAO.contarFiltrado(filtro);
     List<ActividadResumenDTO> items =
-        actividadDAO.listarPaginado(offset, safeSize).stream()
+        actividadDAO.listarFiltrado(filtro, offset, safeSize).stream()
             .map(ActividadResumenDTO::from)
             .toList();
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);

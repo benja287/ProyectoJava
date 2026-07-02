@@ -1,17 +1,22 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import {
+  FilterBarComponent,
+  FilterFieldConfig,
+} from '../../../components/filter-bar/filter-bar.component';
 import { TIPOS_ACTIVIDAD } from '../../../models/enums';
 import { Actividad } from '../../../models/actividad.model';
 import { ActividadService } from '../../../servicios/actividad.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
 import { formatFechaActividad } from '../../../utils/fecha.util';
 
 @Component({
   selector: 'app-actividades-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, FilterBarComponent],
   template: `
     <section class="card">
       <h1>ABM de actividades</h1>
@@ -69,6 +74,14 @@ import { formatFechaActividad } from '../../../utils/fecha.util';
       </form>
 
       <h2>Listado</h2>
+
+      <app-filter-bar
+        [fields]="filterFields"
+        [values]="filtros"
+        (filterApply)="onFiltrosAplicar($event)"
+        (filterClear)="onFiltrosLimpiar()"
+      />
+
       @if (cargando) {
         <p>Cargando...</p>
       } @else if (actividades.length === 0) {
@@ -110,7 +123,21 @@ import { formatFechaActividad } from '../../../utils/fecha.util';
 export class ActividadesAdminComponent implements OnInit {
   private fb = inject(FormBuilder);
 
+  readonly filterFields: FilterFieldConfig[] = [
+    { key: 'codigo', label: 'Código', placeholder: 'Buscar por código' },
+    {
+      key: 'tipoActividad',
+      label: 'Tipo de actividad',
+      type: 'select',
+      options: TIPOS_ACTIVIDAD.map((t) => ({ value: t, label: t })),
+    },
+    { key: 'titulo', label: 'Título', placeholder: 'Buscar por título' },
+    { key: 'sala', label: 'Sala', placeholder: 'Buscar por sala' },
+  ];
+  readonly filterKeys = ['codigo', 'tipoActividad', 'titulo', 'sala'] as const;
+
   actividades: Actividad[] = [];
+  filtros: Record<string, string> = {};
   tipos = [...TIPOS_ACTIVIDAD];
   editando?: Actividad;
   cargando = true;
@@ -127,14 +154,35 @@ export class ActividadesAdminComponent implements OnInit {
     codigo: [''],
   });
 
-  constructor(private actividadService: ActividadService) {}
+  constructor(
+    private actividadService: ActividadService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   formatFecha(valor: unknown): string {
     return formatFechaActividad(valor);
   }
 
   ngOnInit(): void {
-    this.cargar();
+    this.route.queryParamMap.subscribe((params) => {
+      this.filtros = filtroFromParams(params, this.filterKeys);
+      this.cargar();
+    });
+  }
+
+  onFiltrosAplicar(values: Record<string, string>): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro(values, this.filterKeys),
+    });
+  }
+
+  onFiltrosLimpiar(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro({}, this.filterKeys),
+    });
   }
 
   editar(a: Actividad): void {
@@ -215,7 +263,7 @@ export class ActividadesAdminComponent implements OnInit {
 
   private cargar(): void {
     this.cargando = true;
-    this.actividadService.listar().subscribe({
+    this.actividadService.listar(1, 100, this.filtros).subscribe({
       next: (items) => {
         this.actividades = items;
         this.cargando = false;

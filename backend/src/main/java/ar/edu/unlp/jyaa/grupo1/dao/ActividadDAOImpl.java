@@ -2,10 +2,15 @@ package ar.edu.unlp.jyaa.grupo1.dao;
 
 import jakarta.enterprise.context.RequestScoped;
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.ActividadFiltro;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.JpqlLikeFilters;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RequestScoped
 public class ActividadDAOImpl extends AbstractJpaDAO<Actividad> implements ActividadDAO {
@@ -46,6 +51,48 @@ public class ActividadDAOImpl extends AbstractJpaDAO<Actividad> implements Activ
     } finally {
       closeLegacy(em);
     }
+  }
+
+  @Override
+  public long contarFiltrado(ActividadFiltro filtro) {
+    EntityManager em = emConsulta();
+    try {
+      Map<String, Object> params = new HashMap<>();
+      String jpql = buildActividadWhere("SELECT COUNT(a) FROM Actividad a", filtro, params);
+      TypedQuery<Long> q = em.createQuery(jpql, Long.class);
+      params.forEach(q::setParameter);
+      return q.getSingleResult();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public List<Actividad> listarFiltrado(ActividadFiltro filtro, int offset, int limit) {
+    EntityManager em = emConsulta();
+    try {
+      Map<String, Object> params = new HashMap<>();
+      String jpql = buildActividadWhere("SELECT a FROM Actividad a", filtro, params);
+      jpql += " ORDER BY a.inicio";
+      TypedQuery<Actividad> q = em.createQuery(jpql, Actividad.class);
+      params.forEach(q::setParameter);
+      return q.setFirstResult(offset).setMaxResults(limit).getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  private static String buildActividadWhere(
+      String select, ActividadFiltro filtro, Map<String, Object> params) {
+    StringBuilder jpql = new StringBuilder(select).append(" WHERE 1=1");
+    JpqlLikeFilters.appendLike(jpql, params, "a.codigo", "codigo", filtro.codigo());
+    JpqlLikeFilters.appendLike(jpql, params, "a.titulo", "titulo", filtro.titulo());
+    JpqlLikeFilters.appendLike(jpql, params, "a.sala", "sala", filtro.sala());
+    if (filtro.tipoActividad() != null) {
+      jpql.append(" AND a.tipoActividad = :tipoActividad");
+      params.put("tipoActividad", filtro.tipoActividad());
+    }
+    return jpql.toString();
   }
 
   @Override
