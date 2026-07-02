@@ -87,11 +87,15 @@ export class IdleSessionService {
   }
 
   private hasActiveSession(): boolean {
-    return (
-      this.loginService.getUser() != null &&
-      this.loginService.getToken() != null &&
-      !this.loginService.isTokenExpired()
-    );
+    const user = this.loginService.getUser();
+    if (!user) {
+      return false;
+    }
+    const token = this.loginService.getToken();
+    if (!token) {
+      return true;
+    }
+    return !this.loginService.isTokenExpired();
   }
 
   private onIdleTimeout(): void {

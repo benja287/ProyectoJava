@@ -47,6 +47,13 @@ export class LoginService {
       return;
     }
 
+    // Sesión legacy (Entrega 5 sin JWT en backend): solo usuario en storage
+    if (usuario && !token) {
+      this.usuario = usuario;
+      this.onSessionEstablished();
+      return;
+    }
+
     if (!usuario || !token || this.isJwtExpired(token, 0)) {
       this.logout();
       return;
@@ -62,14 +69,9 @@ export class LoginService {
    */
   login(email: string, password: string): Observable<Usuario> {
     return this.http
-      .post<LoginResponse>(`${environment.apiUrl}/login`, { email, password })
+      .post<LoginResponse | Usuario>(`${environment.apiUrl}/login`, { email, password })
       .pipe(
-        tap((res) => {
-          this.setToken(res.token);
-          this.setUser(res.usuario);
-          this.onSessionEstablished();
-        }),
-        map((res) => res.usuario),
+        map((res) => this.applyLoginResponse(res)),
         catchError((err) => {
           if (isCuentaDeshabilitada(err)) {
             this.logout();
@@ -118,7 +120,11 @@ export class LoginService {
     if (!this.usuario) {
       return false;
     }
-    if (!this.getToken() || this.isTokenExpired()) {
+    const token = this.getToken();
+    if (!token) {
+      return true;
+    }
+    if (this.isTokenExpired()) {
       this.logout();
       return false;
     }
@@ -262,5 +268,23 @@ export class LoginService {
   /** Arranca o reinicia el temporizador de inactividad tras login o restauración de sesión. */
   private onSessionEstablished(): void {
     this.injector.get(IdleSessionService).resetIdleTimer();
+  }
+
+  /** Soporta LoginResponseDTO (JWT) o UsuarioDTO plano (backend Entrega 5 legacy). */
+  private applyLoginResponse(res: LoginResponse | Usuario): Usuario {
+    if (this.isJwtLoginResponse(res)) {
+      this.setToken(res.token);
+      this.setUser(res.usuario);
+      this.onSessionEstablished();
+      return res.usuario;
+    }
+    this.setUser(res);
+    this.onSessionEstablished();
+    return res;
+  }
+
+  private isJwtLoginResponse(res: LoginResponse | Usuario): res is LoginResponse {
+    const candidate = res as LoginResponse;
+    return typeof candidate.token === 'string' && candidate.usuario != null;
   }
 }

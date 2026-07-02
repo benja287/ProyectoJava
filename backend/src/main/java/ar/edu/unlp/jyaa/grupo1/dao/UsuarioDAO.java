@@ -12,6 +12,9 @@ public interface UsuarioDAO extends GenericDAO<Usuario> {
 
   Optional<Usuario> buscarPorEmail(String email);
 
+  /** Consulta liviana: solo el flag activo (sin cargar roles ni password). */
+  Optional<Boolean> isActivoById(Long id);
+
   /** Alias de recuperarPorId para código que esperaba Optional. */
   default Optional<Usuario> buscarPorId(Long id) {
     return Optional.ofNullable(recuperarPorId(id));

@@ -64,6 +64,20 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
     }
   }
 
+  @Override
+  public Optional<Boolean> isActivoById(Long id) {
+    EntityManager em = entityManagerParaConsulta();
+    try {
+      List<Boolean> list =
+          em.createQuery("SELECT u.activo FROM Usuario u WHERE u.id = :id", Boolean.class)
+              .setParameter("id", id)
+              .getResultList();
+      return list.stream().findFirst();
+    } finally {
+      cerrarSiLegacy(em);
+    }
+  }
+
   private EntityManager entityManagerParaConsulta() {
     EntityManager cdi = getEntityManager();
     return cdi != null ? cdi : JpaUtil.createEntityManager();

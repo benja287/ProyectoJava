@@ -22,6 +22,7 @@ public class JaxRsApplication extends Application {
         MultiPartFeature.class,
         CorsRequestFilter.class,
         CorsResponseFilter.class,
+        JwtAuthFilter.class,
         NegocioExceptionMapper.class,
         NotFoundExceptionMapper.class,
         HealthResource.class,
