@@ -1,19 +1,32 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
+import {
+  FilterBarComponent,
+  FilterFieldConfig,
+} from '../../../components/filter-bar/filter-bar.component';
+import { ESTADOS_TRABAJO } from '../../../models/enums';
 import { Trabajo } from '../../../models/trabajo.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
 
 @Component({
   selector: 'app-trabajos-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink, ArchivoLinkComponent],
+  imports: [CommonModule, RouterLink, ArchivoLinkComponent, FilterBarComponent],
   template: `
     <section class="card">
       <h1>Listado de trabajos</h1>
       <p>Admin — limpieza y gestión. DELETE <code>/api/trabajos/{{ '{' }}id{{ '}' }}</code></p>
+
+      <app-filter-bar
+        [fields]="filterFields"
+        [values]="filtros"
+        (filterApply)="onFiltrosAplicar($event)"
+        (filterClear)="onFiltrosLimpiar()"
+      />
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -66,15 +79,50 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   `,
 })
 export class TrabajosAdminComponent implements OnInit {
+  readonly filterFields: FilterFieldConfig[] = [
+    { key: 'titulo', label: 'Título', placeholder: 'Buscar por título' },
+    { key: 'resumen', label: 'Resumen', placeholder: 'Buscar en resumen' },
+    { key: 'ejeTematico', label: 'Eje temático', placeholder: 'Buscar eje' },
+    {
+      key: 'estado',
+      label: 'Estado',
+      type: 'select',
+      options: ESTADOS_TRABAJO.map((e) => ({ value: e, label: e })),
+    },
+  ];
+  readonly filterKeys = ['titulo', 'resumen', 'ejeTematico', 'estado'] as const;
+
   trabajos: Trabajo[] = [];
+  filtros: Record<string, string> = {};
   cargando = true;
   error = '';
   mensaje = '';
 
-  constructor(private trabajoService: TrabajoService) {}
+  constructor(
+    private trabajoService: TrabajoService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.cargar();
+    this.route.queryParamMap.subscribe((params) => {
+      this.filtros = filtroFromParams(params, this.filterKeys);
+      this.cargar();
+    });
+  }
+
+  onFiltrosAplicar(values: Record<string, string>): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro(values, this.filterKeys),
+    });
+  }
+
+  onFiltrosLimpiar(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro({}, this.filterKeys),
+    });
   }
 
   eliminar(t: Trabajo): void {
@@ -95,7 +143,7 @@ export class TrabajosAdminComponent implements OnInit {
   private cargar(): void {
     this.cargando = true;
     this.error = '';
-    this.trabajoService.listar(1, 100).subscribe({
+    this.trabajoService.listar(1, 100, this.filtros).subscribe({
       next: (items) => {
         this.trabajos = items;
         this.cargando = false;

@@ -3,11 +3,13 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 import ar.edu.unlp.jyaa.grupo1.dao.InscripcionCongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.PagoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.PagoFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
+import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaPagosDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -86,26 +88,54 @@ public class PagoService {
     }
   }
 
+  public PaginaPagosDTO listarPendientes(
+      int page, int size, PagoFiltro filtro, AuthenticatedUser auth) {
+    PagoFiltro scoped = aplicarAlcance(filtro, auth);
+    PagoFiltro conEstado =
+        new PagoFiltro(EstadoPago.PENDIENTE, scoped.monto(), scoped.motivoRechazo(), scoped.usuarioId());
+    return listarFiltrado(page, size, conEstado);
+  }
+
   public PaginaPagosDTO listarPendientes(int page, int size) {
-    int safePage = Math.max(PAGE_DEFAULT, page);
-    int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
-    int offset = (safePage - 1) * safeSize;
+    return listarFiltrado(page, size, new PagoFiltro(EstadoPago.PENDIENTE, null, null, null));
+  }
 
-    long total = pagoDAO.contarPorEstado(EstadoPago.PENDIENTE);
-    List<Pago> items =
-        pagoDAO.listarPorEstadoPaginado(EstadoPago.PENDIENTE, offset, safeSize);
-    int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
-
-    return new PaginaPagosDTO(items, safePage, safeSize, total, totalPages);
+  public PaginaPagosDTO listar(int page, int size, PagoFiltro filtro, AuthenticatedUser auth) {
+    return listarFiltrado(page, size, aplicarAlcance(filtro, auth));
   }
 
   public PaginaPagosDTO listar(int page, int size) {
+    return listarFiltrado(page, size, new PagoFiltro(null, null, null, null));
+  }
+
+  public static PagoFiltro parseFiltro(
+      String estado, Double monto, String motivoRechazo, Long usuarioId) {
+    EstadoPago estadoEnum = null;
+    if (estado != null && !estado.isBlank()) {
+      try {
+        estadoEnum = EstadoPago.valueOf(estado.trim().toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new NegocioException("Estado de pago inválido: " + estado);
+      }
+    }
+    return new PagoFiltro(estadoEnum, monto, motivoRechazo, usuarioId);
+  }
+
+  private PagoFiltro aplicarAlcance(PagoFiltro filtro, AuthenticatedUser auth) {
+    PagoFiltro base = filtro != null ? filtro : new PagoFiltro(null, null, null, null);
+    if (auth.canListAllPagos()) {
+      return base;
+    }
+    return new PagoFiltro(base.estado(), base.monto(), base.motivoRechazo(), auth.userId());
+  }
+
+  private PaginaPagosDTO listarFiltrado(int page, int size, PagoFiltro filtro) {
     int safePage = Math.max(PAGE_DEFAULT, page);
     int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
     int offset = (safePage - 1) * safeSize;
 
-    long total = pagoDAO.contar();
-    List<Pago> items = pagoDAO.listarPaginado(offset, safeSize);
+    long total = pagoDAO.contarFiltrado(filtro);
+    List<Pago> items = pagoDAO.listarFiltrado(filtro, offset, safeSize);
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
 
     return new PaginaPagosDTO(items, safePage, safeSize, total, totalPages);

@@ -1,18 +1,23 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
+import {
+  FilterBarComponent,
+  FilterFieldConfig,
+} from '../../../components/filter-bar/filter-bar.component';
 import { LoginService } from '../../../auth/login.service';
-import { TIPOS_TRABAJO } from '../../../models/enums';
+import { ESTADOS_TRABAJO, TIPOS_TRABAJO } from '../../../models/enums';
 import { Trabajo } from '../../../models/trabajo.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
 
 @Component({
   selector: 'app-trabajos-autor',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, ArchivoLinkComponent],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, ArchivoLinkComponent, FilterBarComponent],
   template: `
     <section class="card">
       <h1>Mis trabajos</h1>
@@ -63,6 +68,14 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       </form>
 
       <h2>Listado</h2>
+
+      <app-filter-bar
+        [fields]="filterFields"
+        [values]="filtros"
+        (filterApply)="onFiltrosAplicar($event)"
+        (filterClear)="onFiltrosLimpiar()"
+      />
+
       @if (cargando) {
         <p>Cargando...</p>
       } @else if (trabajos.length === 0) {
@@ -113,7 +126,21 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 export class TrabajosAutorComponent implements OnInit {
   private fb = inject(FormBuilder);
 
+  readonly filterFields: FilterFieldConfig[] = [
+    { key: 'titulo', label: 'Título', placeholder: 'Buscar por título' },
+    { key: 'resumen', label: 'Resumen', placeholder: 'Buscar en resumen' },
+    { key: 'ejeTematico', label: 'Eje temático', placeholder: 'Buscar eje' },
+    {
+      key: 'estado',
+      label: 'Estado',
+      type: 'select',
+      options: ESTADOS_TRABAJO.map((e) => ({ value: e, label: e })),
+    },
+  ];
+  readonly filterKeys = ['titulo', 'resumen', 'ejeTematico', 'estado'] as const;
+
   trabajos: Trabajo[] = [];
+  filtros: Record<string, string> = {};
   tipos = [...TIPOS_TRABAJO];
   cargando = true;
   guardando = false;
@@ -135,7 +162,8 @@ export class TrabajosAutorComponent implements OnInit {
   constructor(
     private loginService: LoginService,
     private trabajoService: TrabajoService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -149,7 +177,25 @@ export class TrabajosAutorComponent implements OnInit {
       this.cargando = false;
       return;
     }
-    this.cargar();
+
+    this.route.queryParamMap.subscribe((params) => {
+      this.filtros = filtroFromParams(params, this.filterKeys);
+      this.cargar();
+    });
+  }
+
+  onFiltrosAplicar(values: Record<string, string>): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro(values, this.filterKeys),
+    });
+  }
+
+  onFiltrosLimpiar(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro({}, this.filterKeys),
+    });
   }
 
   crear(): void {
@@ -247,7 +293,7 @@ export class TrabajosAutorComponent implements OnInit {
       return;
     }
     this.cargando = true;
-    this.trabajoService.listar(1, 100, this.autorId).subscribe({
+    this.trabajoService.listar(1, 100, { ...this.filtros, autorId: this.autorId }).subscribe({
       next: (items) => {
         this.trabajos = items;
         this.cargando = false;

@@ -1,10 +1,15 @@
 package ar.edu.unlp.jyaa.grupo1.dao;
 
 import jakarta.enterprise.context.RequestScoped;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.JpqlLikeFilters;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.UsuarioFiltro;
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RequestScoped
@@ -76,6 +81,44 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
     } finally {
       cerrarSiLegacy(em);
     }
+  }
+
+  @Override
+  public List<Usuario> listarFiltrado(UsuarioFiltro filtro, int offset, int limit) {
+    EntityManager em = entityManagerParaConsulta();
+    try {
+      Map<String, Object> params = new HashMap<>();
+      String jpql = buildUsuarioWhere("SELECT u FROM Usuario u LEFT JOIN FETCH u.roles", filtro, params);
+      jpql += " ORDER BY u.apellido";
+      TypedQuery<Usuario> q = em.createQuery(jpql, Usuario.class);
+      params.forEach(q::setParameter);
+      return q.setFirstResult(offset).setMaxResults(limit).getResultList();
+    } finally {
+      cerrarSiLegacy(em);
+    }
+  }
+
+  @Override
+  public long contarFiltrado(UsuarioFiltro filtro) {
+    EntityManager em = entityManagerParaConsulta();
+    try {
+      Map<String, Object> params = new HashMap<>();
+      String jpql = buildUsuarioWhere("SELECT COUNT(u) FROM Usuario u", filtro, params);
+      TypedQuery<Long> q = em.createQuery(jpql, Long.class);
+      params.forEach(q::setParameter);
+      return q.getSingleResult();
+    } finally {
+      cerrarSiLegacy(em);
+    }
+  }
+
+  private static String buildUsuarioWhere(
+      String select, UsuarioFiltro filtro, Map<String, Object> params) {
+    StringBuilder jpql = new StringBuilder(select).append(" WHERE 1=1");
+    JpqlLikeFilters.appendLike(jpql, params, "u.apellido", "apellido", filtro.apellido());
+    JpqlLikeFilters.appendLike(jpql, params, "u.nombre", "nombre", filtro.nombre());
+    JpqlLikeFilters.appendLike(jpql, params, "u.email", "email", filtro.email());
+    return jpql.toString();
   }
 
   private EntityManager entityManagerParaConsulta() {

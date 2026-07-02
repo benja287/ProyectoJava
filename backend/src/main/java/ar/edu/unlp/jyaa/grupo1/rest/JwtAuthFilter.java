@@ -55,6 +55,9 @@ public class JwtAuthFilter implements ContainerRequestFilter {
       var claims = jwtService.parse(token);
       requestContext.setProperty("jwtSubject", claims.getSubject());
       requestContext.setProperty("jwtEmail", claims.get("email", String.class));
+      @SuppressWarnings("unchecked")
+      var roles = (java.util.List<String>) claims.get("roles", java.util.List.class);
+      requestContext.setProperty("jwtRoles", roles != null ? roles : java.util.List.of());
 
       if (!isAccountActive(claims.getSubject(), requestContext)) {
         return;

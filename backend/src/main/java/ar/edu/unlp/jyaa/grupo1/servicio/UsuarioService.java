@@ -1,8 +1,10 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.UsuarioFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
+import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaUsuariosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.UsuarioDTO;
 import jakarta.enterprise.context.RequestScoped;
@@ -20,14 +22,18 @@ public class UsuarioService {
 
   @Inject private UsuarioDAO usuarioDAO;
 
-  public PaginaUsuariosDTO listar(int page, int size) {
+  public PaginaUsuariosDTO listar(int page, int size, UsuarioFiltro filtro, AuthenticatedUser auth) {
+    if (!auth.canListAllUsuarios()) {
+      throw new NegocioException("No tiene permiso para listar usuarios");
+    }
     int safePage = Math.max(PAGE_DEFAULT, page);
     int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
     int offset = (safePage - 1) * safeSize;
+    UsuarioFiltro effective = filtro != null ? filtro : new UsuarioFiltro(null, null, null);
 
-    long total = usuarioDAO.contar();
+    long total = usuarioDAO.contarFiltrado(effective);
     List<UsuarioDTO> items =
-        usuarioDAO.listarPaginado(offset, safeSize).stream().map(UsuarioDTO::from).toList();
+        usuarioDAO.listarFiltrado(effective, offset, safeSize).stream().map(UsuarioDTO::from).toList();
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
 
     return new PaginaUsuariosDTO(items, safePage, safeSize, total, totalPages);

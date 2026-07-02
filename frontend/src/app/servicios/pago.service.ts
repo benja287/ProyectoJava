@@ -4,6 +4,16 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { PaginaPagos, Pago, ValidacionPagoRequest } from '../models/pago.model';
+import { buildListHttpParams } from '../utils/filtro-params.util';
+
+export interface PagoListFiltro {
+  estado?: string;
+  monto?: string | number;
+  motivoRechazo?: string;
+}
+
+const PAGO_FILTER_KEYS = ['estado', 'monto', 'motivoRechazo'] as const;
+const PAGO_PENDIENTE_FILTER_KEYS = ['monto', 'motivoRechazo'] as const;
 
 @Injectable({ providedIn: 'root' })
 export class PagoService {
@@ -11,16 +21,16 @@ export class PagoService {
 
   constructor(private http: HttpClient) {}
 
-  listarPendientes(page = 1, size = 50): Observable<Pago[]> {
+  listarPendientes(page = 1, size = 50, filtro: PagoListFiltro = {}): Observable<Pago[]> {
+    const params = buildListHttpParams(page, size, filtro, PAGO_PENDIENTE_FILTER_KEYS);
     return this.http
-      .get<PaginaPagos>(`${this.baseUrl}/pendientes?page=${page}&size=${size}`)
+      .get<PaginaPagos>(`${this.baseUrl}/pendientes`, { params })
       .pipe(map((p) => p.items));
   }
 
-  listar(page = 1, size = 50): Observable<Pago[]> {
-    return this.http
-      .get<PaginaPagos>(`${this.baseUrl}?page=${page}&size=${size}`)
-      .pipe(map((p) => p.items));
+  listar(page = 1, size = 50, filtro: PagoListFiltro = {}): Observable<Pago[]> {
+    const params = buildListHttpParams(page, size, filtro, PAGO_FILTER_KEYS);
+    return this.http.get<PaginaPagos>(this.baseUrl, { params }).pipe(map((p) => p.items));
   }
 
   consultarEstadoPorUsuario(usuarioId: number): Observable<Pago> {

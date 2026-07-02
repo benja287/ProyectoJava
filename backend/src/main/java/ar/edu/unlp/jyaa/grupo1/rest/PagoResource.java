@@ -4,6 +4,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ComprobanteUploadForm;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.PagoRegistroRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ValidacionPagoRequest;
+import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.servicio.PagoService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaPagosDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +26,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -50,8 +52,13 @@ public class PagoResource {
   @ApiResponse(responseCode = "200", description = "Listado paginado de pagos")
   public PaginaPagosDTO listar(
       @QueryParam("page") @DefaultValue("1") int page,
-      @QueryParam("size") @DefaultValue("20") int size) {
-    return pagoService.listar(page, size);
+      @QueryParam("size") @DefaultValue("20") int size,
+      @QueryParam("estado") String estado,
+      @QueryParam("monto") Double monto,
+      @QueryParam("motivoRechazo") String motivoRechazo,
+      @Context ContainerRequestContext ctx) {
+    var filtro = PagoService.parseFiltro(estado, monto, motivoRechazo, null);
+    return pagoService.listar(page, size, filtro, AuthenticatedUser.from(ctx));
   }
 
   @GET
@@ -60,8 +67,12 @@ public class PagoResource {
   @ApiResponse(responseCode = "200", description = "Listado paginado de pagos pendientes")
   public PaginaPagosDTO listarPendientes(
       @QueryParam("page") @DefaultValue("1") int page,
-      @QueryParam("size") @DefaultValue("20") int size) {
-    return pagoService.listarPendientes(page, size);
+      @QueryParam("size") @DefaultValue("20") int size,
+      @QueryParam("monto") Double monto,
+      @QueryParam("motivoRechazo") String motivoRechazo,
+      @Context ContainerRequestContext ctx) {
+    var filtro = PagoService.parseFiltro(null, monto, motivoRechazo, null);
+    return pagoService.listarPendientes(page, size, filtro, AuthenticatedUser.from(ctx));
   }
 
   @GET

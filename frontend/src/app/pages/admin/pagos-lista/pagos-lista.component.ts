@@ -1,19 +1,32 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
+import {
+  FilterBarComponent,
+  FilterFieldConfig,
+} from '../../../components/filter-bar/filter-bar.component';
+import { ESTADOS_PAGO } from '../../../models/enums';
 import { Pago } from '../../../models/pago.model';
 import { PagoService } from '../../../servicios/pago.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
 
 @Component({
   selector: 'app-pagos-lista',
   standalone: true,
-  imports: [CommonModule, RouterLink, ArchivoLinkComponent],
+  imports: [CommonModule, RouterLink, ArchivoLinkComponent, FilterBarComponent],
   template: `
     <section class="card">
       <h1>Listado de pagos</h1>
       <p>Admin — todos los estados. DELETE <code>/api/pagos/{{ '{' }}id{{ '}' }}</code></p>
+
+      <app-filter-bar
+        [fields]="filterFields"
+        [values]="filtros"
+        (filterApply)="onFiltrosAplicar($event)"
+        (filterClear)="onFiltrosLimpiar()"
+      />
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -72,15 +85,49 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   `,
 })
 export class PagosListaComponent implements OnInit {
+  readonly filterFields: FilterFieldConfig[] = [
+    {
+      key: 'estado',
+      label: 'Estado',
+      type: 'select',
+      options: ESTADOS_PAGO.map((e) => ({ value: e, label: e })),
+    },
+    { key: 'monto', label: 'Monto', type: 'number', placeholder: 'Ej. 1500' },
+    { key: 'motivoRechazo', label: 'Motivo rechazo', placeholder: 'Buscar motivo' },
+  ];
+  readonly filterKeys = ['estado', 'monto', 'motivoRechazo'] as const;
+
   pagos: Pago[] = [];
+  filtros: Record<string, string> = {};
   cargando = true;
   error = '';
   mensaje = '';
 
-  constructor(private pagoService: PagoService) {}
+  constructor(
+    private pagoService: PagoService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.cargar();
+    this.route.queryParamMap.subscribe((params) => {
+      this.filtros = filtroFromParams(params, this.filterKeys);
+      this.cargar();
+    });
+  }
+
+  onFiltrosAplicar(values: Record<string, string>): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro(values, this.filterKeys),
+    });
+  }
+
+  onFiltrosLimpiar(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro({}, this.filterKeys),
+    });
   }
 
   eliminar(p: Pago): void {
@@ -101,7 +148,7 @@ export class PagosListaComponent implements OnInit {
   private cargar(): void {
     this.cargando = true;
     this.error = '';
-    this.pagoService.listar(1, 100).subscribe({
+    this.pagoService.listar(1, 100, this.filtros).subscribe({
       next: (items) => {
         this.pagos = items;
         this.cargando = false;

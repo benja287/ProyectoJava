@@ -1,5 +1,6 @@
 package ar.edu.unlp.jyaa.grupo1.dao;
 
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.UsuarioFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +10,10 @@ public interface UsuarioDAO extends GenericDAO<Usuario> {
   List<Usuario> listarPaginado(int offset, int limit);
 
   long contar();
+
+  List<Usuario> listarFiltrado(UsuarioFiltro filtro, int offset, int limit);
+
+  long contarFiltrado(UsuarioFiltro filtro);
 
   Optional<Usuario> buscarPorEmail(String email);
 

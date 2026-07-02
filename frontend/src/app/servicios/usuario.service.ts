@@ -8,6 +8,15 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { PaginaUsuarios, RolesRequest, Usuario } from '../models/usuario.model';
+import { buildListHttpParams } from '../utils/filtro-params.util';
+
+export interface UsuarioListFiltro {
+  apellido?: string;
+  nombre?: string;
+  email?: string;
+}
+
+const USUARIO_FILTER_KEYS = ['apellido', 'nombre', 'email'] as const;
 
 @Injectable({ providedIn: 'root' })
 export class UsuarioService {
@@ -16,10 +25,11 @@ export class UsuarioService {
 
   constructor(private http: HttpClient) {}
 
-  /** GET /api/usuarios?page=&size= → devuelve solo el array items */
-  listar(page = 1, size = 50): Observable<Usuario[]> {
+  /** GET /api/usuarios?page=&size=&apellido=&nombre=&email= */
+  listar(page = 1, size = 50, filtro: UsuarioListFiltro = {}): Observable<Usuario[]> {
+    const params = buildListHttpParams(page, size, filtro, USUARIO_FILTER_KEYS);
     return this.http
-      .get<PaginaUsuarios>(`${this.baseUrl}?page=${page}&size=${size}`)
+      .get<PaginaUsuarios>(this.baseUrl, { params })
       .pipe(map((pagina) => pagina.items));
   }
 

@@ -1,19 +1,31 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Pago } from '../../../models/pago.model';
 import { PagoService } from '../../../servicios/pago.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
+import {
+  FilterBarComponent,
+  FilterFieldConfig,
+} from '../../../components/filter-bar/filter-bar.component';
 import { PagoFilaComponent } from './pago-fila.component';
 
 @Component({
   selector: 'app-pagos-pendientes',
   standalone: true,
-  imports: [CommonModule, RouterLink, PagoFilaComponent],
+  imports: [CommonModule, RouterLink, PagoFilaComponent, FilterBarComponent],
   template: `
     <section class="card">
       <h1>Pagos pendientes de validación</h1>
       <p>Admin — GET <code>/api/pagos/pendientes</code></p>
+
+      <app-filter-bar
+        [fields]="filterFields"
+        [values]="filtros"
+        (filterApply)="onFiltrosAplicar($event)"
+        (filterClear)="onFiltrosLimpiar()"
+      />
 
       @if (cargando) {
         <p>Cargando...</p>
@@ -55,15 +67,43 @@ import { PagoFilaComponent } from './pago-fila.component';
   `,
 })
 export class PagosPendientesComponent implements OnInit {
+  readonly filterFields: FilterFieldConfig[] = [
+    { key: 'monto', label: 'Monto', type: 'number', placeholder: 'Ej. 1500' },
+    { key: 'motivoRechazo', label: 'Motivo rechazo', placeholder: 'Buscar motivo' },
+  ];
+  readonly filterKeys = ['monto', 'motivoRechazo'] as const;
+
   pagos: Pago[] = [];
+  filtros: Record<string, string> = {};
   cargando = true;
   error = '';
   mensaje = '';
 
-  constructor(private pagoService: PagoService) {}
+  constructor(
+    private pagoService: PagoService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.cargar();
+    this.route.queryParamMap.subscribe((params) => {
+      this.filtros = filtroFromParams(params, this.filterKeys);
+      this.cargar();
+    });
+  }
+
+  onFiltrosAplicar(values: Record<string, string>): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro(values, this.filterKeys),
+    });
+  }
+
+  onFiltrosLimpiar(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro({}, this.filterKeys),
+    });
   }
 
   validar(pago: Pago, aprobar: boolean): void {
@@ -91,7 +131,7 @@ export class PagosPendientesComponent implements OnInit {
   private cargar(): void {
     this.cargando = true;
     this.error = '';
-    this.pagoService.listarPendientes().subscribe({
+    this.pagoService.listarPendientes(1, 100, this.filtros).subscribe({
       next: (items) => {
         this.pagos = items;
         this.cargando = false;

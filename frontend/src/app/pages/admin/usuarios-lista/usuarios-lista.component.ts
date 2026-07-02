@@ -4,20 +4,32 @@
  */
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Usuario } from '../../../models/usuario.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
+import {
+  FilterBarComponent,
+  FilterFieldConfig,
+} from '../../../components/filter-bar/filter-bar.component';
 import { UsuarioFilaComponent } from './usuario-fila.component';
 
 @Component({
   selector: 'app-usuarios-lista',
   standalone: true,
-  imports: [CommonModule, RouterLink, UsuarioFilaComponent],
+  imports: [CommonModule, RouterLink, UsuarioFilaComponent, FilterBarComponent],
   template: `
     <section class="card">
       <h1>Gestión de usuarios — Listado</h1>
       <p>Perfil administrador (Entrega 5).</p>
+
+      <app-filter-bar
+        [fields]="filterFields"
+        [values]="filtros"
+        (filterApply)="onFiltrosAplicar($event)"
+        (filterClear)="onFiltrosLimpiar()"
+      />
 
       @if (cargando) {
         <p>Cargando usuarios...</p>
@@ -42,7 +54,6 @@ import { UsuarioFilaComponent } from './usuario-fila.component';
             </tr>
           </thead>
           <tbody>
-            <!-- @for repite una fila por usuario; track u.id optimiza el render -->
             @for (u of usuarios; track u.id) {
               <app-usuario-fila [usuario]="u" (eliminar)="confirmarBaja($event)" />
             }
@@ -59,18 +70,46 @@ import { UsuarioFilaComponent } from './usuario-fila.component';
   `,
 })
 export class UsuariosListaComponent implements OnInit {
+  readonly filterFields: FilterFieldConfig[] = [
+    { key: 'apellido', label: 'Apellido', placeholder: 'Buscar por apellido' },
+    { key: 'nombre', label: 'Nombre', placeholder: 'Buscar por nombre' },
+    { key: 'email', label: 'Email', placeholder: 'Buscar por email' },
+  ];
+  readonly filterKeys = ['apellido', 'nombre', 'email'] as const;
+
   usuarios: Usuario[] = [];
+  filtros: Record<string, string> = {};
   cargando = true;
   error = '';
   mensaje = '';
 
-  constructor(private usuarioService: UsuarioService) {}
+  constructor(
+    private usuarioService: UsuarioService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.cargar();
+    this.route.queryParamMap.subscribe((params) => {
+      this.filtros = filtroFromParams(params, this.filterKeys);
+      this.cargar();
+    });
   }
 
-  /** DELETE /api/usuarios/{id} y recarga la lista */
+  onFiltrosAplicar(values: Record<string, string>): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro(values, this.filterKeys),
+    });
+  }
+
+  onFiltrosLimpiar(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParamsFromFiltro({}, this.filterKeys),
+    });
+  }
+
   confirmarBaja(usuario: Usuario): void {
     if (!usuario.id || !confirm(`¿Dar de baja a ${usuario.email}?`)) {
       return;
@@ -86,14 +125,10 @@ export class UsuariosListaComponent implements OnInit {
     });
   }
 
-  /**
-   * listar() devuelve Observable; subscribe dispara GET /api/usuarios
-   * next → guarda en this.usuarios → Angular repinta la tabla
-   */
   private cargar(): void {
     this.cargando = true;
     this.error = '';
-    this.usuarioService.listar().subscribe({
+    this.usuarioService.listar(1, 100, this.filtros).subscribe({
       next: (data) => {
         this.usuarios = data;
         this.cargando = false;

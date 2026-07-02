@@ -3,6 +3,8 @@ package ar.edu.unlp.jyaa.grupo1.rest;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ActivoRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.RolesRequest;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.UsuarioFiltro;
+import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.servicio.UsuarioService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaUsuariosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.UsuarioDTO;
@@ -22,6 +24,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -42,8 +45,13 @@ public class UsuarioResource {
   @ApiResponse(responseCode = "200", description = "Listado paginado de usuarios")
   public PaginaUsuariosDTO listar(
       @QueryParam("page") @DefaultValue("1") int page,
-      @QueryParam("size") @DefaultValue("20") int size) {
-    return usuarioService.listar(page, size);
+      @QueryParam("size") @DefaultValue("20") int size,
+      @QueryParam("apellido") String apellido,
+      @QueryParam("nombre") String nombre,
+      @QueryParam("email") String email,
+      @Context ContainerRequestContext ctx) {
+    UsuarioFiltro filtro = new UsuarioFiltro(apellido, nombre, email);
+    return usuarioService.listar(page, size, filtro, AuthenticatedUser.from(ctx));
   }
 
   @GET

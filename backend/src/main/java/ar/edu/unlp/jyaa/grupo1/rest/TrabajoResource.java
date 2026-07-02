@@ -3,6 +3,7 @@ package ar.edu.unlp.jyaa.grupo1.rest;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.DocumentoUploadForm;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoCreateRequest;
+import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.servicio.TrabajoService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaTrabajosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoResumenDTO;
@@ -25,6 +26,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -50,12 +52,15 @@ public class TrabajoResource {
   @ApiResponse(responseCode = "200", description = "Página de trabajos")
   public PaginaTrabajosDTO listar(
       @QueryParam("autorId") Long autorId,
+      @QueryParam("titulo") String titulo,
+      @QueryParam("resumen") String resumen,
+      @QueryParam("ejeTematico") String ejeTematico,
+      @QueryParam("estado") String estado,
       @QueryParam("page") @DefaultValue("1") int page,
-      @QueryParam("size") @DefaultValue("20") int size) {
-    if (autorId != null) {
-      return trabajoService.listarPorAutor(autorId, page, size);
-    }
-    return trabajoService.listar(page, size);
+      @QueryParam("size") @DefaultValue("20") int size,
+      @Context ContainerRequestContext ctx) {
+    var filtro = TrabajoService.parseFiltro(titulo, resumen, ejeTematico, estado, autorId);
+    return trabajoService.listar(page, size, filtro, AuthenticatedUser.from(ctx));
   }
 
   @GET

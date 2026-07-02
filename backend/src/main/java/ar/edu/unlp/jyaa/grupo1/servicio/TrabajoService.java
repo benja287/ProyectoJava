@@ -2,10 +2,12 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.TrabajoFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
+import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaTrabajosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoResumenDTO;
 import jakarta.enterprise.context.RequestScoped;
@@ -26,29 +28,53 @@ public class TrabajoService {
   private static final int SIZE_DEFAULT = 20;
   private static final int SIZE_MAX = 100;
 
+  public PaginaTrabajosDTO listar(int page, int size, TrabajoFiltro filtro, AuthenticatedUser auth) {
+    TrabajoFiltro effective = aplicarAlcance(filtro, auth);
+    return listarFiltrado(page, size, effective);
+  }
+
   public PaginaTrabajosDTO listar(int page, int size) {
-    return listarPaginado(page, size, null);
+    return listarFiltrado(page, size, new TrabajoFiltro(null, null, null, null, null));
   }
 
   public PaginaTrabajosDTO listarPorAutor(Long autorId, int page, int size) {
     if (usuarioDAO.recuperarPorId(autorId) == null) {
       throw new NegocioException("Autor no encontrado: " + autorId);
     }
-    return listarPaginado(page, size, autorId);
+    return listarFiltrado(page, size, new TrabajoFiltro(null, null, null, null, autorId));
   }
 
-  private PaginaTrabajosDTO listarPaginado(int page, int size, Long autorId) {
+  public static TrabajoFiltro parseFiltro(
+      String titulo, String resumen, String ejeTematico, String estado, Long autorId) {
+    EstadoTrabajo estadoEnum = null;
+    if (estado != null && !estado.isBlank()) {
+      try {
+        estadoEnum = EstadoTrabajo.valueOf(estado.trim().toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new NegocioException("Estado de trabajo inválido: " + estado);
+      }
+    }
+    return new TrabajoFiltro(titulo, resumen, ejeTematico, estadoEnum, autorId);
+  }
+
+  private TrabajoFiltro aplicarAlcance(TrabajoFiltro filtro, AuthenticatedUser auth) {
+    TrabajoFiltro base =
+        filtro != null ? filtro : new TrabajoFiltro(null, null, null, null, null);
+    if (auth.canListAllTrabajos()) {
+      return base;
+    }
+    return new TrabajoFiltro(
+        base.titulo(), base.resumen(), base.ejeTematico(), base.estado(), auth.userId());
+  }
+
+  private PaginaTrabajosDTO listarFiltrado(int page, int size, TrabajoFiltro filtro) {
     int safePage = Math.max(PAGE_DEFAULT, page);
     int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
     int offset = (safePage - 1) * safeSize;
 
-    long total =
-        autorId != null ? trabajoDAO.contarPorAutor(autorId) : trabajoDAO.contar();
+    long total = trabajoDAO.contarFiltrado(filtro);
     List<TrabajoResumenDTO> items =
-        (autorId != null
-                ? trabajoDAO.listarPorAutorPaginado(autorId, offset, safeSize)
-                : trabajoDAO.listarPaginado(offset, safeSize))
-            .stream()
+        trabajoDAO.listarFiltrado(filtro, offset, safeSize).stream()
             .map(TrabajoResumenDTO::from)
             .toList();
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);

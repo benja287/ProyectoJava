@@ -4,6 +4,17 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { PaginaTrabajos, Trabajo, TrabajoCreateRequest } from '../models/trabajo.model';
+import { buildListHttpParams } from '../utils/filtro-params.util';
+
+export interface TrabajoListFiltro {
+  titulo?: string;
+  resumen?: string;
+  ejeTematico?: string;
+  estado?: string;
+  autorId?: number;
+}
+
+const TRABAJO_FILTER_KEYS = ['titulo', 'resumen', 'ejeTematico', 'estado', 'autorId'] as const;
 
 @Injectable({ providedIn: 'root' })
 export class TrabajoService {
@@ -11,12 +22,9 @@ export class TrabajoService {
 
   constructor(private http: HttpClient) {}
 
-  listar(page = 1, size = 50, autorId?: number): Observable<Trabajo[]> {
-    let url = `${this.baseUrl}?page=${page}&size=${size}`;
-    if (autorId != null) {
-      url += `&autorId=${autorId}`;
-    }
-    return this.http.get<PaginaTrabajos>(url).pipe(map((p) => p.items));
+  listar(page = 1, size = 50, filtro: TrabajoListFiltro = {}): Observable<Trabajo[]> {
+    const params = buildListHttpParams(page, size, filtro, TRABAJO_FILTER_KEYS);
+    return this.http.get<PaginaTrabajos>(this.baseUrl, { params }).pipe(map((p) => p.items));
   }
 
   buscar(id: number): Observable<Trabajo> {
