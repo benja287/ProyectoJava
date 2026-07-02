@@ -1,3 +1,8 @@
+/**
+ * Mapa de rutas de la SPA.
+ * Cada entrada define: URL → componente (+ guards + data opcional).
+ * Los guards se ejecutan ANTES de mostrar el componente en <router-outlet>.
+ */
 import { Routes } from '@angular/router';
 import { authGuard } from './auth/auth.guard';
 import { roleGuard } from './auth/role.guard';
@@ -21,6 +26,7 @@ import { CronogramaParticipanteComponent } from './pages/participante/cronograma
 import { PagoParticipanteComponent } from './pages/participante/pago/pago-participante.component';
 import { SeleccionRolComponent } from './pages/seleccion-rol/seleccion-rol.component';
 
+// Guards reutilizables por perfil (verifican rol en LoginService)
 const admin = roleGuard(['ADMINISTRADOR']);
 const organizador = roleGuard(['ORGANIZADOR_CIENTIFICO']);
 const evaluador = roleGuard(['EVALUADOR']);
@@ -28,15 +34,18 @@ const autor = roleGuard(['AUTOR']);
 const participante = roleGuard(['PARTICIPANTE']);
 
 export const routes: Routes = [
+  // --- Rutas públicas (sin guards) ---
   { path: '', component: InicioComponent },
   { path: 'login', component: LoginComponent },
   { path: 'seleccion-rol', component: SeleccionRolComponent, canActivate: [authGuard, seleccionRolGuard] },
   { path: 'registro', component: RegistroComponent },
 
+  // --- Perfil Administrador ---
   {
     path: 'admin',
     component: PerfilHomeComponent,
     canActivate: [admin],
+    // data → PerfilHomeComponent lo lee con ActivatedRoute.snapshot.data
     data: {
       titulo: 'Home — Administrador',
       descripcion: 'Gestión de usuarios, pagos y actividades.',
@@ -58,6 +67,7 @@ export const routes: Routes = [
   { path: 'admin/actividades', component: ActividadesAdminComponent, canActivate: [admin] },
   { path: 'admin/trabajos', component: TrabajosAdminComponent, canActivate: [admin] },
 
+  // --- Perfil Organizador científico ---
   {
     path: 'organizador',
     component: PerfilHomeComponent,
@@ -82,6 +92,7 @@ export const routes: Routes = [
     canActivate: [organizador],
   },
 
+  // --- Perfil Evaluador ---
   {
     path: 'evaluador',
     component: PerfilHomeComponent,
@@ -98,6 +109,7 @@ export const routes: Routes = [
     canActivate: [evaluador],
   },
 
+  // --- Perfil Autor ---
   {
     path: 'autor',
     component: PerfilHomeComponent,
@@ -110,6 +122,7 @@ export const routes: Routes = [
   },
   { path: 'autor/trabajos', component: TrabajosAutorComponent, canActivate: [autor], data: { perfilTrabajos: 'autor' } },
 
+  // --- Perfil Participante ---
   {
     path: 'participante',
     component: PerfilHomeComponent,
@@ -142,5 +155,6 @@ export const routes: Routes = [
     data: { perfilTrabajos: 'participante' },
   },
 
+  // Cualquier URL desconocida → redirige al inicio
   { path: '**', redirectTo: '' },
 ];

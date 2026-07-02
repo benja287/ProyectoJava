@@ -1,3 +1,7 @@
+/**
+ * Listado de usuarios (admin).
+ * GET /api/usuarios → tabla con app-usuario-fila por cada registro
+ */
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -38,6 +42,7 @@ import { UsuarioFilaComponent } from './usuario-fila.component';
             </tr>
           </thead>
           <tbody>
+            <!-- @for repite una fila por usuario; track u.id optimiza el render -->
             @for (u of usuarios; track u.id) {
               <app-usuario-fila [usuario]="u" (eliminar)="confirmarBaja($event)" />
             }
@@ -65,6 +70,7 @@ export class UsuariosListaComponent implements OnInit {
     this.cargar();
   }
 
+  /** DELETE /api/usuarios/{id} y recarga la lista */
   confirmarBaja(usuario: Usuario): void {
     if (!usuario.id || !confirm(`¿Dar de baja a ${usuario.email}?`)) {
       return;
@@ -80,6 +86,10 @@ export class UsuariosListaComponent implements OnInit {
     });
   }
 
+  /**
+   * listar() devuelve Observable; subscribe dispara GET /api/usuarios
+   * next → guarda en this.usuarios → Angular repinta la tabla
+   */
   private cargar(): void {
     this.cargando = true;
     this.error = '';

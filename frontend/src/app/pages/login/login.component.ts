@@ -1,8 +1,12 @@
+/**
+ * Pantalla de login.
+ * POST /api/login → LoginService.setUser → navega a panel o /seleccion-rol
+ */
 import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
-import { mensajeErrorApi } from '../../utils/api-error.util';
+import { mensajeErrorApi, isCuentaDeshabilitada } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-login',
@@ -24,6 +28,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
         <p class="error">{{ error }}</p>
       }
 
+      <!-- Formulario reactivo: [formGroup] enlaza con this.form -->
       <form [formGroup]="form" (ngSubmit)="ingresar()" class="form-grid">
         <label>
           Email
@@ -46,6 +51,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
 export class LoginComponent implements OnInit {
   private fb = inject(FormBuilder);
 
+  /** Definición del formulario con validaciones */
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
@@ -56,10 +62,22 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private loginService: LoginService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
+  /** Si ya hay sesión, no mostrar login → ir al panel */
   ngOnInit(): void {
+    if (this.route.snapshot.queryParamMap.get('accountDisabled')) {
+      this.loginService.logout();
+      this.error = 'Tu cuenta fue deshabilitada. Contactá al administrador.';
+      return;
+    }
+    if (this.route.snapshot.queryParamMap.get('sessionExpired')) {
+      this.loginService.logout();
+      this.error = 'Tu sesión expiró. Volvé a iniciar sesión.';
+      return;
+    }
     if (this.loginService.isLogged()) {
       this.router.navigateByUrl(this.loginService.rutaPanel());
     }
@@ -72,9 +90,12 @@ export class LoginComponent implements OnInit {
     this.error = '';
     this.cargando = true;
     const { email, password } = this.form.getRawValue();
+    // Limpia JWT previo para que un intento de login no compita con sesión antigua
+    this.loginService.logout();
     this.loginService.login(email!, password!).subscribe({
       next: () => {
         this.cargando = false;
+        // Multi-rol: forzar elección de perfil (rolActual = null en sessionStorage)
         if (this.loginService.tieneVariosRoles()) {
           this.loginService.limpiarRolActualLocal();
         }
@@ -82,7 +103,11 @@ export class LoginComponent implements OnInit {
       },
       error: (err) => {
         this.cargando = false;
-        this.error = mensajeErrorApi(err, 'Credenciales inválidas o cuenta deshabilitada.');
+        if (isCuentaDeshabilitada(err)) {
+          this.error = 'Cuenta deshabilitada. Contactá al administrador.';
+          return;
+        }
+        this.error = mensajeErrorApi(err, 'Credenciales inválidas.');
       },
     });
   }

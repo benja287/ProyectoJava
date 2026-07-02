@@ -1,8 +1,12 @@
+/**
+ * Guard para /seleccion-rol:
+ * - Debe estar logueado
+ * - Debe tener MÁS de un rol (si tiene uno solo → va directo a su panel)
+ */
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { LoginService } from './login.service';
 
-/** Solo accede quien está logueado y tiene más de un rol. */
 export const seleccionRolGuard: CanActivateFn = () => {
   const login = inject(LoginService);
   const router = inject(Router);

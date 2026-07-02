@@ -1,3 +1,7 @@
+/**
+ * Home de cada perfil (admin, organizador, evaluador, autor, participante).
+ * Un solo componente reutilizado: el contenido viene del `data` de app.routes.ts
+ */
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -13,6 +17,7 @@ export interface MenuItem {
   imports: [RouterLink],
   template: `
     <section class="card">
+      <!-- titulo, descripcion y menu se cargan desde route.data en ngOnInit -->
       <h1>{{ titulo }}</h1>
       <p>{{ descripcion }}</p>
 
@@ -37,9 +42,11 @@ export class PerfilHomeComponent implements OnInit {
   descripcion = '';
   menu: MenuItem[] = [];
 
+  /** ActivatedRoute: acceso a la ruta activa (params, data, etc.) */
   constructor(private route: ActivatedRoute) {}
 
   ngOnInit(): void {
+    // snapshot.data = foto del `data` definido en app.routes.ts para esta URL
     const data = this.route.snapshot.data;
     this.titulo = data['titulo'] ?? 'Perfil';
     this.descripcion = data['descripcion'] ?? '';

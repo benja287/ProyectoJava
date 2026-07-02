@@ -1,3 +1,7 @@
+/**
+ * Fila de la tabla de usuarios (componente hijo).
+ * Comunicación: @Input recibe datos del padre; @Output emite evento "eliminar"
+ */
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Usuario } from '../../../models/usuario.model';
@@ -6,6 +10,7 @@ import { Usuario } from '../../../models/usuario.model';
   selector: 'app-usuario-fila',
   standalone: true,
   imports: [RouterLink],
+  /** display: contents → el <tr> participa en la tabla del padre sin wrapper extra */
   host: { style: 'display: contents' },
   template: `
     <tr>
@@ -20,12 +25,15 @@ import { Usuario } from '../../../models/usuario.model';
       <td>{{ usuario.roles?.join(', ') }}</td>
       <td>
         <a [routerLink]="['/admin/usuarios', usuario.id]">Detalle</a>
+        <!-- emit → el padre escucha con (eliminar)="confirmarBaja($event)" -->
         <button type="button" class="btn-link" (click)="eliminar.emit(usuario)">Baja</button>
       </td>
     </tr>
   `,
 })
 export class UsuarioFilaComponent {
+  /** Dato que el padre pasa: [usuario]="u" */
   @Input({ required: true }) usuario!: Usuario;
+  /** Evento que el padre escucha: (eliminar)="confirmarBaja($event)" */
   @Output() eliminar = new EventEmitter<Usuario>();
 }

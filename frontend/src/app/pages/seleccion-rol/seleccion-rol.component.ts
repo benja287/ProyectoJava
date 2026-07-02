@@ -1,3 +1,7 @@
+/**
+ * Pantalla para elegir perfil cuando el usuario tiene varios roles.
+ * Ruta: /seleccion-rol (protegida por authGuard + seleccionRolGuard)
+ */
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
@@ -17,6 +21,7 @@ import { ROLE_DESCRIPCIONES, etiquetaRol } from '../../models/role-labels';
         <p class="error">{{ error }}</p>
       }
 
+      <!-- Una tarjeta por cada rol del usuario -->
       <div class="rol-grid">
         @for (rol of roles; track rol) {
           <button type="button" class="rol-card" (click)="elegir(rol)" [disabled]="procesando">
@@ -43,12 +48,17 @@ export class SeleccionRolComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (!this.loginService.isLogged()) {
+      this.router.navigate(['/login']);
+      return;
+    }
     const u = this.loginService.getUser();
     if (!u) {
       this.router.navigate(['/login']);
       return;
     }
     this.roles = u.roles ?? [];
+    // Si solo tiene un rol, no tiene sentido esta pantalla
     if (this.roles.length <= 1) {
       this.router.navigateByUrl(this.loginService.homeRoute());
     }
@@ -62,6 +72,7 @@ export class SeleccionRolComponent implements OnInit {
     return ROLE_DESCRIPCIONES[rol] ?? '';
   }
 
+  /** PUT /api/usuarios/{id}/roles con el rol elegido → navega al panel */
   elegir(rol: string): void {
     this.error = '';
     this.procesando = true;

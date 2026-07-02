@@ -1,11 +1,16 @@
+<!-- Cascarón fijo de la SPA: header y footer no se destruyen al cambiar de ruta -->
 <header class="app-header">
+  <!-- [routerLink] dinámico: si hay sesión va al panel; si no, a inicio -->
   <a [routerLink]="irHome()" class="brand">{{ title }}</a>
   <nav>
     <a routerLink="/">Inicio</a>
+
+    <!-- Rama logueado: menú de usuario con cambio de perfil -->
     @if (usuario) {
       @if (loginService.tieneVariosRoles()) {
         <a routerLink="/seleccion-rol" class="cambiar-perfil">Cambiar perfil</a>
       }
+      <!-- #userMenu → referencia para cerrar el menú al hacer clic afuera -->
       <div class="user-menu" #userMenu>
         <button
           type="button"
@@ -16,6 +21,7 @@
           {{ usuario.nombre }} {{ usuario.apellido }}
           <span class="user-menu-chevron" [class.abierto]="menuAbierto">▾</span>
         </button>
+
         @if (menuAbierto) {
           <div class="user-menu-panel" (click)="$event.stopPropagation()">
             <div class="user-menu-header">
@@ -74,12 +80,14 @@
         }
       </div>
     } @else {
+      <!-- Rama no logueado -->
       <a routerLink="/login">Ingresar</a>
       <a routerLink="/registro">Registrarme</a>
     }
   </nav>
 </header>
 
+<!-- Aquí el Router inserta la pantalla activa (Inicio, Login, Admin, etc.) -->
 <main class="app-main">
   <router-outlet />
 </main>

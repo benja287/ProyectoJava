@@ -1,11 +1,19 @@
+/**
+ * Componente raíz de la aplicación.
+ * selector 'app-root' → se monta en <app-root> del index.html.
+ * Muestra header/footer fijos y delega el contenido central al Router (<router-outlet>).
+ */
 import {
   Component,
   ElementRef,
   HostListener,
+  OnDestroy,
+  OnInit,
   ViewChild,
 } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { IdleSessionService } from './auth/idle-session.service';
 import { LoginService } from './auth/login.service';
 import { mensajeErrorApi } from './utils/api-error.util';
 import { etiquetaRol } from './models/role-labels';
@@ -16,27 +24,50 @@ import { etiquetaRol } from './models/role-labels';
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
-export class AppComponent {
+export class AppComponent implements OnInit, OnDestroy {
+  /** Título mostrado en el brand del header (data binding {{ title }}) */
   title = 'JYAA — Entrega 5';
+  /** Si el menú desplegable del usuario está abierto */
   menuAbierto = false;
+  /** Bloquea botones mientras se cambia de rol vía API */
   cambiandoRol = false;
+  /** Mensaje de error al fallar cambiarRolActual */
   errorRol = '';
 
+  /** Referencia al div del menú de usuario (#userMenu en el HTML) */
   @ViewChild('userMenu') userMenu?: ElementRef<HTMLElement>;
 
+  /**
+   * Inyección de dependencias (DI):
+   * - LoginService: sesión del usuario (lee sessionStorage al crearse)
+   * - Router: navegación programática (logout, cambio de perfil)
+   * public loginService → el template puede usar loginService.tieneVariosRoles(), etc.
+   */
   constructor(
     public loginService: LoginService,
+    private idleSession: IdleSessionService,
     private router: Router
   ) {}
 
+  ngOnInit(): void {
+    this.idleSession.startWatching();
+  }
+
+  ngOnDestroy(): void {
+    this.idleSession.stopWatching();
+  }
+
+  /** Getter: el template usa "usuario" sin llamar al servicio directamente */
   get usuario() {
     return this.loginService.getUser();
   }
 
+  /** Convierte código de rol (ADMINISTRADOR) a etiqueta legible */
   etiquetaRol(rol: string | null | undefined): string {
     return rol ? etiquetaRol(rol) : '—';
   }
 
+  /** Abre/cierra el menú desplegable del header */
   toggleMenu(event: MouseEvent): void {
     event.stopPropagation();
     this.menuAbierto = !this.menuAbierto;
@@ -46,6 +77,7 @@ export class AppComponent {
     this.menuAbierto = false;
   }
 
+  /** Cierra el menú si el usuario hace clic fuera del panel */
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     if (!this.menuAbierto) {
@@ -57,6 +89,10 @@ export class AppComponent {
     }
   }
 
+  /**
+   * Cambia rolActual vía PUT /api/usuarios/{id}/roles
+   * y navega al home del perfil elegido (/admin, /participante, etc.)
+   */
   elegirRol(rol: string, event: MouseEvent): void {
     event.stopPropagation();
     if (this.cambiandoRol || rol === this.usuario?.rolActual) {
@@ -81,12 +117,14 @@ export class AppComponent {
     });
   }
 
+  /** Borra sesión (memoria + sessionStorage) y va al login */
   logout(): void {
     this.cerrarMenu();
     this.loginService.logout();
     this.router.navigate(['/login']);
   }
 
+  /** Ruta del link del brand: panel si hay sesión, inicio si no */
   irHome(): string {
     return this.loginService.isLogged()
       ? this.loginService.rutaPanel()

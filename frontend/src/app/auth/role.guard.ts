@@ -1,3 +1,12 @@
+/**
+ * Guard de rol: factory que recibe los roles permitidos.
+ * Ejemplo: roleGuard(['ADMINISTRADOR']) protege rutas /admin/*
+ *
+ * Orden de verificación:
+ * 1. ¿Logueado? → si no, /login
+ * 2. ¿Tiene alguno de los roles? → si sí, true
+ * 3. Si no → redirige a inicio /
+ */
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { LoginService } from './login.service';

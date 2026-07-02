@@ -22,3 +22,11 @@ export interface RolesRequest {
   roles: string[];
   rolActual: string;
 }
+
+/** Respuesta de POST /api/login (LoginResponseDTO en Java). */
+export interface LoginResponse {
+  token: string;
+  tokenType: string;
+  expiresIn: number;
+  usuario: Usuario;
+}

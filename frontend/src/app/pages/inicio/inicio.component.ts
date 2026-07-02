@@ -1,3 +1,7 @@
+/**
+ * Pantalla de inicio (ruta /).
+ * Contenido distinto según haya sesión o no.
+ */
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
@@ -11,6 +15,7 @@ import { etiquetaRol } from '../../models/role-labels';
     <section class="card">
       <h1>Congreso de Agroecología — Entrega 5</h1>
 
+      <!-- @if control flow: rama según LoginService.isLogged() -->
       @if (logueado) {
         <p>
           Hola, {{ usuario?.nombre }} {{ usuario?.apellido }}.

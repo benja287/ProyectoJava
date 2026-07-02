@@ -1,3 +1,7 @@
+/**
+ * Guard: solo deja pasar si hay usuario logueado (LoginService.isLogged()).
+ * Si no → redirige a /login.
+ */
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { LoginService } from './login.service';

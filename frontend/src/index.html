@@ -3,11 +3,19 @@
 <head>
   <meta charset="utf-8">
   <title>JYAA — Práctica 8 Angular</title>
+  <!--
+    base href="/" → el Router de Angular interpreta rutas desde la raíz del sitio.
+    En producción (ROOT.war) la app vive en https://grupo1.../
+  -->
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
+  <!--
+    Contenedor vacío al cargar. Angular busca selector 'app-root' y monta AppComponent.
+    El build agrega <script src="main-....js"> (en dev lo inyecta ng serve).
+  -->
   <app-root></app-root>
 </body>
 </html>

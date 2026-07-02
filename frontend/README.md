@@ -125,21 +125,24 @@ El admin también puede dar de alta usuarios en `/admin/usuarios/nuevo` (`POST /
 
 ---
 
-### PASO 1 — Login y sesión
+### PASO 1 — Login y sesión (JWT)
 
 | Qué probar | Dónde | Network / resultado |
 |------------|-------|---------------------|
-| Login OK | `/login` | `POST /api/login` → 200 |
+| Login OK | `/login` | `POST /api/login` → 200 con `{ token, usuario, expiresIn }` |
 | Credenciales incorrectas | `/login` | Mensaje: *Credenciales inválidas* |
-| Cuenta deshabilitada | Admin inhabilita en detalle → login | *Cuenta deshabilitada* |
-| Multi-rol → elegir perfil | Tras login → `/seleccion-rol` | `PUT /api/usuarios/{id}/roles` |
+| Cuenta deshabilitada | Admin inhabilita → login o navegando | *Cuenta deshabilitada* → `/login?accountDisabled=1` |
+| Sesión expirada (JWT 4 h / idle 30 min) | Tras timeout | `/login?sessionExpired=1` |
+| Multi-rol → elegir perfil | Tras login → `/seleccion-rol` | `PUT /api/usuarios/{id}/roles` + `Authorization: Bearer` |
 | Cambiar perfil | Header → menú o *Cambiar perfil* | mismo `PUT .../roles` |
 | Inicio logueado | `/` | No aparece “Acceso / Iniciar sesión” |
 | `/login` ya logueado | redirige al panel | — |
 | Guard de rol | Participante va a `/admin` | Redirige a `/` |
-| Salir | Header → Cerrar sesión | `sessionStorage` limpio |
+| Salir | Header → Cerrar sesión | `jyaa_token` + `jyaa_usuario` limpios en sessionStorage |
 
-**Tip coloquio:** no hay JWT; el rol activo vive en sesión (`rolActual`) y los **guards** bloquean rutas de otros perfiles.
+**Sesión con JWT:** el login devuelve un token (4 h). El interceptor lo envía en cada `GET/POST/PUT/DELETE` protegido. El **rol activo** sigue en `sessionStorage` (`rolActual`); los **guards** bloquean rutas de otros perfiles igual que en la entrega deployada.
+
+**Rutas API públicas (sin Bearer):** `POST /api/login`, `POST /api/registro`, `GET /api/health`, Swagger/OpenAPI.
 
 **Multi-rol:** `lucasbudnik@hotmail.com.ar` → `/seleccion-rol` (Evaluador / Participante) o cambio desde el header.
 
@@ -253,19 +256,24 @@ Login: `alci0483@gmail.com` o evaluador promovido → `/evaluador/asignaciones`
 
 ---
 
-## Checklist Entrega 5
+## Checklist Entrega 5 (+ JWT)
 
 - [ ] `npm start` o URL grupo1 carga la SPA
-- [ ] Registro + login + logout
+- [ ] Registro + login + logout (token en sessionStorage)
+- [ ] Peticiones API llevan `Authorization: Bearer` (ver Network)
 - [ ] Selector `/seleccion-rol` y menú header
-- [ ] Guards por rol
+- [ ] Guards por rol (sin cambios respecto a entrega deployada)
 - [ ] Admin: usuarios, pagos, actividades, trabajos
 - [ ] Participante: pago, cronograma, trabajos → Autor
 - [ ] Autor: trabajo + PDF + enviar
 - [ ] OC: promover + asignar
 - [ ] Evaluador: aceptar/rechazar + PDF
 - [ ] Errores del API visibles en pantalla
-- [ ] PDFs (comprobante/trabajo) se abren correctamente
+- [ ] PDFs (comprobante/trabajo) se abren correctamente vía blob + Bearer
+- [ ] Cuenta inhabilitada expulsa al instante (403 + logout)
+- [ ] Idle 30 min / JWT 4 h cierran sesión con mensaje en login
+
+> **Deploy:** frontend y backend con JWT deben desplegarse juntos. Si el servidor aún devuelve solo `Usuario` en login (sin `token`), la SPA no podrá mantener sesión.
 
 ---
 
