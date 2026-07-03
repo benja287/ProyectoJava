@@ -6,6 +6,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './auth/auth.guard';
 import { roleGuard } from './auth/role.guard';
+import { asistenteGuard } from './auth/asistente.guard';
 import { seleccionRolGuard } from './auth/seleccion-rol.guard';
 import { InicioComponent } from './pages/inicio/inicio.component';
 import { LoginComponent } from './pages/login/login.component';
@@ -27,27 +28,68 @@ import { InscripcionParticipanteComponent } from './pages/participante/inscripci
 import { PagoParticipanteComponent } from './pages/participante/pago/pago-participante.component';
 import { InscripcionesAdminComponent } from './pages/admin/inscripciones/inscripciones-admin.component';
 import { SeleccionRolComponent } from './pages/seleccion-rol/seleccion-rol.component';
+import { PanelAsistenteComponent } from './pages/asistente/panel-asistente.component';
+import { CertificadoAsistenteComponent } from './pages/asistente/certificado-asistente.component';
 
-// Guards reutilizables por perfil (verifican rol en LoginService)
 const admin = roleGuard(['ADMINISTRADOR']);
 const organizador = roleGuard(['ORGANIZADOR_CIENTIFICO']);
 const evaluador = roleGuard(['EVALUADOR']);
 const autor = roleGuard(['AUTOR']);
-const participante = roleGuard(['PARTICIPANTE']);
 
 export const routes: Routes = [
-  // --- Rutas públicas (sin guards) ---
   { path: '', component: InicioComponent },
   { path: 'login', component: LoginComponent },
   { path: 'seleccion-rol', component: SeleccionRolComponent, canActivate: [authGuard, seleccionRolGuard] },
   { path: 'registro', component: RegistroComponent },
+
+  // Inscripción al congreso (usuario registrado sin rol asistente aún)
+  {
+    path: 'inscripcion',
+    component: InscripcionParticipanteComponent,
+    canActivate: [authGuard],
+  },
+
+  // Panel asistente al congreso (tras aprobación de inscripción/pago)
+  {
+    path: 'asistente',
+    component: PanelAsistenteComponent,
+    canActivate: [asistenteGuard],
+  },
+  {
+    path: 'asistente/cronograma',
+    component: CronogramaParticipanteComponent,
+    canActivate: [asistenteGuard],
+  },
+  {
+    path: 'asistente/trabajos',
+    component: TrabajosAutorComponent,
+    canActivate: [asistenteGuard],
+    data: { perfilTrabajos: 'asistente' },
+  },
+  {
+    path: 'asistente/taller',
+    component: TrabajosAutorComponent,
+    canActivate: [asistenteGuard],
+    data: { perfilTrabajos: 'asistente', tipoTaller: true },
+  },
+  {
+    path: 'asistente/certificado',
+    component: CertificadoAsistenteComponent,
+    canActivate: [asistenteGuard],
+  },
+
+  // Redirects legacy participante → nuevas rutas
+  { path: 'participante', redirectTo: 'asistente', pathMatch: 'full' },
+  { path: 'participante/inscripcion', redirectTo: 'inscripcion', pathMatch: 'full' },
+  { path: 'participante/cronograma', redirectTo: 'asistente/cronograma', pathMatch: 'full' },
+  { path: 'participante/trabajos', redirectTo: 'asistente/trabajos', pathMatch: 'full' },
+  { path: 'participante/pago', redirectTo: 'inscripcion', pathMatch: 'full' },
 
   // --- Perfil Administrador ---
   {
     path: 'admin',
     component: PerfilHomeComponent,
     canActivate: [admin],
-    // data → PerfilHomeComponent lo lee con ActivatedRoute.snapshot.data
     data: {
       titulo: 'Home — Administrador',
       descripcion: 'Gestión de usuarios, pagos y actividades.',
@@ -126,45 +168,5 @@ export const routes: Routes = [
   },
   { path: 'autor/trabajos', component: TrabajosAutorComponent, canActivate: [autor], data: { perfilTrabajos: 'autor' } },
 
-  // --- Perfil Participante ---
-  {
-    path: 'participante',
-    component: PerfilHomeComponent,
-    canActivate: [participante],
-    data: {
-      titulo: 'Home — Participante',
-      descripcion:
-        'Cronograma personal, pagos de inscripción y envío de trabajos (con promoción automática a Autor).',
-      menu: [
-        { label: 'Inscripción al congreso', route: '/participante/inscripcion' },
-        { label: 'Mi cronograma', route: '/participante/cronograma' },
-        { label: 'Estado de pago', route: '/participante/pago' },
-        {
-          label: 'Mis trabajos',
-          route: '/participante/trabajos',
-          nota: 'al crear uno se agrega el rol Autor',
-        },
-      ],
-    },
-  },
-  {
-    path: 'participante/cronograma',
-    component: CronogramaParticipanteComponent,
-    canActivate: [participante],
-  },
-  {
-    path: 'participante/inscripcion',
-    component: InscripcionParticipanteComponent,
-    canActivate: [participante],
-  },
-  { path: 'participante/pago', component: PagoParticipanteComponent, canActivate: [participante] },
-  {
-    path: 'participante/trabajos',
-    component: TrabajosAutorComponent,
-    canActivate: [participante],
-    data: { perfilTrabajos: 'participante' },
-  },
-
-  // Cualquier URL desconocida → redirige al inicio
   { path: '**', redirectTo: '' },
 ];

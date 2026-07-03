@@ -25,12 +25,44 @@ body {
 }
 
 .app-header .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   font-weight: 700;
   margin-left: 0;
+  text-decoration: none;
+}
+
+.brand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  font-size: 1.1rem;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.brand-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.brand-sub {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  font-weight: 400;
 }
 
 .app-main {
-  max-width: 960px;
+  max-width: 1080px;
   margin: 1.5rem auto;
   padding: 0 1rem;
 }
@@ -763,4 +795,149 @@ textarea {
 .inscripcion-back {
   margin-top: 1.5rem;
   text-align: center;
+}
+
+/* --- Panel asistente (como React) --- */
+.panel-asistente {
+  padding: 0.5rem 0 2rem;
+}
+
+.panel-asistente-titulo {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin: 0 0 1.25rem;
+  font-weight: 700;
+}
+
+.panel-asistente-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.accion-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s ease;
+  border: none;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+}
+
+.accion-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.accion-card--aviso {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  cursor: default;
+}
+
+.accion-card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+  color: #1e293b;
+}
+
+.accion-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.accion-icono {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 10px;
+  font-size: 1.5rem;
+}
+
+.accion-icono--naranja {
+  background: #fef3c7;
+}
+
+.accion-icono--teal {
+  background: #ccfbf1;
+}
+
+.accion-icono--violeta {
+  background: #ede9fe;
+}
+
+.accion-icono--azul {
+  background: #dbeafe;
+}
+
+.mis-trabajos-card {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f1f5f9;
+}
+
+.mis-trabajos-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.mis-trabajos-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1e293b;
+}
+
+.mis-trabajos-vacio {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.mis-trabajos-lista {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mis-trabajos-lista li {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.btn-secundario {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.875rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-secundario:hover {
+  background: #f8fafc;
+}
+
+.panel-asistente-detalle h1 {
+  margin-top: 0;
 }

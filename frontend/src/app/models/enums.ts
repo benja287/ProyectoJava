@@ -1,4 +1,5 @@
 export const ROLES = [
+  'ASISTENTE',
   'PARTICIPANTE',
   'AUTOR',
   'EVALUADOR',

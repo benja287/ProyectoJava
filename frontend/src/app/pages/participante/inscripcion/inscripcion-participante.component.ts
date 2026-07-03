@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { LoginService } from '../../../auth/login.service';
 import {
@@ -215,7 +215,8 @@ export class InscripcionParticipanteComponent implements OnInit {
 
   constructor(
     private inscripcionService: InscripcionService,
-    private loginService: LoginService
+    private loginService: LoginService,
+    private router: Router
   ) {}
 
   get categoriaActual(): string {
@@ -247,6 +248,10 @@ export class InscripcionParticipanteComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (this.loginService.esAsistenteCongreso()) {
+      this.router.navigateByUrl('/asistente');
+      return;
+    }
     const catUsuario = asCategoriaInscripcion(
       this.loginService.getUser()?.categoriaInscripcion
     );
@@ -325,6 +330,12 @@ export class InscripcionParticipanteComponent implements OnInit {
           this.categoriaBloqueada = true;
         }
         this.mostrarFormulario = estado.puedeInscribirse;
+        if (this.inscripcion?.estado === 'APROBADA' && !this.loginService.esAsistenteCongreso()) {
+          this.loginService.refreshUser().subscribe({
+            next: () => this.router.navigateByUrl('/asistente'),
+            error: () => undefined,
+          });
+        }
         this.cargando = false;
       },
       error: () => {

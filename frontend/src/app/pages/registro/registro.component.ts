@@ -16,7 +16,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
         <div class="auth-header">
           <div class="auth-icon">+</div>
           <h2>Registrarse</h2>
-          <p>Creá tu cuenta para participar del congreso</p>
+          <p>Creá tu cuenta. Después del login completás la inscripción al congreso.</p>
         </div>
 
         @if (mensaje) {
@@ -136,7 +136,7 @@ export class RegistroComponent {
       })
       .subscribe({
         next: () => {
-          this.mensaje = 'Cuenta creada. Redirigiendo al login...';
+          this.mensaje = 'Cuenta creada. Iniciá sesión para completar tu inscripción al congreso...';
           this.guardando = false;
           setTimeout(() => this.router.navigate(['/login']), 1500);
         },

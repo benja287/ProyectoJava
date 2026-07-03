@@ -23,37 +23,48 @@ import { InscripcionService } from '../../servicios/inscripcion.service';
           <p class="hero-welcome">
             Hola, {{ usuario?.nombre }} {{ usuario?.apellido }}.
             @if (usuario?.rolActual) {
-              Perfil: <strong>{{ etiqueta(usuario!.rolActual!) }}</strong>.
+              Perfil activo: <strong>{{ etiqueta(usuario!.rolActual!) }}</strong>.
+            } @else if (!tieneRolOperativo) {
+              Todavía no tenés un rol operativo. Completá tu inscripción al congreso.
             }
           </p>
 
-          @if (esParticipante && estado?.puedeInscribirse) {
-            <a routerLink="/participante/inscripcion" class="btn-cta-inscripcion">
+          @if (!esAsistente && estado?.puedeInscribirse) {
+            <a routerLink="/inscripcion" class="btn-cta-inscripcion">
               Inscribirme al congreso
             </a>
           }
-          @if (esParticipante && estado?.inscripcion?.estado === 'PENDIENTE') {
-            <p class="hero-status pending">Tu inscripción está pendiente de aprobación</p>
+          @if (!esAsistente && estado?.inscripcion?.estado === 'PENDIENTE') {
+            <p class="hero-status pending">
+              Tu inscripción está pendiente de aprobación por la organización.
+            </p>
+            <a routerLink="/inscripcion" class="btn-hero-secondary">Ver estado de inscripción</a>
           }
-          @if (esParticipante && estado?.inscripcion?.estado === 'APROBADA') {
-            <p class="hero-status ok">Inscripción confirmada. ¡Nos vemos en el congreso!</p>
+          @if (esAsistente) {
+            <p class="hero-status ok">
+              Sos <strong>asistente</strong> al congreso. Accedé a tus acciones desde el panel.
+            </p>
+            <a routerLink="/asistente" class="btn-cta-inscripcion">Ir a mi panel de asistente</a>
           }
-          @if (esParticipante && estado?.inscripcion?.estado === 'RECHAZADA') {
+          @if (!esAsistente && estado?.inscripcion?.estado === 'RECHAZADA') {
             <p class="hero-status error">
               Tu inscripción fue rechazada.
-              <a routerLink="/participante/inscripcion">Enviar una nueva solicitud</a>
+              <a routerLink="/inscripcion">Enviar una nueva solicitud</a>
             </p>
           }
 
-          <ul class="hero-links">
-            <li><a [routerLink]="loginService.rutaPanel()">Ir a mi panel</a></li>
-            @if (loginService.tieneVariosRoles()) {
-              <li><a routerLink="/seleccion-rol">Cambiar perfil</a></li>
-            }
-          </ul>
+          @if (tieneRolOperativo) {
+            <ul class="hero-links">
+              <li><a [routerLink]="loginService.rutaPanel()">Ir a mi panel</a></li>
+              @if (loginService.tieneVariosRoles()) {
+                <li><a routerLink="/seleccion-rol">Cambiar perfil</a></li>
+              }
+            </ul>
+          }
         } @else {
           <p class="hero-lead">
-            Bienvenido al sistema del congreso. Registrate como participante o iniciá sesión.
+            Bienvenido al sistema del congreso. Registrate y completá tu inscripción para asistir
+            al evento.
           </p>
           <div class="hero-actions">
             <a routerLink="/registro" class="btn-cta-inscripcion">Registrarme</a>
@@ -73,9 +84,14 @@ export class InicioComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (this.esParticipante) {
+    if (this.logueado && !this.esAsistente) {
       this.inscripcionService.misEstado().subscribe({
-        next: (estado) => (this.estado = estado),
+        next: (estado) => {
+          this.estado = estado;
+          if (estado.inscripcion?.estado === 'APROBADA') {
+            this.loginService.refreshUser().subscribe({ error: () => undefined });
+          }
+        },
         error: () => undefined,
       });
     }
@@ -89,15 +105,12 @@ export class InicioComponent implements OnInit {
     return this.loginService.getUser();
   }
 
-  get esParticipante(): boolean {
-    const u = this.usuario;
-    if (!u) {
-      return false;
-    }
-    return (
-      u.rolActual === 'PARTICIPANTE' ||
-      (!u.rolActual && (u.roles?.length === 1 && u.roles[0] === 'PARTICIPANTE'))
-    );
+  get esAsistente(): boolean {
+    return this.loginService.esAsistenteCongreso();
+  }
+
+  get tieneRolOperativo(): boolean {
+    return this.loginService.tieneRolOperativo();
   }
 
   etiqueta(rol: string): string {

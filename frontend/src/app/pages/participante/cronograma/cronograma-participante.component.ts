@@ -15,8 +15,8 @@ import { formatFechaActividad } from '../../../utils/fecha.util';
   imports: [CommonModule, RouterLink],
   template: `
     <section class="card">
-      <h1>Mi cronograma</h1>
-      <p>Participante — <code>/api/cronograma/{{ '{' }}usuarioId{{ '}' }}</code></p>
+      <h1>Mi agenda</h1>
+      <p class="muted">Rol <strong>asistente</strong> — actividades que agregaste al cronograma.</p>
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -55,7 +55,7 @@ import { formatFechaActividad } from '../../../utils/fecha.util';
         </ul>
       }
 
-      <p><a routerLink="/participante">← Menú participante</a></p>
+      <p><a routerLink="/asistente">← Panel asistente</a></p>
     </section>
   `,
 })

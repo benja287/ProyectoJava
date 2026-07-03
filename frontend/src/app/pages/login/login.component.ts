@@ -16,8 +16,8 @@ import { mensajeErrorApi, isCuentaDeshabilitada } from '../../utils/api-error.ut
     <section class="card">
       <h1>Iniciar sesión</h1>
       <p>
-        Ingresá con tu email y contraseña para acceder a tu panel.
-        Si tu cuenta tiene varios roles, vas a elegir el perfil después del login.
+        Ingresá con tu email y contraseña. Si recién te registraste, completá la inscripción al
+        congreso. Cuando la organización apruebe tu pago, accedés como <strong>asistente</strong>.
       </p>
       <p class="muted">
         ¿Sos participante nuevo?

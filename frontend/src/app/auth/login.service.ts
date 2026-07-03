@@ -145,7 +145,7 @@ export class LoginService {
     return roles.some((r) => this.hasRole(r));
   }
 
-  /** Ruta del panel según rolActual (/admin, /participante, etc.) */
+  /** Ruta del panel según rolActual (/admin, /asistente, /inscripcion, etc.) */
   homeRoute(): string {
     switch (this.usuario?.rolActual) {
       case 'ADMINISTRADOR':
@@ -156,24 +156,49 @@ export class LoginService {
         return '/evaluador';
       case 'AUTOR':
         return '/autor';
+      case 'ASISTENTE':
       case 'PARTICIPANTE':
-        return '/participante';
+        return '/asistente';
       default:
-        return '/';
+        break;
     }
+    if (this.esAsistenteCongreso()) {
+      return '/asistente';
+    }
+    if (this.isLogged() && !this.tieneRolOperativo()) {
+      return '/inscripcion';
+    }
+    return '/';
+  }
+
+  /** Usuario inscripto y aprobado al congreso (rol asistente). */
+  esAsistenteCongreso(): boolean {
+    return this.hasAnyRole(['ASISTENTE', 'PARTICIPANTE']);
+  }
+
+  /** Tiene algún rol de panel (admin, autor, etc.) o asistente al congreso. */
+  tieneRolOperativo(): boolean {
+    const roles = this.usuario?.roles ?? [];
+    return roles.length > 0;
+  }
+
+  /** Tras login: sin roles → inscripción; con roles → panel o selección de perfil. */
+  rutaTrasLogin(): string {
+    if (!this.tieneRolOperativo()) {
+      return '/inscripcion';
+    }
+    return this.tieneVariosRoles() ? '/seleccion-rol' : this.homeRoute();
   }
 
   tieneVariosRoles(): boolean {
     return (this.usuario?.roles?.length ?? 0) > 1;
   }
 
-  /** Tras login: si hay varios roles → /seleccion-rol; si no → panel directo */
-  rutaTrasLogin(): string {
-    return this.tieneVariosRoles() ? '/seleccion-rol' : this.homeRoute();
-  }
-
   /** Si tiene varios roles y aún no eligió perfil → forzar /seleccion-rol */
   rutaPanel(): string {
+    if (!this.tieneRolOperativo()) {
+      return '/inscripcion';
+    }
     if (this.tieneVariosRoles() && !this.usuario?.rolActual) {
       return '/seleccion-rol';
     }

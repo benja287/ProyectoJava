@@ -1,6 +1,7 @@
 /** Etiquetas legibles para los roles del backend (como en React). */
 export const ROLE_LABELS: Record<string, string> = {
-  PARTICIPANTE: 'Participante',
+  ASISTENTE: 'Asistente',
+  PARTICIPANTE: 'Participante (legacy)',
   AUTOR: 'Autor',
   EVALUADOR: 'Evaluador',
   ORGANIZADOR_CIENTIFICO: 'Organizador científico',
@@ -12,9 +13,14 @@ export function etiquetaRol(rol: string): string {
 }
 
 export const ROLE_DESCRIPCIONES: Record<string, string> = {
-  PARTICIPANTE: 'Cronograma, pagos e inscripción de trabajos (promoción a Autor).',
+  ASISTENTE:
+    'Asistente al congreso: enviar trabajos, proponer talleres, cronograma y certificado.',
+  PARTICIPANTE: 'Rol legacy — usar Asistente.',
   AUTOR: 'Crear y enviar trabajos científicos.',
   EVALUADOR: 'Aceptar o rechazar asignaciones de evaluación.',
   ORGANIZADOR_CIENTIFICO: 'Asignar trabajos a evaluadores y promover evaluadores.',
   ADMINISTRADOR: 'Usuarios, pagos, actividades y limpieza de datos.',
 };
+
+/** Roles operativos del congreso (post inscripción aprobada). */
+export const ROLES_ASISTENTE_CONGRESO = ['ASISTENTE', 'PARTICIPANTE'] as const;

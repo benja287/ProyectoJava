@@ -16,7 +16,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   template: `
     <section class="card">
       <h1>Estado de pago</h1>
-      <p>Participante — consulta del pago vinculado a tu inscripción.</p>
+      <p>Consulta del pago vinculado a tu inscripción al congreso.</p>
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -28,7 +28,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       @if (!inscripcion && !cargando) {
         <p>
           Todavía no completaste la inscripción.
-          <a routerLink="/participante/inscripcion">Inscribirme al congreso</a>
+          <a routerLink="/inscripcion">Inscribirme al congreso</a>
         </p>
       }
 
@@ -64,7 +64,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         } @else if (!cargando) {
           <p class="muted">
             El pago se registra al enviar el formulario de
-            <a routerLink="/participante/inscripcion">inscripción al congreso</a>.
+            <a routerLink="/inscripcion">inscripción al congreso</a>.
           </p>
         }
       }
@@ -73,7 +73,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         <p>Cargando...</p>
       }
 
-      <p><a routerLink="/participante">← Menú participante</a></p>
+      <p><a routerLink="/inscripcion">← Inscripción al congreso</a></p>
     </section>
   `,
 })

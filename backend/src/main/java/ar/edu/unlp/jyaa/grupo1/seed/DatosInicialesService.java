@@ -45,7 +45,7 @@ public final class DatosInicialesService {
               "lucasbudnik@hotmail.com.ar",
               "Asistente",
               "Principal",
-              Set.of(Rol.PARTICIPANTE));
+              Set.of(Rol.ASISTENTE));
       InscripcionCongreso ins = new InscripcionCongreso();
       ins.setUsuario(asistente);
       ins.setCategoria("estudiante");
@@ -65,7 +65,7 @@ public final class DatosInicialesService {
           "autor.demo@jyaa.unlp.edu.ar",
           "Autor",
           "Demo",
-          Set.of(Rol.AUTOR, Rol.PARTICIPANTE));
+          Set.of(Rol.AUTOR, Rol.ASISTENTE));
 
       tx.commit();
     } catch (RuntimeException e) {

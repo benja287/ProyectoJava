@@ -135,9 +135,25 @@ public class UsuarioService {
       }
     }
     usuario.setActivo(true);
-    usuario.setRoles(new HashSet<>(Set.of(Rol.PARTICIPANTE)));
-    normalizarRolActual(usuario, Rol.PARTICIPANTE);
+    usuario.setRoles(new HashSet<>());
+    usuario.setRolActual(null);
     return usuarioDAO.alta(usuario);
+  }
+
+  /** Tras aprobar la inscripción al congreso, habilita el rol operativo de asistente. */
+  public void promoverAsistente(Usuario usuario) {
+    if (usuario == null) {
+      return;
+    }
+    if (usuario.getRoles() == null) {
+      usuario.setRoles(new HashSet<>());
+    }
+    usuario.getRoles().add(Rol.ASISTENTE);
+    usuario.getRoles().remove(Rol.PARTICIPANTE);
+    if (usuario.getRolActual() == null || usuario.getRolActual() == Rol.PARTICIPANTE) {
+      usuario.setRolActual(Rol.ASISTENTE);
+    }
+    usuarioDAO.modificar(usuario);
   }
 
   /**

@@ -1,16 +1,19 @@
 <!-- Cascarón fijo de la SPA: header y footer no se destruyen al cambiar de ruta -->
 <header class="app-header">
-  <!-- [routerLink] dinámico: si hay sesión va al panel; si no, a inicio -->
-  <a [routerLink]="irHome()" class="brand">{{ title }}</a>
+  <a [routerLink]="irHome()" class="brand">
+    <span class="brand-icon" aria-hidden="true">🌱</span>
+    <span class="brand-text">
+      <span class="brand-title">V Congreso Argentino de Agroecología</span>
+      <span class="brand-sub">La Plata 2027</span>
+    </span>
+  </a>
   <nav>
     <a routerLink="/">Inicio</a>
 
-    <!-- Rama logueado: menú de usuario con cambio de perfil -->
     @if (usuario) {
       @if (loginService.tieneVariosRoles()) {
         <a routerLink="/seleccion-rol" class="cambiar-perfil">Cambiar perfil</a>
       }
-      <!-- #userMenu → referencia para cerrar el menú al hacer clic afuera -->
       <div class="user-menu" #userMenu>
         <button
           type="button"
@@ -18,7 +21,7 @@
           (click)="toggleMenu($event)"
           [attr.aria-expanded]="menuAbierto"
         >
-          {{ usuario.nombre }} {{ usuario.apellido }}
+          {{ usuario.nombre }}
           <span class="user-menu-chevron" [class.abierto]="menuAbierto">▾</span>
         </button>
 
@@ -31,6 +34,8 @@
                 <p class="user-menu-rol-actual">
                   Perfil: {{ etiquetaRol(usuario.rolActual) }}
                 </p>
+              } @else if (!loginService.tieneRolOperativo()) {
+                <p class="user-menu-rol-actual pendiente">Completá tu inscripción al congreso</p>
               } @else if (loginService.tieneVariosRoles()) {
                 <p class="user-menu-rol-actual pendiente">Elegí un perfil para continuar</p>
               }
@@ -45,6 +50,16 @@
             >
               Mi panel
             </a>
+            @if (!loginService.esAsistenteCongreso() && loginService.isLogged()) {
+              <a class="user-menu-item" routerLink="/inscripcion" (click)="cerrarMenu()">
+                Inscripción al congreso
+              </a>
+            }
+            @if (loginService.esAsistenteCongreso()) {
+              <a class="user-menu-item" routerLink="/asistente" (click)="cerrarMenu()">
+                Panel asistente
+              </a>
+            }
             @if (loginService.tieneVariosRoles()) {
               <div class="user-menu-roles">
                 <p class="user-menu-label">Perfiles disponibles</p>
@@ -80,18 +95,16 @@
         }
       </div>
     } @else {
-      <!-- Rama no logueado -->
       <a routerLink="/login">Ingresar</a>
       <a routerLink="/registro">Registrarme</a>
     }
   </nav>
 </header>
 
-<!-- Aquí el Router inserta la pantalla activa (Inicio, Login, Admin, etc.) -->
 <main class="app-main">
   <router-outlet />
 </main>
 
 <footer class="app-footer">
-  Entrega 5 — Angular + REST Jersey · <code>frontend/</code>
+  V Congreso Argentino de Agroecología — La Plata 2027 · Angular + REST Jersey
 </footer>

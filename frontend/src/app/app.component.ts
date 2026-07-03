@@ -26,7 +26,7 @@ import { etiquetaRol } from './models/role-labels';
 })
 export class AppComponent implements OnInit, OnDestroy {
   /** Título mostrado en el brand del header (data binding {{ title }}) */
-  title = 'JYAA — Entrega 5';
+  title = 'V Congreso Argentino de Agroecología';
   /** Si el menú desplegable del usuario está abierto */
   menuAbierto = false;
   /** Bloquea botones mientras se cambia de rol vía API */

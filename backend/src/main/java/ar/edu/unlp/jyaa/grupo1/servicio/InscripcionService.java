@@ -33,6 +33,7 @@ public class InscripcionService {
   @Inject private PagoDAO pagoDAO;
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private DocumentStorageService documentStorageService;
+  @Inject private UsuarioService usuarioService;
 
   public InscripcionCongresoDTO crear(
       AuthenticatedUser auth,
@@ -167,6 +168,12 @@ public class InscripcionService {
     } else {
       inscripcion.setEstado(EstadoInscripcion.APROBADA);
       inscripcion.setMotivoRechazo(null);
+      if (inscripcion.getPago() != null
+          && inscripcion.getPago().getEstado() == EstadoPago.PENDIENTE) {
+        inscripcion.getPago().setEstado(EstadoPago.APROBADO);
+        pagoDAO.modificar(inscripcion.getPago());
+      }
+      usuarioService.promoverAsistente(inscripcion.getUsuario());
     }
 
     inscripcionDAO.modificar(inscripcion);

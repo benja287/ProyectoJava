@@ -22,7 +22,10 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
   template: `
     <section class="card">
       <h1>Inscripciones al congreso</h1>
-      <p>Admin — <code>GET /api/inscripciones</code></p>
+      <p>
+        Al aprobar una inscripción, el usuario recibe el rol <strong>Asistente</strong> y se
+        confirma el pago vinculado.
+      </p>
 
       <app-filter-bar
         [fields]="filterFields"

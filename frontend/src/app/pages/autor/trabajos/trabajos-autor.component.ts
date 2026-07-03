@@ -20,10 +20,14 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
   imports: [CommonModule, RouterLink, ReactiveFormsModule, ArchivoLinkComponent, FilterBarComponent],
   template: `
     <section class="card">
-      <h1>Mis trabajos</h1>
-      @if (perfilParticipante) {
+      <h1>{{ esPropuestaTaller ? 'Proponer taller' : 'Mis trabajos' }}</h1>
+      @if (perfilAsistente && esPropuestaTaller) {
         <p>
-          Participante — al crear un trabajo el backend te asigna el rol
+          <strong>Rol asistente</strong> — enviá tu propuesta de taller para evaluación del comité.
+        </p>
+      } @else if (perfilAsistente) {
+        <p>
+          <strong>Rol asistente</strong> — al crear un trabajo el backend te asigna el rol
           <strong>Autor</strong> automáticamente (<code>POST /api/trabajos</code>).
           Podés subir el PDF y enviarlo igual que en el panel de autor.
         </p>
@@ -147,7 +151,8 @@ export class TrabajosAutorComponent implements OnInit {
   error = '';
   mensaje = '';
   autorId?: number;
-  perfilParticipante = false;
+  perfilAsistente = false;
+  esPropuestaTaller = false;
   menuVolver = '/autor';
   etiquetaVolver = 'Menú autor';
 
@@ -167,9 +172,15 @@ export class TrabajosAutorComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.perfilParticipante = this.route.snapshot.data['perfilTrabajos'] === 'participante';
-    this.menuVolver = this.perfilParticipante ? '/participante' : '/autor';
-    this.etiquetaVolver = this.perfilParticipante ? 'Menú participante' : 'Menú autor';
+    const perfil = this.route.snapshot.data['perfilTrabajos'];
+    this.perfilAsistente = perfil === 'asistente' || perfil === 'participante';
+    this.esPropuestaTaller = this.route.snapshot.data['tipoTaller'] === true;
+    this.menuVolver = this.perfilAsistente ? '/asistente' : '/autor';
+    this.etiquetaVolver = this.perfilAsistente ? 'Panel asistente' : 'Menú autor';
+
+    if (this.esPropuestaTaller) {
+      this.form.patchValue({ tipo: 'PROPUESTA_TALLER' });
+    }
 
     this.autorId = this.loginService.getUser()?.id;
     if (!this.autorId) {
@@ -226,7 +237,7 @@ export class TrabajosAutorComponent implements OnInit {
             next: (u) => {
               const rolesAhora = u.roles ?? [];
               if (
-                this.perfilParticipante &&
+                this.perfilAsistente &&
                 !rolesAntes.has('AUTOR') &&
                 rolesAhora.includes('AUTOR')
               ) {
