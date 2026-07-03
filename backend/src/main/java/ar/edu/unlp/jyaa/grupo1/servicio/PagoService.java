@@ -4,7 +4,6 @@ import ar.edu.unlp.jyaa.grupo1.dao.InscripcionCongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.PagoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.PagoFiltro;
-import ar.edu.unlp.jyaa.grupo1.modelo.EstadoInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
@@ -27,6 +26,7 @@ public class PagoService {
 
   @Inject private PagoDAO pagoDAO;
   @Inject private InscripcionCongresoDAO inscripcionDAO;
+  @Inject private InscripcionService inscripcionService;
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private DocumentStorageService documentStorageService;
 
@@ -35,24 +35,23 @@ public class PagoService {
     if (usuario == null) {
       throw new NegocioException("Usuario no encontrado");
     }
+
+    InscripcionCongreso inscripcion = inscripcionService.buscarUltimaPorUsuario(usuarioId);
+    if (inscripcion == null) {
+      throw new NegocioException("Debe completar la inscripción antes de registrar el pago");
+    }
+    if (!inscripcionService.puedeRegistrarPago(inscripcion)) {
+      throw new NegocioException(
+          "No puede registrar un pago con la inscripción actual. Verifique su estado.");
+    }
+
     pago.setEstado(EstadoPago.PENDIENTE);
     pago.setFechaRegistro(LocalDate.now());
+    pago.setRequiereFactura(inscripcion.isRequiereFactura());
     pagoDAO.alta(pago);
 
-    InscripcionCongreso inscripcion =
-        inscripcionDAO.buscarUltimaPorUsuario(usuarioId).orElse(null);
-    if (inscripcion == null) {
-      inscripcion = new InscripcionCongreso();
-      inscripcion.setUsuario(usuario);
-      inscripcion.setCategoria("general");
-      inscripcion.setEstado(EstadoInscripcion.PENDIENTE);
-      inscripcion.setFechaSolicitud(LocalDate.now());
-      inscripcion.setPago(pago);
-      inscripcionDAO.alta(inscripcion);
-    } else {
-      inscripcion.setPago(pago);
-      inscripcionDAO.modificar(inscripcion);
-    }
+    inscripcion.setPago(pago);
+    inscripcionDAO.modificar(inscripcion);
     return pago;
   }
 

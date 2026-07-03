@@ -23,7 +23,9 @@ import { PromoverEvaluadorComponent } from './pages/organizador/promover-evaluad
 import { AsignacionesEvaluadorComponent } from './pages/evaluador/asignaciones/asignaciones-evaluador.component';
 import { TrabajosAutorComponent } from './pages/autor/trabajos/trabajos-autor.component';
 import { CronogramaParticipanteComponent } from './pages/participante/cronograma/cronograma-participante.component';
+import { InscripcionParticipanteComponent } from './pages/participante/inscripcion/inscripcion-participante.component';
 import { PagoParticipanteComponent } from './pages/participante/pago/pago-participante.component';
+import { InscripcionesAdminComponent } from './pages/admin/inscripciones/inscripciones-admin.component';
 import { SeleccionRolComponent } from './pages/seleccion-rol/seleccion-rol.component';
 
 // Guards reutilizables por perfil (verifican rol en LoginService)
@@ -53,6 +55,7 @@ export const routes: Routes = [
         { label: 'Listado de usuarios', route: '/admin/usuarios' },
         { label: 'Nuevo usuario', route: '/admin/usuarios/nuevo' },
         { label: 'Validar pagos pendientes', route: '/admin/pagos' },
+        { label: 'Inscripciones al congreso', route: '/admin/inscripciones' },
         { label: 'Listado de pagos (limpieza)', route: '/admin/pagos/todos' },
         { label: 'ABM actividades', route: '/admin/actividades' },
         { label: 'Listado de trabajos (limpieza)', route: '/admin/trabajos' },
@@ -64,6 +67,7 @@ export const routes: Routes = [
   { path: 'admin/usuarios/:id', component: UsuarioDetalleComponent, canActivate: [admin] },
   { path: 'admin/pagos', component: PagosPendientesComponent, canActivate: [admin] },
   { path: 'admin/pagos/todos', component: PagosListaComponent, canActivate: [admin] },
+  { path: 'admin/inscripciones', component: InscripcionesAdminComponent, canActivate: [admin] },
   { path: 'admin/actividades', component: ActividadesAdminComponent, canActivate: [admin] },
   { path: 'admin/trabajos', component: TrabajosAdminComponent, canActivate: [admin] },
 
@@ -132,6 +136,7 @@ export const routes: Routes = [
       descripcion:
         'Cronograma personal, pagos de inscripción y envío de trabajos (con promoción automática a Autor).',
       menu: [
+        { label: 'Inscripción al congreso', route: '/participante/inscripcion' },
         { label: 'Mi cronograma', route: '/participante/cronograma' },
         { label: 'Estado de pago', route: '/participante/pago' },
         {
@@ -145,6 +150,11 @@ export const routes: Routes = [
   {
     path: 'participante/cronograma',
     component: CronogramaParticipanteComponent,
+    canActivate: [participante],
+  },
+  {
+    path: 'participante/inscripcion',
+    component: InscripcionParticipanteComponent,
     canActivate: [participante],
   },
   { path: 'participante/pago', component: PagoParticipanteComponent, canActivate: [participante] },

@@ -19,7 +19,8 @@ public class DocumentStorageService {
 
   public enum TipoArchivo {
     TRABAJO(TipoArchivoAlmacenado.TRABAJO),
-    COMPROBANTE(TipoArchivoAlmacenado.COMPROBANTE);
+    COMPROBANTE(TipoArchivoAlmacenado.COMPROBANTE),
+    CERTIFICADO_INSCRIPCION(TipoArchivoAlmacenado.CERTIFICADO_INSCRIPCION);
 
     private final TipoArchivoAlmacenado entidad;
 

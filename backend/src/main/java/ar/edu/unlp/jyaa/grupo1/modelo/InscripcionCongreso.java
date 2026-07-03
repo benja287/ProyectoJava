@@ -25,6 +25,18 @@ public class InscripcionCongreso implements Serializable {
   @Column(name = "motivo_rechazo", length = 500)
   private String motivoRechazo;
 
+  @Column(length = 200)
+  private String institucion;
+
+  @Column(length = 120)
+  private String provincia;
+
+  @Column(name = "requiere_factura", nullable = false)
+  private boolean requiereFactura;
+
+  @Column(name = "certificado_url", length = 500)
+  private String certificadoUrl;
+
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "usuario_id", nullable = false)
   private Usuario usuario;
@@ -73,6 +85,38 @@ public class InscripcionCongreso implements Serializable {
 
   public void setMotivoRechazo(String motivoRechazo) {
     this.motivoRechazo = motivoRechazo;
+  }
+
+  public String getInstitucion() {
+    return institucion;
+  }
+
+  public void setInstitucion(String institucion) {
+    this.institucion = institucion;
+  }
+
+  public String getProvincia() {
+    return provincia;
+  }
+
+  public void setProvincia(String provincia) {
+    this.provincia = provincia;
+  }
+
+  public boolean isRequiereFactura() {
+    return requiereFactura;
+  }
+
+  public void setRequiereFactura(boolean requiereFactura) {
+    this.requiereFactura = requiereFactura;
+  }
+
+  public String getCertificadoUrl() {
+    return certificadoUrl;
+  }
+
+  public void setCertificadoUrl(String certificadoUrl) {
+    this.certificadoUrl = certificadoUrl;
   }
 
   public Usuario getUsuario() {

@@ -35,6 +35,7 @@ public class JaxRsApplication extends Application {
         CronogramaResource.class,
         ArchivoResource.class,
         LoginResource.class,
-        CircularesResource.class);
+        CircularesResource.class,
+        InscripcionResource.class);
   }
 }

@@ -4,8 +4,10 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { LoginService } from '../../../auth/login.service';
+import { InscripcionCongreso } from '../../../models/inscripcion.model';
 import { METODOS_PAGO } from '../../../models/enums';
 import { Pago } from '../../../models/pago.model';
+import { InscripcionService } from '../../../servicios/inscripcion.service';
 import { PagoService } from '../../../servicios/pago.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
@@ -23,6 +25,24 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       }
       @if (mensaje) {
         <p class="ok">{{ mensaje }}</p>
+      }
+
+      @if (!inscripcion && !cargando) {
+        <p class="error">
+          Primero debés completar tu
+          <a routerLink="/participante/inscripcion">inscripción al congreso</a>.
+        </p>
+      }
+
+      @if (inscripcion && inscripcion.estado === 'RECHAZADA') {
+        <p class="error">
+          Tu inscripción fue rechazada.
+          @if (inscripcion.motivoRechazo) {
+            Motivo: {{ inscripcion.motivoRechazo }}.
+          }
+          Podés crear una nueva en
+          <a routerLink="/participante/inscripcion">Inscripción al congreso</a>.
+        </p>
       }
 
       @if (pago) {
@@ -55,8 +75,14 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
             <input type="file" accept=".pdf" (change)="subirComprobante($event)" />
           </label>
         }
-      } @else if (!cargando) {
+      } @else if (!cargando && inscripcion && inscripcion.estado !== 'RECHAZADA') {
         <h2>Registrar pago de inscripción</h2>
+        <p class="muted">
+          Categoría: {{ inscripcion.categoria }}
+          @if (inscripcion.requiereFactura) {
+            · Requiere factura
+          }
+        </p>
         <form [formGroup]="form" (ngSubmit)="registrar()" class="form-grid">
           <label>
             Monto
@@ -69,14 +95,6 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                 <option [value]="m">{{ m }}</option>
               }
             </select>
-          </label>
-          <label class="checkbox-inline">
-            <input type="checkbox" formControlName="requiereFactura" />
-            Requiere factura
-          </label>
-          <label>
-            ID asociación (opcional)
-            <input formControlName="idAsociacion" />
           </label>
           <button type="submit" [disabled]="form.invalid || guardando">Registrar pago</button>
         </form>
@@ -94,6 +112,7 @@ export class PagoParticipanteComponent implements OnInit {
   private fb = inject(FormBuilder);
 
   pago?: Pago;
+  inscripcion?: InscripcionCongreso;
   metodos = [...METODOS_PAGO];
   cargando = true;
   guardando = false;
@@ -104,13 +123,12 @@ export class PagoParticipanteComponent implements OnInit {
   form = this.fb.group({
     monto: [0, [Validators.required, Validators.min(0.01)]],
     metodo: [this.metodos[0], Validators.required],
-    requiereFactura: [false],
-    idAsociacion: [''],
   });
 
   constructor(
     private loginService: LoginService,
-    private pagoService: PagoService
+    private pagoService: PagoService,
+    private inscripcionService: InscripcionService
   ) {}
 
   ngOnInit(): void {
@@ -124,7 +142,7 @@ export class PagoParticipanteComponent implements OnInit {
   }
 
   registrar(): void {
-    if (!this.usuarioId || this.form.invalid) {
+    if (!this.usuarioId || this.form.invalid || !this.inscripcion) {
       return;
     }
     const raw = this.form.getRawValue();
@@ -133,8 +151,7 @@ export class PagoParticipanteComponent implements OnInit {
       .registrar(this.usuarioId, {
         monto: Number(raw.monto),
         metodo: raw.metodo!,
-        requiereFactura: !!raw.requiereFactura,
-        idAsociacion: raw.idAsociacion || undefined,
+        requiereFactura: !!this.inscripcion?.requiereFactura,
       })
       .subscribe({
         next: (creado) => {
@@ -167,12 +184,27 @@ export class PagoParticipanteComponent implements OnInit {
     if (!this.usuarioId) {
       return;
     }
-    this.pagoService.consultarEstadoPorUsuario(this.usuarioId).subscribe({
-      next: (p) => {
-        this.pago = p;
-        this.cargando = false;
+    this.inscripcionService.misDatos().subscribe({
+      next: (inscripcion) => {
+        this.inscripcion = inscripcion;
+        if (inscripcion.pagoId) {
+          this.pagoService.consultarEstadoPorUsuario(this.usuarioId!).subscribe({
+            next: (p) => {
+              this.pago = p;
+              this.cargando = false;
+            },
+            error: () => {
+              this.pago = undefined;
+              this.cargando = false;
+            },
+          });
+        } else {
+          this.pago = undefined;
+          this.cargando = false;
+        }
       },
       error: () => {
+        this.inscripcion = undefined;
         this.pago = undefined;
         this.cargando = false;
       },

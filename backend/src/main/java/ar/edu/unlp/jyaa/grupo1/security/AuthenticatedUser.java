@@ -41,4 +41,8 @@ public record AuthenticatedUser(Long userId, List<String> roles) {
   public boolean canListActividades() {
     return true;
   }
+
+  public boolean canValidarInscripciones() {
+    return isAdmin();
+  }
 }
