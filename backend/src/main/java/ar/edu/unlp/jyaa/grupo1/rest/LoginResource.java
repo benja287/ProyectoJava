@@ -5,6 +5,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.LoginRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.LoginResponseDTO;
 import ar.edu.unlp.jyaa.grupo1.security.JwtService;
+import ar.edu.unlp.jyaa.grupo1.servicio.UsuarioService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.UsuarioDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -29,6 +30,7 @@ public class LoginResource {
 
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private JwtService jwtService;
+  @Inject private UsuarioService usuarioService;
 
   @POST
   @Operation(summary = "Iniciar sesión")
@@ -53,6 +55,7 @@ public class LoginResource {
           .entity(Map.of("error", "Credenciales inválidas"))
           .build();
     }
+    usuario = usuarioService.normalizarRolesCongreso(usuario);
     return Response.ok(
             new LoginResponseDTO(
                 jwtService.generate(usuario),

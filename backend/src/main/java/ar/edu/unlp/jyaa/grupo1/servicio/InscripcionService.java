@@ -9,6 +9,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.EstadoInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago;
+import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
@@ -129,13 +130,43 @@ public class InscripcionService {
   }
 
   public EstadoInscripcionParticipanteDTO estadoParticipante(AuthenticatedUser auth) {
+    sincronizarCongresoAprobado(auth.userId());
     Usuario usuario = usuarioDAO.recuperarPorId(auth.userId());
     if (usuario == null) {
       throw new NegocioException("Usuario no encontrado");
     }
     InscripcionCongreso inscripcion =
         inscripcionDAO.buscarUltimaPorUsuario(auth.userId()).orElse(null);
-    return EstadoInscripcionParticipanteDTO.of(inscripcion, usuario.getCategoriaInscripcion());
+    boolean esAsistente =
+        usuario.getRoles() != null && usuario.getRoles().contains(Rol.ASISTENTE);
+    return EstadoInscripcionParticipanteDTO.of(
+        inscripcion, usuario.getCategoriaInscripcion(), esAsistente);
+  }
+
+  /**
+   * Si el pago del congreso está aprobado, confirma la inscripción y asigna rol ASISTENTE.
+   * Se invoca al consultar estado y tras validar pagos en administración.
+   */
+  public void sincronizarCongresoAprobado(Long usuarioId) {
+    if (usuarioId == null) {
+      return;
+    }
+    InscripcionCongreso inscripcion =
+        inscripcionDAO.buscarUltimaPorUsuario(usuarioId).orElse(null);
+    if (inscripcion == null || inscripcion.getPago() == null) {
+      return;
+    }
+    if (inscripcion.getPago().getEstado() != EstadoPago.APROBADO) {
+      return;
+    }
+    if (inscripcion.getEstado() == EstadoInscripcion.PENDIENTE) {
+      inscripcion.setEstado(EstadoInscripcion.APROBADA);
+      inscripcion.setMotivoRechazo(null);
+      inscripcionDAO.modificar(inscripcion);
+    }
+    if (inscripcion.getEstado() == EstadoInscripcion.APROBADA) {
+      usuarioService.promoverAsistente(usuarioId);
+    }
   }
 
   public PaginaInscripcionesDTO listar(
@@ -165,19 +196,49 @@ public class InscripcionService {
       }
       inscripcion.setEstado(EstadoInscripcion.RECHAZADA);
       inscripcion.setMotivoRechazo(motivoRechazo.trim());
+      inscripcionDAO.modificar(inscripcion);
     } else {
-      inscripcion.setEstado(EstadoInscripcion.APROBADA);
-      inscripcion.setMotivoRechazo(null);
-      if (inscripcion.getPago() != null
-          && inscripcion.getPago().getEstado() == EstadoPago.PENDIENTE) {
-        inscripcion.getPago().setEstado(EstadoPago.APROBADO);
-        pagoDAO.modificar(inscripcion.getPago());
-      }
-      usuarioService.promoverAsistente(inscripcion.getUsuario());
+      aprobarInscripcion(inscripcion, true);
     }
 
-    inscripcionDAO.modificar(inscripcion);
     return InscripcionCongresoDTO.from(recuperarConRelaciones(id));
+  }
+
+  /**
+   * Tras aprobar el pago desde administración: aprueba la inscripción vinculada (si pendía) y
+   * promueve al usuario a rol ASISTENTE.
+   */
+  public void confirmarCongresoPorPagoAprobado(Long pagoId) {
+    if (pagoId == null) {
+      return;
+    }
+    var inscripciones = inscripcionDAO.listarPorPago(pagoId);
+    if (inscripciones.isEmpty()) {
+      inscripcionDAO
+          .buscarPorPagoId(pagoId)
+          .ifPresent(ins -> sincronizarCongresoAprobado(ins.getUsuario().getId()));
+      return;
+    }
+    for (InscripcionCongreso inscripcion : inscripciones) {
+      if (inscripcion.getUsuario() != null) {
+        sincronizarCongresoAprobado(inscripcion.getUsuario().getId());
+      }
+    }
+  }
+
+  private void aprobarInscripcion(InscripcionCongreso inscripcion, boolean aprobarPagoSiPendiente) {
+    inscripcion.setEstado(EstadoInscripcion.APROBADA);
+    inscripcion.setMotivoRechazo(null);
+    if (aprobarPagoSiPendiente
+        && inscripcion.getPago() != null
+        && inscripcion.getPago().getEstado() == EstadoPago.PENDIENTE) {
+      inscripcion.getPago().setEstado(EstadoPago.APROBADO);
+      pagoDAO.modificar(inscripcion.getPago());
+    }
+    inscripcionDAO.modificar(inscripcion);
+    if (inscripcion.getUsuario() != null) {
+      usuarioService.promoverAsistente(inscripcion.getUsuario().getId());
+    }
   }
 
   public static InscripcionFiltro parseFiltro(String estado, String categoria) {

@@ -1,6 +1,5 @@
 /**
- * Guard para rutas del asistente al congreso (aprobado).
- * Acepta ASISTENTE y PARTICIPANTE legacy.
+ * Guard para rutas del asistente al congreso (rol ASISTENTE, tras aprobación).
  */
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
@@ -15,7 +14,7 @@ export const asistenteGuard: CanActivateFn = () => {
   if (login.esAsistenteCongreso()) {
     return true;
   }
-  if (!login.tieneRolOperativo()) {
+  if (login.necesitaInscripcionCongreso() || !login.tieneRolOperativo()) {
     return router.createUrlTree(['/inscripcion']);
   }
   return router.createUrlTree(['/']);

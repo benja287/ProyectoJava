@@ -24,4 +24,6 @@ public interface UsuarioDAO extends GenericDAO<Usuario> {
   default Optional<Usuario> buscarPorId(Long id) {
     return Optional.ofNullable(recuperarPorId(id));
   }
+
+  void flush();
 }

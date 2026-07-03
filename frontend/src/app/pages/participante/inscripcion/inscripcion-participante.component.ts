@@ -248,7 +248,7 @@ export class InscripcionParticipanteComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this.loginService.esAsistenteCongreso()) {
+    if (this.loginService.hasRole('ASISTENTE')) {
       this.router.navigateByUrl('/asistente');
       return;
     }
@@ -330,12 +330,13 @@ export class InscripcionParticipanteComponent implements OnInit {
           this.categoriaBloqueada = true;
         }
         this.mostrarFormulario = estado.puedeInscribirse;
-        if (this.inscripcion?.estado === 'APROBADA' && !this.loginService.esAsistenteCongreso()) {
-          this.loginService.refreshUser().subscribe({
-            next: () => this.router.navigateByUrl('/asistente'),
-            error: () => undefined,
-          });
-        }
+        this.loginService.sincronizarTrasEstadoCongreso(estado).subscribe({
+          next: () => {
+            if (this.loginService.esAsistenteCongreso()) {
+              this.router.navigateByUrl('/asistente');
+            }
+          },
+        });
         this.cargando = false;
       },
       error: () => {

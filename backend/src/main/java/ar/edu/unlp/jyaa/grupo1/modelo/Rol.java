@@ -4,7 +4,7 @@ package ar.edu.unlp.jyaa.grupo1.modelo;
 public enum Rol {
   /** Inscripto y aprobado al congreso (asistente al evento). */
   ASISTENTE,
-  /** @deprecated Usar {@link #ASISTENTE}; se mantiene por datos legacy. */
+  /** @deprecated Solo para compatibilidad con filas legacy en BD; no asignar en código nuevo. */
   PARTICIPANTE,
   AUTOR,
   EVALUADOR,

@@ -76,6 +76,7 @@ export interface EstadoInscripcionParticipante {
   inscripcion: InscripcionCongreso | null;
   categoriaPreferida: string | null;
   puedeInscribirse: boolean;
+  esAsistente: boolean;
 }
 
 export interface PaginaInscripciones {

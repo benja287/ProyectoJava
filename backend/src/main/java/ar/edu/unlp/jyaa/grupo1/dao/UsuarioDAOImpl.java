@@ -131,4 +131,9 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
       em.close();
     }
   }
+
+  @Override
+  public void flush() {
+    super.flush();
+  }
 }

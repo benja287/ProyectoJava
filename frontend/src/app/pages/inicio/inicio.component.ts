@@ -24,17 +24,18 @@ import { InscripcionService } from '../../servicios/inscripcion.service';
             Hola, {{ usuario?.nombre }} {{ usuario?.apellido }}.
             @if (usuario?.rolActual) {
               Perfil activo: <strong>{{ etiqueta(usuario!.rolActual!) }}</strong>.
-            } @else if (!tieneRolOperativo) {
-              Todavía no tenés un rol operativo. Completá tu inscripción al congreso.
+            } @else if (necesitaInscripcion) {
+              Sos usuario registrado. Completá tu inscripción al congreso para acceder como
+              <strong>asistente</strong>.
             }
           </p>
 
-          @if (!esAsistente && estado?.puedeInscribirse) {
+          @if (necesitaInscripcion && estado?.puedeInscribirse) {
             <a routerLink="/inscripcion" class="btn-cta-inscripcion">
               Inscribirme al congreso
             </a>
           }
-          @if (!esAsistente && estado?.inscripcion?.estado === 'PENDIENTE') {
+          @if (necesitaInscripcion && estado?.inscripcion?.estado === 'PENDIENTE') {
             <p class="hero-status pending">
               Tu inscripción está pendiente de aprobación por la organización.
             </p>
@@ -46,7 +47,7 @@ import { InscripcionService } from '../../servicios/inscripcion.service';
             </p>
             <a routerLink="/asistente" class="btn-cta-inscripcion">Ir a mi panel de asistente</a>
           }
-          @if (!esAsistente && estado?.inscripcion?.estado === 'RECHAZADA') {
+          @if (necesitaInscripcion && estado?.inscripcion?.estado === 'RECHAZADA') {
             <p class="hero-status error">
               Tu inscripción fue rechazada.
               <a routerLink="/inscripcion">Enviar una nueva solicitud</a>
@@ -84,17 +85,16 @@ export class InicioComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (this.logueado && !this.esAsistente) {
-      this.inscripcionService.misEstado().subscribe({
-        next: (estado) => {
-          this.estado = estado;
-          if (estado.inscripcion?.estado === 'APROBADA') {
-            this.loginService.refreshUser().subscribe({ error: () => undefined });
-          }
-        },
-        error: () => undefined,
-      });
+    if (!this.logueado) {
+      return;
     }
+    this.inscripcionService.misEstado().subscribe({
+      next: (estado) => {
+        this.estado = estado;
+        this.loginService.sincronizarTrasEstadoCongreso(estado).subscribe();
+      },
+      error: () => undefined,
+    });
   }
 
   get logueado(): boolean {
@@ -107,6 +107,10 @@ export class InicioComponent implements OnInit {
 
   get esAsistente(): boolean {
     return this.loginService.esAsistenteCongreso();
+  }
+
+  get necesitaInscripcion(): boolean {
+    return this.loginService.necesitaInscripcionCongreso();
   }
 
   get tieneRolOperativo(): boolean {

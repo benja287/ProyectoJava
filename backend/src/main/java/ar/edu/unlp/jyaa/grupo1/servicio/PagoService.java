@@ -175,6 +175,7 @@ public class PagoService {
     pago.setEstado(EstadoPago.APROBADO);
     pago.setMotivoRechazo(null);
     pagoDAO.modificar(pago);
+    inscripcionService.confirmarCongresoPorPagoAprobado(pago.getId());
     return new ValidacionPagoResult(pago, mensaje);
   }
 

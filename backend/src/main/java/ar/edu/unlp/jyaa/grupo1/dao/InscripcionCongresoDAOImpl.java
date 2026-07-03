@@ -118,10 +118,29 @@ public class InscripcionCongresoDAOImpl extends AbstractJpaDAO<InscripcionCongre
     EntityManager em = emConsulta();
     try {
       return em.createQuery(
-              "SELECT i FROM InscripcionCongreso i WHERE i.pago.id = :pagoId",
+              "SELECT i FROM InscripcionCongreso i JOIN FETCH i.usuario LEFT JOIN FETCH i.pago"
+                  + " WHERE i.pago.id = :pagoId",
               InscripcionCongreso.class)
           .setParameter("pagoId", pagoId)
           .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public Optional<InscripcionCongreso> buscarPorPagoId(Long pagoId) {
+    EntityManager em = emConsulta();
+    try {
+      List<InscripcionCongreso> list =
+          em.createQuery(
+                  "SELECT i FROM InscripcionCongreso i JOIN FETCH i.usuario LEFT JOIN FETCH i.pago"
+                      + " WHERE i.pago.id = :pagoId",
+                  InscripcionCongreso.class)
+              .setParameter("pagoId", pagoId)
+              .setMaxResults(1)
+              .getResultList();
+      return list.stream().findFirst();
     } finally {
       closeLegacy(em);
     }

@@ -157,7 +157,6 @@ export class LoginService {
       case 'AUTOR':
         return '/autor';
       case 'ASISTENTE':
-      case 'PARTICIPANTE':
         return '/asistente';
       default:
         break;
@@ -165,25 +164,38 @@ export class LoginService {
     if (this.esAsistenteCongreso()) {
       return '/asistente';
     }
-    if (this.isLogged() && !this.tieneRolOperativo()) {
+    if (this.necesitaInscripcionCongreso()) {
       return '/inscripcion';
     }
     return '/';
   }
 
-  /** Usuario inscripto y aprobado al congreso (rol asistente). */
+  /** Usuario con inscripción aprobada (rol ASISTENTE en el congreso). */
   esAsistenteCongreso(): boolean {
-    return this.hasAnyRole(['ASISTENTE', 'PARTICIPANTE']);
+    return this.hasRole('ASISTENTE');
   }
 
-  /** Tiene algún rol de panel (admin, autor, etc.) o asistente al congreso. */
+  /**
+   * Usuario registrado que aún debe completar (o reenviar) la inscripción al congreso.
+   */
+  necesitaInscripcionCongreso(): boolean {
+    if (!this.isLogged() || this.hasRole('ASISTENTE')) {
+      return false;
+    }
+    return (this.usuario?.roles ?? []).length === 0;
+  }
+
+  /** Tiene algún rol de panel (admin, autor, asistente, etc.). */
   tieneRolOperativo(): boolean {
     const roles = this.usuario?.roles ?? [];
     return roles.length > 0;
   }
 
-  /** Tras login: sin roles → inscripción; con roles → panel o selección de perfil. */
+  /** Tras login: registrado sin aprobación → inscripción; con roles → panel o selección. */
   rutaTrasLogin(): string {
+    if (this.necesitaInscripcionCongreso()) {
+      return '/inscripcion';
+    }
     if (!this.tieneRolOperativo()) {
       return '/inscripcion';
     }
@@ -196,6 +208,9 @@ export class LoginService {
 
   /** Si tiene varios roles y aún no eligió perfil → forzar /seleccion-rol */
   rutaPanel(): string {
+    if (this.necesitaInscripcionCongreso()) {
+      return '/inscripcion';
+    }
     if (!this.tieneRolOperativo()) {
       return '/inscripcion';
     }
@@ -230,15 +245,36 @@ export class LoginService {
           return throwError(() => new Error('Usuario no encontrado'));
         }
         const roles = u.roles ?? [];
-        const rolActual =
-          rolActualPrevio && roles.includes(rolActualPrevio)
-            ? rolActualPrevio
-            : (u.rolActual ?? roles[0] ?? null);
+        let rolActual = u.rolActual ?? null;
+        if (!rolActual && roles.includes('ASISTENTE')) {
+          rolActual = 'ASISTENTE';
+        } else if (rolActualPrevio && roles.includes(rolActualPrevio)) {
+          rolActual = rolActualPrevio;
+        } else if (!rolActual && roles.length > 0) {
+          rolActual = roles[0];
+        }
         const actualizado: Usuario = { ...u, rolActual };
         this.setUser(actualizado);
         return of(actualizado);
       })
     );
+  }
+
+  /**
+   * Tras consultar /inscripciones/mis-datos: actualiza la sesión local si el backend
+   * confirmó rol asistente (p. ej. admin aprobó el pago).
+   */
+  sincronizarTrasEstadoCongreso(
+    estado: { esAsistente?: boolean; inscripcion?: { estado?: string; pagoEstado?: string | null } | null }
+  ): Observable<Usuario | null> {
+    const debeActualizar =
+      estado.esAsistente === true ||
+      estado.inscripcion?.estado === 'APROBADA' ||
+      estado.inscripcion?.pagoEstado === 'APROBADO';
+    if (!debeActualizar) {
+      return of(null);
+    }
+    return this.refreshUser().pipe(catchError(() => of(null)));
   }
 
   /** PUT /api/usuarios/{id}/roles — actualiza rolActual en backend y sesión local */

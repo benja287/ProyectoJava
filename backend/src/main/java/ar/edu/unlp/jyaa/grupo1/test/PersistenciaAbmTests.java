@@ -74,7 +74,7 @@ public final class PersistenciaAbmTests {
       u.setEmail("test.abm." + stamp + "@jyaa.unlp.edu.ar");
       u.setPassword("test");
       u.setActivo(true);
-      u.setRoles(new HashSet<>(Set.of(Rol.AUTOR, Rol.PARTICIPANTE)));
+      u.setRoles(new HashSet<>(Set.of(Rol.AUTOR, Rol.ASISTENTE)));
       u.setRolActual(Rol.AUTOR);
 
       u = dao.alta(u);
@@ -415,8 +415,8 @@ public final class PersistenciaAbmTests {
     u.setEmail(prefijo + "." + stamp + "@jyaa.unlp.edu.ar");
     u.setPassword("test");
     u.setActivo(true);
-    u.setRoles(new HashSet<>(Set.of(Rol.PARTICIPANTE)));
-    u.setRolActual(Rol.PARTICIPANTE);
+    u.setRoles(new HashSet<>(Set.of(Rol.ASISTENTE)));
+    u.setRolActual(Rol.ASISTENTE);
     return u;
   }
 

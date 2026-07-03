@@ -18,7 +18,10 @@ import { PagoFilaComponent } from './pago-fila.component';
   template: `
     <section class="card">
       <h1>Pagos pendientes de validación</h1>
-      <p>Admin — GET <code>/api/pagos/pendientes</code></p>
+      <p>
+        Al aprobar un pago se confirma la inscripción vinculada y el usuario recibe el rol
+        <strong>Asistente</strong>.
+      </p>
 
       <app-filter-bar
         [fields]="filterFields"

@@ -82,6 +82,12 @@ public abstract class AbstractJpaDAO<T> implements GenericDAO<T> {
     }
   }
 
+  public void flush() {
+    if (usesCdi()) {
+      injectedEm.flush();
+    }
+  }
+
   @Override
   public T modificar(T entidad) {
     if (usesCdi()) {
