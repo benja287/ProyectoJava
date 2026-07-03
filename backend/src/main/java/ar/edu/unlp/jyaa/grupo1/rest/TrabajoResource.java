@@ -1,7 +1,9 @@
 package ar.edu.unlp.jyaa.grupo1.rest;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.ConfirmarComiteRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.DocumentoUploadForm;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.PrecheckRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoCreateRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.servicio.TrabajoService;
@@ -56,10 +58,11 @@ public class TrabajoResource {
       @QueryParam("resumen") String resumen,
       @QueryParam("ejeTematico") String ejeTematico,
       @QueryParam("estado") String estado,
+      @QueryParam("modalidad") String modalidad,
       @QueryParam("page") @DefaultValue("1") int page,
       @QueryParam("size") @DefaultValue("20") int size,
       @Context ContainerRequestContext ctx) {
-    var filtro = TrabajoService.parseFiltro(titulo, resumen, ejeTematico, estado, autorId);
+    var filtro = TrabajoService.parseFiltro(titulo, resumen, ejeTematico, estado, modalidad, autorId);
     return trabajoService.listar(page, size, filtro, AuthenticatedUser.from(ctx));
   }
 
@@ -98,6 +101,30 @@ public class TrabajoResource {
         throw new NotFoundException("Trabajo no encontrado");
       }
       return TrabajoResumenDTO.from(trabajo);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @PUT
+  @Path("/{id}/precheck")
+  @Operation(summary = "Precheck del comité académico (apto u observado)")
+  public TrabajoResumenDTO precheck(@PathParam("id") Long id, PrecheckRequest request) {
+    try {
+      return TrabajoResumenDTO.from(trabajoService.registrarPrecheck(id, request.apto()));
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @PUT
+  @Path("/{id}/confirmar-comite")
+  @Operation(summary = "Confirmación final del comité tras evaluaciones")
+  public TrabajoResumenDTO confirmarComite(
+      @PathParam("id") Long id, ConfirmarComiteRequest request) {
+    try {
+      return TrabajoResumenDTO.from(
+          trabajoService.confirmarAprobacionComite(id, request.aprobar(), request.observaciones()));
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }

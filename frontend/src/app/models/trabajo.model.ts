@@ -3,6 +3,7 @@ export interface Trabajo {
   titulo: string;
   resumen?: string;
   ejeTematico?: string;
+  modalidad?: string;
   tipo: string;
   estado?: string;
   documentoUrl?: string | null;
@@ -11,6 +12,7 @@ export interface Trabajo {
   autorId?: number;
   autorNombre?: string;
   autorApellido?: string;
+  precheckIntentos?: number;
 }
 
 export interface PaginaTrabajos {
@@ -27,7 +29,25 @@ export interface TrabajoCreateRequest {
     titulo: string;
     resumen?: string;
     ejeTematico?: string;
+    modalidad?: string;
     tipo: string;
     coautores?: string[];
   };
+}
+
+export interface CrearMesaTematicaRequest {
+  codigo: string;
+  titulo: string;
+  sala: string;
+  inicio: string;
+  fin: string;
+  trabajoIds: number[];
+}
+
+export interface CrearSesionPostersRequest {
+  titulo: string;
+  ubicacion: string;
+  inicio: string;
+  fin: string;
+  trabajoIds: number[];
 }

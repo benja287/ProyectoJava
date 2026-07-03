@@ -1,5 +1,7 @@
 package ar.edu.unlp.jyaa.grupo1.rest;
 
+import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearMesaTematicaRequest;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearSesionPostersRequest;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.servicio.ActividadService;
@@ -67,6 +69,24 @@ public class ActividadResource {
       throw new NotFoundException("Actividad no encontrada");
     }
     return ActividadResumenDTO.from(actividad);
+  }
+
+  @POST
+  @Path("/mesa-tematica")
+  @Operation(summary = "Crear mesa temática con trabajos orales aprobados")
+  public Response crearMesaTematica(CrearMesaTematicaRequest request, @Context UriInfo uriInfo) {
+    Actividad creada = actividadService.crearMesaTematica(request);
+    URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
+    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
+  }
+
+  @POST
+  @Path("/sesion-posters")
+  @Operation(summary = "Crear sesión de pósters con trabajos aprobados")
+  public Response crearSesionPosters(CrearSesionPostersRequest request, @Context UriInfo uriInfo) {
+    Actividad creada = actividadService.crearSesionPosters(request);
+    URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
+    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
   }
 
   @POST

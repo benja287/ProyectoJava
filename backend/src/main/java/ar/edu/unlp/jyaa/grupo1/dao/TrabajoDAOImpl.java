@@ -156,6 +156,10 @@ public class TrabajoDAOImpl extends AbstractJpaDAO<Trabajo> implements TrabajoDA
       jpql.append(" AND t.estado = :estado");
       params.put("estado", filtro.estado());
     }
+    if (filtro.modalidad() != null) {
+      jpql.append(" AND t.modalidad = :modalidad");
+      params.put("modalidad", filtro.modalidad());
+    }
     return jpql.toString();
   }
 

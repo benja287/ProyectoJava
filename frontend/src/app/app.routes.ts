@@ -29,6 +29,9 @@ import { PagoParticipanteComponent } from './pages/participante/pago/pago-partic
 import { InscripcionesAdminComponent } from './pages/admin/inscripciones/inscripciones-admin.component';
 import { SeleccionRolComponent } from './pages/seleccion-rol/seleccion-rol.component';
 import { PanelAsistenteComponent } from './pages/asistente/panel-asistente.component';
+import { MesasTematicasAdminComponent } from './pages/admin/mesas-tematicas/mesas-tematicas-admin.component';
+import { SesionPostersAdminComponent } from './pages/admin/sesion-posters/sesion-posters-admin.component';
+import { ComiteOcComponent } from './pages/organizador/comite/comite-oc.component';
 import { CertificadoAsistenteComponent } from './pages/asistente/certificado-asistente.component';
 
 const admin = roleGuard(['ADMINISTRADOR']);
@@ -100,6 +103,8 @@ export const routes: Routes = [
         { label: 'Inscripciones al congreso', route: '/admin/inscripciones' },
         { label: 'Listado de pagos (limpieza)', route: '/admin/pagos/todos' },
         { label: 'ABM actividades', route: '/admin/actividades' },
+        { label: 'Crear mesa temática', route: '/admin/mesas-tematicas' },
+        { label: 'Crear sesión de pósters', route: '/admin/sesion-posters' },
         { label: 'Listado de trabajos (limpieza)', route: '/admin/trabajos' },
       ],
     },
@@ -111,6 +116,8 @@ export const routes: Routes = [
   { path: 'admin/pagos/todos', component: PagosListaComponent, canActivate: [admin] },
   { path: 'admin/inscripciones', component: InscripcionesAdminComponent, canActivate: [admin] },
   { path: 'admin/actividades', component: ActividadesAdminComponent, canActivate: [admin] },
+  { path: 'admin/mesas-tematicas', component: MesasTematicasAdminComponent, canActivate: [admin] },
+  { path: 'admin/sesion-posters', component: SesionPostersAdminComponent, canActivate: [admin] },
   { path: 'admin/trabajos', component: TrabajosAdminComponent, canActivate: [admin] },
 
   // --- Perfil Organizador científico ---
@@ -122,10 +129,16 @@ export const routes: Routes = [
       titulo: 'Home — Organizador científico',
       descripcion: 'Asignación de trabajos a evaluadores y promoción de evaluadores.',
       menu: [
+        { label: 'Precheck y confirmación comité', route: '/organizador/comite' },
         { label: 'Asignar trabajos a evaluadores', route: '/organizador/asignaciones' },
         { label: 'Promover evaluadores', route: '/organizador/promover' },
       ],
     },
+  },
+  {
+    path: 'organizador/comite',
+    component: ComiteOcComponent,
+    canActivate: [organizador],
   },
   {
     path: 'organizador/asignaciones',

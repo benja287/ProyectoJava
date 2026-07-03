@@ -1,10 +1,14 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
+import ar.edu.unlp.jyaa.grupo1.dao.AsignacionEvaluacionDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.TrabajoFiltro;
+import ar.edu.unlp.jyaa.grupo1.modelo.EjesTematicos;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
+import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
+import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
@@ -20,8 +24,11 @@ import java.util.List;
 @RequestScoped
 public class TrabajoService {
 
+  private static final int MAX_PRECHECK_INTENTOS = 3;
+
   @Inject private TrabajoDAO trabajoDAO;
   @Inject private UsuarioDAO usuarioDAO;
+  @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
   @Inject private DocumentStorageService documentStorageService;
 
   private static final int PAGE_DEFAULT = 1;
@@ -34,18 +41,23 @@ public class TrabajoService {
   }
 
   public PaginaTrabajosDTO listar(int page, int size) {
-    return listarFiltrado(page, size, new TrabajoFiltro(null, null, null, null, null));
+    return listarFiltrado(page, size, new TrabajoFiltro(null, null, null, null, null, null));
   }
 
   public PaginaTrabajosDTO listarPorAutor(Long autorId, int page, int size) {
     if (usuarioDAO.recuperarPorId(autorId) == null) {
       throw new NegocioException("Autor no encontrado: " + autorId);
     }
-    return listarFiltrado(page, size, new TrabajoFiltro(null, null, null, null, autorId));
+    return listarFiltrado(page, size, new TrabajoFiltro(null, null, null, null, null, autorId));
   }
 
   public static TrabajoFiltro parseFiltro(
-      String titulo, String resumen, String ejeTematico, String estado, Long autorId) {
+      String titulo,
+      String resumen,
+      String ejeTematico,
+      String estado,
+      String modalidad,
+      Long autorId) {
     EstadoTrabajo estadoEnum = null;
     if (estado != null && !estado.isBlank()) {
       try {
@@ -54,17 +66,30 @@ public class TrabajoService {
         throw new NegocioException("Estado de trabajo inválido: " + estado);
       }
     }
-    return new TrabajoFiltro(titulo, resumen, ejeTematico, estadoEnum, autorId);
+    ModalidadPresentacion modalidadEnum = null;
+    if (modalidad != null && !modalidad.isBlank()) {
+      try {
+        modalidadEnum = ModalidadPresentacion.valueOf(modalidad.trim().toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new NegocioException("Modalidad inválida: " + modalidad);
+      }
+    }
+    return new TrabajoFiltro(titulo, resumen, ejeTematico, estadoEnum, modalidadEnum, autorId);
   }
 
   private TrabajoFiltro aplicarAlcance(TrabajoFiltro filtro, AuthenticatedUser auth) {
     TrabajoFiltro base =
-        filtro != null ? filtro : new TrabajoFiltro(null, null, null, null, null);
+        filtro != null ? filtro : new TrabajoFiltro(null, null, null, null, null, null);
     if (auth.canListAllTrabajos()) {
       return base;
     }
     return new TrabajoFiltro(
-        base.titulo(), base.resumen(), base.ejeTematico(), base.estado(), auth.userId());
+        base.titulo(),
+        base.resumen(),
+        base.ejeTematico(),
+        base.estado(),
+        base.modalidad(),
+        auth.userId());
   }
 
   private PaginaTrabajosDTO listarFiltrado(int page, int size, TrabajoFiltro filtro) {
@@ -97,24 +122,107 @@ public class TrabajoService {
       autor.getRoles().add(Rol.AUTOR);
       usuarioDAO.modificar(autor);
     }
+    validarDatosPostulacion(trabajo);
     trabajo.setAutor(autor);
     trabajo.setEstado(EstadoTrabajo.BORRADOR);
     trabajo.setFechaCreacion(LocalDate.now());
+    if (trabajo.getPrecheckIntentos() < 0) {
+      trabajo.setPrecheckIntentos(0);
+    }
     return trabajoDAO.alta(trabajo);
   }
 
   public Trabajo enviar(Long id) {
     Trabajo trabajo = buscar(id);
-    if (trabajo.getEstado() == EstadoTrabajo.BORRADOR) {
-      trabajo.setEstado(EstadoTrabajo.ENVIADO);
+    if (trabajo.getEstado() != EstadoTrabajo.BORRADOR
+        && trabajo.getEstado() != EstadoTrabajo.APROBADO_CON_CORRECCIONES) {
+      throw new NegocioException(
+          "Solo se pueden enviar trabajos en borrador o reenviar correcciones pendientes");
+    }
+    validarDatosPostulacion(trabajo);
+    if (trabajo.getDocumentoUrl() == null || trabajo.getDocumentoUrl().isBlank()) {
+      throw new NegocioException("Debe adjuntar el PDF antes de enviar el trabajo");
+    }
+    trabajo.setEstado(EstadoTrabajo.ENVIADO);
+    return trabajoDAO.modificar(trabajo);
+  }
+
+  public Trabajo registrarPrecheck(Long id, boolean apto) {
+    Trabajo trabajo = buscar(id);
+    if (trabajo.getEstado() != EstadoTrabajo.ENVIADO) {
+      throw new NegocioException("Solo se puede hacer precheck de trabajos en estado ENVIADO");
+    }
+    if (apto) {
+      trabajo.setEstado(EstadoTrabajo.PRECHECK_OK);
       return trabajoDAO.modificar(trabajo);
     }
-    if (trabajo.getEstado() == EstadoTrabajo.APROBADO_CON_CORRECCIONES) {
-      trabajo.setEstado(EstadoTrabajo.ENVIADO);
-      return trabajoDAO.modificar(trabajo);
+    int intentos = trabajo.getPrecheckIntentos() + 1;
+    trabajo.setPrecheckIntentos(intentos);
+    if (intentos >= MAX_PRECHECK_INTENTOS) {
+      trabajo.setEstado(EstadoTrabajo.RECHAZADO);
     }
-    throw new NegocioException(
-        "Solo se pueden enviar trabajos en borrador o reenviar correcciones pendientes");
+    return trabajoDAO.modificar(trabajo);
+  }
+
+  public Trabajo confirmarAprobacionComite(Long id, boolean aprobar, String observaciones) {
+    Trabajo trabajo = buscar(id);
+    if (trabajo.getEstado() != EstadoTrabajo.PENDIENTE_APROBACION_COMITE) {
+      throw new NegocioException(
+          "Solo se puede confirmar trabajos pendientes de aprobación del comité");
+    }
+    if (aprobar) {
+      trabajo.setEstado(EstadoTrabajo.APROBADO);
+    } else {
+      if (observaciones == null || observaciones.isBlank()) {
+        throw new NegocioException("Debe indicar el motivo del rechazo definitivo");
+      }
+      trabajo.setEstado(EstadoTrabajo.RECHAZADO);
+    }
+    return trabajoDAO.modificar(trabajo);
+  }
+
+  public void actualizarEstadoTrasEvaluaciones(Long trabajoId) {
+    Trabajo trabajo = buscar(trabajoId);
+    if (trabajo.getEstado() != EstadoTrabajo.EN_EVALUACION) {
+      return;
+    }
+    var asignaciones = asignacionEvaluacionDAO.listarPorTrabajo(trabajoId);
+    long evaluacionesCompletas =
+        asignaciones.stream()
+            .filter(a -> a.isAceptada() && a.getEvaluacion() != null)
+            .count();
+    if (evaluacionesCompletas < 2) {
+      return;
+    }
+    long aprobaciones =
+        asignaciones.stream()
+            .filter(
+                a ->
+                    a.isAceptada()
+                        && a.getEvaluacion() != null
+                        && (a.getEvaluacion().getRecomendacion()
+                                == ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion.APROBADO
+                            || a.getEvaluacion().getRecomendacion()
+                                == ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion
+                                    .APROBADO_CON_CORRECCIONES))
+            .count();
+    long rechazos =
+        asignaciones.stream()
+            .filter(
+                a ->
+                    a.isAceptada()
+                        && a.getEvaluacion() != null
+                        && a.getEvaluacion().getRecomendacion()
+                            == ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion.RECHAZADO)
+            .count();
+    if (aprobaciones >= 2) {
+      trabajo.setEstado(EstadoTrabajo.PENDIENTE_APROBACION_COMITE);
+    } else if (rechazos >= 2) {
+      trabajo.setEstado(EstadoTrabajo.RECHAZADO);
+    } else if (rechazos >= 1 && aprobaciones < 2) {
+      trabajo.setEstado(EstadoTrabajo.RECHAZADO);
+    }
+    trabajoDAO.modificar(trabajo);
   }
 
   public Trabajo adjuntarDocumento(Long id, InputStream contenido, String filename) {
@@ -134,5 +242,17 @@ public class TrabajoService {
     Trabajo trabajo = buscar(id);
     documentStorageService.eliminarPorUrl(trabajo.getDocumentoUrl());
     trabajoDAO.baja(id);
+  }
+
+  private void validarDatosPostulacion(Trabajo trabajo) {
+    if (trabajo.getTipo() == TipoTrabajo.PROPUESTA_TALLER) {
+      return;
+    }
+    if (trabajo.getModalidad() == null) {
+      throw new NegocioException("Debe indicar la modalidad de presentación (Oral o Póster)");
+    }
+    if (!EjesTematicos.esValido(trabajo.getEjeTematico())) {
+      throw new NegocioException("Debe seleccionar un eje temático válido");
+    }
   }
 }

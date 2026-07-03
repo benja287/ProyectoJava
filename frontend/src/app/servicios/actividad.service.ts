@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { Actividad, PaginaActividades } from '../models/actividad.model';
+import { CrearMesaTematicaRequest, CrearSesionPostersRequest } from '../models/trabajo.model';
 import { buildListHttpParams } from '../utils/filtro-params.util';
 
 export interface ActividadListFiltro {
@@ -40,5 +41,13 @@ export class ActividadService {
 
   baja(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  crearMesaTematica(request: CrearMesaTematicaRequest): Observable<Actividad> {
+    return this.http.post<Actividad>(`${this.baseUrl}/mesa-tematica`, request);
+  }
+
+  crearSesionPosters(request: CrearSesionPostersRequest): Observable<Actividad> {
+    return this.http.post<Actividad>(`${this.baseUrl}/sesion-posters`, request);
   }
 }

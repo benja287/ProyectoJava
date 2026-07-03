@@ -1,20 +1,22 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { LoginService } from '../../../auth/login.service';
 import { AsignacionEvaluacion } from '../../../models/asignacion.model';
 import { AsignacionService } from '../../../servicios/asignacion.service';
+import { EvaluacionService } from '../../../servicios/evaluacion.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
   selector: 'app-asignaciones-evaluador',
   standalone: true,
-  imports: [CommonModule, RouterLink, ArchivoLinkComponent],
+  imports: [CommonModule, RouterLink, FormsModule, ArchivoLinkComponent],
   template: `
     <section class="card">
       <h1>Mis asignaciones de evaluación</h1>
-      <p>Evaluador — GET <code>/api/asignaciones-evaluacion?evaluadorId=...</code></p>
+      <p>Aceptá la asignación, revisá el PDF y registrá tu evaluación.</p>
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -31,21 +33,18 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         <table>
           <thead>
             <tr>
-              <th>ID</th>
               <th>Trabajo</th>
-              <th>Estado trabajo</th>
-              <th>Aceptada</th>
+              <th>Estado</th>
               <th>Documento</th>
-              <th>Acciones</th>
+              <th>Asignación</th>
+              <th>Evaluación</th>
             </tr>
           </thead>
           <tbody>
             @for (a of asignaciones; track a.id) {
               <tr>
-                <td>{{ a.id }}</td>
                 <td>#{{ a.trabajoId }} — {{ a.trabajoTitulo }}</td>
                 <td>{{ a.trabajoEstado }}</td>
-                <td>{{ a.aceptada ? 'Sí' : 'Pendiente' }}</td>
                 <td>
                   @if (a.trabajoDocumentoUrl) {
                     <app-archivo-link [url]="a.trabajoDocumentoUrl" label="PDF" />
@@ -57,8 +56,35 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                   @if (!a.fechaRespuesta) {
                     <button type="button" class="btn-ok" (click)="responder(a.id, true)">Aceptar</button>
                     <button type="button" class="btn-warn" (click)="responder(a.id, false)">Rechazar</button>
+                  } @else if (a.aceptada) {
+                    Aceptada ({{ a.fechaRespuesta }})
                   } @else {
-                    Respondida ({{ a.fechaRespuesta }})
+                    Rechazada
+                  }
+                </td>
+                <td>
+                  @if (a.evaluacionRecomendacion) {
+                    {{ a.evaluacionRecomendacion }}
+                    @if (a.evaluacionComentario) {
+                      <br /><span class="muted">{{ a.evaluacionComentario }}</span>
+                    }
+                  } @else if (a.aceptada && a.fechaRespuesta) {
+                    <select [(ngModel)]="decisiones[a.id]" class="eval-select">
+                      <option value="">Decisión...</option>
+                      <option value="APROBADO">Aprobar</option>
+                      <option value="APROBADO_CON_CORRECCIONES">Aprobar con correcciones</option>
+                      <option value="RECHAZADO">Rechazar</option>
+                    </select>
+                    <textarea
+                      [(ngModel)]="comentarios[a.id]"
+                      rows="2"
+                      placeholder="Comentario (opcional)"
+                    ></textarea>
+                    <button type="button" (click)="evaluar(a.id)" [disabled]="!decisiones[a.id] || procesando">
+                      Enviar evaluación
+                    </button>
+                  } @else {
+                    —
                   }
                 </td>
               </tr>
@@ -73,23 +99,27 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 })
 export class AsignacionesEvaluadorComponent implements OnInit {
   asignaciones: AsignacionEvaluacion[] = [];
+  decisiones: Record<number, string> = {};
+  comentarios: Record<number, string> = {};
   cargando = true;
+  procesando = false;
   error = '';
   mensaje = '';
 
   constructor(
     private loginService: LoginService,
-    private asignacionService: AsignacionService
+    private asignacionService: AsignacionService,
+    private evaluacionService: EvaluacionService
   ) {}
 
   ngOnInit(): void {
-    const user = this.loginService.getUser();
-    if (!user?.id) {
+    const uid = this.loginService.getUser()?.id;
+    if (!uid) {
       this.error = 'Sesión inválida.';
       this.cargando = false;
       return;
     }
-    this.asignacionService.listarPorEvaluador(user.id).subscribe({
+    this.asignacionService.listarPorEvaluador(uid).subscribe({
       next: (items) => {
         this.asignaciones = items;
         this.cargando = false;
@@ -102,15 +132,46 @@ export class AsignacionesEvaluadorComponent implements OnInit {
   }
 
   responder(id: number, aceptar: boolean): void {
+    this.procesando = true;
+    this.error = '';
     this.asignacionService.responder(id, aceptar).subscribe({
-      next: (actualizada) => {
+      next: () => {
         this.mensaje = aceptar ? 'Asignación aceptada.' : 'Asignación rechazada.';
-        const idx = this.asignaciones.findIndex((a) => a.id === id);
-        if (idx >= 0) {
-          this.asignaciones[idx] = actualizada;
-        }
+        this.procesando = false;
+        this.recargar();
       },
-      error: (err) => (this.error = mensajeErrorApi(err, 'No se pudo registrar la respuesta.')),
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo responder.');
+        this.procesando = false;
+      },
+    });
+  }
+
+  evaluar(asignacionId: number): void {
+    const recomendacion = this.decisiones[asignacionId];
+    if (!recomendacion) return;
+    this.procesando = true;
+    this.error = '';
+    this.evaluacionService
+      .registrar(asignacionId, recomendacion, this.comentarios[asignacionId])
+      .subscribe({
+        next: () => {
+          this.mensaje = 'Evaluación registrada.';
+          this.procesando = false;
+          this.recargar();
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudo registrar la evaluación.');
+          this.procesando = false;
+        },
+      });
+  }
+
+  private recargar(): void {
+    const uid = this.loginService.getUser()?.id;
+    if (!uid) return;
+    this.asignacionService.listarPorEvaluador(uid).subscribe({
+      next: (items) => (this.asignaciones = items),
     });
   }
 }

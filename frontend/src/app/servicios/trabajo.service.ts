@@ -11,10 +11,11 @@ export interface TrabajoListFiltro {
   resumen?: string;
   ejeTematico?: string;
   estado?: string;
+  modalidad?: string;
   autorId?: number;
 }
 
-const TRABAJO_FILTER_KEYS = ['titulo', 'resumen', 'ejeTematico', 'estado', 'autorId'] as const;
+const TRABAJO_FILTER_KEYS = ['titulo', 'resumen', 'ejeTematico', 'estado', 'modalidad', 'autorId'] as const;
 
 @Injectable({ providedIn: 'root' })
 export class TrabajoService {
@@ -37,6 +38,17 @@ export class TrabajoService {
 
   enviar(id: number): Observable<Trabajo> {
     return this.http.put<Trabajo>(`${this.baseUrl}/${id}/enviar`, {});
+  }
+
+  precheck(id: number, apto: boolean): Observable<Trabajo> {
+    return this.http.put<Trabajo>(`${this.baseUrl}/${id}/precheck`, { apto });
+  }
+
+  confirmarComite(id: number, aprobar: boolean, observaciones?: string): Observable<Trabajo> {
+    return this.http.put<Trabajo>(`${this.baseUrl}/${id}/confirmar-comite`, {
+      aprobar,
+      observaciones: observaciones ?? null,
+    });
   }
 
   adjuntarDocumento(id: number, file: File): Observable<Trabajo> {

@@ -1,6 +1,7 @@
 package ar.edu.unlp.jyaa.grupo1.web.dto;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
+import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
@@ -13,6 +14,7 @@ public record TrabajoResumenDTO(
     String titulo,
     String resumen,
     String ejeTematico,
+    ModalidadPresentacion modalidad,
     TipoTrabajo tipo,
     EstadoTrabajo estado,
     String documentoUrl,
@@ -20,7 +22,8 @@ public record TrabajoResumenDTO(
     List<String> coautores,
     Long autorId,
     String autorNombre,
-    String autorApellido) {
+    String autorApellido,
+    int precheckIntentos) {
 
   public static TrabajoResumenDTO from(Trabajo t) {
     Usuario autor = t.getAutor();
@@ -29,6 +32,7 @@ public record TrabajoResumenDTO(
         t.getTitulo(),
         t.getResumen(),
         t.getEjeTematico(),
+        t.getModalidad(),
         t.getTipo(),
         t.getEstado(),
         t.getDocumentoUrl(),
@@ -36,6 +40,7 @@ public record TrabajoResumenDTO(
         t.getCoautores(),
         autor != null ? autor.getId() : null,
         autor != null ? autor.getNombre() : null,
-        autor != null ? autor.getApellido() : null);
+        autor != null ? autor.getApellido() : null,
+        t.getPrecheckIntentos());
   }
 }

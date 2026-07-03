@@ -20,12 +20,19 @@ public class Trabajo implements Serializable {
   @Column(columnDefinition = "TEXT")
   private String resumen;
 
-  @Column(name = "eje_tematico", length = 200)
+  @Column(name = "eje_tematico", length = 300)
   private String ejeTematico;
+
+  @Enumerated(EnumType.STRING)
+  @Column(length = 20)
+  private ModalidadPresentacion modalidad;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private TipoTrabajo tipo;
+
+  @Column(name = "precheck_intentos", nullable = false)
+  private int precheckIntentos = 0;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
@@ -81,6 +88,22 @@ public class Trabajo implements Serializable {
 
   public void setEjeTematico(String ejeTematico) {
     this.ejeTematico = ejeTematico;
+  }
+
+  public ModalidadPresentacion getModalidad() {
+    return modalidad;
+  }
+
+  public void setModalidad(ModalidadPresentacion modalidad) {
+    this.modalidad = modalidad;
+  }
+
+  public int getPrecheckIntentos() {
+    return precheckIntentos;
+  }
+
+  public void setPrecheckIntentos(int precheckIntentos) {
+    this.precheckIntentos = precheckIntentos;
   }
 
   public TipoTrabajo getTipo() {

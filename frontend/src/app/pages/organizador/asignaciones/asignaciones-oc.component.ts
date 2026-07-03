@@ -17,7 +17,7 @@ import { UsuarioService } from '../../../servicios/usuario.service';
   template: `
     <section class="card">
       <h1>Asignar trabajos a evaluadores</h1>
-      <p>Organizador científico — POST <code>/api/asignaciones-evaluacion</code></p>
+      <p>Organizador científico — asigná evaluadores a trabajos con precheck OK.</p>
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -106,7 +106,10 @@ export class AsignacionesOcComponent implements OnInit {
 
   ngOnInit(): void {
     this.trabajoService.listar(1, 100).subscribe({
-      next: (items) => (this.trabajos = items),
+      next: (items) =>
+        (this.trabajos = items.filter(
+          (t) => t.estado === 'PRECHECK_OK' || t.estado === 'EN_EVALUACION'
+        )),
       error: (err) => (this.error = mensajeErrorApi(err, 'No se pudieron cargar trabajos.')),
     });
     this.usuarioService.listar(1, 200).subscribe({

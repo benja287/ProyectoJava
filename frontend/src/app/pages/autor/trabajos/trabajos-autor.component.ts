@@ -10,6 +10,11 @@ import {
 } from '../../../components/filter-bar/filter-bar.component';
 import { LoginService } from '../../../auth/login.service';
 import { ESTADOS_TRABAJO, TIPOS_TRABAJO } from '../../../models/enums';
+import {
+  EJES_TEMATICOS,
+  MODALIDADES_PRESENTACION,
+  MODALIDAD_LABELS,
+} from '../../../constants/ejes-tematicos';
 import { Trabajo } from '../../../models/trabajo.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -55,7 +60,20 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
           </label>
           <label>
             Eje temático
-            <input formControlName="ejeTematico" />
+            <select formControlName="ejeTematico">
+              <option value="">Seleccionar eje...</option>
+              @for (eje of ejesTematicos; track eje) {
+                <option [value]="eje">{{ eje }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Modalidad de presentación
+            <select formControlName="modalidad">
+              @for (m of modalidades; track m) {
+                <option [value]="m">{{ modalidadLabels[m] }}</option>
+              }
+            </select>
           </label>
           <label>
             Tipo
@@ -92,7 +110,20 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
         </label>
         <label>
           Eje temático
-          <input formControlName="ejeTematico" />
+          <select formControlName="ejeTematico">
+            <option value="">Seleccionar eje...</option>
+            @for (eje of ejesTematicos; track eje) {
+              <option [value]="eje">{{ eje }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Modalidad de presentación
+          <select formControlName="modalidad">
+            @for (m of modalidades; track m) {
+              <option [value]="m">{{ modalidadLabels[m] }}</option>
+            }
+          </select>
         </label>
         <label>
           Tipo
@@ -195,6 +226,9 @@ export class TrabajosAutorComponent implements OnInit {
   filtros: Record<string, string> = {};
   tipos = [...TIPOS_TRABAJO];
   tiposAsistente = TIPOS_TRABAJO.filter((t) => t !== 'PROPUESTA_TALLER');
+  ejesTematicos = [...EJES_TEMATICOS];
+  modalidades = [...MODALIDADES_PRESENTACION];
+  modalidadLabels = MODALIDAD_LABELS;
   pdfNuevo?: File;
   cargando = true;
   guardando = false;
@@ -209,7 +243,8 @@ export class TrabajosAutorComponent implements OnInit {
   form = this.fb.group({
     titulo: ['', Validators.required],
     resumen: [''],
-    ejeTematico: [''],
+    ejeTematico: ['', Validators.required],
+    modalidad: ['ORAL', Validators.required],
     tipo: [this.tipos[0], Validators.required],
     coautoresTexto: [''],
   });
@@ -230,6 +265,10 @@ export class TrabajosAutorComponent implements OnInit {
 
     if (this.esPropuestaTaller) {
       this.form.patchValue({ tipo: 'PROPUESTA_TALLER' });
+      this.form.get('ejeTematico')?.clearValidators();
+      this.form.get('modalidad')?.clearValidators();
+      this.form.get('ejeTematico')?.updateValueAndValidity();
+      this.form.get('modalidad')?.updateValueAndValidity();
     }
 
     this.autorId = this.loginService.getUser()?.id;
@@ -281,6 +320,7 @@ export class TrabajosAutorComponent implements OnInit {
           titulo: raw.titulo!,
           resumen: raw.resumen || undefined,
           ejeTematico: raw.ejeTematico || undefined,
+          modalidad: raw.modalidad || undefined,
           tipo: raw.tipo!,
           coautores,
         },
@@ -337,6 +377,7 @@ export class TrabajosAutorComponent implements OnInit {
           titulo: raw.titulo!,
           resumen: raw.resumen || undefined,
           ejeTematico: raw.ejeTematico || undefined,
+          modalidad: raw.modalidad || undefined,
           tipo: raw.tipo!,
           coautores,
         },
@@ -357,13 +398,13 @@ export class TrabajosAutorComponent implements OnInit {
                 this.mensaje = 'Trabajo creado en borrador.';
               }
               this.guardando = false;
-              this.form.reset({ tipo: this.tipos[0] });
+              this.form.reset({ tipo: this.tipos[0], modalidad: 'ORAL', ejeTematico: '' });
               this.cargar();
             },
             error: () => {
               this.mensaje = 'Trabajo creado en borrador.';
               this.guardando = false;
-              this.form.reset({ tipo: this.tipos[0] });
+              this.form.reset({ tipo: this.tipos[0], modalidad: 'ORAL', ejeTematico: '' });
               this.cargar();
             },
           });

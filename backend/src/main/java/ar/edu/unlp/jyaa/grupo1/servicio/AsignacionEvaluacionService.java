@@ -16,6 +16,8 @@ import java.util.List;
 @RequestScoped
 public class AsignacionEvaluacionService {
 
+  private static final int MAX_EVALUADORES = 2;
+
   @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
   @Inject private TrabajoDAO trabajoDAO;
   @Inject private UsuarioDAO usuarioDAO;
@@ -24,6 +26,11 @@ public class AsignacionEvaluacionService {
     Trabajo trabajo = trabajoDAO.recuperarPorId(trabajoId);
     if (trabajo == null) {
       throw new NegocioException("Trabajo no encontrado: " + trabajoId);
+    }
+    if (trabajo.getEstado() != EstadoTrabajo.PRECHECK_OK
+        && trabajo.getEstado() != EstadoTrabajo.EN_EVALUACION) {
+      throw new NegocioException(
+          "Solo se pueden asignar evaluadores a trabajos con precheck OK o ya en evaluación");
     }
     Usuario evaluador = usuarioDAO.recuperarPorId(evaluadorId);
     if (evaluador == null) {
@@ -34,6 +41,10 @@ public class AsignacionEvaluacionService {
     }
     if (asignacionEvaluacionDAO.buscarActiva(trabajoId, evaluadorId).isPresent()) {
       throw new NegocioException("El evaluador ya está asignado a este trabajo");
+    }
+    List<AsignacionEvaluacion> actuales = asignacionEvaluacionDAO.listarPorTrabajo(trabajoId);
+    if (actuales.size() >= MAX_EVALUADORES) {
+      throw new NegocioException("El trabajo ya tiene " + MAX_EVALUADORES + " evaluadores asignados");
     }
 
     AsignacionEvaluacion asignacion = new AsignacionEvaluacion();
@@ -66,7 +77,12 @@ public class AsignacionEvaluacionService {
         asignacionEvaluacionDAO
             .recuperarPorIdConDetalle(id)
             .orElseThrow(() -> new NegocioException("Asignación no encontrada: " + id));
-    asignacion.setAceptada(aceptar);
+    if (!aceptar) {
+      asignacion.setAceptada(false);
+      asignacion.setFechaRespuesta(LocalDate.now());
+      return asignacionEvaluacionDAO.modificar(asignacion);
+    }
+    asignacion.setAceptada(true);
     asignacion.setFechaRespuesta(LocalDate.now());
     return asignacionEvaluacionDAO.modificar(asignacion);
   }
