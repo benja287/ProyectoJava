@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
 import { Trabajo } from '../../models/trabajo.model';
 import { TrabajoService } from '../../servicios/trabajo.service';
@@ -12,8 +12,12 @@ import { TrabajoService } from '../../servicios/trabajo.service';
     <section class="panel-asistente">
       <h2 class="panel-asistente-titulo">Acciones disponibles</h2>
 
+      @if (mensajeTrabajo) {
+        <p class="ok panel-asistente-aviso">{{ mensajeTrabajo }}</p>
+      }
+
       <div class="panel-asistente-grid">
-        @if (envioTrabajoDesdeAsistente) {
+        @if (mostrarEnvioTrabajo) {
           <a routerLink="/asistente/trabajos" class="accion-card">
             <span class="accion-icono accion-icono--naranja" aria-hidden="true">📄</span>
             <div>
@@ -24,16 +28,16 @@ import { TrabajoService } from '../../servicios/trabajo.service';
         }
 
         @if (esAsistente && esTambienAutor) {
-          <div class="accion-card accion-card--aviso">
+          <a routerLink="/asistente/trabajos" class="accion-card">
             <span class="accion-icono accion-icono--naranja" aria-hidden="true">📄</span>
             <div>
-              <h3>Envío de trabajos científicos</h3>
+              <h3>Mis trabajos</h3>
               <p>
-                Tu cuenta tiene rol <strong>autor</strong>. Activá <strong>rol autor</strong> en el menú
-                de usuario y entrá a <strong>Mis trabajos</strong> para enviar o gestionar trabajos.
+                Gestioná tus trabajos enviados, el estado y las correcciones solicitadas por el
+                comité.
               </p>
             </div>
-          </div>
+          </a>
         }
 
         <a routerLink="/asistente/taller" class="accion-card">
@@ -61,14 +65,14 @@ import { TrabajoService } from '../../servicios/trabajo.service';
         </a>
       </div>
 
-      @if (envioTrabajoDesdeAsistente) {
-        <div class="mis-trabajos-card">
+      @if (esAsistente) {
+        <div class="mis-trabajos-card" id="mis-trabajos">
           <div class="mis-trabajos-header">
             <div>
               <h3>Mis trabajos (rol asistente)</h3>
               <p class="muted">Podés ver el estado y, si corresponde, reenviar correcciones.</p>
             </div>
-            <a routerLink="/asistente/trabajos" class="btn-secundario">Ver detalle</a>
+            <a routerLink="/asistente/trabajos" class="btn-secundario">Gestionar trabajos</a>
           </div>
 
           @if (cargandoTrabajos) {
@@ -80,7 +84,10 @@ import { TrabajoService } from '../../servicios/trabajo.service';
               @for (t of trabajos; track t.id) {
                 <li>
                   <strong>{{ t.titulo }}</strong>
-                  <span class="muted"> — {{ t.estado }}</span>
+                  <span class="estado-badge">{{ t.estado }}</span>
+                  @if (t.estado === 'APROBADO_CON_CORRECCIONES') {
+                    <a routerLink="/asistente/trabajos" class="link-correccion">Reenviar correcciones</a>
+                  }
                 </li>
               }
             </ul>
@@ -93,13 +100,20 @@ import { TrabajoService } from '../../servicios/trabajo.service';
 export class PanelAsistenteComponent implements OnInit {
   trabajos: Trabajo[] = [];
   cargandoTrabajos = true;
+  mensajeTrabajo = '';
 
   constructor(
     private loginService: LoginService,
-    private trabajoService: TrabajoService
+    private trabajoService: TrabajoService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    if (this.route.snapshot.queryParamMap.get('trabajoEnviado') === '1') {
+      this.mensajeTrabajo =
+        'Tu trabajo fue enviado correctamente. El comité lo evaluará y podés seguir el estado acá.';
+    }
+
     const userId = this.loginService.getUser()?.id;
     if (!userId) {
       this.cargandoTrabajos = false;
@@ -125,8 +139,8 @@ export class PanelAsistenteComponent implements OnInit {
     return this.loginService.hasRole('AUTOR');
   }
 
-  /** Solo asistente sin rol autor: envío desde este panel. */
-  get envioTrabajoDesdeAsistente(): boolean {
+  /** Tarjeta de primer envío: asistente sin rol autor previo. */
+  get mostrarEnvioTrabajo(): boolean {
     return this.esAsistente && !this.esTambienAutor;
   }
 }

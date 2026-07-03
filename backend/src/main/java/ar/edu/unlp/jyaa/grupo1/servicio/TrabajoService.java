@@ -105,11 +105,16 @@ public class TrabajoService {
 
   public Trabajo enviar(Long id) {
     Trabajo trabajo = buscar(id);
-    if (trabajo.getEstado() != EstadoTrabajo.BORRADOR) {
-      throw new NegocioException("Solo se pueden enviar trabajos en estado borrador");
+    if (trabajo.getEstado() == EstadoTrabajo.BORRADOR) {
+      trabajo.setEstado(EstadoTrabajo.ENVIADO);
+      return trabajoDAO.modificar(trabajo);
     }
-    trabajo.setEstado(EstadoTrabajo.ENVIADO);
-    return trabajoDAO.modificar(trabajo);
+    if (trabajo.getEstado() == EstadoTrabajo.APROBADO_CON_CORRECCIONES) {
+      trabajo.setEstado(EstadoTrabajo.ENVIADO);
+      return trabajoDAO.modificar(trabajo);
+    }
+    throw new NegocioException(
+        "Solo se pueden enviar trabajos en borrador o reenviar correcciones pendientes");
   }
 
   public Trabajo adjuntarDocumento(Long id, InputStream contenido, String filename) {

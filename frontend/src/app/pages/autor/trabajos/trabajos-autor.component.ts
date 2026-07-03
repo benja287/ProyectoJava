@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { switchMap } from 'rxjs/operators';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import {
   FilterBarComponent,
@@ -27,9 +28,8 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
         </p>
       } @else if (perfilAsistente) {
         <p>
-          <strong>Rol asistente</strong> — al crear un trabajo el backend te asigna el rol
-          <strong>Autor</strong> automáticamente (<code>POST /api/trabajos</code>).
-          Podés subir el PDF y enviarlo igual que en el panel de autor.
+          Completá el formulario, adjuntá el PDF y enviá tu trabajo. Después volvés al panel de
+          asistente para ver el estado o reenviar correcciones si el comité lo solicita.
         </p>
       } @else {
         <p>Autor — <code>/api/trabajos</code></p>
@@ -42,7 +42,45 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
         <p class="ok">{{ mensaje }}</p>
       }
 
-      <h2>Nuevo trabajo</h2>
+      <h2>{{ perfilAsistente && !esPropuestaTaller ? 'Enviar trabajo' : 'Nuevo trabajo' }}</h2>
+      @if (perfilAsistente && !esPropuestaTaller) {
+        <form [formGroup]="form" (ngSubmit)="crearYEnviar()" class="form-grid trabajo-form-asistente">
+          <label>
+            Título
+            <input formControlName="titulo" />
+          </label>
+          <label>
+            Resumen
+            <textarea formControlName="resumen" rows="3"></textarea>
+          </label>
+          <label>
+            Eje temático
+            <input formControlName="ejeTematico" />
+          </label>
+          <label>
+            Tipo
+            <select formControlName="tipo">
+              @for (t of tiposAsistente; track t) {
+                <option [value]="t">{{ t }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Coautores (separados por coma)
+            <input formControlName="coautoresTexto" placeholder="Apellido Nombre, ..." />
+          </label>
+          <label class="upload-box">
+            Archivo PDF (obligatorio)
+            <input type="file" accept=".pdf" (change)="onPdfNuevo($event)" />
+            @if (pdfNuevo) {
+              <span class="ok">{{ pdfNuevo.name }}</span>
+            }
+          </label>
+          <button type="submit" class="btn-primary-full" [disabled]="form.invalid || guardando || !pdfNuevo">
+            {{ guardando ? 'Enviando...' : 'Enviar trabajo' }}
+          </button>
+        </form>
+      } @else {
       <form [formGroup]="form" (ngSubmit)="crear()" class="form-grid">
         <label>
           Título
@@ -70,6 +108,7 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
         </label>
         <button type="submit" [disabled]="form.invalid || guardando">Crear borrador</button>
       </form>
+      }
 
       <h2>Listado</h2>
 
@@ -116,6 +155,15 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
                     </label>
                     <button type="button" (click)="enviar(t)" [disabled]="!t.documentoUrl">Enviar</button>
                   }
+                  @if (t.estado === 'APROBADO_CON_CORRECCIONES') {
+                    <label class="file-inline">
+                      PDF corregido
+                      <input type="file" accept=".pdf" (change)="subirPdf(t, $event)" />
+                    </label>
+                    <button type="button" (click)="enviar(t)" [disabled]="!t.documentoUrl">
+                      Reenviar correcciones
+                    </button>
+                  }
                 </td>
               </tr>
             }
@@ -146,6 +194,8 @@ export class TrabajosAutorComponent implements OnInit {
   trabajos: Trabajo[] = [];
   filtros: Record<string, string> = {};
   tipos = [...TIPOS_TRABAJO];
+  tiposAsistente = TIPOS_TRABAJO.filter((t) => t !== 'PROPUESTA_TALLER');
+  pdfNuevo?: File;
   cargando = true;
   guardando = false;
   error = '';
@@ -207,6 +257,66 @@ export class TrabajosAutorComponent implements OnInit {
       relativeTo: this.route,
       queryParams: queryParamsFromFiltro({}, this.filterKeys),
     });
+  }
+
+  onPdfNuevo(event: Event): void {
+    this.pdfNuevo = (event.target as HTMLInputElement).files?.[0];
+  }
+
+  crearYEnviar(): void {
+    if (!this.autorId || this.form.invalid || !this.pdfNuevo) {
+      return;
+    }
+    const raw = this.form.getRawValue();
+    const coautores = raw.coautoresTexto
+      ? raw.coautoresTexto.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+    const pdf = this.pdfNuevo;
+    this.guardando = true;
+    this.error = '';
+    this.trabajoService
+      .crear({
+        autorId: this.autorId,
+        trabajo: {
+          titulo: raw.titulo!,
+          resumen: raw.resumen || undefined,
+          ejeTematico: raw.ejeTematico || undefined,
+          tipo: raw.tipo!,
+          coautores,
+        },
+      })
+      .pipe(
+        switchMap((creado) => {
+          if (!creado.id) {
+            throw new Error('Trabajo sin id');
+          }
+          return this.trabajoService.adjuntarDocumento(creado.id, pdf);
+        }),
+        switchMap((conPdf) => {
+          if (!conPdf.id) {
+            throw new Error('Trabajo sin id');
+          }
+          return this.trabajoService.enviar(conPdf.id);
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.loginService.refreshUser().subscribe({
+            next: () => {
+              this.guardando = false;
+              this.router.navigate(['/asistente'], { queryParams: { trabajoEnviado: '1' } });
+            },
+            error: () => {
+              this.guardando = false;
+              this.router.navigate(['/asistente'], { queryParams: { trabajoEnviado: '1' } });
+            },
+          });
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudo enviar el trabajo.');
+          this.guardando = false;
+        },
+      });
   }
 
   crear(): void {
@@ -289,10 +399,16 @@ export class TrabajosAutorComponent implements OnInit {
     }
     this.trabajoService.enviar(trabajo.id).subscribe({
       next: (actualizado) => {
-        this.mensaje = 'Trabajo enviado a evaluación.';
+        this.mensaje =
+          trabajo.estado === 'APROBADO_CON_CORRECCIONES'
+            ? 'Correcciones reenviadas.'
+            : 'Trabajo enviado a evaluación.';
         const idx = this.trabajos.findIndex((t) => t.id === trabajo.id);
         if (idx >= 0) {
           this.trabajos[idx] = actualizado;
+        }
+        if (this.perfilAsistente && !this.esPropuestaTaller) {
+          this.router.navigate(['/asistente'], { queryParams: { trabajoEnviado: '1' } });
         }
       },
       error: (err) => (this.error = mensajeErrorApi(err, 'No se pudo enviar el trabajo.')),
