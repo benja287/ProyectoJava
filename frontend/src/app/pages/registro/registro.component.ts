@@ -1,63 +1,117 @@
 import { Component, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { CATEGORIAS_INSCRIPCION } from '../../models/inscripcion.model';
 import { RegistroService } from '../../servicios/registro.service';
 import { mensajeErrorApi } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-registro',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
-    <section class="card">
-      <h1>Registro de participante</h1>
-      <p>POST <code>/api/registro</code> — inscripción al congreso (Entrega 5).</p>
-
-      @if (mensaje) {
-        <p class="ok">{{ mensaje }}</p>
-      }
-      @if (error) {
-        <p class="error">{{ error }}</p>
-      }
-
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="form-grid">
-        <label>
-          Apellido
-          <input formControlName="apellido" />
-        </label>
-        <label>
-          Nombre
-          <input formControlName="nombre" />
-        </label>
-        <label>
-          Email
-          <input formControlName="email" type="email" />
-        </label>
-        <label>
-          Contraseña
-          <input formControlName="password" type="password" minlength="8" />
-        </label>
-        <div class="actions">
-          <button type="submit" [disabled]="form.invalid || guardando">Registrarme</button>
-          <a routerLink="/login">Ya tengo cuenta — ingresar</a>
+    <div class="auth-page">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-icon">+</div>
+          <h2>Registrarse</h2>
+          <p>Creá tu cuenta para participar del congreso</p>
         </div>
-      </form>
-    </section>
+
+        @if (mensaje) {
+          <p class="ok">{{ mensaje }}</p>
+        }
+        @if (error) {
+          <p class="error">{{ error }}</p>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="guardar()" class="auth-form">
+          <label>
+            Nombre
+            <input formControlName="nombre" autocomplete="given-name" />
+          </label>
+          <label>
+            Apellido
+            <input formControlName="apellido" autocomplete="family-name" />
+          </label>
+          <label>
+            Email
+            <input formControlName="email" type="email" autocomplete="email" />
+          </label>
+          <label>
+            Categoría
+            <select formControlName="categoria">
+              <option value="">Seleccioná una categoría</option>
+              @for (c of categorias; track c.value) {
+                <option [value]="c.value">{{ c.label }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Contraseña
+            <div class="password-field">
+              <input
+                [type]="mostrarPassword ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="new-password"
+              />
+              <button type="button" class="btn-link" (click)="mostrarPassword = !mostrarPassword">
+                {{ mostrarPassword ? 'Ocultar' : 'Ver' }}
+              </button>
+            </div>
+          </label>
+          <label>
+            Confirmar contraseña
+            <div class="password-field">
+              <input
+                [type]="mostrarConfirm ? 'text' : 'password'"
+                formControlName="confirmPassword"
+                autocomplete="new-password"
+              />
+              <button type="button" class="btn-link" (click)="mostrarConfirm = !mostrarConfirm">
+                {{ mostrarConfirm ? 'Ocultar' : 'Ver' }}
+              </button>
+            </div>
+          </label>
+          @if (form.hasError('passwordMismatch') && form.get('confirmPassword')?.touched) {
+            <p class="error">Las contraseñas no coinciden</p>
+          }
+
+          <button type="submit" class="btn-primary-full" [disabled]="form.invalid || guardando">
+            Registrarse
+          </button>
+        </form>
+
+        <p class="auth-footer">
+          ¿Ya tenés cuenta?
+          <a routerLink="/login">Iniciar sesión</a>
+        </p>
+      </div>
+    </div>
   `,
 })
 export class RegistroComponent {
   private fb = inject(FormBuilder);
 
-  form = this.fb.group({
-    apellido: ['', Validators.required],
-    nombre: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-    password: ['12345678', [Validators.required, Validators.minLength(8)]],
-  });
-
+  categorias = [...CATEGORIAS_INSCRIPCION];
+  mostrarPassword = false;
+  mostrarConfirm = false;
   mensaje = '';
   error = '';
   guardando = false;
+
+  form = this.fb.group(
+    {
+      nombre: ['', Validators.required],
+      apellido: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      categoria: ['', Validators.required],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      confirmPassword: ['', Validators.required],
+    },
+    { validators: (g) => this.passwordsMatch(g) }
+  );
 
   constructor(
     private registroService: RegistroService,
@@ -68,19 +122,34 @@ export class RegistroComponent {
     if (this.form.invalid) {
       return;
     }
+    const raw = this.form.getRawValue();
     this.mensaje = '';
     this.error = '';
     this.guardando = true;
-    this.registroService.registrarParticipante(this.form.getRawValue() as never).subscribe({
-      next: (creado) => {
-        this.mensaje = `Participante registrado (id ${creado.id}). Redirigiendo al login...`;
-        this.guardando = false;
-        setTimeout(() => this.router.navigate(['/login']), 1500);
-      },
-      error: (err) => {
-        this.error = mensajeErrorApi(err, 'No se pudo completar el registro. Verificá el email.');
-        this.guardando = false;
-      },
-    });
+    this.registroService
+      .registrarParticipante({
+        nombre: raw.nombre!,
+        apellido: raw.apellido!,
+        email: raw.email!,
+        password: raw.password!,
+        categoria: raw.categoria!,
+      })
+      .subscribe({
+        next: () => {
+          this.mensaje = 'Cuenta creada. Redirigiendo al login...';
+          this.guardando = false;
+          setTimeout(() => this.router.navigate(['/login']), 1500);
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudo completar el registro. Verificá el email.');
+          this.guardando = false;
+        },
+      });
+  }
+
+  private passwordsMatch(group: AbstractControl) {
+    const pwd = group.get('password')?.value;
+    const confirm = group.get('confirmPassword')?.value;
+    return pwd === confirm ? null : { passwordMismatch: true };
   }
 }

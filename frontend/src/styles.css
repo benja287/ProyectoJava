@@ -490,3 +490,277 @@ textarea {
 .filter-bar .btn-secondary {
   background: #757575;
 }
+
+/* --- Registro / auth (estilo React) --- */
+.auth-page,
+.inscripcion-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #faf8f5 0%, #f3f1ed 100%);
+}
+
+.auth-card,
+.inscripcion-card {
+  width: 100%;
+  max-width: 720px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.auth-card {
+  max-width: 480px;
+}
+
+.auth-header,
+.inscripcion-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.auth-icon {
+  display: inline-flex;
+  width: 3rem;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e8f5e9;
+  color: #2d5016;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.auth-form,
+.inscripcion-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-form label,
+.inscripcion-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.auth-form input,
+.auth-form select,
+.inscripcion-form input,
+.inscripcion-form select {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.password-field {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.password-field input {
+  flex: 1;
+}
+
+.auth-footer {
+  margin-top: 1.25rem;
+  text-align: center;
+  color: #666;
+}
+
+.auth-footer a {
+  color: #2d5016;
+  font-weight: 600;
+  margin-left: 0.35rem;
+}
+
+.btn-primary-full {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #2d5016;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary-full:hover:not(:disabled) {
+  background: #3d6b23;
+}
+
+.btn-primary-full:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* --- Hero inicio --- */
+.hero-congress {
+  background: linear-gradient(135deg, #2d5016 0%, #3d6b23 50%, #4d7c33 100%);
+  color: #fff;
+  border-radius: 12px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.hero-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.hero-congress h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+}
+
+.hero-sub,
+.hero-org,
+.hero-lead,
+.hero-welcome {
+  opacity: 0.95;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.btn-cta-inscripcion {
+  display: inline-block;
+  margin-top: 1.25rem;
+  padding: 0.85rem 1.5rem;
+  background: #facc15;
+  color: #1a1a1a;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.btn-hero-secondary {
+  display: inline-block;
+  padding: 0.85rem 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.hero-status {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+}
+
+.hero-status.pending {
+  background: rgba(250, 204, 21, 0.2);
+}
+
+.hero-status.ok {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.hero-status.error {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.hero-links {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+}
+
+.hero-links a {
+  color: #fff;
+  text-decoration: underline;
+}
+
+/* --- Inscripción participante --- */
+.inscripcion-fieldset {
+  border: 1px solid rgba(45, 80, 22, 0.25);
+  border-radius: 10px;
+  padding: 1rem;
+  background: #f7faf5;
+}
+
+.inscripcion-fieldset legend {
+  font-weight: 600;
+  padding: 0 0.35rem;
+}
+
+.radio-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.radio-card small {
+  display: block;
+  color: #666;
+  margin-top: 0.15rem;
+}
+
+.upload-box {
+  border: 2px dashed #ccc;
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+  background: #fafafa;
+}
+
+.notice-box,
+.arancel-info {
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+}
+
+.notice-box {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+.arancel-info {
+  margin-top: 0.5rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.categoria-fija {
+  padding: 0.65rem 0.85rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.inscripcion-success {
+  text-align: center;
+}
+
+.inscripcion-success .detalle {
+  text-align: left;
+  margin: 1.5rem auto;
+  max-width: 420px;
+}
+
+.inscripcion-back {
+  margin-top: 1.5rem;
+  text-align: center;
+}

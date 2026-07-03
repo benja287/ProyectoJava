@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import {
+  EstadoInscripcionParticipante,
   InscripcionCongreso,
   InscripcionCreateRequest,
   InscripcionListFiltro,
@@ -22,18 +23,25 @@ export class InscripcionService {
 
   crear(request: InscripcionCreateRequest): Observable<InscripcionCongreso> {
     const form = new FormData();
-    form.append('categoria', request.categoria);
+    if (request.categoria) {
+      form.append('categoria', request.categoria);
+    }
     form.append('institucion', request.institucion);
     form.append('provincia', request.provincia);
     form.append('requiereFactura', String(request.requiereFactura));
+    form.append('metodoPago', request.metodoPago);
+    form.append('monto', String(request.monto));
     if (request.certificado) {
       form.append('certificado', request.certificado);
+    }
+    if (request.comprobante) {
+      form.append('comprobante', request.comprobante);
     }
     return this.http.post<InscripcionCongreso>(this.baseUrl, form);
   }
 
-  misDatos(): Observable<InscripcionCongreso> {
-    return this.http.get<InscripcionCongreso>(`${this.baseUrl}/mis-datos`);
+  misEstado(): Observable<EstadoInscripcionParticipante> {
+    return this.http.get<EstadoInscripcionParticipante>(`${this.baseUrl}/mis-datos`);
   }
 
   listar(page = 1, size = 50, filtro: InscripcionListFiltro = {}): Observable<InscripcionCongreso[]> {

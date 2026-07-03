@@ -2,6 +2,7 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.UsuarioFiltro;
+import ar.edu.unlp.jyaa.grupo1.modelo.CategoriaInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
@@ -116,11 +117,22 @@ public class UsuarioService {
   }
 
   public Usuario registrarParticipante(Usuario usuario) {
+    return registrarParticipante(usuario, null);
+  }
+
+  public Usuario registrarParticipante(Usuario usuario, String categoriaRaw) {
     if (usuario.getEmail() != null) {
       usuario.setEmail(usuario.getEmail().trim().toLowerCase());
     }
     if (usuarioDAO.buscarPorEmail(usuario.getEmail()).isPresent()) {
       throw new NegocioException("El email ya está registrado");
+    }
+    if (categoriaRaw != null && !categoriaRaw.isBlank()) {
+      try {
+        usuario.setCategoriaInscripcion(CategoriaInscripcion.parse(categoriaRaw).name());
+      } catch (IllegalArgumentException e) {
+        throw new NegocioException("Categoría de inscripción inválida: " + categoriaRaw);
+      }
     }
     usuario.setActivo(true);
     usuario.setRoles(new HashSet<>(Set.of(Rol.PARTICIPANTE)));

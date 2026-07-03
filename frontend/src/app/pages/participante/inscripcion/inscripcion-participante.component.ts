@@ -3,9 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
+import { LoginService } from '../../../auth/login.service';
 import {
+  ARANCELES_CATEGORIA,
   CATEGORIAS_INSCRIPCION,
+  CategoriaInscripcion,
   InscripcionCongreso,
+  PROVINCIAS,
+  arancelCategoria,
+  asCategoriaInscripcion,
   categoriaRequiereCertificado,
   etiquetaCategoria,
 } from '../../../models/inscripcion.model';
@@ -17,136 +23,223 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   standalone: true,
   imports: [CommonModule, RouterLink, ReactiveFormsModule, ArchivoLinkComponent],
   template: `
-    <section class="card">
-      <h1>Inscripción al congreso</h1>
-      <p>Participante — <code>POST /api/inscripciones</code></p>
-
-      @if (error) {
-        <p class="error">{{ error }}</p>
-      }
-      @if (mensaje) {
-        <p class="ok">{{ mensaje }}</p>
-      }
-
-      @if (inscripcion && !mostrarFormulario) {
-        <h2>Estado de tu inscripción</h2>
-        <dl class="detalle">
-          <dt>ID</dt>
-          <dd>{{ inscripcion.id }}</dd>
-          <dt>Categoría</dt>
-          <dd>{{ etiqueta(inscripcion.categoria) }}</dd>
-          <dt>Estado</dt>
-          <dd>{{ inscripcion.estado }}</dd>
-          <dt>Institución</dt>
-          <dd>{{ inscripcion.institucion || '—' }}</dd>
-          <dt>Provincia</dt>
-          <dd>{{ inscripcion.provincia || '—' }}</dd>
-          <dt>Requiere factura</dt>
-          <dd>{{ inscripcion.requiereFactura ? 'Sí' : 'No' }}</dd>
-          @if (inscripcion.motivoRechazo) {
-            <dt>Motivo rechazo</dt>
-            <dd>{{ inscripcion.motivoRechazo }}</dd>
-          }
-          <dt>Certificado</dt>
-          <dd>
-            @if (inscripcion.certificadoUrl) {
-              <app-archivo-link [url]="inscripcion.certificadoUrl" label="Ver certificado" />
-            } @else {
-              —
-            }
-          </dd>
-        </dl>
-
-        @if (inscripcion.estado === 'RECHAZADA') {
-          <p class="actions-top">
-            <button type="button" (click)="reiniciarFormulario()">Nueva inscripción</button>
-          </p>
-        } @else {
-          <p class="muted">
-            @if (!inscripcion.pagoId) {
-              Una vez confirmada la solicitud, registrá el pago en
-              <a routerLink="/participante/pago">Estado de pago</a>.
-            } @else {
-              Pago registrado (estado: {{ inscripcion.pagoEstado }}).
-              <a routerLink="/participante/pago">Ver detalle</a>
-            }
-          </p>
-        }
-      }
-
-      @if (mostrarFormulario) {
-        <h2>{{ inscripcion ? 'Nueva inscripción' : 'Completar inscripción' }}</h2>
-        <form [formGroup]="form" (ngSubmit)="enviar()" class="form-grid">
-          <label>
-            Categoría
-            <select formControlName="categoria">
-              @for (c of categorias; track c.value) {
-                <option [value]="c.value">{{ c.label }}</option>
-              }
-            </select>
-          </label>
-          <label>
-            Institución
-            <input formControlName="institucion" />
-          </label>
-          <label>
-            Provincia
-            <input formControlName="provincia" />
-          </label>
-          <label class="checkbox-inline">
-            <input type="checkbox" formControlName="requiereFactura" />
-            Requiere factura
-          </label>
-          @if (requiereCertificado) {
-            <label>
-              Certificado de categoría (PDF/JPG)
-              <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onCertificado($event)" />
-            </label>
-          }
-          <div class="actions">
-            <button type="submit" [disabled]="form.invalid || guardando || faltaCertificado">
-              Enviar inscripción
-            </button>
+    <div class="inscripcion-page">
+      <div class="inscripcion-card">
+        @if (enviado) {
+          <div class="inscripcion-success">
+            <h2>Tu inscripción fue enviada</h2>
+            <p>Será validada por el equipo organizador.</p>
+            <a routerLink="/" class="btn-primary-full">Volver al inicio</a>
           </div>
-        </form>
-      }
+        } @else if (inscripcion && !mostrarFormulario) {
+          <div class="inscripcion-success">
+            @if (inscripcion.estado === 'APROBADA') {
+              <h2>¡Tu inscripción fue aprobada!</h2>
+              <p>Ya estás inscripto/a al congreso.</p>
+            } @else if (inscripcion.estado === 'PENDIENTE') {
+              <h2>Tu inscripción está pendiente</h2>
+              <p>
+                @if (metodoEfectivo) {
+                  Declaraste pago en efectivo. La organización validará el cobro presencial.
+                } @else {
+                  Enviaste comprobante de transferencia. Será validado por administración.
+                }
+              </p>
+            } @else {
+              <h2>Inscripción rechazada</h2>
+              @if (inscripcion.motivoRechazo) {
+                <p>Motivo: {{ inscripcion.motivoRechazo }}</p>
+              }
+            }
 
-      @if (cargando) {
-        <p>Cargando...</p>
-      }
+            <dl class="detalle">
+              <dt>Categoría</dt>
+              <dd>{{ etiqueta(inscripcion.categoria) }}</dd>
+              <dt>Estado pago</dt>
+              <dd>{{ inscripcion.pagoEstado || '—' }}</dd>
+              @if (inscripcion.pagoComprobanteUrl) {
+                <dt>Comprobante</dt>
+                <dd>
+                  <app-archivo-link [url]="inscripcion.pagoComprobanteUrl" label="Ver comprobante" />
+                </dd>
+              }
+            </dl>
 
-      <p><a routerLink="/participante">← Menú participante</a></p>
-    </section>
+            @if (inscripcion.estado === 'RECHAZADA') {
+              <button type="button" class="btn-primary-full" (click)="reiniciarFormulario()">
+                Enviar nueva inscripción
+              </button>
+            } @else {
+              <a routerLink="/" class="btn-primary-full">Volver al inicio</a>
+            }
+          </div>
+        } @else {
+          <div class="inscripcion-header">
+            <h1>Inscripción al Congreso</h1>
+            <p>
+              Completá tus datos, elegí la forma de pago y adjuntá los archivos que correspondan.
+            </p>
+          </div>
+
+          @if (error) {
+            <p class="error">{{ error }}</p>
+          }
+
+          <form [formGroup]="form" (ngSubmit)="enviar()" class="inscripcion-form">
+            <fieldset class="inscripcion-fieldset">
+              <legend>Forma de pago</legend>
+              <label class="radio-card">
+                <input type="radio" formControlName="metodoPago" value="TRANSFERENCIA" />
+                <span>
+                  <strong>Transferencia u otro pago con comprobante</strong>
+                  <small>Adjuntá captura, PDF o imagen del comprobante.</small>
+                </span>
+              </label>
+              <label class="radio-card">
+                <input type="radio" formControlName="metodoPago" value="EFECTIVO" />
+                <span>
+                  <strong>Efectivo / inscripción presencial</strong>
+                  <small>Sin comprobante digital. Validación en caja o acreditación.</small>
+                </span>
+              </label>
+              <label class="checkbox-inline">
+                <input type="checkbox" formControlName="requiereFactura" />
+                Solicito factura (fiscal)
+              </label>
+            </fieldset>
+
+            @if (form.get('metodoPago')?.value === 'TRANSFERENCIA') {
+              <label class="upload-box">
+                Comprobante de pago (obligatorio)
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onComprobante($event)" />
+                @if (comprobante) {
+                  <span class="ok">Archivo: {{ comprobante.name }}</span>
+                }
+              </label>
+            } @else {
+              <p class="notice-box">
+                Pago en efectivo: la inscripción queda pendiente hasta que un administrador confirme el cobro.
+              </p>
+            }
+
+            <label>
+              Institución
+              <input formControlName="institucion" />
+            </label>
+
+            <label>
+              Provincia
+              <select formControlName="provincia">
+                <option value="">Seleccioná</option>
+                @for (p of provincias; track p) {
+                  <option [value]="p">{{ p }}</option>
+                }
+              </select>
+            </label>
+
+            <div class="categoria-box">
+              <label>Categoría de inscripción</label>
+              @if (categoriaBloqueada) {
+                <p class="categoria-fija">
+                  {{ etiqueta(categoriaActual) }}
+                  <small>Definida en tu registro de usuario.</small>
+                </p>
+              } @else {
+                <select formControlName="categoria">
+                  @for (c of categorias; track c.value) {
+                    <option [value]="c.value">{{ c.label }}</option>
+                  }
+                </select>
+              }
+              @if (arancel) {
+                <div class="arancel-info">
+                  Arancel para tu categoría: <strong>{{ arancel.etiqueta }}</strong>
+                  <small>{{ arancel.linkLabel }}</small>
+                </div>
+              }
+            </div>
+
+            @if (requiereCertificado) {
+              <label class="upload-box">
+                Certificado de categoría (obligatorio)
+                <small>No es el comprobante de pago</small>
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onCertificado($event)" />
+                @if (certificado) {
+                  <span class="ok">Certificado: {{ certificado.name }}</span>
+                }
+              </label>
+            }
+
+            <button
+              type="submit"
+              class="btn-primary-full"
+              [disabled]="form.invalid || guardando || faltaArchivos"
+            >
+              {{ guardando ? 'Enviando...' : 'Enviar inscripción' }}
+            </button>
+          </form>
+        }
+
+        @if (cargando) {
+          <p>Cargando...</p>
+        }
+
+        <p class="inscripcion-back"><a routerLink="/">← Volver al inicio</a></p>
+      </div>
+    </div>
   `,
 })
 export class InscripcionParticipanteComponent implements OnInit {
   private fb = inject(FormBuilder);
 
   categorias = [...CATEGORIAS_INSCRIPCION];
+  provincias = [...PROVINCIAS];
   inscripcion?: InscripcionCongreso;
+  categoriaPreferida?: CategoriaInscripcion | null;
+  categoriaBloqueada = false;
   mostrarFormulario = true;
+  enviado = false;
   certificado?: File;
+  comprobante?: File;
   cargando = true;
   guardando = false;
   error = '';
-  mensaje = '';
 
   form = this.fb.group({
-    categoria: [this.categorias[0].value, Validators.required],
+    metodoPago: ['TRANSFERENCIA', Validators.required],
+    requiereFactura: [false],
     institucion: ['', Validators.required],
     provincia: ['', Validators.required],
-    requiereFactura: [false],
+    categoria: [this.categorias[0].value, Validators.required],
   });
 
-  constructor(private inscripcionService: InscripcionService) {}
+  constructor(
+    private inscripcionService: InscripcionService,
+    private loginService: LoginService
+  ) {}
 
-  get requiereCertificado(): boolean {
-    const cat = this.form.get('categoria')?.value;
-    return cat ? categoriaRequiereCertificado(cat) : false;
+  get categoriaActual(): string {
+    return this.form.get('categoria')?.value ?? '';
   }
 
-  get faltaCertificado(): boolean {
+  get arancel() {
+    return arancelCategoria(this.categoriaActual);
+  }
+
+  get requiereCertificado(): boolean {
+    return categoriaRequiereCertificado(this.categoriaActual);
+  }
+
+  get faltaArchivos(): boolean {
+    const transfer = this.form.get('metodoPago')?.value === 'TRANSFERENCIA';
+    if (transfer && !this.comprobante) {
+      return true;
+    }
     return this.requiereCertificado && !this.certificado;
+  }
+
+  get metodoEfectivo(): boolean {
+    return this.inscripcion?.pagoEstado != null && !this.inscripcion?.pagoComprobanteUrl;
   }
 
   etiqueta(categoria: string): string {
@@ -154,6 +247,14 @@ export class InscripcionParticipanteComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const catUsuario = asCategoriaInscripcion(
+      this.loginService.getUser()?.categoriaInscripcion
+    );
+    if (catUsuario) {
+      this.form.patchValue({ categoria: catUsuario });
+      this.categoriaPreferida = catUsuario;
+      this.categoriaBloqueada = true;
+    }
     this.cargar();
   }
 
@@ -161,21 +262,31 @@ export class InscripcionParticipanteComponent implements OnInit {
     this.certificado = (event.target as HTMLInputElement).files?.[0];
   }
 
+  onComprobante(event: Event): void {
+    this.comprobante = (event.target as HTMLInputElement).files?.[0];
+  }
+
   reiniciarFormulario(): void {
     this.mostrarFormulario = true;
     this.inscripcion = undefined;
+    this.enviado = false;
     this.certificado = undefined;
+    this.comprobante = undefined;
     this.form.reset({
-      categoria: this.categorias[0].value,
+      metodoPago: 'TRANSFERENCIA',
       requiereFactura: false,
+      categoria: this.categoriaPreferida || this.categorias[0].value,
+      institucion: '',
+      provincia: '',
     });
   }
 
   enviar(): void {
-    if (this.form.invalid || this.faltaCertificado) {
+    if (this.form.invalid || this.faltaArchivos) {
       return;
     }
     const raw = this.form.getRawValue();
+    const arancelCat = ARANCELES_CATEGORIA[raw.categoria as keyof typeof ARANCELES_CATEGORIA];
     this.guardando = true;
     this.error = '';
     this.inscripcionService
@@ -184,13 +295,16 @@ export class InscripcionParticipanteComponent implements OnInit {
         institucion: raw.institucion!,
         provincia: raw.provincia!,
         requiereFactura: !!raw.requiereFactura,
+        metodoPago: raw.metodoPago as 'TRANSFERENCIA' | 'EFECTIVO',
+        monto: arancelCat?.monto ?? 0,
         certificado: this.certificado,
+        comprobante: raw.metodoPago === 'TRANSFERENCIA' ? this.comprobante : undefined,
       })
       .subscribe({
         next: (creada) => {
           this.inscripcion = creada;
           this.mostrarFormulario = false;
-          this.mensaje = 'Inscripción enviada. Podés registrar el pago cuando quieras.';
+          this.enviado = true;
           this.guardando = false;
         },
         error: (err) => {
@@ -201,10 +315,16 @@ export class InscripcionParticipanteComponent implements OnInit {
   }
 
   private cargar(): void {
-    this.inscripcionService.misDatos().subscribe({
-      next: (data) => {
-        this.inscripcion = data;
-        this.mostrarFormulario = false;
+    this.inscripcionService.misEstado().subscribe({
+      next: (estado) => {
+        this.inscripcion = estado.inscripcion ?? undefined;
+        const catPreferida = asCategoriaInscripcion(estado.categoriaPreferida);
+        this.categoriaPreferida = catPreferida ?? this.categoriaPreferida;
+        if (catPreferida && !this.categoriaBloqueada) {
+          this.form.patchValue({ categoria: catPreferida });
+          this.categoriaBloqueada = true;
+        }
+        this.mostrarFormulario = estado.puedeInscribirse;
         this.cargando = false;
       },
       error: () => {

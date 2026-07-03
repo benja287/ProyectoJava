@@ -1,6 +1,7 @@
 package ar.edu.unlp.jyaa.grupo1.rest;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.RegistroParticipanteRequest;
 import ar.edu.unlp.jyaa.grupo1.servicio.UsuarioService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.UsuarioDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,8 +32,13 @@ public class RegistroResource {
   @Operation(summary = "Registrar participante")
   @ApiResponse(responseCode = "201", description = "Participante registrado")
   @ApiResponse(responseCode = "400", description = "Error de validación")
-  public Response registrarParticipante(Usuario usuario, @Context UriInfo uriInfo) {
-    Usuario creado = usuarioService.registrarParticipante(usuario);
+  public Response registrarParticipante(RegistroParticipanteRequest request, @Context UriInfo uriInfo) {
+    Usuario usuario = new Usuario();
+    usuario.setNombre(request.nombre());
+    usuario.setApellido(request.apellido());
+    usuario.setEmail(request.email());
+    usuario.setPassword(request.password());
+    Usuario creado = usuarioService.registrarParticipante(usuario, request.categoria());
     URI location =
         uriInfo.getBaseUriBuilder().path("usuarios").path(creado.getId().toString()).build();
     return Response.created(location).entity(UsuarioDTO.from(creado)).build();

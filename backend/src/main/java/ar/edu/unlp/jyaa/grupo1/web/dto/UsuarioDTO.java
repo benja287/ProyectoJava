@@ -11,7 +11,8 @@ public record UsuarioDTO(
     String apellido,
     List<String> roles,
     String rolActual,
-    boolean activo) {
+    boolean activo,
+    String categoriaInscripcion) {
 
   public static UsuarioDTO from(Usuario u) {
     return new UsuarioDTO(
@@ -21,6 +22,7 @@ public record UsuarioDTO(
         u.getApellido(),
         u.getRoles().stream().map(Rol::name).toList(),
         u.getRolActual() != null ? u.getRolActual().name() : null,
-        u.isActivo());
+        u.isActivo(),
+        u.getCategoriaInscripcion());
   }
 }

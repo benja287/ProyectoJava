@@ -40,6 +40,9 @@ public class Usuario implements Serializable {
   @Column(name = "rol_actual")
   private Rol rolActual;
 
+  @Column(name = "categoria_inscripcion", length = 80)
+  private String categoriaInscripcion;
+
   @OneToMany(mappedBy = "autor", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Trabajo> trabajos = new ArrayList<>();
 
@@ -119,6 +122,14 @@ public class Usuario implements Serializable {
 
   public void setRolActual(Rol rolActual) {
     this.rolActual = rolActual;
+  }
+
+  public String getCategoriaInscripcion() {
+    return categoriaInscripcion;
+  }
+
+  public void setCategoriaInscripcion(String categoriaInscripcion) {
+    this.categoriaInscripcion = categoriaInscripcion;
   }
 
   public List<Trabajo> getTrabajos() {

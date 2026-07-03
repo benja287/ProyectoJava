@@ -1,11 +1,9 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { LoginService } from '../../../auth/login.service';
-import { InscripcionCongreso } from '../../../models/inscripcion.model';
-import { METODOS_PAGO } from '../../../models/enums';
+import { InscripcionCongreso, etiquetaCategoria } from '../../../models/inscripcion.model';
 import { Pago } from '../../../models/pago.model';
 import { InscripcionService } from '../../../servicios/inscripcion.service';
 import { PagoService } from '../../../servicios/pago.service';
@@ -14,11 +12,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 @Component({
   selector: 'app-pago-participante',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, ArchivoLinkComponent],
+  imports: [CommonModule, RouterLink, ArchivoLinkComponent],
   template: `
     <section class="card">
       <h1>Estado de pago</h1>
-      <p>Participante — <code>/api/pagos</code></p>
+      <p>Participante — consulta del pago vinculado a tu inscripción.</p>
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -28,76 +26,47 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       }
 
       @if (!inscripcion && !cargando) {
-        <p class="error">
-          Primero debés completar tu
-          <a routerLink="/participante/inscripcion">inscripción al congreso</a>.
+        <p>
+          Todavía no completaste la inscripción.
+          <a routerLink="/participante/inscripcion">Inscribirme al congreso</a>
         </p>
       }
 
-      @if (inscripcion && inscripcion.estado === 'RECHAZADA') {
-        <p class="error">
-          Tu inscripción fue rechazada.
-          @if (inscripcion.motivoRechazo) {
-            Motivo: {{ inscripcion.motivoRechazo }}.
-          }
-          Podés crear una nueva en
-          <a routerLink="/participante/inscripcion">Inscripción al congreso</a>.
-        </p>
-      }
-
-      @if (pago) {
+      @if (inscripcion) {
         <dl class="detalle">
-          <dt>ID pago</dt>
-          <dd>{{ pago.id }}</dd>
-          <dt>Monto</dt>
-          <dd>{{ pago.monto | number: '1.2-2' }}</dd>
-          <dt>Método</dt>
-          <dd>{{ pago.metodo }}</dd>
-          <dt>Estado</dt>
-          <dd>{{ pago.estado }}</dd>
-          @if (pago.motivoRechazo) {
-            <dt>Motivo rechazo</dt>
-            <dd>{{ pago.motivoRechazo }}</dd>
-          }
-          <dt>Comprobante</dt>
-          <dd>
-            @if (pago.comprobanteUrl) {
-              <app-archivo-link [url]="pago.comprobanteUrl" label="Ver comprobante" />
-            } @else {
-              Sin comprobante
-            }
-          </dd>
+          <dt>Inscripción</dt>
+          <dd>#{{ inscripcion.id }} — {{ etiqueta(inscripcion.categoria) }} ({{ inscripcion.estado }})</dd>
         </dl>
 
-        @if (pago.id && !pago.comprobanteUrl) {
-          <label class="file-inline">
-            Subir comprobante (PDF)
-            <input type="file" accept=".pdf" (change)="subirComprobante($event)" />
-          </label>
-        }
-      } @else if (!cargando && inscripcion && inscripcion.estado !== 'RECHAZADA') {
-        <h2>Registrar pago de inscripción</h2>
-        <p class="muted">
-          Categoría: {{ inscripcion.categoria }}
-          @if (inscripcion.requiereFactura) {
-            · Requiere factura
-          }
-        </p>
-        <form [formGroup]="form" (ngSubmit)="registrar()" class="form-grid">
-          <label>
-            Monto
-            <input formControlName="monto" type="number" step="0.01" min="0" />
-          </label>
-          <label>
-            Método
-            <select formControlName="metodo">
-              @for (m of metodos; track m) {
-                <option [value]="m">{{ m }}</option>
+        @if (pago) {
+          <dl class="detalle">
+            <dt>ID pago</dt>
+            <dd>{{ pago.id }}</dd>
+            <dt>Monto</dt>
+            <dd>{{ pago.monto | number: '1.2-2' }}</dd>
+            <dt>Método</dt>
+            <dd>{{ pago.metodo }}</dd>
+            <dt>Estado</dt>
+            <dd>{{ pago.estado }}</dd>
+            @if (pago.motivoRechazo) {
+              <dt>Motivo rechazo</dt>
+              <dd>{{ pago.motivoRechazo }}</dd>
+            }
+            <dt>Comprobante</dt>
+            <dd>
+              @if (pago.comprobanteUrl) {
+                <app-archivo-link [url]="pago.comprobanteUrl" label="Ver comprobante" />
+              } @else {
+                Pago en efectivo / sin comprobante digital
               }
-            </select>
-          </label>
-          <button type="submit" [disabled]="form.invalid || guardando">Registrar pago</button>
-        </form>
+            </dd>
+          </dl>
+        } @else if (!cargando) {
+          <p class="muted">
+            El pago se registra al enviar el formulario de
+            <a routerLink="/participante/inscripcion">inscripción al congreso</a>.
+          </p>
+        }
       }
 
       @if (cargando) {
@@ -109,21 +78,12 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   `,
 })
 export class PagoParticipanteComponent implements OnInit {
-  private fb = inject(FormBuilder);
-
-  pago?: Pago;
   inscripcion?: InscripcionCongreso;
-  metodos = [...METODOS_PAGO];
+  pago?: Pago;
   cargando = true;
-  guardando = false;
   error = '';
   mensaje = '';
   usuarioId?: number;
-
-  form = this.fb.group({
-    monto: [0, [Validators.required, Validators.min(0.01)]],
-    metodo: [this.metodos[0], Validators.required],
-  });
 
   constructor(
     private loginService: LoginService,
@@ -141,54 +101,16 @@ export class PagoParticipanteComponent implements OnInit {
     this.cargarEstado();
   }
 
-  registrar(): void {
-    if (!this.usuarioId || this.form.invalid || !this.inscripcion) {
-      return;
-    }
-    const raw = this.form.getRawValue();
-    this.guardando = true;
-    this.pagoService
-      .registrar(this.usuarioId, {
-        monto: Number(raw.monto),
-        metodo: raw.metodo!,
-        requiereFactura: !!this.inscripcion?.requiereFactura,
-      })
-      .subscribe({
-        next: (creado) => {
-          this.pago = creado;
-          this.mensaje = 'Pago registrado. Podés subir el comprobante.';
-          this.guardando = false;
-        },
-        error: (err) => {
-          this.error = mensajeErrorApi(err, 'No se pudo registrar el pago.');
-          this.guardando = false;
-        },
-      });
-  }
-
-  subirComprobante(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!this.pago?.id || !file) {
-      return;
-    }
-    this.pagoService.adjuntarComprobante(this.pago.id, file).subscribe({
-      next: (actualizado) => {
-        this.pago = actualizado;
-        this.mensaje = 'Comprobante subido.';
-      },
-      error: (err) => (this.error = mensajeErrorApi(err, 'No se pudo subir el comprobante.')),
-    });
+  etiqueta(categoria: string): string {
+    return etiquetaCategoria(categoria);
   }
 
   private cargarEstado(): void {
-    if (!this.usuarioId) {
-      return;
-    }
-    this.inscripcionService.misDatos().subscribe({
-      next: (inscripcion) => {
-        this.inscripcion = inscripcion;
-        if (inscripcion.pagoId) {
-          this.pagoService.consultarEstadoPorUsuario(this.usuarioId!).subscribe({
+    this.inscripcionService.misEstado().subscribe({
+      next: (estado) => {
+        this.inscripcion = estado.inscripcion ?? undefined;
+        if (this.inscripcion?.pagoId && this.usuarioId) {
+          this.pagoService.consultarEstadoPorUsuario(this.usuarioId).subscribe({
             next: (p) => {
               this.pago = p;
               this.cargando = false;

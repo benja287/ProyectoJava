@@ -8,6 +8,7 @@ export interface Usuario {
   activo?: boolean;
   roles?: string[];
   rolActual?: string | null;
+  categoriaInscripcion?: string | null;
 }
 
 export interface PaginaUsuarios {

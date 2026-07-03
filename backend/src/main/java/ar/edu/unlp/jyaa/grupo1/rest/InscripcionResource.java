@@ -3,7 +3,7 @@ package ar.edu.unlp.jyaa.grupo1.rest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ValidacionInscripcionRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.servicio.InscripcionService;
-import ar.edu.unlp.jyaa.grupo1.servicio.NegocioException;
+import ar.edu.unlp.jyaa.grupo1.web.dto.EstadoInscripcionParticipanteDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.InscripcionCongresoDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaInscripcionesDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,45 +40,46 @@ public class InscripcionResource {
 
   @POST
   @Consumes(MediaType.MULTIPART_FORM_DATA)
-  @Operation(summary = "Crear inscripción al congreso")
+  @Operation(summary = "Crear inscripción al congreso con pago")
   @ApiResponse(responseCode = "201", description = "Inscripción creada")
   public Response crear(
       @FormDataParam("categoria") String categoria,
       @FormDataParam("institucion") String institucion,
       @FormDataParam("provincia") String provincia,
       @FormDataParam("requiereFactura") String requiereFactura,
+      @FormDataParam("metodoPago") String metodoPago,
+      @FormDataParam("monto") String monto,
       @FormDataParam("certificado") InputStream certificado,
       @FormDataParam("certificado")
           org.glassfish.jersey.media.multipart.FormDataContentDisposition certificadoDetail,
+      @FormDataParam("comprobante") InputStream comprobante,
+      @FormDataParam("comprobante")
+          org.glassfish.jersey.media.multipart.FormDataContentDisposition comprobanteDetail,
       @Context ContainerRequestContext ctx,
       @Context UriInfo uriInfo) {
-    boolean factura = parseBoolean(requiereFactura);
-    String nombreArchivo =
-        certificadoDetail != null ? certificadoDetail.getFileName() : "certificado.pdf";
     InscripcionCongresoDTO creada =
         inscripcionService.crear(
             AuthenticatedUser.from(ctx),
             categoria,
             institucion,
             provincia,
-            factura,
+            parseBoolean(requiereFactura),
+            metodoPago,
+            parseMonto(monto),
             certificado,
-            nombreArchivo);
+            certificadoDetail != null ? certificadoDetail.getFileName() : "certificado.pdf",
+            comprobante,
+            comprobanteDetail != null ? comprobanteDetail.getFileName() : "comprobante.pdf");
     URI location = uriInfo.getAbsolutePathBuilder().path(creada.id().toString()).build();
     return Response.created(location).entity(creada).build();
   }
 
   @GET
   @Path("/mis-datos")
-  @Operation(summary = "Consultar la inscripción del usuario autenticado")
-  @ApiResponse(responseCode = "200", description = "Inscripción encontrada")
-  @ApiResponse(responseCode = "404", description = "Sin inscripción")
-  public InscripcionCongresoDTO misDatos(@Context ContainerRequestContext ctx) {
-    try {
-      return inscripcionService.misDatos(AuthenticatedUser.from(ctx));
-    } catch (NegocioException e) {
-      throw new NotFoundException(e.getMessage());
-    }
+  @Operation(summary = "Estado de inscripción del participante autenticado")
+  @ApiResponse(responseCode = "200", description = "Estado de inscripción")
+  public EstadoInscripcionParticipanteDTO misDatos(@Context ContainerRequestContext ctx) {
+    return inscripcionService.estadoParticipante(AuthenticatedUser.from(ctx));
   }
 
   @GET
@@ -118,5 +119,16 @@ public class InscripcionResource {
       return false;
     }
     return "true".equalsIgnoreCase(value.trim()) || "1".equals(value.trim());
+  }
+
+  private static Double parseMonto(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    try {
+      return Double.parseDouble(value.trim().replace(',', '.'));
+    } catch (NumberFormatException e) {
+      throw new ar.edu.unlp.jyaa.grupo1.servicio.NegocioException("Monto inválido: " + value);
+    }
   }
 }

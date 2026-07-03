@@ -1,14 +1,18 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.InscripcionCongresoDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.PagoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.InscripcionFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.CategoriaInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
+import ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago;
+import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
+import ar.edu.unlp.jyaa.grupo1.web.dto.EstadoInscripcionParticipanteDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.InscripcionCongresoDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaInscripcionesDTO;
 import jakarta.enterprise.context.RequestScoped;
@@ -26,6 +30,7 @@ public class InscripcionService {
   private static final int SIZE_MAX = 100;
 
   @Inject private InscripcionCongresoDAO inscripcionDAO;
+  @Inject private PagoDAO pagoDAO;
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private DocumentStorageService documentStorageService;
 
@@ -35,15 +40,28 @@ public class InscripcionService {
       String institucion,
       String provincia,
       boolean requiereFactura,
+      String metodoPagoRaw,
+      Double monto,
       InputStream certificado,
-      String certificadoNombre) {
+      String certificadoNombre,
+      InputStream comprobante,
+      String comprobanteNombre) {
     Usuario usuario = usuarioDAO.recuperarPorId(auth.userId());
     if (usuario == null) {
       throw new NegocioException("Usuario no encontrado");
     }
 
-    CategoriaInscripcion categoria = parseCategoria(categoriaRaw);
-    validarDatos(categoria, institucion, provincia, requiereFactura, certificado);
+    String categoriaEfectiva =
+        categoriaRaw != null && !categoriaRaw.isBlank()
+            ? categoriaRaw
+            : usuario.getCategoriaInscripcion();
+    if (categoriaEfectiva == null || categoriaEfectiva.isBlank()) {
+      throw new NegocioException("Debe indicar la categoría de inscripción");
+    }
+
+    CategoriaInscripcion categoria = parseCategoria(categoriaEfectiva);
+    MetodoPago metodoPago = parseMetodoPago(metodoPagoRaw);
+    validarDatos(categoria, institucion, provincia, requiereFactura, certificado, metodoPago, monto, comprobante);
 
     inscripcionDAO
         .buscarUltimaPorUsuario(auth.userId())
@@ -79,15 +97,44 @@ public class InscripcionService {
       }
     }
 
+    Pago pago = new Pago();
+    pago.setMonto(monto);
+    pago.setMetodo(metodoPago);
+    pago.setRequiereFactura(requiereFactura);
+    pago.setEstado(EstadoPago.PENDIENTE);
+    pago.setFechaRegistro(LocalDate.now());
+
+    if (comprobante != null && metodoPago == MetodoPago.TRANSFERENCIA) {
+      try {
+        String url =
+            documentStorageService.guardar(
+                DocumentStorageService.TipoArchivo.COMPROBANTE, comprobanteNombre, comprobante);
+        pago.setComprobanteUrl(url);
+      } catch (IOException e) {
+        throw new NegocioException("No se pudo guardar el comprobante: " + e.getMessage());
+      }
+    }
+
+    pagoDAO.alta(pago);
+    inscripcion.setPago(pago);
     InscripcionCongreso creada = inscripcionDAO.alta(inscripcion);
+
+    if (!categoria.name().equals(usuario.getCategoriaInscripcion())) {
+      usuario.setCategoriaInscripcion(categoria.name());
+      usuarioDAO.modificar(usuario);
+    }
+
     return InscripcionCongresoDTO.from(recuperarConRelaciones(creada.getId()));
   }
 
-  public InscripcionCongresoDTO misDatos(AuthenticatedUser auth) {
-    return inscripcionDAO
-        .buscarUltimaPorUsuario(auth.userId())
-        .map(InscripcionCongresoDTO::from)
-        .orElseThrow(() -> new NegocioException("No tiene inscripciones registradas"));
+  public EstadoInscripcionParticipanteDTO estadoParticipante(AuthenticatedUser auth) {
+    Usuario usuario = usuarioDAO.recuperarPorId(auth.userId());
+    if (usuario == null) {
+      throw new NegocioException("Usuario no encontrado");
+    }
+    InscripcionCongreso inscripcion =
+        inscripcionDAO.buscarUltimaPorUsuario(auth.userId()).orElse(null);
+    return EstadoInscripcionParticipanteDTO.of(inscripcion, usuario.getCategoriaInscripcion());
   }
 
   public PaginaInscripcionesDTO listar(
@@ -176,12 +223,33 @@ public class InscripcionService {
     }
   }
 
+  private static MetodoPago parseMetodoPago(String value) {
+    if (value == null || value.isBlank()) {
+      throw new NegocioException("Debe indicar la forma de pago");
+    }
+    String normalizado = value.trim().toUpperCase();
+    if ("TRANSFER".equals(normalizado) || "TRANSFERENCIA".equals(normalizado)) {
+      return MetodoPago.TRANSFERENCIA;
+    }
+    if ("CASH".equals(normalizado) || "EFECTIVO".equals(normalizado)) {
+      return MetodoPago.EFECTIVO;
+    }
+    try {
+      return MetodoPago.valueOf(normalizado);
+    } catch (IllegalArgumentException e) {
+      throw new NegocioException("Forma de pago inválida: " + value);
+    }
+  }
+
   private static void validarDatos(
       CategoriaInscripcion categoria,
       String institucion,
       String provincia,
       boolean requiereFactura,
-      InputStream certificado) {
+      InputStream certificado,
+      MetodoPago metodoPago,
+      Double monto,
+      InputStream comprobante) {
     if (institucion == null || institucion.isBlank()) {
       throw new NegocioException("Debe indicar la institución");
     }
@@ -194,9 +262,14 @@ public class InscripcionService {
     if (categoria.requiereCertificado() && certificado == null) {
       throw new NegocioException("La categoría " + categoria.name() + " requiere adjuntar certificado");
     }
+    if (monto == null || monto <= 0) {
+      throw new NegocioException("Debe indicar un monto válido");
+    }
+    if (metodoPago == MetodoPago.TRANSFERENCIA && comprobante == null) {
+      throw new NegocioException("Debe adjuntar comprobante de transferencia");
+    }
   }
 
-  /** Usado por PagoService para verificar inscripción previa. */
   public InscripcionCongreso buscarUltimaPorUsuario(Long usuarioId) {
     return inscripcionDAO.buscarUltimaPorUsuario(usuarioId).orElse(null);
   }
