@@ -33,11 +33,11 @@ public class Usuario implements Serializable {
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "usuario_roles", joinColumns = @JoinColumn(name = "usuario_id"))
   @Enumerated(EnumType.STRING)
-  @Column(name = "rol")
+  @Column(name = "rol", length = 30)
   private Set<Rol> roles = new HashSet<>();
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "rol_actual")
+  @Column(name = "rol_actual", length = 30)
   private Rol rolActual;
 
   @Column(name = "categoria_inscripcion", length = 80)
