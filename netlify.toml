@@ -1,0 +1,12 @@
+# Deploy del frontend Angular (base directory = frontend/)
+# Conectar repo en https://app.netlify.com → Import project → base: frontend
+
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "dist/jyaa-frontend/browser"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

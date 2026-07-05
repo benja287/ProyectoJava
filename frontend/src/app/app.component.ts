@@ -61,6 +61,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.appVersionService.checkForUpdate();
+    this.appVersionService.startPolling();
     this.idleSession.startWatching();
     this.refrescarNotificaciones();
     this.cargarConfigCongreso();
@@ -103,6 +104,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.idleSession.stopWatching();
+    this.appVersionService.ngOnDestroy();
   }
 
   /** Getter: el template usa "usuario" sin llamar al servicio directamente */

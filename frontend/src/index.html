@@ -12,6 +12,44 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  <script>
+    (function () {
+      var mainRe = /main-([A-Za-z0-9]+)\.js/;
+      var reloadKey = 'jyaa-app-reload-attempt';
+
+      function hashFrom(value) {
+        var match = String(value || '').match(mainRe);
+        return match ? match[1] : null;
+      }
+
+      function tryReload(serverHash) {
+        var localEl = document.querySelector('script[src*="main-"]');
+        if (!localEl || !serverHash) return;
+        var localHash = hashFrom(localEl.getAttribute('src'));
+        if (!localHash || localHash === serverHash) return;
+        try {
+          if (sessionStorage.getItem(reloadKey) === serverHash) return;
+          sessionStorage.setItem(reloadKey, serverHash);
+        } catch (e) {}
+        var url = new URL(location.href);
+        url.searchParams.set('_cb', serverHash);
+        location.replace(url.href);
+      }
+
+      var serverHash = null;
+      fetch('/index.html?_=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.text() : ''; })
+        .then(function (html) {
+          serverHash = hashFrom(html);
+          tryReload(serverHash);
+        })
+        .catch(function () {});
+
+      document.addEventListener('DOMContentLoaded', function () {
+        tryReload(serverHash);
+      });
+    })();
+  </script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
