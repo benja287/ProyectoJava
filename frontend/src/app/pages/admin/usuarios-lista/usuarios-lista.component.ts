@@ -1,12 +1,12 @@
 /**
- * Listado de usuarios (admin).
- * GET /api/usuarios → tabla con app-usuario-fila por cada registro
+ * Listado de usuarios (admin) con modal de edición MatDialog.
  */
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Usuario } from '../../../models/usuario.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
+import { UsuarioEdicionDialogService } from '../../../servicios/usuario-edicion-dialog.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
 import {
@@ -22,7 +22,7 @@ import { UsuarioFilaComponent } from './usuario-fila.component';
   template: `
     <section class="card">
       <h1>Gestión de usuarios — Listado</h1>
-      <p>Perfil administrador (Entrega 5).</p>
+      <p>Perfil administrador — editá usuarios desde el modal sin salir del listado.</p>
 
       <app-filter-bar
         [fields]="filterFields"
@@ -42,23 +42,30 @@ import { UsuarioFilaComponent } from './usuario-fila.component';
       }
 
       @if (!cargando && !error) {
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Apellido y nombre</th>
-              <th>Email</th>
-              <th>Estado</th>
-              <th>Roles</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (u of usuarios; track u.id) {
-              <app-usuario-fila [usuario]="u" (eliminar)="confirmarBaja($event)" />
-            }
-          </tbody>
-        </table>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Apellido y nombre</th>
+                <th>Email</th>
+                <th>Estado</th>
+                <th>Roles</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of usuarios; track u.id) {
+                <app-usuario-fila
+                  [usuario]="u"
+                  (editar)="abrirEdicion($event)"
+                  (toggleActivo)="toggleActivo($event)"
+                  (eliminar)="confirmarBaja($event)"
+                />
+              }
+            </tbody>
+          </table>
+        </div>
       }
 
       <p class="actions-top">
@@ -85,6 +92,7 @@ export class UsuariosListaComponent implements OnInit {
 
   constructor(
     private usuarioService: UsuarioService,
+    private usuarioEdicionDialog: UsuarioEdicionDialogService,
     private route: ActivatedRoute,
     private router: Router
   ) {}
@@ -110,19 +118,58 @@ export class UsuariosListaComponent implements OnInit {
     });
   }
 
+  abrirEdicion(usuario: Usuario): void {
+    this.usuarioEdicionDialog.abrir(usuario).subscribe((actualizado) => {
+      if (actualizado) {
+        this.reemplazarEnLista(actualizado);
+        this.mensaje = `Usuario #${actualizado.id} actualizado.`;
+        this.error = '';
+      }
+    });
+  }
+
+  toggleActivo(usuario: Usuario): void {
+    if (!usuario.id) return;
+    const nuevoEstado = !usuario.activo;
+    const accion = nuevoEstado ? 'habilitar' : 'inhabilitar';
+    if (!confirm(`¿${accion} la cuenta de ${usuario.email}?`)) {
+      return;
+    }
+    this.usuarioService.setActivo(usuario.id, nuevoEstado).subscribe({
+      next: (actualizado) => {
+        this.reemplazarEnLista(actualizado);
+        this.mensaje = nuevoEstado ? 'Cuenta habilitada.' : 'Cuenta inhabilitada.';
+        this.error = '';
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo cambiar el estado de la cuenta.');
+      },
+    });
+  }
+
   confirmarBaja(usuario: Usuario): void {
-    if (!usuario.id || !confirm(`¿Dar de baja a ${usuario.email}?`)) {
+    if (!usuario.id || !confirm(`¿Eliminar definitivamente a ${usuario.email}?`)) {
       return;
     }
     this.usuarioService.baja(usuario.id).subscribe({
       next: () => {
+        this.usuarios = this.usuarios.filter((u) => u.id !== usuario.id);
         this.mensaje = `Usuario ${usuario.id} eliminado.`;
-        this.cargar();
+        this.error = '';
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo eliminar el usuario.');
       },
     });
+  }
+
+  private reemplazarEnLista(actualizado: Usuario): void {
+    const idx = this.usuarios.findIndex((u) => u.id === actualizado.id);
+    if (idx >= 0) {
+      const copia = [...this.usuarios];
+      copia[idx] = actualizado;
+      this.usuarios = copia;
+    }
   }
 
   private cargar(): void {

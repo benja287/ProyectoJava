@@ -1,16 +1,12 @@
 /**
  * Fila de la tabla de usuarios (componente hijo).
- * Comunicación: @Input recibe datos del padre; @Output emite evento "eliminar"
  */
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { Usuario } from '../../../models/usuario.model';
 
 @Component({
   selector: 'app-usuario-fila',
   standalone: true,
-  imports: [RouterLink],
-  /** display: contents → el <tr> participa en la tabla del padre sin wrapper extra */
   host: { style: 'display: contents' },
   template: `
     <tr>
@@ -23,17 +19,19 @@ import { Usuario } from '../../../models/usuario.model';
         </span>
       </td>
       <td>{{ usuario.roles?.join(', ') }}</td>
-      <td>
-        <a [routerLink]="['/admin/usuarios', usuario.id]">Detalle</a>
-        <!-- emit → el padre escucha con (eliminar)="confirmarBaja($event)" -->
-        <button type="button" class="btn-link" (click)="eliminar.emit(usuario)">Baja</button>
+      <td class="acciones-tabla">
+        <button type="button" class="btn-link" (click)="editar.emit(usuario)">Editar</button>
+        <button type="button" class="btn-link" (click)="toggleActivo.emit(usuario)">
+          {{ usuario.activo ? 'Inhabilitar' : 'Habilitar' }}
+        </button>
+        <button type="button" class="btn-link danger" (click)="eliminar.emit(usuario)">Eliminar</button>
       </td>
     </tr>
   `,
 })
 export class UsuarioFilaComponent {
-  /** Dato que el padre pasa: [usuario]="u" */
   @Input({ required: true }) usuario!: Usuario;
-  /** Evento que el padre escucha: (eliminar)="confirmarBaja($event)" */
+  @Output() editar = new EventEmitter<Usuario>();
+  @Output() toggleActivo = new EventEmitter<Usuario>();
   @Output() eliminar = new EventEmitter<Usuario>();
 }

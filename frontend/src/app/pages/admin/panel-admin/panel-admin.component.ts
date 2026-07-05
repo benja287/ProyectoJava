@@ -11,6 +11,7 @@ import { CircularService } from '../../../servicios/circular.service';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { NotificacionService } from '../../../servicios/notificacion.service';
 import { UsuarioService } from '../../../servicios/usuario.service';
+import { UsuarioEdicionDialogService } from '../../../servicios/usuario-edicion-dialog.service';
 import { UsuarioFilaComponent } from '../usuarios-lista/usuario-fila.component';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
@@ -159,7 +160,12 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
               </thead>
               <tbody>
                 @for (u of usuarios; track u.id) {
-                  <app-usuario-fila [usuario]="u" (eliminar)="confirmarBaja($event)" />
+                  <app-usuario-fila
+                    [usuario]="u"
+                    (editar)="abrirEdicionUsuario($event)"
+                    (toggleActivo)="toggleActivoUsuario($event)"
+                    (eliminar)="confirmarBaja($event)"
+                  />
                 }
               </tbody>
             </table>
@@ -298,7 +304,8 @@ export class PanelAdminComponent implements OnInit {
     private notificacionService: NotificacionService,
     private congresoConfigService: CongresoConfigService,
     private circularService: CircularService,
-    private usuarioService: UsuarioService
+    private usuarioService: UsuarioService,
+    private usuarioEdicionDialog: UsuarioEdicionDialogService
   ) {}
 
   ngOnInit(): void {
@@ -388,18 +395,55 @@ export class PanelAdminComponent implements OnInit {
     return `${d}/${m}/${y}`;
   }
 
+  abrirEdicionUsuario(usuario: Usuario): void {
+    this.usuarioEdicionDialog.abrir(usuario).subscribe((actualizado) => {
+      if (actualizado) {
+        this.reemplazarUsuarioEnLista(actualizado);
+        this.mensaje = `Usuario #${actualizado.id} actualizado.`;
+        this.error = '';
+      }
+    });
+  }
+
+  toggleActivoUsuario(usuario: Usuario): void {
+    if (!usuario.id) return;
+    const nuevoEstado = !usuario.activo;
+    const accion = nuevoEstado ? 'habilitar' : 'inhabilitar';
+    if (!confirm(`¿${accion} la cuenta de ${usuario.email}?`)) return;
+    this.usuarioService.setActivo(usuario.id, nuevoEstado).subscribe({
+      next: (actualizado) => {
+        this.reemplazarUsuarioEnLista(actualizado);
+        this.mensaje = nuevoEstado ? 'Cuenta habilitada.' : 'Cuenta inhabilitada.';
+        this.error = '';
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo cambiar el estado de la cuenta.');
+      },
+    });
+  }
+
   confirmarBaja(usuario: Usuario): void {
-    if (!usuario.id || !confirm(`¿Dar de baja a ${usuario.email}?`)) return;
+    if (!usuario.id || !confirm(`¿Eliminar definitivamente a ${usuario.email}?`)) return;
     this.usuarioService.baja(usuario.id).subscribe({
       next: () => {
         this.mensaje = `Usuario ${usuario.id} eliminado.`;
         this.usuarios = this.usuarios.filter((u) => u.id !== usuario.id);
         this.statsService.obtener().subscribe({ next: (s) => (this.stats = s) });
+        this.error = '';
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo eliminar el usuario.');
       },
     });
+  }
+
+  private reemplazarUsuarioEnLista(actualizado: Usuario): void {
+    const idx = this.usuarios.findIndex((u) => u.id === actualizado.id);
+    if (idx >= 0) {
+      const copia = [...this.usuarios];
+      copia[idx] = actualizado;
+      this.usuarios = copia;
+    }
   }
 
   togglePublicacion(c: Circular): void {

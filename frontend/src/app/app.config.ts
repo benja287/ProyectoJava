@@ -2,9 +2,11 @@
  * Configuración global de la aplicación.
  * Se pasa a bootstrapApplication(AppComponent, appConfig).
  */
-import { APP_INITIALIZER, ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig, importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { MatDialogModule } from '@angular/material/dialog';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './auth/auth.interceptor';
@@ -22,6 +24,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     // HttpClient + interceptor JWT (Authorization: Bearer)
     provideHttpClient(withInterceptors([authInterceptor])),
+    provideAnimationsAsync(),
+    importProvidersFrom(MatDialogModule),
     // Valida JWT en sessionStorage antes de montar componentes (evita sesión fantasma)
     {
       provide: APP_INITIALIZER,
