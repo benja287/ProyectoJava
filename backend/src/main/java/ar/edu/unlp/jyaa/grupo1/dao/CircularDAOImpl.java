@@ -53,6 +53,31 @@ public class CircularDAOImpl extends AbstractJpaDAO<Circular> implements Circula
     }
   }
 
+  @Override
+  public List<Circular> listarTodasPaginado(int offset, int limit) {
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery(
+              "SELECT c FROM Circular c ORDER BY COALESCE(c.fechaPublicacion, '1970-01-01') DESC, c.id DESC",
+              Circular.class)
+          .setFirstResult(offset)
+          .setMaxResults(limit)
+          .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public long contarTodas() {
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery("SELECT COUNT(c) FROM Circular c", Long.class).getSingleResult();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
   private EntityManager emConsulta() {
     EntityManager cdi = getEntityManager();
     return cdi != null ? cdi : JpaUtil.createEntityManager();

@@ -10,4 +10,8 @@ public interface CircularDAO extends GenericDAO<Circular> {
   List<Circular> listarPublicadasPaginado(int offset, int limit);
 
   long contarPublicadas();
+
+  List<Circular> listarTodasPaginado(int offset, int limit);
+
+  long contarTodas();
 }

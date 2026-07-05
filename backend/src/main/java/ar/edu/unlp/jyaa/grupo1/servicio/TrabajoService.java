@@ -30,6 +30,7 @@ public class TrabajoService {
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
   @Inject private DocumentStorageService documentStorageService;
+  @Inject private NotificacionService notificacionService;
 
   private static final int PAGE_DEFAULT = 1;
   private static final int SIZE_DEFAULT = 20;
@@ -41,14 +42,14 @@ public class TrabajoService {
   }
 
   public PaginaTrabajosDTO listar(int page, int size) {
-    return listarFiltrado(page, size, new TrabajoFiltro(null, null, null, null, null, null));
+    return listarFiltrado(page, size, new TrabajoFiltro(null, null, null, null, null, null, null));
   }
 
   public PaginaTrabajosDTO listarPorAutor(Long autorId, int page, int size) {
     if (usuarioDAO.recuperarPorId(autorId) == null) {
       throw new NegocioException("Autor no encontrado: " + autorId);
     }
-    return listarFiltrado(page, size, new TrabajoFiltro(null, null, null, null, null, autorId));
+    return listarFiltrado(page, size, new TrabajoFiltro(null, null, null, null, null, null, autorId));
   }
 
   public static TrabajoFiltro parseFiltro(
@@ -57,6 +58,7 @@ public class TrabajoService {
       String ejeTematico,
       String estado,
       String modalidad,
+      String tipo,
       Long autorId) {
     EstadoTrabajo estadoEnum = null;
     if (estado != null && !estado.isBlank()) {
@@ -74,12 +76,21 @@ public class TrabajoService {
         throw new NegocioException("Modalidad inválida: " + modalidad);
       }
     }
-    return new TrabajoFiltro(titulo, resumen, ejeTematico, estadoEnum, modalidadEnum, autorId);
+    TipoTrabajo tipoEnum = null;
+    if (tipo != null && !tipo.isBlank()) {
+      try {
+        tipoEnum = TipoTrabajo.valueOf(tipo.trim().toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new NegocioException("Tipo de trabajo inválido: " + tipo);
+      }
+    }
+    return new TrabajoFiltro(
+        titulo, resumen, ejeTematico, estadoEnum, modalidadEnum, tipoEnum, autorId);
   }
 
   private TrabajoFiltro aplicarAlcance(TrabajoFiltro filtro, AuthenticatedUser auth) {
     TrabajoFiltro base =
-        filtro != null ? filtro : new TrabajoFiltro(null, null, null, null, null, null);
+        filtro != null ? filtro : new TrabajoFiltro(null, null, null, null, null, null, null);
     if (auth.canListAllTrabajos()) {
       return base;
     }
@@ -89,6 +100,7 @@ public class TrabajoService {
         base.ejeTematico(),
         base.estado(),
         base.modalidad(),
+        base.tipo(),
         auth.userId());
   }
 
@@ -118,11 +130,14 @@ public class TrabajoService {
     if (autor == null) {
       throw new NegocioException("Autor no encontrado: " + autorId);
     }
-    if (!autor.getRoles().contains(Rol.AUTOR)) {
+    if (trabajo.getTipo() != TipoTrabajo.PROPUESTA_TALLER && !autor.getRoles().contains(Rol.AUTOR)) {
       autor.getRoles().add(Rol.AUTOR);
       usuarioDAO.modificar(autor);
     }
     validarDatosPostulacion(trabajo);
+    if (trabajo.getTipo() == TipoTrabajo.PROPUESTA_TALLER) {
+      validarPropuestaTallerUnica(autorId);
+    }
     trabajo.setAutor(autor);
     trabajo.setEstado(EstadoTrabajo.BORRADOR);
     trabajo.setFechaCreacion(LocalDate.now());
@@ -144,6 +159,10 @@ public class TrabajoService {
       throw new NegocioException("Debe adjuntar el PDF antes de enviar el trabajo");
     }
     trabajo.setEstado(EstadoTrabajo.ENVIADO);
+    notificarAutor(
+        trabajo,
+        "Trabajo enviado",
+        "Tu trabajo \"" + trabajo.getTitulo() + "\" fue enviado y está pendiente de revisión del comité.");
     return trabajoDAO.modificar(trabajo);
   }
 
@@ -154,12 +173,25 @@ public class TrabajoService {
     }
     if (apto) {
       trabajo.setEstado(EstadoTrabajo.PRECHECK_OK);
+      notificarAutor(
+          trabajo,
+          "Precheck aprobado",
+          "Tu trabajo \"" + trabajo.getTitulo() + "\" pasó el precheck del comité.");
       return trabajoDAO.modificar(trabajo);
     }
     int intentos = trabajo.getPrecheckIntentos() + 1;
     trabajo.setPrecheckIntentos(intentos);
     if (intentos >= MAX_PRECHECK_INTENTOS) {
       trabajo.setEstado(EstadoTrabajo.RECHAZADO);
+      notificarAutor(
+          trabajo,
+          "Trabajo no prevalidado",
+          "Tu trabajo \"" + trabajo.getTitulo() + "\" no superó el precheck tras " + intentos + " intentos.");
+    } else {
+      notificarAutor(
+          trabajo,
+          "Trabajo observado en precheck",
+          "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. Revisá los requisitos y reenviá si corresponde.");
     }
     return trabajoDAO.modificar(trabajo);
   }
@@ -172,11 +204,19 @@ public class TrabajoService {
     }
     if (aprobar) {
       trabajo.setEstado(EstadoTrabajo.APROBADO);
+      notificarAutor(
+          trabajo,
+          "Trabajo aprobado",
+          "Tu trabajo \"" + trabajo.getTitulo() + "\" fue aprobado por el comité académico.");
     } else {
       if (observaciones == null || observaciones.isBlank()) {
         throw new NegocioException("Debe indicar el motivo del rechazo definitivo");
       }
       trabajo.setEstado(EstadoTrabajo.RECHAZADO);
+      notificarAutor(
+          trabajo,
+          "Trabajo rechazado",
+          "Tu trabajo \"" + trabajo.getTitulo() + "\" fue rechazado. Motivo: " + observaciones);
     }
     return trabajoDAO.modificar(trabajo);
   }
@@ -217,10 +257,21 @@ public class TrabajoService {
             .count();
     if (aprobaciones >= 2) {
       trabajo.setEstado(EstadoTrabajo.PENDIENTE_APROBACION_COMITE);
+      notificarAutor(
+          trabajo,
+          "Evaluaciones favorables",
+          "Tu trabajo \"" + trabajo.getTitulo() + "\" recibió 2 evaluaciones favorables. El comité confirmará el resultado final.");
+      notificacionService.enviarPorRol(
+          Rol.ORGANIZADOR_CIENTIFICO,
+          "Confirmar trabajo tras evaluaciones",
+          "El trabajo \"" + trabajo.getTitulo() + "\" tiene 2 aprobaciones de evaluadores.",
+          null);
     } else if (rechazos >= 2) {
       trabajo.setEstado(EstadoTrabajo.RECHAZADO);
+      notificarAutor(trabajo, "Trabajo rechazado", "Tu trabajo \"" + trabajo.getTitulo() + "\" fue rechazado por los evaluadores.");
     } else if (rechazos >= 1 && aprobaciones < 2) {
       trabajo.setEstado(EstadoTrabajo.RECHAZADO);
+      notificarAutor(trabajo, "Trabajo rechazado", "Tu trabajo \"" + trabajo.getTitulo() + "\" no alcanzó las aprobaciones necesarias.");
     }
     trabajoDAO.modificar(trabajo);
   }
@@ -246,6 +297,15 @@ public class TrabajoService {
 
   private void validarDatosPostulacion(Trabajo trabajo) {
     if (trabajo.getTipo() == TipoTrabajo.PROPUESTA_TALLER) {
+      if (trabajo.getTitulo() == null || trabajo.getTitulo().isBlank()) {
+        throw new NegocioException("Debe indicar el título del taller");
+      }
+      if (trabajo.getResumen() == null || trabajo.getResumen().isBlank()) {
+        throw new NegocioException("Debe indicar la descripción del taller");
+      }
+      if (trabajo.getMetodologia() == null || trabajo.getMetodologia().isBlank()) {
+        throw new NegocioException("Debe indicar la metodología del taller");
+      }
       return;
     }
     if (trabajo.getModalidad() == null) {
@@ -253,6 +313,24 @@ public class TrabajoService {
     }
     if (!EjesTematicos.esValido(trabajo.getEjeTematico())) {
       throw new NegocioException("Debe seleccionar un eje temático válido");
+    }
+  }
+
+  private void validarPropuestaTallerUnica(Long autorId) {
+    TrabajoFiltro filtro =
+        new TrabajoFiltro(null, null, null, null, null, TipoTrabajo.PROPUESTA_TALLER, autorId);
+    List<Trabajo> existentes = trabajoDAO.listarFiltrado(filtro, 0, 50);
+    boolean tieneActiva =
+        existentes.stream().anyMatch(t -> t.getEstado() != EstadoTrabajo.RECHAZADO);
+    if (tieneActiva) {
+      throw new NegocioException(
+          "Ya tenés una propuesta de taller activa (pendiente o aprobada). No podés enviar otra.");
+    }
+  }
+
+  private void notificarAutor(Trabajo trabajo, String asunto, String mensaje) {
+    if (trabajo.getAutor() != null && trabajo.getAutor().getId() != null) {
+      notificacionService.enviar(trabajo.getAutor().getId(), asunto, mensaje);
     }
   }
 }

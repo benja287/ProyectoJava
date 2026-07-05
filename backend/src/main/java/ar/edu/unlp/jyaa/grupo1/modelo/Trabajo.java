@@ -20,6 +20,9 @@ public class Trabajo implements Serializable {
   @Column(columnDefinition = "TEXT")
   private String resumen;
 
+  @Column(columnDefinition = "TEXT")
+  private String metodologia;
+
   @Column(name = "eje_tematico", length = 300)
   private String ejeTematico;
 
@@ -80,6 +83,14 @@ public class Trabajo implements Serializable {
 
   public void setResumen(String resumen) {
     this.resumen = resumen;
+  }
+
+  public String getMetodologia() {
+    return metodologia;
+  }
+
+  public void setMetodologia(String metodologia) {
+    this.metodologia = metodologia;
   }
 
   public String getEjeTematico() {

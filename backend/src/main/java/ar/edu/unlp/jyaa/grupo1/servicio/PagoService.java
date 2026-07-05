@@ -29,6 +29,7 @@ public class PagoService {
   @Inject private InscripcionService inscripcionService;
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private DocumentStorageService documentStorageService;
+  @Inject private NotificacionService notificacionService;
 
   public Pago registrarPago(Long usuarioId, Pago pago) {
     Usuario usuario = usuarioDAO.recuperarPorId(usuarioId);
@@ -163,6 +164,7 @@ public class PagoService {
       pago.setEstado(EstadoPago.RECHAZADO);
       pago.setMotivoRechazo(motivoRechazo);
       pagoDAO.modificar(pago);
+      notificarPago(usuarioIdFromPago(pago), false, motivoRechazo);
       return new ValidacionPagoResult(pago, "Pago rechazado");
     }
 
@@ -176,7 +178,32 @@ public class PagoService {
     pago.setMotivoRechazo(null);
     pagoDAO.modificar(pago);
     inscripcionService.confirmarCongresoPorPagoAprobado(pago.getId());
+    notificarPago(usuarioIdFromPago(pago), true, null);
     return new ValidacionPagoResult(pago, mensaje);
+  }
+
+  private Long usuarioIdFromPago(Pago pago) {
+    return inscripcionDAO.listarPorPago(pago.getId()).stream()
+        .findFirst()
+        .map(i -> i.getUsuario().getId())
+        .orElse(null);
+  }
+
+  private void notificarPago(Long usuarioId, boolean aprobado, String motivo) {
+    if (usuarioId == null) {
+      return;
+    }
+    if (aprobado) {
+      notificacionService.enviar(
+          usuarioId,
+          "Inscripción confirmada",
+          "Tu inscripción al congreso fue aprobada. Ya podés acceder como asistente.");
+    } else {
+      notificacionService.enviar(
+          usuarioId,
+          "Inscripción no aprobada",
+          "Tu pago no fue aprobado. Motivo: " + motivo);
+    }
   }
 
   public record ValidacionPagoResult(Pago pago, String mensaje) {}

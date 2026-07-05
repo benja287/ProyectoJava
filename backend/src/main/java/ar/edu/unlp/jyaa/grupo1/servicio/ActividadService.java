@@ -29,11 +29,16 @@ public class ActividadService {
 
   @Inject private ActividadDAO actividadDAO;
   @Inject private TrabajoDAO trabajoDAO;
+  @Inject private NotificacionService notificacionService;
 
   public PaginaActividadesDTO listar(int page, int size, ActividadFiltro filtro, AuthenticatedUser auth) {
     if (!auth.canListActividades()) {
       throw new NegocioException("No tiene permiso para listar actividades");
     }
+    return listarFiltrado(page, size, filtro != null ? filtro : new ActividadFiltro(null, null, null, null));
+  }
+
+  public PaginaActividadesDTO listarPublico(int page, int size, ActividadFiltro filtro) {
     return listarFiltrado(page, size, filtro != null ? filtro : new ActividadFiltro(null, null, null, null));
   }
 
@@ -171,6 +176,12 @@ public class ActividadService {
     for (Trabajo t : trabajos) {
       t.setEstado(EstadoTrabajo.PROGRAMADO);
       trabajoDAO.modificar(t);
+      if (t.getAutor() != null) {
+        notificacionService.enviar(
+            t.getAutor().getId(),
+            "Trabajo programado",
+            "Tu trabajo \"" + t.getTitulo() + "\" fue incluido en el cronograma del congreso.");
+      }
     }
   }
 

@@ -59,10 +59,12 @@ public class TrabajoResource {
       @QueryParam("ejeTematico") String ejeTematico,
       @QueryParam("estado") String estado,
       @QueryParam("modalidad") String modalidad,
+      @QueryParam("tipo") String tipo,
       @QueryParam("page") @DefaultValue("1") int page,
       @QueryParam("size") @DefaultValue("20") int size,
       @Context ContainerRequestContext ctx) {
-    var filtro = TrabajoService.parseFiltro(titulo, resumen, ejeTematico, estado, modalidad, autorId);
+    var filtro =
+        TrabajoService.parseFiltro(titulo, resumen, ejeTematico, estado, modalidad, tipo, autorId);
     return trabajoService.listar(page, size, filtro, AuthenticatedUser.from(ctx));
   }
 

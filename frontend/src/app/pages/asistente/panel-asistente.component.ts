@@ -9,7 +9,16 @@ import { TrabajoService } from '../../servicios/trabajo.service';
   standalone: true,
   imports: [RouterLink],
   template: `
-    <section class="panel-asistente">
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--naranja">
+        <span class="panel-hero-icon" aria-hidden="true">👤</span>
+        <div>
+          <h1>Panel Asistente</h1>
+          <p>Acciones disponibles para participantes del congreso</p>
+        </div>
+      </div>
+
+      <section class="panel-asistente">
       <h2 class="panel-asistente-titulo">Acciones disponibles</h2>
 
       @if (mensajeTrabajo) {
@@ -95,6 +104,7 @@ import { TrabajoService } from '../../servicios/trabajo.service';
         </div>
       }
     </section>
+    </div>
   `,
 })
 export class PanelAsistenteComponent implements OnInit {
@@ -121,7 +131,7 @@ export class PanelAsistenteComponent implements OnInit {
     }
     this.trabajoService.listar(1, 20, { autorId: userId }).subscribe({
       next: (items) => {
-        this.trabajos = items;
+        this.trabajos = items.filter((t) => t.tipo !== 'PROPUESTA_TALLER');
         this.cargandoTrabajos = false;
       },
       error: () => {

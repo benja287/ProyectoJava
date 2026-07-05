@@ -105,6 +105,17 @@ public class JwtAuthFilter implements ContainerRequestFilter {
     if ("health".equals(path) && "GET".equalsIgnoreCase(method)) {
       return true;
     }
+    if ("GET".equalsIgnoreCase(method)) {
+      if ("congreso/config".equals(path)) {
+        return true;
+      }
+      if ("circulares".equals(path)) {
+        return true;
+      }
+      if ("actividades".equals(path)) {
+        return true;
+      }
+    }
     return path.startsWith("openapi") || path.startsWith("swagger");
   }
 

@@ -3,7 +3,6 @@ package ar.edu.unlp.jyaa.grupo1.rest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearMesaTematicaRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearSesionPostersRequest;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
-import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.servicio.ActividadService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.ActividadResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaActividadesDTO;
@@ -52,10 +51,9 @@ public class ActividadResource {
       @QueryParam("codigo") String codigo,
       @QueryParam("tipoActividad") String tipoActividad,
       @QueryParam("titulo") String titulo,
-      @QueryParam("sala") String sala,
-      @Context ContainerRequestContext ctx) {
+      @QueryParam("sala") String sala) {
     var filtro = ActividadService.parseFiltro(codigo, tipoActividad, titulo, sala);
-    return actividadService.listar(page, size, filtro, AuthenticatedUser.from(ctx));
+    return actividadService.listarPublico(page, size, filtro);
   }
 
   @GET

@@ -11,7 +11,7 @@ import { seleccionRolGuard } from './auth/seleccion-rol.guard';
 import { InicioComponent } from './pages/inicio/inicio.component';
 import { LoginComponent } from './pages/login/login.component';
 import { RegistroComponent } from './pages/registro/registro.component';
-import { PerfilHomeComponent } from './pages/perfil-home/perfil-home.component';
+import { SeleccionRolComponent } from './pages/seleccion-rol/seleccion-rol.component';
 import { UsuariosListaComponent } from './pages/admin/usuarios-lista/usuarios-lista.component';
 import { UsuarioDetalleComponent } from './pages/admin/usuario-detalle/usuario-detalle.component';
 import { UsuarioAltaComponent } from './pages/admin/usuario-alta/usuario-alta.component';
@@ -27,12 +27,19 @@ import { CronogramaParticipanteComponent } from './pages/participante/cronograma
 import { InscripcionParticipanteComponent } from './pages/participante/inscripcion/inscripcion-participante.component';
 import { PagoParticipanteComponent } from './pages/participante/pago/pago-participante.component';
 import { InscripcionesAdminComponent } from './pages/admin/inscripciones/inscripciones-admin.component';
-import { SeleccionRolComponent } from './pages/seleccion-rol/seleccion-rol.component';
 import { PanelAsistenteComponent } from './pages/asistente/panel-asistente.component';
 import { MesasTematicasAdminComponent } from './pages/admin/mesas-tematicas/mesas-tematicas-admin.component';
 import { SesionPostersAdminComponent } from './pages/admin/sesion-posters/sesion-posters-admin.component';
 import { ComiteOcComponent } from './pages/organizador/comite/comite-oc.component';
+import { ProponerTallerAsistenteComponent } from './pages/asistente/proponer-taller/proponer-taller-asistente.component';
 import { CertificadoAsistenteComponent } from './pages/asistente/certificado-asistente.component';
+import { PanelAdminComponent } from './pages/admin/panel-admin/panel-admin.component';
+import { PanelRolComponent } from './pages/panel-rol/panel-rol.component';
+import { NotificacionesComponent } from './pages/notificaciones/notificaciones.component';
+import { AdminEstadisticasComponent } from './pages/admin/admin-estadisticas/admin-estadisticas.component';
+import { CircularFormAdminComponent } from './pages/admin/circular-form/circular-form-admin.component';
+import { CircularesPublicasComponent } from './pages/circulares/circulares-publicas.component';
+import { ProgramaCongresoComponent } from './pages/programa/programa-congreso.component';
 
 const admin = roleGuard(['ADMINISTRADOR']);
 const organizador = roleGuard(['ORGANIZADOR_CIENTIFICO']);
@@ -41,6 +48,8 @@ const autor = roleGuard(['AUTOR']);
 
 export const routes: Routes = [
   { path: '', component: InicioComponent },
+  { path: 'programa', component: ProgramaCongresoComponent },
+  { path: 'circulares', component: CircularesPublicasComponent },
   { path: 'login', component: LoginComponent },
   { path: 'seleccion-rol', component: SeleccionRolComponent, canActivate: [authGuard, seleccionRolGuard] },
   { path: 'registro', component: RegistroComponent },
@@ -71,9 +80,8 @@ export const routes: Routes = [
   },
   {
     path: 'asistente/taller',
-    component: TrabajosAutorComponent,
+    component: ProponerTallerAsistenteComponent,
     canActivate: [asistenteGuard],
-    data: { perfilTrabajos: 'asistente', tipoTaller: true },
   },
   {
     path: 'asistente/certificado',
@@ -88,26 +96,13 @@ export const routes: Routes = [
   { path: 'participante/trabajos', redirectTo: 'asistente/trabajos', pathMatch: 'full' },
   { path: 'participante/pago', redirectTo: 'inscripcion', pathMatch: 'full' },
 
+  { path: 'notificaciones', component: NotificacionesComponent, canActivate: [authGuard] },
+
   // --- Perfil Administrador ---
   {
     path: 'admin',
-    component: PerfilHomeComponent,
+    component: PanelAdminComponent,
     canActivate: [admin],
-    data: {
-      titulo: 'Home — Administrador',
-      descripcion: 'Gestión de usuarios, pagos y actividades.',
-      menu: [
-        { label: 'Listado de usuarios', route: '/admin/usuarios' },
-        { label: 'Nuevo usuario', route: '/admin/usuarios/nuevo' },
-        { label: 'Validar pagos pendientes', route: '/admin/pagos' },
-        { label: 'Inscripciones al congreso', route: '/admin/inscripciones' },
-        { label: 'Listado de pagos (limpieza)', route: '/admin/pagos/todos' },
-        { label: 'ABM actividades', route: '/admin/actividades' },
-        { label: 'Crear mesa temática', route: '/admin/mesas-tematicas' },
-        { label: 'Crear sesión de pósters', route: '/admin/sesion-posters' },
-        { label: 'Listado de trabajos (limpieza)', route: '/admin/trabajos' },
-      ],
-    },
   },
   { path: 'admin/usuarios', component: UsuariosListaComponent, canActivate: [admin] },
   { path: 'admin/usuarios/nuevo', component: UsuarioAltaComponent, canActivate: [admin] },
@@ -119,19 +114,42 @@ export const routes: Routes = [
   { path: 'admin/mesas-tematicas', component: MesasTematicasAdminComponent, canActivate: [admin] },
   { path: 'admin/sesion-posters', component: SesionPostersAdminComponent, canActivate: [admin] },
   { path: 'admin/trabajos', component: TrabajosAdminComponent, canActivate: [admin] },
+  { path: 'admin/estadisticas', component: AdminEstadisticasComponent, canActivate: [admin] },
+  { path: 'admin/circulares/nueva', component: CircularFormAdminComponent, canActivate: [admin] },
+  { path: 'admin/circulares/editar/:id', component: CircularFormAdminComponent, canActivate: [admin] },
 
   // --- Perfil Organizador científico ---
   {
     path: 'organizador',
-    component: PerfilHomeComponent,
+    component: PanelRolComponent,
     canActivate: [organizador],
     data: {
-      titulo: 'Home — Organizador científico',
-      descripcion: 'Asignación de trabajos a evaluadores y promoción de evaluadores.',
-      menu: [
-        { label: 'Precheck y confirmación comité', route: '/organizador/comite' },
-        { label: 'Asignar trabajos a evaluadores', route: '/organizador/asignaciones' },
-        { label: 'Promover evaluadores', route: '/organizador/promover' },
+      titulo: 'Comité Académico',
+      descripcion: 'Precheck, asignación de evaluadores y confirmación final.',
+      colorTema: 'indigo',
+      iconoTema: '🎓',
+      acciones: [
+        {
+          label: 'Precheck y confirmación',
+          route: '/organizador/comite',
+          descripcion: 'Revisá trabajos enviados y confirmá aprobaciones finales.',
+          icono: '✓',
+          color: 'violeta',
+        },
+        {
+          label: 'Asignar evaluadores',
+          route: '/organizador/asignaciones',
+          descripcion: 'Asigná 2 evaluadores por trabajo con precheck OK.',
+          icono: '👥',
+          color: 'azul',
+        },
+        {
+          label: 'Promover evaluadores',
+          route: '/organizador/promover',
+          descripcion: 'Otorgá el rol evaluador a usuarios del congreso.',
+          icono: '⭐',
+          color: 'naranja',
+        },
       ],
     },
   },
@@ -154,12 +172,22 @@ export const routes: Routes = [
   // --- Perfil Evaluador ---
   {
     path: 'evaluador',
-    component: PerfilHomeComponent,
+    component: PanelRolComponent,
     canActivate: [evaluador],
     data: {
-      titulo: 'Home — Evaluador',
-      descripcion: 'Aceptar o rechazar asignaciones de trabajos.',
-      menu: [{ label: 'Mis asignaciones', route: '/evaluador/asignaciones' }],
+      titulo: 'Panel Evaluador',
+      descripcion: 'Aceptá asignaciones y registrá evaluaciones de trabajos.',
+      colorTema: 'teal',
+      iconoTema: '📝',
+      acciones: [
+        {
+          label: 'Mis asignaciones',
+          route: '/evaluador/asignaciones',
+          descripcion: 'Aceptá convocatorias, revisá PDFs y enviá tu dictamen.',
+          icono: '📄',
+          color: 'teal',
+        },
+      ],
     },
   },
   {
@@ -171,12 +199,22 @@ export const routes: Routes = [
   // --- Perfil Autor ---
   {
     path: 'autor',
-    component: PerfilHomeComponent,
+    component: PanelRolComponent,
     canActivate: [autor],
     data: {
-      titulo: 'Home — Autor',
-      descripcion: 'Crear y enviar trabajos científicos.',
-      menu: [{ label: 'Mis trabajos', route: '/autor/trabajos' }],
+      titulo: 'Panel Autor',
+      descripcion: 'Gestioná tus trabajos científicos y su estado de evaluación.',
+      colorTema: 'naranja',
+      iconoTema: '📄',
+      acciones: [
+        {
+          label: 'Mis trabajos',
+          route: '/autor/trabajos',
+          descripcion: 'Creá borradores, adjuntá PDFs y seguí el estado.',
+          icono: '📑',
+          color: 'naranja',
+        },
+      ],
     },
   },
   { path: 'autor/trabajos', component: TrabajosAutorComponent, canActivate: [autor], data: { perfilTrabajos: 'autor' } },

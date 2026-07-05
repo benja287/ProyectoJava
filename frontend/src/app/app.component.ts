@@ -11,10 +11,14 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterOutlet, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { filter } from 'rxjs/operators';
 import { IdleSessionService } from './auth/idle-session.service';
 import { LoginService } from './auth/login.service';
+import { NotificacionService } from './servicios/notificacion.service';
+import { CongresoConfigService } from './servicios/congreso-config.service';
+import { CongresoConfig } from './models/congreso-config.model';
 import { mensajeErrorApi } from './utils/api-error.util';
 import { etiquetaRol } from './models/role-labels';
 
@@ -33,6 +37,8 @@ export class AppComponent implements OnInit, OnDestroy {
   cambiandoRol = false;
   /** Mensaje de error al fallar cambiarRolActual */
   errorRol = '';
+  noLeidas = 0;
+  congresoConfig?: CongresoConfig;
 
   /** Referencia al div del menú de usuario (#userMenu en el HTML) */
   @ViewChild('userMenu') userMenu?: ElementRef<HTMLElement>;
@@ -46,11 +52,47 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     public loginService: LoginService,
     private idleSession: IdleSessionService,
+    private notificacionService: NotificacionService,
+    private congresoConfigService: CongresoConfigService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.idleSession.startWatching();
+    this.refrescarNotificaciones();
+    this.cargarConfigCongreso();
+    this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd))
+      .subscribe(() => this.refrescarNotificaciones());
+  }
+
+  private cargarConfigCongreso(): void {
+    this.congresoConfigService.obtener().subscribe({
+      next: (c) => (this.congresoConfig = c),
+      error: () => (this.congresoConfig = undefined),
+    });
+  }
+
+  get avisoCertificado(): string | null {
+    if (!this.loginService.esAsistenteCongreso()) return null;
+    const desde = this.congresoConfig?.certificadosDisponiblesDesde;
+    if (!desde) return null;
+    const hoy = new Date();
+    const [y, m, d] = desde.split('-').map(Number);
+    const limite = new Date(y, m - 1, d, 23, 59, 59);
+    if (hoy >= limite) return null;
+    return `El certificado de asistencia estará disponible a partir del ${d}/${m}/${y}.`;
+  }
+
+  private refrescarNotificaciones(): void {
+    if (!this.loginService.isLogged()) {
+      this.noLeidas = 0;
+      return;
+    }
+    this.notificacionService.contarNoLeidas().subscribe({
+      next: (r) => (this.noLeidas = r.total),
+      error: () => (this.noLeidas = 0),
+    });
   }
 
   ngOnDestroy(): void {

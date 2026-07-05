@@ -25,4 +25,36 @@ public class CongresoDAOImpl extends AbstractJpaDAO<Congreso> implements Congres
       em.close();
     }
   }
+
+  @Override
+  public Congreso obtenerPrincipal() {
+    EntityManager em = emConsulta();
+    try {
+      List<Congreso> list =
+          em.createQuery("SELECT c FROM Congreso c ORDER BY c.id ASC", Congreso.class)
+              .setMaxResults(1)
+              .getResultList();
+      if (!list.isEmpty()) {
+        return list.getFirst();
+      }
+      Congreso c = new Congreso();
+      c.setNombre("Congreso Argentino de Agroecología");
+      c.setEdicion("V");
+      alta(c);
+      return c;
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  private EntityManager emConsulta() {
+    EntityManager cdi = getEntityManager();
+    return cdi != null ? cdi : JpaUtil.createEntityManager();
+  }
+
+  private void closeLegacy(EntityManager em) {
+    if (getEntityManager() == null) {
+      em.close();
+    }
+  }
 }

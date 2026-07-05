@@ -2,6 +2,7 @@ package ar.edu.unlp.jyaa.grupo1.modelo;
 
 import jakarta.persistence.*;
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +23,12 @@ public class Congreso implements Serializable {
   @ElementCollection
   @CollectionTable(name = "congreso_etapas", joinColumns = @JoinColumn(name = "congreso_id"))
   private List<EtapaCongreso> etapas = new ArrayList<>();
+
+  @Column(name = "programa_publicado", nullable = false)
+  private boolean programaPublicado = false;
+
+  @Column(name = "certificados_disponibles_desde")
+  private LocalDate certificadosDisponiblesDesde;
 
   public Congreso() {}
 
@@ -55,5 +62,21 @@ public class Congreso implements Serializable {
 
   public void setEtapas(List<EtapaCongreso> etapas) {
     this.etapas = etapas;
+  }
+
+  public boolean isProgramaPublicado() {
+    return programaPublicado;
+  }
+
+  public void setProgramaPublicado(boolean programaPublicado) {
+    this.programaPublicado = programaPublicado;
+  }
+
+  public LocalDate getCertificadosDisponiblesDesde() {
+    return certificadosDisponiblesDesde;
+  }
+
+  public void setCertificadosDisponiblesDesde(LocalDate certificadosDisponiblesDesde) {
+    this.certificadosDisponiblesDesde = certificadosDisponiblesDesde;
   }
 }

@@ -12,10 +12,19 @@ export interface TrabajoListFiltro {
   ejeTematico?: string;
   estado?: string;
   modalidad?: string;
+  tipo?: string;
   autorId?: number;
 }
 
-const TRABAJO_FILTER_KEYS = ['titulo', 'resumen', 'ejeTematico', 'estado', 'modalidad', 'autorId'] as const;
+const TRABAJO_FILTER_KEYS = [
+  'titulo',
+  'resumen',
+  'ejeTematico',
+  'estado',
+  'modalidad',
+  'tipo',
+  'autorId',
+] as const;
 
 @Injectable({ providedIn: 'root' })
 export class TrabajoService {

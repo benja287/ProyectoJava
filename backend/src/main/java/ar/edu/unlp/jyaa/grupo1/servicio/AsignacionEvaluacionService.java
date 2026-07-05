@@ -20,6 +20,7 @@ public class AsignacionEvaluacionService {
 
   @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
   @Inject private TrabajoDAO trabajoDAO;
+  @Inject private NotificacionService notificacionService;
   @Inject private UsuarioDAO usuarioDAO;
 
   public AsignacionEvaluacion asignar(Long trabajoId, Long evaluadorId) {
@@ -53,7 +54,12 @@ public class AsignacionEvaluacionService {
     asignacion.setAceptada(false);
     trabajo.setEstado(EstadoTrabajo.EN_EVALUACION);
     trabajoDAO.modificar(trabajo);
-    return asignacionEvaluacionDAO.alta(asignacion);
+    AsignacionEvaluacion creada = asignacionEvaluacionDAO.alta(asignacion);
+    notificacionService.enviar(
+        evaluador.getId(),
+        "Nueva asignación de evaluación",
+        "Te asignaron el trabajo \"" + trabajo.getTitulo() + "\". Aceptá o rechazá la convocatoria.");
+    return creada;
   }
 
   public void desasignar(Long id) {

@@ -2,6 +2,7 @@ export interface Trabajo {
   id?: number;
   titulo: string;
   resumen?: string;
+  metodologia?: string;
   ejeTematico?: string;
   modalidad?: string;
   tipo: string;
@@ -28,6 +29,7 @@ export interface TrabajoCreateRequest {
   trabajo: {
     titulo: string;
     resumen?: string;
+    metodologia?: string;
     ejeTematico?: string;
     modalidad?: string;
     tipo: string;

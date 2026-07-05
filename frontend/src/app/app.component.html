@@ -9,8 +9,16 @@
   </a>
   <nav>
     <a routerLink="/">Inicio</a>
+    <a routerLink="/programa">Programa</a>
+    <a routerLink="/circulares">Circulares</a>
 
     @if (usuario) {
+      <a routerLink="/notificaciones" class="notif-bell" title="Notificaciones">
+        🔔
+        @if (noLeidas > 0) {
+          <span class="notif-badge">{{ noLeidas }}</span>
+        }
+      </a>
       @if (loginService.tieneVariosRoles()) {
         <a routerLink="/seleccion-rol" class="cambiar-perfil">Cambiar perfil</a>
       }
@@ -100,6 +108,10 @@
     }
   </nav>
 </header>
+
+@if (avisoCertificado) {
+  <div class="cert-banner">{{ avisoCertificado }}</div>
+}
 
 <main class="app-main">
   <router-outlet />

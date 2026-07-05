@@ -26,12 +26,8 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
   imports: [CommonModule, RouterLink, ReactiveFormsModule, ArchivoLinkComponent, FilterBarComponent],
   template: `
     <section class="card">
-      <h1>{{ esPropuestaTaller ? 'Proponer taller' : 'Mis trabajos' }}</h1>
-      @if (perfilAsistente && esPropuestaTaller) {
-        <p>
-          <strong>Rol asistente</strong> — enviá tu propuesta de taller para evaluación del comité.
-        </p>
-      } @else if (perfilAsistente) {
+      <h1>Mis trabajos</h1>
+      @if (perfilAsistente) {
         <p>
           Completá el formulario, adjuntá el PDF y enviá tu trabajo. Después volvés al panel de
           asistente para ver el estado o reenviar correcciones si el comité lo solicita.
@@ -47,8 +43,8 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
         <p class="ok">{{ mensaje }}</p>
       }
 
-      <h2>{{ perfilAsistente && !esPropuestaTaller ? 'Enviar trabajo' : 'Nuevo trabajo' }}</h2>
-      @if (perfilAsistente && !esPropuestaTaller) {
+      <h2>{{ perfilAsistente ? 'Enviar trabajo' : 'Nuevo trabajo' }}</h2>
+      @if (perfilAsistente) {
         <form [formGroup]="form" (ngSubmit)="crearYEnviar()" class="form-grid trabajo-form-asistente">
           <label>
             Título
@@ -236,7 +232,6 @@ export class TrabajosAutorComponent implements OnInit {
   mensaje = '';
   autorId?: number;
   perfilAsistente = false;
-  esPropuestaTaller = false;
   menuVolver = '/autor';
   etiquetaVolver = 'Menú autor';
 
@@ -259,17 +254,8 @@ export class TrabajosAutorComponent implements OnInit {
   ngOnInit(): void {
     const perfil = this.route.snapshot.data['perfilTrabajos'];
     this.perfilAsistente = perfil === 'asistente' || perfil === 'participante';
-    this.esPropuestaTaller = this.route.snapshot.data['tipoTaller'] === true;
     this.menuVolver = this.perfilAsistente ? '/asistente' : '/autor';
     this.etiquetaVolver = this.perfilAsistente ? 'Panel asistente' : 'Menú autor';
-
-    if (this.esPropuestaTaller) {
-      this.form.patchValue({ tipo: 'PROPUESTA_TALLER' });
-      this.form.get('ejeTematico')?.clearValidators();
-      this.form.get('modalidad')?.clearValidators();
-      this.form.get('ejeTematico')?.updateValueAndValidity();
-      this.form.get('modalidad')?.updateValueAndValidity();
-    }
 
     this.autorId = this.loginService.getUser()?.id;
     if (!this.autorId) {
@@ -448,7 +434,7 @@ export class TrabajosAutorComponent implements OnInit {
         if (idx >= 0) {
           this.trabajos[idx] = actualizado;
         }
-        if (this.perfilAsistente && !this.esPropuestaTaller) {
+        if (this.perfilAsistente) {
           this.router.navigate(['/asistente'], { queryParams: { trabajoEnviado: '1' } });
         }
       },
@@ -461,11 +447,13 @@ export class TrabajosAutorComponent implements OnInit {
       return;
     }
     this.cargando = true;
-    this.trabajoService.listar(1, 100, { ...this.filtros, autorId: this.autorId }).subscribe({
-      next: (items) => {
-        this.trabajos = items;
-        this.cargando = false;
-      },
+    this.trabajoService
+      .listar(1, 100, { ...this.filtros, autorId: this.autorId })
+      .subscribe({
+        next: (items) => {
+          this.trabajos = items.filter((t) => t.tipo !== 'PROPUESTA_TALLER');
+          this.cargando = false;
+        },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'Error al cargar trabajos.');
         this.cargando = false;
