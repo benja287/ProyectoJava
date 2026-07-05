@@ -18,6 +18,7 @@ import { IdleSessionService } from './auth/idle-session.service';
 import { LoginService } from './auth/login.service';
 import { NotificacionService } from './servicios/notificacion.service';
 import { CongresoConfigService } from './servicios/congreso-config.service';
+import { AppVersionService } from './servicios/app-version.service';
 import { CongresoConfig } from './models/congreso-config.model';
 import { mensajeErrorApi } from './utils/api-error.util';
 import { etiquetaRol } from './models/role-labels';
@@ -54,16 +55,21 @@ export class AppComponent implements OnInit, OnDestroy {
     private idleSession: IdleSessionService,
     private notificacionService: NotificacionService,
     private congresoConfigService: CongresoConfigService,
+    private appVersionService: AppVersionService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    this.appVersionService.checkForUpdate();
     this.idleSession.startWatching();
     this.refrescarNotificaciones();
     this.cargarConfigCongreso();
     this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd))
-      .subscribe(() => this.refrescarNotificaciones());
+      .subscribe(() => {
+        this.refrescarNotificaciones();
+        this.appVersionService.checkForUpdate();
+      });
   }
 
   private cargarConfigCongreso(): void {

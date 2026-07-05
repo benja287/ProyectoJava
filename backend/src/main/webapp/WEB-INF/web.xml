@@ -10,6 +10,15 @@
     <listener-class>ar.edu.unlp.jyaa.grupo1.listener.JpaBootstrapListener</listener-class>
   </listener>
 
+  <filter>
+    <filter-name>StaticCacheFilter</filter-name>
+    <filter-class>ar.edu.unlp.jyaa.grupo1.web.StaticCacheFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>StaticCacheFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
   <servlet>
     <servlet-name>JerseyREST</servlet-name>
     <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
