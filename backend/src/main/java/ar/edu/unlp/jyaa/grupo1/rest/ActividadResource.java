@@ -1,7 +1,10 @@
 package ar.edu.unlp.jyaa.grupo1.rest;
 
+import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearConferenciaRequest;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearMesaRedondaRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearMesaTematicaRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearSesionPostersRequest;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearTallerOficialRequest;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.servicio.ActividadService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.ActividadResumenDTO;
@@ -83,6 +86,33 @@ public class ActividadResource {
   @Operation(summary = "Crear sesión de pósters con trabajos aprobados")
   public Response crearSesionPosters(CrearSesionPostersRequest request, @Context UriInfo uriInfo) {
     Actividad creada = actividadService.crearSesionPosters(request);
+    URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
+    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
+  }
+
+  @POST
+  @Path("/mesa-redonda")
+  @Operation(summary = "Crear mesa redonda en el programa oficial")
+  public Response crearMesaRedonda(CrearMesaRedondaRequest request, @Context UriInfo uriInfo) {
+    Actividad creada = actividadService.crearMesaRedonda(request);
+    URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
+    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
+  }
+
+  @POST
+  @Path("/taller-oficial")
+  @Operation(summary = "Crear taller en el programa oficial")
+  public Response crearTallerOficial(CrearTallerOficialRequest request, @Context UriInfo uriInfo) {
+    Actividad creada = actividadService.crearTallerOficial(request);
+    URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
+    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
+  }
+
+  @POST
+  @Path("/conferencia")
+  @Operation(summary = "Crear conferencia en el programa oficial")
+  public Response crearConferencia(CrearConferenciaRequest request, @Context UriInfo uriInfo) {
+    Actividad creada = actividadService.crearConferencia(request);
     URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
     return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
   }

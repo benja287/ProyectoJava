@@ -1435,6 +1435,21 @@ textarea {
   text-align: center;
   margin-top: 1.5rem;
 }
+
+.form-page {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.programa-detalle {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.programa-descripcion {
+  white-space: pre-wrap;
+}
 .accion-icono--violeta { background: #ede9fe; }
 .accion-icono--naranja { background: #ffedd5; }
 .accion-icono--teal { background: #ccfbf1; }

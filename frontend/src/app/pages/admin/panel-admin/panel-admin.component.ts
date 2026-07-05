@@ -42,10 +42,10 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 
       <div class="acciones-rapidas">
         <a routerLink="/admin/mesas-tematicas" class="accion-rapida accion-rapida--azul">Crear Mesa Temática</a>
-        <a routerLink="/admin/actividades" class="accion-rapida accion-rapida--violeta">Crear Mesa Redonda</a>
+        <a routerLink="/admin/mesas-redondas" class="accion-rapida accion-rapida--violeta">Crear Mesa Redonda</a>
         <a routerLink="/admin/sesion-posters" class="accion-rapida accion-rapida--naranja">Crear Sesión de Pósters</a>
-        <a routerLink="/admin/actividades" class="accion-rapida accion-rapida--teal">Crear Taller</a>
-        <a routerLink="/admin/actividades" class="accion-rapida accion-rapida--indigo">Crear Conferencia</a>
+        <a routerLink="/admin/crear-taller" class="accion-rapida accion-rapida--teal">Crear Taller</a>
+        <a routerLink="/admin/crear-conferencia" class="accion-rapida accion-rapida--indigo">Crear Conferencia</a>
         <a routerLink="/asistente/certificado" class="accion-rapida accion-rapida--azul">Generar Certificado</a>
       </div>
 
@@ -302,9 +302,14 @@ export class PanelAdminComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const st = history.state as { circularesFeedback?: string } | null;
+    const st = history.state as { circularesFeedback?: string; mensaje?: string } | null;
     if (st?.circularesFeedback) {
       this.circularesFeedback = st.circularesFeedback;
+    }
+    if (st?.mensaje) {
+      this.mensaje = st.mensaje;
+    }
+    if (st?.circularesFeedback || st?.mensaje) {
       history.replaceState({}, '');
     }
 

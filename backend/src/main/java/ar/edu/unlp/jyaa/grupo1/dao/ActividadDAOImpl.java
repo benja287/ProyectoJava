@@ -5,6 +5,7 @@ import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.ActividadFiltro;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.JpqlLikeFilters;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
+import ar.edu.unlp.jyaa.grupo1.modelo.TipoActividad;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import java.time.LocalDateTime;
@@ -106,6 +107,29 @@ public class ActividadDAOImpl extends AbstractJpaDAO<Actividad> implements Activ
                   + (excluirId != null ? " AND a.id <> :excluir" : ""),
               Actividad.class);
       q.setParameter("sala", sala);
+      q.setParameter("inicio", inicio);
+      q.setParameter("fin", fin);
+      if (excluirId != null) {
+        q.setParameter("excluir", excluirId);
+      }
+      return q.getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public List<Actividad> buscarSolapamientoTipo(
+      TipoActividad tipo, LocalDateTime inicio, LocalDateTime fin, Long excluirId) {
+    EntityManager em = emConsulta();
+    try {
+      var q =
+          em.createQuery(
+              "SELECT a FROM Actividad a WHERE a.tipoActividad = :tipo"
+                  + " AND a.inicio < :fin AND a.fin > :inicio"
+                  + (excluirId != null ? " AND a.id <> :excluir" : ""),
+              Actividad.class);
+      q.setParameter("tipo", tipo);
       q.setParameter("inicio", inicio);
       q.setParameter("fin", fin);
       if (excluirId != null) {

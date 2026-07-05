@@ -30,6 +30,31 @@ public class Actividad implements Serializable {
   @Column(length = 40)
   private String codigo;
 
+  @Column(columnDefinition = "TEXT")
+  private String descripcion;
+
+  @Column(name = "eje_tematico", length = 300)
+  private String ejeTematico;
+
+  @Column(length = 300)
+  private String moderador;
+
+  @Column(columnDefinition = "TEXT")
+  private String panelistas;
+
+  @Column(columnDefinition = "TEXT")
+  private String responsables;
+
+  @Column(columnDefinition = "TEXT")
+  private String conferencistas;
+
+  @Column(length = 200)
+  private String institucion;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "propuesta_taller_id")
+  private Trabajo propuestaTaller;
+
   @ManyToMany
   @JoinTable(
       name = "actividad_trabajos",
@@ -93,6 +118,70 @@ public class Actividad implements Serializable {
 
   public void setCodigo(String codigo) {
     this.codigo = codigo;
+  }
+
+  public String getDescripcion() {
+    return descripcion;
+  }
+
+  public void setDescripcion(String descripcion) {
+    this.descripcion = descripcion;
+  }
+
+  public String getEjeTematico() {
+    return ejeTematico;
+  }
+
+  public void setEjeTematico(String ejeTematico) {
+    this.ejeTematico = ejeTematico;
+  }
+
+  public String getModerador() {
+    return moderador;
+  }
+
+  public void setModerador(String moderador) {
+    this.moderador = moderador;
+  }
+
+  public String getPanelistas() {
+    return panelistas;
+  }
+
+  public void setPanelistas(String panelistas) {
+    this.panelistas = panelistas;
+  }
+
+  public String getResponsables() {
+    return responsables;
+  }
+
+  public void setResponsables(String responsables) {
+    this.responsables = responsables;
+  }
+
+  public String getConferencistas() {
+    return conferencistas;
+  }
+
+  public void setConferencistas(String conferencistas) {
+    this.conferencistas = conferencistas;
+  }
+
+  public String getInstitucion() {
+    return institucion;
+  }
+
+  public void setInstitucion(String institucion) {
+    this.institucion = institucion;
+  }
+
+  public Trabajo getPropuestaTaller() {
+    return propuestaTaller;
+  }
+
+  public void setPropuestaTaller(Trabajo propuestaTaller) {
+    this.propuestaTaller = propuestaTaller;
   }
 
   public List<Trabajo> getTrabajos() {

@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Actividad, PaginaActividades } from '../models/actividad.model';
+import { Actividad, CrearConferenciaRequest, CrearMesaRedondaRequest, CrearTallerOficialRequest, PaginaActividades } from '../models/actividad.model';
 import { CrearMesaTematicaRequest, CrearSesionPostersRequest } from '../models/trabajo.model';
 import { buildListHttpParams } from '../utils/filtro-params.util';
 
@@ -49,5 +49,17 @@ export class ActividadService {
 
   crearSesionPosters(request: CrearSesionPostersRequest): Observable<Actividad> {
     return this.http.post<Actividad>(`${this.baseUrl}/sesion-posters`, request);
+  }
+
+  crearMesaRedonda(request: CrearMesaRedondaRequest): Observable<Actividad> {
+    return this.http.post<Actividad>(`${this.baseUrl}/mesa-redonda`, request);
+  }
+
+  crearTallerOficial(request: CrearTallerOficialRequest): Observable<Actividad> {
+    return this.http.post<Actividad>(`${this.baseUrl}/taller-oficial`, request);
+  }
+
+  crearConferencia(request: CrearConferenciaRequest): Observable<Actividad> {
+    return this.http.post<Actividad>(`${this.baseUrl}/conferencia`, request);
   }
 }

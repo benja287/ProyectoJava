@@ -84,6 +84,27 @@ const ETIQUETAS_TIPO: Record<string, string> = {
                     <span>📍 {{ a.sala }}</span>
                   }
                 </div>
+                @if (a.moderador) {
+                  <p class="programa-detalle"><strong>Moderador/a:</strong> {{ a.moderador }}</p>
+                }
+                @if (a.panelistas) {
+                  <p class="programa-detalle"><strong>Panelistas:</strong> {{ a.panelistas }}</p>
+                }
+                @if (a.responsables) {
+                  <p class="programa-detalle"><strong>Responsable(s):</strong> {{ a.responsables }}</p>
+                }
+                @if (a.conferencistas) {
+                  <p class="programa-detalle"><strong>Conferencista(s):</strong> {{ a.conferencistas }}</p>
+                }
+                @if (a.institucion) {
+                  <p class="programa-detalle"><strong>Institución:</strong> {{ a.institucion }}</p>
+                }
+                @if (a.ejeTematico) {
+                  <p class="programa-detalle"><strong>Eje temático:</strong> {{ a.ejeTematico }}</p>
+                }
+                @if (a.descripcion) {
+                  <p class="programa-detalle programa-descripcion">{{ a.descripcion }}</p>
+                }
               </article>
             }
           </div>

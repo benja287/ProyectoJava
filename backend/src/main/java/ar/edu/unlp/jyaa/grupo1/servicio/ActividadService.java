@@ -7,9 +7,14 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoActividad;
+import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
+import ar.edu.unlp.jyaa.grupo1.util.FechasCongreso;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearConferenciaRequest;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearMesaRedondaRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearMesaTematicaRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearSesionPostersRequest;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearTallerOficialRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.ActividadResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaActividadesDTO;
@@ -19,6 +24,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 
 @RequestScoped
 public class ActividadService {
@@ -119,6 +128,103 @@ public class ActividadService {
     Actividad creada = actividadDAO.alta(actividad);
     marcarTrabajosProgramados(trabajos);
     return creada;
+  }
+
+  public Actividad crearMesaRedonda(CrearMesaRedondaRequest request) {
+    if (request.titulo() == null || request.titulo().isBlank()) {
+      throw new NegocioException("Debe indicar el título");
+    }
+    if (request.moderador() == null || request.moderador().isBlank()) {
+      throw new NegocioException("Debe indicar el moderador");
+    }
+    if (request.sala() == null || request.sala().isBlank()) {
+      throw new NegocioException("Debe indicar el lugar");
+    }
+    LocalDateTime[] horario = parseHorarioCongreso(request.fecha(), request.horaInicio(), request.horaFin());
+
+    Actividad actividad = new Actividad();
+    actividad.setTitulo(request.titulo().trim());
+    actividad.setEjeTematico(blankToNull(request.ejeTematico()));
+    actividad.setModerador(request.moderador().trim());
+    actividad.setPanelistas(blankToNull(request.panelistas()));
+    actividad.setDescripcion(blankToNull(request.descripcion()));
+    actividad.setSala(request.sala().trim());
+    actividad.setInicio(horario[0]);
+    actividad.setFin(horario[1]);
+    actividad.setTipoActividad(TipoActividad.MESA_REDONDA);
+    validarSolapamientoTipo(actividad, null);
+    validarConflictos(actividad, null);
+    return actividadDAO.alta(actividad);
+  }
+
+  public Actividad crearTallerOficial(CrearTallerOficialRequest request) {
+    if (request.titulo() == null || request.titulo().isBlank()) {
+      throw new NegocioException("Debe indicar el título del taller");
+    }
+    if (request.sala() == null || request.sala().isBlank()) {
+      throw new NegocioException("Debe indicar el lugar / espacio");
+    }
+    if (request.responsables() == null || request.responsables().isBlank()) {
+      throw new NegocioException("Debe indicar el/los responsable(s)");
+    }
+    LocalDateTime[] horario = parseHorarioCongreso(request.fecha(), request.horaInicio(), request.horaFin());
+
+    Actividad actividad = new Actividad();
+    actividad.setTitulo(request.titulo().trim());
+    actividad.setSala(request.sala().trim());
+    actividad.setResponsables(request.responsables().trim());
+    actividad.setDescripcion(blankToNull(request.descripcion()));
+    actividad.setInicio(horario[0]);
+    actividad.setFin(horario[1]);
+    actividad.setTipoActividad(TipoActividad.TALLER);
+
+    if (request.propuestaTallerId() != null) {
+      Trabajo propuesta = trabajoDAO.recuperarPorId(request.propuestaTallerId());
+      if (propuesta == null) {
+        throw new NegocioException("Propuesta de taller no encontrada");
+      }
+      if (propuesta.getTipo() != TipoTrabajo.PROPUESTA_TALLER) {
+        throw new NegocioException("El trabajo indicado no es una propuesta de taller");
+      }
+      if (propuesta.getEstado() != EstadoTrabajo.APROBADO) {
+        throw new NegocioException("La propuesta de taller debe estar aprobada");
+      }
+      actividad.setPropuestaTaller(propuesta);
+      if (actividad.getDescripcion() == null && propuesta.getResumen() != null) {
+        actividad.setDescripcion(propuesta.getResumen());
+      }
+    }
+
+    validarSolapamientoTipo(actividad, null);
+    validarConflictos(actividad, null);
+    return actividadDAO.alta(actividad);
+  }
+
+  public Actividad crearConferencia(CrearConferenciaRequest request) {
+    if (request.titulo() == null || request.titulo().isBlank()) {
+      throw new NegocioException("Debe indicar el título de la conferencia");
+    }
+    if (request.sala() == null || request.sala().isBlank()) {
+      throw new NegocioException("Debe indicar el lugar / espacio");
+    }
+    if (request.conferencistas() == null || request.conferencistas().isBlank()) {
+      throw new NegocioException("Debe indicar el/los conferencista(s)");
+    }
+    LocalDateTime[] horario = parseHorarioCongreso(request.fecha(), request.horaInicio(), request.horaFin());
+
+    Actividad actividad = new Actividad();
+    actividad.setTitulo(request.titulo().trim());
+    actividad.setSala(request.sala().trim());
+    actividad.setConferencistas(request.conferencistas().trim());
+    actividad.setModerador(blankToNull(request.moderador()));
+    actividad.setInstitucion(blankToNull(request.institucion()));
+    actividad.setDescripcion(blankToNull(request.descripcion()));
+    actividad.setInicio(horario[0]);
+    actividad.setFin(horario[1]);
+    actividad.setTipoActividad(TipoActividad.CONFERENCIA);
+    validarSolapamientoTipo(actividad, null);
+    validarConflictos(actividad, null);
+    return actividadDAO.alta(actividad);
   }
 
   public Actividad modificar(Long id, Actividad actividad) {
@@ -233,5 +339,51 @@ public class ActividadService {
     if (!conflictos.isEmpty()) {
       throw new NegocioException("Conflicto de horario en la sala " + actividad.getSala());
     }
+  }
+
+  private void validarSolapamientoTipo(Actividad actividad, Long excluirId) {
+    List<Actividad> solapamientos =
+        actividadDAO.buscarSolapamientoTipo(
+            actividad.getTipoActividad(), actividad.getInicio(), actividad.getFin(), excluirId);
+    if (!solapamientos.isEmpty()) {
+      throw new NegocioException(
+          "Ya existe una actividad de este tipo en ese horario. Elegí otro horario.");
+    }
+  }
+
+  private LocalDateTime[] parseHorarioCongreso(String fecha, String horaInicio, String horaFin) {
+    if (fecha == null || fecha.isBlank() || horaInicio == null || horaInicio.isBlank() || horaFin == null || horaFin.isBlank()) {
+      throw new NegocioException("Debe indicar fecha y horario de inicio y fin");
+    }
+    LocalDate dia;
+    try {
+      dia = LocalDate.parse(fecha.trim());
+    } catch (DateTimeParseException e) {
+      throw new NegocioException("Fecha inválida (use AAAA-MM-DD)");
+    }
+    if (!FechasCongreso.esFechaValida(dia)) {
+      throw new NegocioException("La fecha seleccionada no es válida para este congreso");
+    }
+    LocalTime ini;
+    LocalTime fin;
+    try {
+      ini = LocalTime.parse(horaInicio.trim());
+      fin = LocalTime.parse(horaFin.trim());
+    } catch (DateTimeParseException e) {
+      throw new NegocioException("Horario inválido (use HH:mm)");
+    }
+    LocalDateTime inicio = LocalDateTime.of(dia, ini);
+    LocalDateTime finDt = LocalDateTime.of(dia, fin);
+    if (!finDt.isAfter(inicio)) {
+      throw new NegocioException("La hora de fin debe ser posterior a la hora de inicio");
+    }
+    return new LocalDateTime[] {inicio, finDt};
+  }
+
+  private static String blankToNull(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    return value.trim();
   }
 }

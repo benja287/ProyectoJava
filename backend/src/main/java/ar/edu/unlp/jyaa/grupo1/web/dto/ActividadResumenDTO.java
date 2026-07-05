@@ -12,7 +12,14 @@ public record ActividadResumenDTO(
     LocalDateTime inicio,
     LocalDateTime fin,
     TipoActividad tipoActividad,
-    String codigo) {
+    String codigo,
+    String descripcion,
+    String ejeTematico,
+    String moderador,
+    String panelistas,
+    String responsables,
+    String conferencistas,
+    String institucion) {
 
   public static ActividadResumenDTO from(Actividad a) {
     return new ActividadResumenDTO(
@@ -22,6 +29,13 @@ public record ActividadResumenDTO(
         a.getInicio(),
         a.getFin(),
         a.getTipoActividad(),
-        a.getCodigo());
+        a.getCodigo(),
+        a.getDescripcion(),
+        a.getEjeTematico(),
+        a.getModerador(),
+        a.getPanelistas(),
+        a.getResponsables(),
+        a.getConferencistas(),
+        a.getInstitucion());
   }
 }

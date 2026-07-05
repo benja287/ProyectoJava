@@ -1,5 +1,9 @@
 export const CONGRESS_EVENT_DATES = ['2027-05-10', '2027-05-11', '2027-05-12'] as const;
 
+export function isCongressDate(date: string): boolean {
+  return (CONGRESS_EVENT_DATES as readonly string[]).includes(date);
+}
+
 export function congressDateLabels(): { value: string; label: string }[] {
   return CONGRESS_EVENT_DATES.map((value) => ({
     value,
