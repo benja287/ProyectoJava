@@ -60,9 +60,23 @@ public class UsuarioService {
     if (usuarioDAO.buscarPorEmail(usuario.getEmail()).isPresent()) {
       throw new NegocioException("El email ya está registrado");
     }
+    if (usuario.getCategoriaInscripcion() != null && !usuario.getCategoriaInscripcion().isBlank()) {
+      try {
+        usuario.setCategoriaInscripcion(CategoriaInscripcion.parse(usuario.getCategoriaInscripcion()).name());
+      } catch (IllegalArgumentException e) {
+        throw new NegocioException("Categoría de inscripción inválida: " + usuario.getCategoriaInscripcion());
+      }
+    } else {
+      usuario.setCategoriaInscripcion(null);
+    }
     if (usuario.getRoles() == null) {
       usuario.setRoles(new HashSet<>());
     }
+    usuario.getRoles().remove(Rol.PARTICIPANTE);
+    if (usuario.getRoles().isEmpty()) {
+      throw new NegocioException("Debe indicar al menos un rol");
+    }
+    usuario.setActivo(true);
     normalizarRolActual(usuario, usuario.getRolActual());
     return usuarioDAO.alta(usuario);
   }

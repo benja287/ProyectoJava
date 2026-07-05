@@ -18,6 +18,17 @@ export interface UsuarioListFiltro {
 
 const USUARIO_FILTER_KEYS = ['apellido', 'nombre', 'email'] as const;
 
+export interface UsuarioAltaPayload {
+  nombre: string;
+  apellido: string;
+  email: string;
+  password: string;
+  roles: string[];
+  rolActual: string;
+  categoriaInscripcion?: string | null;
+  activo?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class UsuarioService {
   /** URL base según environment (proxy, CORS o producción) */
@@ -41,14 +52,20 @@ export class UsuarioService {
   }
 
   /** POST /api/usuarios */
-  alta(usuario: Usuario): Observable<Usuario> {
-    const body = {
-      nombre: usuario.nombre,
-      apellido: usuario.apellido,
-      email: usuario.email,
-      password: usuario.password ?? '12345678',
-      activo: true,
+  alta(payload: UsuarioAltaPayload): Observable<Usuario> {
+    const body: Record<string, unknown> = {
+      nombre: payload.nombre,
+      apellido: payload.apellido,
+      email: payload.email,
+      password: payload.password,
+      activo: payload.activo ?? true,
+      roles: payload.roles,
+      rolActual: payload.rolActual,
     };
+    const categoria = payload.categoriaInscripcion?.trim();
+    if (categoria) {
+      body['categoriaInscripcion'] = categoria;
+    }
     return this.http.post<Usuario>(this.baseUrl, body);
   }
 
