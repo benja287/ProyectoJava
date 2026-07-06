@@ -18,6 +18,10 @@ public class CongresoService {
     return CongresoConfigDTO.from(congresoDAO.obtenerPrincipal());
   }
 
+  public boolean isProgramaPublicado() {
+    return congresoDAO.obtenerPrincipal().isProgramaPublicado();
+  }
+
   public CongresoConfigDTO actualizarConfig(CongresoConfigUpdateRequest request) {
     Congreso congreso = congresoDAO.obtenerPrincipal();
     if (request.programaPublicado() != null) {

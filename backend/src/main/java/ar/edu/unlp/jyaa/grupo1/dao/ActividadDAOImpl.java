@@ -141,6 +141,21 @@ public class ActividadDAOImpl extends AbstractJpaDAO<Actividad> implements Activ
     }
   }
 
+  @Override
+  public List<Actividad> listarCronogramaCompleto() {
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery(
+              "SELECT DISTINCT a FROM Actividad a"
+                  + " LEFT JOIN FETCH a.trabajos t LEFT JOIN FETCH t.autor"
+                  + " ORDER BY a.inicio ASC, a.tipoActividad ASC",
+              Actividad.class)
+          .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
   private EntityManager emConsulta() {
     EntityManager cdi = getEntityManager();
     return cdi != null ? cdi : JpaUtil.createEntityManager();

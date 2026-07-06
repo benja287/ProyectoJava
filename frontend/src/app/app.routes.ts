@@ -17,7 +17,6 @@ import { UsuarioDetalleComponent } from './pages/admin/usuario-detalle/usuario-d
 import { UsuarioAltaComponent } from './pages/admin/usuario-alta/usuario-alta.component';
 import { PagosPendientesComponent } from './pages/admin/pagos-pendientes/pagos-pendientes.component';
 import { PagosListaComponent } from './pages/admin/pagos-lista/pagos-lista.component';
-import { ActividadesAdminComponent } from './pages/admin/actividades/actividades-admin.component';
 import { TrabajosAdminComponent } from './pages/admin/trabajos/trabajos-admin.component';
 import { PanelEvaluadorComponent } from './pages/evaluador/panel-evaluador.component';
 import { TrabajosAutorComponent } from './pages/autor/trabajos/trabajos-autor.component';
@@ -111,7 +110,7 @@ export const routes: Routes = [
   { path: 'admin/pagos', component: PagosPendientesComponent, canActivate: [admin] },
   { path: 'admin/pagos/todos', component: PagosListaComponent, canActivate: [admin] },
   { path: 'admin/inscripciones', component: InscripcionesAdminComponent, canActivate: [admin] },
-  { path: 'admin/actividades', component: ActividadesAdminComponent, canActivate: [admin] },
+  { path: 'admin/actividades', redirectTo: 'admin', pathMatch: 'full' },
   { path: 'admin/mesas-tematicas', component: MesasTematicasAdminComponent, canActivate: [admin] },
   { path: 'admin/mesas-redondas', component: MesaRedondaAdminComponent, canActivate: [admin] },
   { path: 'admin/sesion-posters', component: SesionPostersAdminComponent, canActivate: [admin] },

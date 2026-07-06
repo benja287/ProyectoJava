@@ -2173,3 +2173,136 @@ textarea {
   text-align: right;
   white-space: nowrap;
 }
+
+.cronograma-dia-grupo {
+  margin-bottom: 1.75rem;
+}
+
+.cronograma-dia-titulo {
+  font-size: 1.15rem;
+  margin: 0 0 0.85rem;
+  color: #1e293b;
+}
+
+.cronograma-dia-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.cronograma-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  background: #fff;
+}
+
+.cronograma-item--mesa { background: #eff6ff; border-color: #bfdbfe; }
+.cronograma-item--redonda { background: #faf5ff; border-color: #e9d5ff; }
+.cronograma-item--poster { background: #fefce8; border-color: #fde68a; }
+.cronograma-item--taller { background: #f0fdfa; border-color: #99f6e4; }
+.cronograma-item--conferencia { background: #eef2ff; border-color: #c7d2fe; }
+
+.cronograma-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.cronograma-item-tipo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.35rem;
+  color: #475569;
+}
+
+.cronograma-item-titulo {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.cronograma-item-acciones {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.btn-sm {
+  font-size: 0.82rem;
+  padding: 0.35rem 0.75rem;
+}
+
+.cronograma-trabajos-lista {
+  margin: 0.85rem 0 0 1.25rem;
+  padding: 0;
+  list-style: disc;
+}
+
+.cronograma-trabajo-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.cronograma-trabajo-titulo {
+  font-weight: 600;
+}
+
+.btn-quitar-trabajo {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  cursor: pointer;
+}
+
+.btn-quitar-trabajo:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modal-card--wide {
+  max-width: 560px;
+}
+
+.modal-card h3 {
+  margin: 0 0 0.75rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.italic {
+  font-style: italic;
+}

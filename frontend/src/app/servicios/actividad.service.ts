@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Actividad, CrearConferenciaRequest, CrearMesaRedondaRequest, CrearTallerOficialRequest, PaginaActividades } from '../models/actividad.model';
+import { Actividad, ActividadCronograma, ActualizarActividadProgramaRequest, CrearConferenciaRequest, CrearMesaRedondaRequest, CrearTallerOficialRequest, PaginaActividades } from '../models/actividad.model';
 import { CrearMesaTematicaRequest, CrearSesionPostersRequest } from '../models/trabajo.model';
 import { buildListHttpParams } from '../utils/filtro-params.util';
 
@@ -61,5 +61,17 @@ export class ActividadService {
 
   crearConferencia(request: CrearConferenciaRequest): Observable<Actividad> {
     return this.http.post<Actividad>(`${this.baseUrl}/conferencia`, request);
+  }
+
+  listarCronograma(): Observable<ActividadCronograma[]> {
+    return this.http.get<ActividadCronograma[]>(`${this.baseUrl}/cronograma`);
+  }
+
+  actualizarPrograma(id: number, body: ActualizarActividadProgramaRequest): Observable<ActividadCronograma> {
+    return this.http.put<ActividadCronograma>(`${this.baseUrl}/${id}/programa`, body);
+  }
+
+  quitarTrabajo(actividadId: number, trabajoId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${actividadId}/trabajos/${trabajoId}`);
   }
 }

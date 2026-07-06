@@ -19,6 +19,7 @@ import { SolicitudAutor } from '../../../models/solicitud-autor.model';
 import { Trabajo } from '../../../models/trabajo.model';
 import { Pago } from '../../../models/pago.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
+import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronograma-congreso-admin.component';
 import { PagoService } from '../../../servicios/pago.service';
 
 @Component({
@@ -31,6 +32,7 @@ import { PagoService } from '../../../servicios/pago.service';
     FormsModule,
     UsuarioFilaComponent,
     ArchivoLinkComponent,
+    CronogramaCongresoAdminComponent,
   ],
   template: `
     <div class="panel-page">
@@ -347,10 +349,10 @@ import { PagoService } from '../../../servicios/pago.service';
         <a routerLink="/admin/usuarios" class="btn-link">Ver listado completo →</a>
       </section>
 
-      <section class="panel-card">
+      <section class="panel-card" id="cronograma-congreso">
         <h2>Cronograma del congreso</h2>
         <p class="muted">Mesas temáticas, pósters, talleres y conferencias programadas.</p>
-        <a routerLink="/admin/actividades" class="btn-primary">ABM actividades</a>
+        <app-cronograma-congreso-admin />
       </section>
 
       <section class="panel-card">

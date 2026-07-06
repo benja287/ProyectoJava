@@ -5,6 +5,7 @@ import { LoginService } from '../../../auth/login.service';
 import { Actividad } from '../../../models/actividad.model';
 import { Cronograma } from '../../../models/cronograma.model';
 import { ActividadService } from '../../../servicios/actividad.service';
+import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { CronogramaService } from '../../../servicios/cronograma.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { formatFechaActividad } from '../../../utils/fecha.util';
@@ -25,34 +26,43 @@ import { formatFechaActividad } from '../../../utils/fecha.util';
         <p class="ok">{{ mensaje }}</p>
       }
 
-      <h2>Actividades en mi agenda</h2>
       @if (cargando) {
         <p>Cargando...</p>
-      } @else if (!cronograma?.actividades?.length) {
-        <p>Tu cronograma está vacío.</p>
+      } @else if (!programaPublicado) {
+        <div class="panel-card programa-empty">
+          <p>El programa aún no fue publicado por el organizador.</p>
+          <p class="muted small">
+            Cuando el administrador publique el cronograma, vas a poder ver las actividades y armar tu agenda personal.
+          </p>
+        </div>
       } @else {
-        <ul class="menu">
-          @for (a of cronograma!.actividades; track a.id) {
-            <li>
-              <strong>{{ a.titulo }}</strong> — {{ formatFecha(a.inicio) }} ({{ a.sala || 'sin sala' }})
-              <button type="button" class="btn-link" (click)="quitar(a)">Quitar</button>
-            </li>
-          }
-        </ul>
-      }
+        <h2>Actividades en mi agenda</h2>
+        @if (!cronograma?.actividades?.length) {
+          <p>Tu cronograma está vacío.</p>
+        } @else {
+          <ul class="menu">
+            @for (a of cronograma!.actividades; track a.id) {
+              <li>
+                <strong>{{ a.titulo }}</strong> — {{ formatFecha(a.inicio) }} ({{ a.sala || 'sin sala' }})
+                <button type="button" class="btn-link" (click)="quitar(a)">Quitar</button>
+              </li>
+            }
+          </ul>
+        }
 
-      <h2>Agregar actividad del congreso</h2>
-      @if (actividadesDisponibles.length === 0) {
-        <p>No hay más actividades para agregar.</p>
-      } @else {
-        <ul class="menu">
-          @for (a of actividadesDisponibles; track a.id) {
-            <li>
-              {{ a.titulo }} ({{ a.tipoActividad }}) — {{ formatFecha(a.inicio) }}
-              <button type="button" (click)="agregar(a)">Agregar</button>
-            </li>
-          }
-        </ul>
+        <h2>Agregar actividad del congreso</h2>
+        @if (actividadesDisponibles.length === 0) {
+          <p>No hay más actividades para agregar.</p>
+        } @else {
+          <ul class="menu">
+            @for (a of actividadesDisponibles; track a.id) {
+              <li>
+                {{ a.titulo }} ({{ a.tipoActividad }}) — {{ formatFecha(a.inicio) }}
+                <button type="button" (click)="agregar(a)">Agregar</button>
+              </li>
+            }
+          </ul>
+        }
       }
 
       <p><a routerLink="/asistente">← Panel asistente</a></p>
@@ -62,6 +72,7 @@ import { formatFechaActividad } from '../../../utils/fecha.util';
 export class CronogramaParticipanteComponent implements OnInit {
   cronograma?: Cronograma;
   todasActividades: Actividad[] = [];
+  programaPublicado = false;
   cargando = true;
   error = '';
   mensaje = '';
@@ -75,7 +86,8 @@ export class CronogramaParticipanteComponent implements OnInit {
   constructor(
     private loginService: LoginService,
     private cronogramaService: CronogramaService,
-    private actividadService: ActividadService
+    private actividadService: ActividadService,
+    private congresoConfigService: CongresoConfigService
   ) {}
 
   ngOnInit(): void {
@@ -85,10 +97,21 @@ export class CronogramaParticipanteComponent implements OnInit {
       this.cargando = false;
       return;
     }
-    this.actividadService.listar(1, 100).subscribe({
-      next: (items) => (this.todasActividades = items),
+    this.congresoConfigService.obtener().subscribe({
+      next: (config) => {
+        this.programaPublicado = config.programaPublicado;
+        if (this.programaPublicado) {
+          this.actividadService.listar(1, 100).subscribe({
+            next: (items) => (this.todasActividades = items),
+          });
+        }
+        this.cargarCronograma();
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo cargar la configuración del congreso.');
+        this.cargando = false;
+      },
     });
-    this.cargarCronograma();
   }
 
   formatFecha(valor: unknown): string {

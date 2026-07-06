@@ -20,4 +20,7 @@ public interface ActividadDAO extends GenericDAO<Actividad> {
   long contar();
 
   long contarFiltrado(ActividadFiltro filtro);
+
+  /** Actividades del programa con trabajos y autores (panel admin). */
+  List<Actividad> listarCronogramaCompleto();
 }

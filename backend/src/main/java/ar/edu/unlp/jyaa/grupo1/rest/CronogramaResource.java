@@ -1,8 +1,11 @@
 package ar.edu.unlp.jyaa.grupo1.rest;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.CronogramaPersonal;
+import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
+import ar.edu.unlp.jyaa.grupo1.servicio.CongresoService;
 import ar.edu.unlp.jyaa.grupo1.servicio.CronogramaService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.CronogramaDTO;
+import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,6 +28,7 @@ import jakarta.ws.rs.core.Response;
 public class CronogramaResource {
 
   @Inject private CronogramaService cronogramaService;
+  @Inject private CongresoService congresoService;
 
   @GET
   @Path("/{usuarioId}")
@@ -33,7 +37,17 @@ public class CronogramaResource {
   @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
   public CronogramaDTO obtener(@PathParam("usuarioId") Long usuarioId) {
     try {
-      return CronogramaDTO.from(cronogramaService.obtenerCronograma(usuarioId));
+      CronogramaPersonal cronograma = cronogramaService.obtenerCronograma(usuarioId);
+      if (!congresoService.isProgramaPublicado()) {
+        Usuario u = cronograma.getUsuario();
+        return new CronogramaDTO(
+            cronograma.getId(),
+            u != null ? u.getId() : null,
+            u != null ? u.getNombre() : null,
+            u != null ? u.getApellido() : null,
+            List.of());
+      }
+      return CronogramaDTO.from(cronograma);
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }

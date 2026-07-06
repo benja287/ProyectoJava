@@ -1,6 +1,7 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.ActividadDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.ActividadFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
@@ -10,12 +11,14 @@ import ar.edu.unlp.jyaa.grupo1.modelo.TipoActividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.util.FechasCongreso;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.ActualizarActividadProgramaRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearConferenciaRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearMesaRedondaRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearMesaTematicaRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearSesionPostersRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CrearTallerOficialRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ActividadCronogramaDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.ActividadResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaActividadesDTO;
 import jakarta.enterprise.context.RequestScoped;
@@ -38,6 +41,7 @@ public class ActividadService {
 
   @Inject private ActividadDAO actividadDAO;
   @Inject private TrabajoDAO trabajoDAO;
+  @Inject private CongresoDAO congresoDAO;
   @Inject private NotificacionService notificacionService;
 
   public PaginaActividadesDTO listar(int page, int size, ActividadFiltro filtro, AuthenticatedUser auth) {
@@ -48,6 +52,11 @@ public class ActividadService {
   }
 
   public PaginaActividadesDTO listarPublico(int page, int size, ActividadFiltro filtro) {
+    if (!congresoDAO.obtenerPrincipal().isProgramaPublicado()) {
+      int safePage = Math.max(PAGE_DEFAULT, page);
+      int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
+      return new PaginaActividadesDTO(List.of(), safePage, safeSize, 0, 0);
+    }
     return listarFiltrado(page, size, filtro != null ? filtro : new ActividadFiltro(null, null, null, null));
   }
 
@@ -227,6 +236,56 @@ public class ActividadService {
     return actividadDAO.alta(actividad);
   }
 
+  public List<ActividadCronogramaDTO> listarCronogramaAdmin() {
+    return actividadDAO.listarCronogramaCompleto().stream().map(ActividadCronogramaDTO::from).toList();
+  }
+
+  public Actividad actualizarPrograma(Long id, ActualizarActividadProgramaRequest request) {
+    Actividad actividad = actividadDAO.recuperarPorId(id);
+    if (actividad == null) {
+      return null;
+    }
+    if (request.titulo() != null && !request.titulo().isBlank()) {
+      actividad.setTitulo(request.titulo().trim());
+    }
+    if (request.sala() != null && !request.sala().isBlank()) {
+      actividad.setSala(request.sala().trim());
+    }
+    if (request.inicio() != null) {
+      actividad.setInicio(request.inicio());
+    }
+    if (request.fin() != null) {
+      actividad.setFin(request.fin());
+    }
+    if (request.codigo() != null) {
+      actividad.setCodigo(blankToNull(request.codigo()));
+    }
+    if (request.descripcion() != null) {
+      actividad.setDescripcion(blankToNull(request.descripcion()));
+    }
+    if (request.ejeTematico() != null) {
+      actividad.setEjeTematico(blankToNull(request.ejeTematico()));
+    }
+    if (request.moderador() != null) {
+      actividad.setModerador(blankToNull(request.moderador()));
+    }
+    if (request.panelistas() != null) {
+      actividad.setPanelistas(blankToNull(request.panelistas()));
+    }
+    if (request.responsables() != null) {
+      actividad.setResponsables(blankToNull(request.responsables()));
+    }
+    if (request.conferencistas() != null) {
+      actividad.setConferencistas(blankToNull(request.conferencistas()));
+    }
+    if (request.institucion() != null) {
+      actividad.setInstitucion(blankToNull(request.institucion()));
+    }
+    validarSolapamientoTipo(actividad, id);
+    validarConflictos(actividad, id);
+    return actividadDAO.modificar(actividad);
+  }
+
   public Actividad modificar(Long id, Actividad actividad) {
     if (actividadDAO.recuperarPorId(id) == null) {
       return null;
@@ -236,9 +295,40 @@ public class ActividadService {
     return actividadDAO.modificar(actividad);
   }
 
-  public void baja(Long id) {
-    if (actividadDAO.recuperarPorId(id) == null) {
+  public void quitarTrabajo(Long actividadId, Long trabajoId) {
+    Actividad actividad = actividadDAO.recuperarPorId(actividadId);
+    if (actividad == null) {
       throw new NegocioException("Actividad no encontrada");
+    }
+    if (actividad.getTipoActividad() != TipoActividad.MESA_TEMATICA
+        && actividad.getTipoActividad() != TipoActividad.POSTER) {
+      throw new NegocioException("Solo mesas temáticas y sesiones de pósters admiten quitar trabajos");
+    }
+    Trabajo trabajo = trabajoDAO.recuperarPorId(trabajoId);
+    if (trabajo == null) {
+      throw new NegocioException("Trabajo no encontrado");
+    }
+    boolean removido =
+        actividad.getTrabajos().removeIf(t -> trabajoId.equals(t.getId()));
+    if (!removido) {
+      throw new NegocioException("El trabajo no está asignado a esta actividad");
+    }
+    trabajo.setEstado(EstadoTrabajo.APROBADO);
+    actividadDAO.modificar(actividad);
+    trabajoDAO.modificar(trabajo);
+  }
+
+  public void baja(Long id) {
+    Actividad actividad = actividadDAO.recuperarPorId(id);
+    if (actividad == null) {
+      throw new NegocioException("Actividad no encontrada");
+    }
+    if (actividad.getTipoActividad() == TipoActividad.MESA_TEMATICA
+        || actividad.getTipoActividad() == TipoActividad.POSTER) {
+      for (Trabajo t : new ArrayList<>(actividad.getTrabajos())) {
+        t.setEstado(EstadoTrabajo.APROBADO);
+        trabajoDAO.modificar(t);
+      }
     }
     actividadDAO.baja(id);
   }

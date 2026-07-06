@@ -57,3 +57,33 @@ export interface CrearConferenciaRequest {
   institucion?: string;
   descripcion?: string;
 }
+
+export interface TrabajoCronogramaItem {
+  id: number;
+  titulo: string;
+  ejeTematico?: string;
+  tipo?: string;
+  modalidad?: string;
+  autorId?: number;
+  autorNombre?: string;
+  autorApellido?: string;
+}
+
+export interface ActividadCronograma extends Actividad {
+  trabajos?: TrabajoCronogramaItem[];
+}
+
+export interface ActualizarActividadProgramaRequest {
+  titulo?: string;
+  sala?: string;
+  inicio?: string;
+  fin?: string;
+  codigo?: string;
+  descripcion?: string;
+  ejeTematico?: string;
+  moderador?: string;
+  panelistas?: string;
+  responsables?: string;
+  conferencistas?: string;
+  institucion?: string;
+}
