@@ -11,7 +11,7 @@ declare global {
 @Injectable({ providedIn: 'root' })
 export class AppVersionService implements OnDestroy {
   private readonly storageKey = 'jyaa-app-build';
-  private readonly reloadAttemptKey = 'jyaa-app-reload-attempt';
+  private readonly reloadAttemptPrefix = 'jyaa-app-reload-attempt';
   private pollTimer?: ReturnType<typeof setInterval>;
   private readonly onVisibilityChange = (): void => {
     if (document.visibilityState === 'visible') {
@@ -21,7 +21,6 @@ export class AppVersionService implements OnDestroy {
 
   /**
    * Bloquea el bootstrap de Angular si el bundle cargado no coincide con version.json.
-   * Se ejecuta vía APP_INITIALIZER antes de montar componentes.
    */
   async ensureCurrentBuild(): Promise<void> {
     const staleTag = await this.detectStaleBuild();
@@ -29,9 +28,12 @@ export class AppVersionService implements OnDestroy {
       this.forceReload(staleTag);
       await new Promise<void>(() => {});
     }
+    const remote = await this.fetchRemoteBuild();
+    if (remote) {
+      this.markSynchronized(remote);
+    }
   }
 
-  /** Comprueba si hay un deploy nuevo y recarga si el bundle en memoria quedó viejo. */
   checkForUpdate(): void {
     if (!environment.production) {
       return;
@@ -39,7 +41,6 @@ export class AppVersionService implements OnDestroy {
     void this.evaluateUpdate();
   }
 
-  /** Revisa cada 3 min y al volver a la pestaña (deploy con sesión abierta). */
   startPolling(): void {
     if (!environment.production || this.pollTimer) {
       return;
@@ -65,7 +66,7 @@ export class AppVersionService implements OnDestroy {
       }
       const remoteBuild = await this.fetchRemoteBuild();
       if (remoteBuild) {
-        localStorage.setItem(this.storageKey, remoteBuild);
+        this.markSynchronized(remoteBuild);
       }
     } catch {
       // Sin bloquear la app si falla la red
@@ -109,15 +110,37 @@ export class AppVersionService implements OnDestroy {
     return (data?.build as string | undefined) ?? null;
   }
 
+  private reloadAttemptKey(embedded: string, remote: string): string {
+    return `${this.reloadAttemptPrefix}:${embedded}->${remote}`;
+  }
+
   private forceReload(tag: string): void {
-    if (sessionStorage.getItem(this.reloadAttemptKey) === tag) {
+    const embedded = this.embeddedBuildId();
+    const attemptKey = this.reloadAttemptKey(embedded, tag);
+    if (sessionStorage.getItem(attemptKey) === '1') {
       return;
     }
-    sessionStorage.setItem(this.reloadAttemptKey, tag);
-    localStorage.setItem(this.storageKey, tag);
+    sessionStorage.setItem(attemptKey, '1');
 
     const url = new URL(window.location.href);
     url.searchParams.set('_cb', tag);
+    url.searchParams.set('_t', String(Date.now()));
     window.location.replace(url.toString());
+  }
+
+  private markSynchronized(remoteBuild: string): void {
+    localStorage.setItem(this.storageKey, remoteBuild);
+    this.clearReloadAttempts();
+  }
+
+  private clearReloadAttempts(): void {
+    const keys: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key?.startsWith(this.reloadAttemptPrefix)) {
+        keys.push(key);
+      }
+    }
+    keys.forEach((key) => sessionStorage.removeItem(key));
   }
 }

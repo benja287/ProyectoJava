@@ -18,27 +18,47 @@
       var embedded = window.__JYAA_BUILD__;
       if (!embedded || embedded === '__JYAA_BUILD_ID__' || embedded === 'dev') return;
 
-      function forceReload(remoteBuild) {
+      function clearReloadAttempts() {
         try {
-          var k = 'jyaa-app-reload-attempt';
-          if (sessionStorage.getItem(k) === remoteBuild) return;
-          sessionStorage.setItem(k, remoteBuild);
+          var keys = [];
+          for (var i = 0; i < sessionStorage.length; i++) {
+            var key = sessionStorage.key(i);
+            if (key && key.indexOf('jyaa-app-reload-attempt:') === 0) keys.push(key);
+          }
+          keys.forEach(function (k) { sessionStorage.removeItem(k); });
+        } catch (e) {}
+      }
+
+      function forceReload(remoteBuild) {
+        var attemptKey = 'jyaa-app-reload-attempt:' + embedded + '->' + remoteBuild;
+        try {
+          if (sessionStorage.getItem(attemptKey) === '1') return;
+          sessionStorage.setItem(attemptKey, '1');
         } catch (e) {}
         var url = new URL(location.href);
         url.searchParams.set('_cb', remoteBuild);
+        url.searchParams.set('_t', String(Date.now()));
         location.replace(url.href);
       }
 
-      fetch('/version.json?_=' + Date.now(), {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-      })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (data) {
-          if (!data || !data.build || data.build === embedded) return;
-          forceReload(data.build);
-        })
-        .catch(function () {});
+      // XHR síncrono: bloquea la carga de main.js hasta decidir si hay que recargar
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/version.json?_=' + Date.now(), false);
+        xhr.setRequestHeader('Cache-Control', 'no-cache');
+        xhr.setRequestHeader('Pragma', 'no-cache');
+        xhr.send(null);
+        if (xhr.status === 200) {
+          var data = JSON.parse(xhr.responseText);
+          if (data && data.build) {
+            if (data.build === embedded) {
+              clearReloadAttempts();
+            } else {
+              forceReload(data.build);
+            }
+          }
+        }
+      } catch (e) {}
     })();
   </script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">

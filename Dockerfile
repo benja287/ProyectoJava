@@ -16,11 +16,14 @@ COPY backend/src src
 COPY --from=frontendbuild /fe/dist/jyaa-frontend/browser/ src/main/webapp/
 RUN mvn clean package -q
 RUN WAR=target/jyaa2026-grupo1.war \
+    && MAIN=$(unzip -l "$WAR" | awk '/main-.*\.js/{print $4; exit}') \
     && unzip -l "$WAR" | grep -q 'main-.*\.js' \
     && unzip -p "$WAR" index.html | grep -q 'app-root' \
+    && unzip -p "$WAR" "$MAIN" | grep -q 'app-panel-admin' \
+    && ! unzip -p "$WAR" "$MAIN" | grep -q 'Home — Administrador' \
     && STYLES=$(unzip -l "$WAR" | awk '/styles-.*\.css/{print $4; exit}') \
     && unzip -p "$WAR" "$STYLES" | grep -q 'panel-hero--admin' \
-    && echo "OK WAR verificado (panel admin nuevo)" \
+    && echo "OK WAR verificado (panel admin nuevo, sin panel legacy)" \
     && unzip -l "$WAR" | grep -E 'main-|version.json' \
     && unzip -p "$WAR" version.json
 

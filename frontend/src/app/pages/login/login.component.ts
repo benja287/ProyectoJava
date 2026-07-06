@@ -6,6 +6,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
+import { navegarConRecargaCompleta } from '../../utils/hard-navigation.util';
 import { mensajeErrorApi, isCuentaDeshabilitada } from '../../utils/api-error.util';
 
 @Component({
@@ -78,12 +79,12 @@ export class LoginComponent implements OnInit {
       return;
     }
     if (this.loginService.isLogged()) {
-      window.location.replace(this.loginService.rutaPanel());
+      navegarConRecargaCompleta(this.loginService.rutaPanel());
     }
   }
 
   private irTrasLogin(): void {
-    window.location.replace(this.loginService.rutaTrasLogin());
+    navegarConRecargaCompleta(this.loginService.rutaTrasLogin());
   }
 
   ingresar(): void {

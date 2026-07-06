@@ -5,6 +5,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
+import { navegarConRecargaCompleta } from '../../utils/hard-navigation.util';
 import { mensajeErrorApi } from '../../utils/api-error.util';
 import { ROLE_DESCRIPCIONES, etiquetaRol } from '../../models/role-labels';
 
@@ -60,7 +61,7 @@ export class SeleccionRolComponent implements OnInit {
     this.roles = u.roles ?? [];
     // Si solo tiene un rol, no tiene sentido esta pantalla
     if (this.roles.length <= 1) {
-      this.router.navigateByUrl(this.loginService.homeRoute());
+      navegarConRecargaCompleta(this.loginService.homeRoute());
     }
   }
 
@@ -79,7 +80,7 @@ export class SeleccionRolComponent implements OnInit {
     this.loginService.cambiarRolActual(rol).subscribe({
       next: () => {
         this.procesando = false;
-        this.router.navigateByUrl(this.loginService.homeRoute());
+        navegarConRecargaCompleta(this.loginService.homeRoute());
       },
       error: (err) => {
         this.procesando = false;

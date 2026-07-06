@@ -22,6 +22,7 @@ import { AppVersionService } from './servicios/app-version.service';
 import { CongresoConfig } from './models/congreso-config.model';
 import { mensajeErrorApi } from './utils/api-error.util';
 import { etiquetaRol } from './models/role-labels';
+import { navegarConRecargaCompleta } from './utils/hard-navigation.util';
 
 @Component({
   selector: 'app-root',
@@ -148,7 +149,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.cambiandoRol || rol === this.usuario?.rolActual) {
       this.cerrarMenu();
       if (rol === this.usuario?.rolActual) {
-        this.router.navigateByUrl(this.loginService.homeRoute());
+        navegarConRecargaCompleta(this.loginService.homeRoute());
       }
       return;
     }
@@ -158,7 +159,7 @@ export class AppComponent implements OnInit, OnDestroy {
       next: () => {
         this.cambiandoRol = false;
         this.cerrarMenu();
-        this.router.navigateByUrl(this.loginService.homeRoute());
+        navegarConRecargaCompleta(this.loginService.homeRoute());
       },
       error: (err) => {
         this.cambiandoRol = false;
