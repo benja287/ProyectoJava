@@ -65,7 +65,11 @@ import { PagoFilaComponent } from './pago-fila.component';
         </table>
       }
 
-      <p><a routerLink="/admin">← Menú admin</a></p>
+      <p>
+        <a routerLink="/admin/pagos/todos">Listado de pagos (limpieza)</a>
+        ·
+        <a routerLink="/admin">← Panel admin</a>
+      </p>
     </section>
   `,
 })

@@ -79,7 +79,7 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
       <p>
         <a routerLink="/admin/pagos">Validar pendientes</a>
         ·
-        <a routerLink="/admin">← Menú admin</a>
+        <a routerLink="/admin">← Panel admin</a>
       </p>
     </section>
   `,

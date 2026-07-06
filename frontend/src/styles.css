@@ -2126,3 +2126,50 @@ textarea {
 .solicitud-autor-trabajo-titulo {
   font-weight: 600;
 }
+
+.panel-card--limpieza {
+  border-left: 4px solid #f59e0b;
+}
+
+.limpieza-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 960px) {
+  .limpieza-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.limpieza-bloque {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  background: #fff;
+}
+
+.limpieza-bloque-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.limpieza-bloque-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.limpieza-table {
+  font-size: 0.88rem;
+}
+
+.limpieza-table th:last-child,
+.limpieza-table td:last-child {
+  text-align: right;
+  white-space: nowrap;
+}

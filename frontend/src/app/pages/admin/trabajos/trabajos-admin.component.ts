@@ -74,7 +74,7 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
         </table>
       }
 
-      <p><a routerLink="/admin">← Menú admin</a></p>
+      <p><a routerLink="/admin">← Panel admin</a></p>
     </section>
   `,
 })

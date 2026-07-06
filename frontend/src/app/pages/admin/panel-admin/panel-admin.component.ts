@@ -13,13 +13,25 @@ import { NotificacionService } from '../../../servicios/notificacion.service';
 import { UsuarioService } from '../../../servicios/usuario.service';
 import { UsuarioEdicionDialogService } from '../../../servicios/usuario-edicion-dialog.service';
 import { UsuarioFilaComponent } from '../usuarios-lista/usuario-fila.component';
+import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { SolicitudAutor } from '../../../models/solicitud-autor.model';
+import { Trabajo } from '../../../models/trabajo.model';
+import { Pago } from '../../../models/pago.model';
+import { TrabajoService } from '../../../servicios/trabajo.service';
+import { PagoService } from '../../../servicios/pago.service';
 
 @Component({
   selector: 'app-panel-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, FormsModule, UsuarioFilaComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ReactiveFormsModule,
+    FormsModule,
+    UsuarioFilaComponent,
+    ArchivoLinkComponent,
+  ],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--admin">
@@ -133,6 +145,115 @@ import { SolicitudAutor } from '../../../models/solicitud-autor.model';
         <a routerLink="/admin/pagos" class="btn-secundario">Validar pagos pendientes</a>
       </section>
 
+      <section class="panel-card panel-card--limpieza">
+        <h2>Limpieza de datos</h2>
+        <p class="muted">
+          Eliminá trabajos o pagos de prueba. La baja es permanente (incluye archivos adjuntos cuando
+          corresponda).
+        </p>
+        @if (limpiezaFeedback) {
+          <p class="ok">{{ limpiezaFeedback }}</p>
+        }
+
+        <div class="limpieza-grid">
+          <div class="limpieza-bloque">
+            <div class="limpieza-bloque-header">
+              <h3>Trabajos</h3>
+              <a routerLink="/admin/trabajos" class="btn-link">Ver listado completo →</a>
+            </div>
+            @if (cargandoTrabajosLimpieza) {
+              <p class="muted">Cargando trabajos...</p>
+            } @else if (trabajosLimpieza.length === 0) {
+              <p class="muted dashed-box">No hay trabajos registrados.</p>
+            } @else {
+              <div class="table-wrap">
+                <table class="limpieza-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Título</th>
+                      <th>Estado</th>
+                      <th>PDF</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (t of trabajosLimpieza; track t.id) {
+                      <tr>
+                        <td>{{ t.id }}</td>
+                        <td>{{ t.titulo }}</td>
+                        <td>{{ t.estado }}</td>
+                        <td>
+                          @if (t.documentoUrl) {
+                            <app-archivo-link [url]="t.documentoUrl" label="Ver" />
+                          } @else {
+                            —
+                          }
+                        </td>
+                        <td>
+                          <button type="button" class="btn-warn" (click)="eliminarTrabajo(t)">
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <p class="muted small">Mostrando los últimos {{ trabajosLimpieza.length }} trabajos.</p>
+            }
+          </div>
+
+          <div class="limpieza-bloque">
+            <div class="limpieza-bloque-header">
+              <h3>Pagos</h3>
+              <a routerLink="/admin/pagos/todos" class="btn-link">Ver listado completo →</a>
+            </div>
+            @if (cargandoPagosLimpieza) {
+              <p class="muted">Cargando pagos...</p>
+            } @else if (pagosLimpieza.length === 0) {
+              <p class="muted dashed-box">No hay pagos registrados.</p>
+            } @else {
+              <div class="table-wrap">
+                <table class="limpieza-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Monto</th>
+                      <th>Estado</th>
+                      <th>Comprobante</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of pagosLimpieza; track p.id) {
+                      <tr>
+                        <td>{{ p.id }}</td>
+                        <td>{{ p.monto | number: '1.2-2' }}</td>
+                        <td>{{ p.estado }}</td>
+                        <td>
+                          @if (p.comprobanteUrl) {
+                            <app-archivo-link [url]="p.comprobanteUrl" label="Ver" />
+                          } @else {
+                            —
+                          }
+                        </td>
+                        <td>
+                          <button type="button" class="btn-warn" (click)="eliminarPago(p)">
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <p class="muted small">Mostrando los últimos {{ pagosLimpieza.length }} pagos.</p>
+            }
+          </div>
+        </div>
+      </section>
+
       <section class="panel-card panel-card--verde">
         <h2>Solicitudes para ser Autor</h2>
         <p class="muted">
@@ -230,7 +351,6 @@ import { SolicitudAutor } from '../../../models/solicitud-autor.model';
         <h2>Cronograma del congreso</h2>
         <p class="muted">Mesas temáticas, pósters, talleres y conferencias programadas.</p>
         <a routerLink="/admin/actividades" class="btn-primary">ABM actividades</a>
-        <a routerLink="/admin/trabajos" class="btn-secundario">Listado de trabajos</a>
       </section>
 
       <section class="panel-card">
@@ -338,6 +458,11 @@ export class PanelAdminComponent implements OnInit {
   circulares: Circular[] = [];
   solicitudesAutor: SolicitudAutor[] = [];
   solicitudesAutorFeedback = '';
+  trabajosLimpieza: Trabajo[] = [];
+  pagosLimpieza: Pago[] = [];
+  cargandoTrabajosLimpieza = true;
+  cargandoPagosLimpieza = true;
+  limpiezaFeedback = '';
   error = '';
   mensaje = '';
   circularesFeedback = '';
@@ -361,7 +486,9 @@ export class PanelAdminComponent implements OnInit {
     private congresoConfigService: CongresoConfigService,
     private circularService: CircularService,
     private usuarioService: UsuarioService,
-    private usuarioEdicionDialog: UsuarioEdicionDialogService
+    private usuarioEdicionDialog: UsuarioEdicionDialogService,
+    private trabajoService: TrabajoService,
+    private pagoService: PagoService
   ) {}
 
   ngOnInit(): void {
@@ -401,6 +528,65 @@ export class PanelAdminComponent implements OnInit {
 
     this.cargarCirculares();
     this.cargarSolicitudesAutor();
+    this.cargarLimpieza();
+  }
+
+  eliminarTrabajo(t: Trabajo): void {
+    if (!t.id || !confirm(`¿Eliminar trabajo #${t.id} "${t.titulo}"?`)) {
+      return;
+    }
+    this.limpiezaFeedback = '';
+    this.error = '';
+    this.trabajoService.baja(t.id).subscribe({
+      next: () => {
+        this.limpiezaFeedback = `Trabajo #${t.id} eliminado.`;
+        this.trabajosLimpieza = this.trabajosLimpieza.filter((x) => x.id !== t.id);
+        this.statsService.obtener().subscribe({ next: (s) => (this.stats = s) });
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo eliminar el trabajo.');
+      },
+    });
+  }
+
+  eliminarPago(p: Pago): void {
+    if (!p.id || !confirm(`¿Eliminar pago #${p.id}?`)) {
+      return;
+    }
+    this.limpiezaFeedback = '';
+    this.error = '';
+    this.pagoService.baja(p.id).subscribe({
+      next: () => {
+        this.limpiezaFeedback = `Pago #${p.id} eliminado.`;
+        this.pagosLimpieza = this.pagosLimpieza.filter((x) => x.id !== p.id);
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo eliminar el pago.');
+      },
+    });
+  }
+
+  private cargarLimpieza(): void {
+    this.trabajoService.listar(1, 20).subscribe({
+      next: (items) => {
+        this.trabajosLimpieza = items;
+        this.cargandoTrabajosLimpieza = false;
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudieron cargar trabajos para limpieza.');
+        this.cargandoTrabajosLimpieza = false;
+      },
+    });
+    this.pagoService.listar(1, 20).subscribe({
+      next: (items) => {
+        this.pagosLimpieza = items;
+        this.cargandoPagosLimpieza = false;
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudieron cargar pagos para limpieza.');
+        this.cargandoPagosLimpieza = false;
+      },
+    });
   }
 
   etiquetaTipoTrabajo(tipo?: string): string {
