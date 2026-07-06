@@ -25,5 +25,8 @@ public interface UsuarioDAO extends GenericDAO<Usuario> {
     return Optional.ofNullable(recuperarPorId(id));
   }
 
+  /** Evaluadores con eje temático asignado (excluye opcionalmente un usuario). */
+  long contarEvaluadoresPorEje(String ejeTematico, Long excluirUsuarioId);
+
   void flush();
 }

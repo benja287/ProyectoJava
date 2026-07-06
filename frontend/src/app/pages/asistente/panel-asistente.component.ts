@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
-import { Trabajo } from '../../models/trabajo.model';
+import { Trabajo, TrabajoEnvioResumen } from '../../models/trabajo.model';
+import { MODALIDAD_LABELS } from '../../constants/ejes-tematicos';
 import { TrabajoService } from '../../servicios/trabajo.service';
 
 @Component({
@@ -19,96 +20,142 @@ import { TrabajoService } from '../../servicios/trabajo.service';
       </div>
 
       <section class="panel-asistente">
-      <h2 class="panel-asistente-titulo">Acciones disponibles</h2>
+        <h2 class="panel-asistente-titulo">Acciones disponibles</h2>
 
-      @if (mensajeTrabajo) {
-        <p class="ok panel-asistente-aviso">{{ mensajeTrabajo }}</p>
-      }
-
-      <div class="panel-asistente-grid">
-        @if (mostrarEnvioTrabajo) {
-          <a routerLink="/asistente/trabajos" class="accion-card">
-            <span class="accion-icono accion-icono--naranja" aria-hidden="true">📄</span>
-            <div>
-              <h3>Enviar Trabajo</h3>
-              <p>Presenta tu trabajo científico o relato de experiencia (1 envío como asistente)</p>
-            </div>
-          </a>
+        @if (mensajeTrabajo) {
+          <p class="ok panel-asistente-aviso">{{ mensajeTrabajo }}</p>
         }
 
-        @if (esAsistente && esTambienAutor) {
-          <a routerLink="/asistente/trabajos" class="accion-card">
-            <span class="accion-icono accion-icono--naranja" aria-hidden="true">📄</span>
-            <div>
-              <h3>Mis trabajos</h3>
-              <p>
-                Gestioná tus trabajos enviados, el estado y las correcciones solicitadas por el
-                comité.
-              </p>
-            </div>
-          </a>
-        }
-
-        <a routerLink="/asistente/taller" class="accion-card">
-          <span class="accion-icono accion-icono--teal" aria-hidden="true">🖥</span>
-          <div>
-            <h3>Proponer Taller</h3>
-            <p>Enviá tu propuesta de taller para evaluación del comité</p>
-          </div>
-        </a>
-
-        <a routerLink="/asistente/cronograma" class="accion-card">
-          <span class="accion-icono accion-icono--violeta" aria-hidden="true">📅</span>
-          <div>
-            <h3>Ver mi agenda</h3>
-            <p>Consultá las actividades que agregaste al cronograma</p>
-          </div>
-        </a>
-
-        <a routerLink="/asistente/certificado" class="accion-card">
-          <span class="accion-icono accion-icono--azul" aria-hidden="true">✓</span>
-          <div>
-            <h3>Generar Certificado de Asistencia</h3>
-            <p>Generá un certificado de asistencia al congreso para tu rol activo</p>
-          </div>
-        </a>
-      </div>
-
-      @if (esAsistente) {
-        <div class="mis-trabajos-card" id="mis-trabajos">
-          <div class="mis-trabajos-header">
-            <div>
-              <h3>Mis trabajos (rol asistente)</h3>
-              <p class="muted">Podés ver el estado y, si corresponde, reenviar correcciones.</p>
-            </div>
-            <a routerLink="/asistente/trabajos" class="btn-secundario">Gestionar trabajos</a>
-          </div>
-
-          @if (cargandoTrabajos) {
-            <p class="muted">Cargando trabajos...</p>
-          } @else if (trabajos.length === 0) {
-            <p class="mis-trabajos-vacio">Todavía no enviaste trabajos como asistente.</p>
-          } @else {
-            <ul class="mis-trabajos-lista">
-              @for (t of trabajos; track t.id) {
-                <li>
-                  <strong>{{ t.titulo }}</strong>
-                  <span class="estado-badge">{{ t.estado }}</span>
-                  @if (t.estado === 'APROBADO_CON_CORRECCIONES') {
-                    <a routerLink="/asistente/trabajos" class="link-correccion">Reenviar correcciones</a>
-                  }
-                </li>
-              }
-            </ul>
+        <div class="panel-asistente-grid">
+          @if (mostrarEnvioTrabajo || trabajos.length > 0) {
+            <a routerLink="/asistente/trabajos" class="accion-card">
+              <span class="accion-icono accion-icono--naranja" aria-hidden="true">📄</span>
+              <div>
+                <h3>{{ trabajos.length > 0 ? 'Mis trabajos' : 'Enviar Trabajo' }}</h3>
+                <p>
+                  {{
+                    trabajos.length > 0
+                      ? 'Gestioná tus trabajos enviados, el estado y las correcciones solicitadas.'
+                      : 'Presentá tu trabajo científico o relato de experiencia (1 envío como asistente)'
+                  }}
+                </p>
+              </div>
+            </a>
           }
+
+          <a routerLink="/asistente/taller" class="accion-card">
+            <span class="accion-icono accion-icono--teal" aria-hidden="true">🖥</span>
+            <div>
+              <h3>Proponer Taller</h3>
+              <p>Enviá tu propuesta de taller para evaluación del comité</p>
+            </div>
+          </a>
+
+          <a routerLink="/asistente/cronograma" class="accion-card">
+            <span class="accion-icono accion-icono--violeta" aria-hidden="true">📅</span>
+            <div>
+              <h3>Ver mi agenda</h3>
+              <p>Consultá las actividades que agregaste al cronograma</p>
+            </div>
+          </a>
+
+          <a routerLink="/asistente/certificado" class="accion-card">
+            <span class="accion-icono accion-icono--azul" aria-hidden="true">✓</span>
+            <div>
+              <h3>Generar Certificado de Asistencia</h3>
+              <p>Generá un certificado de asistencia al congreso para tu rol activo</p>
+            </div>
+          </a>
         </div>
-      }
-    </section>
+
+        @if (esAsistente) {
+          <div class="mis-trabajos-card" id="mis-trabajos">
+            <div class="mis-trabajos-header">
+              <div>
+                <h3>Mis trabajos (rol asistente)</h3>
+                @if (resumen) {
+                  <p class="muted">
+                    Trabajos enviados (asistente): {{ resumen.trabajosEnviadosRol }} | Total histórico:
+                    {{ resumen.totalHistorico }}
+                  </p>
+                }
+              </div>
+              <a routerLink="/asistente/trabajos" class="btn-secundario">Gestionar trabajos</a>
+            </div>
+
+            @if (resumen) {
+              <div
+                class="limite-envio-box"
+                [class.limite-envio-box--ok]="!resumen.fechaLimitePasada"
+                [class.limite-envio-box--error]="resumen.fechaLimitePasada"
+              >
+                <strong>Límite de envíos</strong>
+                <p>
+                  {{
+                    resumen.envioTrabajosHasta
+                      ? 'Fecha límite para enviar trabajos nuevos: ' + resumen.envioTrabajosHasta + ' (inclusive).'
+                      : 'El Comité Académico aún no definió fecha límite de entrega: por ahora se permiten envíos nuevos.'
+                  }}
+                </p>
+                @if (resumen.fechaLimitePasada) {
+                  <p>No se permiten envíos nuevos: se superó la fecha límite.</p>
+                }
+              </div>
+
+              @if (!resumen.puedeEnviarNuevo) {
+                <div class="limite-envio-box limite-envio-box--warn">
+                  <p><strong>No podés enviar un nuevo trabajo en este momento.</strong></p>
+                  @if (resumen.mensajeBloqueo) {
+                    <p>{{ resumen.mensajeBloqueo }}</p>
+                  }
+                  <p class="muted">
+                    Trabajos activos (asistente): {{ resumen.trabajosActivos }} | Reenvíos disponibles:
+                    {{ resumen.reenviosDisponibles }}
+                  </p>
+                </div>
+              }
+            }
+
+            @if (cargandoTrabajos) {
+              <p class="muted">Cargando trabajos...</p>
+            } @else if (trabajos.length === 0) {
+              <p class="mis-trabajos-vacio">Todavía no enviaste trabajos como asistente.</p>
+            } @else {
+              @for (t of trabajos; track t.id) {
+                <article class="trabajo-item-detalle">
+                  <div class="trabajo-item-detalle-header">
+                    <strong>{{ t.titulo }}</strong>
+                    <div>
+                      <span class="estado-badge">Enviado como asistente</span>
+                      <span class="estado-badge estado-badge--enviado">{{ etiquetaEstado(t) }}</span>
+                    </div>
+                  </div>
+                  <p class="trabajo-item-meta">
+                    {{ t.ejeTematico || 'Sin eje' }} • Precheck
+                    {{ Math.min(t.precheckIntentos ?? 0, 3) }}/3 • Revisión
+                    {{ Math.min(t.revisionIntentos ?? 0, 2) }}/2
+                  </p>
+                  <p class="trabajo-feedback" [class]="feedbackClass(t)">{{ feedbackTexto(t) }}</p>
+                  @if (puedeReenviar(t)) {
+                    <a routerLink="/asistente/trabajos" [queryParams]="{ resubmit: t.id }" class="link-correccion">
+                      Editar y reenviar
+                    </a>
+                  }
+                </article>
+              }
+            }
+          </div>
+        }
+      </section>
     </div>
   `,
 })
 export class PanelAsistenteComponent implements OnInit {
+  readonly Math = Math;
+  readonly modalidadLabels = MODALIDAD_LABELS;
+
   trabajos: Trabajo[] = [];
+  resumen?: TrabajoEnvioResumen;
   cargandoTrabajos = true;
   mensajeTrabajo = '';
 
@@ -129,9 +176,17 @@ export class PanelAsistenteComponent implements OnInit {
       this.cargandoTrabajos = false;
       return;
     }
-    this.trabajoService.listar(1, 20, { autorId: userId }).subscribe({
+
+    this.trabajoService.resumenEnvio(userId, 'ASISTENTE').subscribe({
+      next: (r) => (this.resumen = r),
+      error: () => (this.resumen = undefined),
+    });
+
+    this.trabajoService.listar(1, 50, { autorId: userId }).subscribe({
       next: (items) => {
-        this.trabajos = items.filter((t) => t.tipo !== 'PROPUESTA_TALLER');
+        this.trabajos = items.filter(
+          (t) => t.tipo !== 'PROPUESTA_TALLER' && (t.rolEnvio === 'ASISTENTE' || !t.rolEnvio)
+        );
         this.cargandoTrabajos = false;
       },
       error: () => {
@@ -145,12 +200,60 @@ export class PanelAsistenteComponent implements OnInit {
     return this.loginService.esAsistenteCongreso();
   }
 
-  get esTambienAutor(): boolean {
-    return this.loginService.hasRole('AUTOR');
+  get mostrarEnvioTrabajo(): boolean {
+    return this.esAsistente && this.trabajos.length === 0 && (this.resumen?.puedeEnviarNuevo ?? true);
   }
 
-  /** Tarjeta de primer envío: asistente sin rol autor previo. */
-  get mostrarEnvioTrabajo(): boolean {
-    return this.esAsistente && !this.esTambienAutor;
+  etiquetaEstado(t: Trabajo): string {
+    const map: Record<string, string> = {
+      ENVIADO: 'Enviado',
+      PRECHECK_OK: 'Precheck OK',
+      EN_EVALUACION: 'En evaluación',
+      PENDIENTE_APROBACION_COMITE: 'Pendiente comité',
+      APROBADO: 'Aprobado',
+      APROBADO_CON_CORRECCIONES: 'Correcciones',
+      RECHAZADO: 'Rechazado',
+    };
+    return t.estado ? map[t.estado] ?? t.estado : '—';
+  }
+
+  feedbackTexto(t: Trabajo): string {
+    if (t.estado === 'ENVIADO' && (t.precheckIntentos ?? 0) === 0) {
+      return 'Trabajo enviado. Esperando prevalidación del Comité Académico.';
+    }
+    if (t.estado === 'ENVIADO' && (t.precheckIntentos ?? 0) > 0) {
+      return 'Trabajo observado en precheck. Podés corregirlo y reenviarlo.';
+    }
+    if (t.estado === 'APROBADO_CON_CORRECCIONES') {
+      return 'Correcciones solicitadas por evaluadores. Podés reenviar el trabajo.';
+    }
+    if (t.estado === 'PENDIENTE_APROBACION_COMITE') {
+      return 'Evaluaciones favorables. Pendiente de confirmación final del comité.';
+    }
+    if (t.estado === 'EN_EVALUACION') {
+      return 'En evaluación por los evaluadores asignados.';
+    }
+    if (t.estado === 'APROBADO') {
+      return 'Trabajo aprobado por el comité académico.';
+    }
+    return '';
+  }
+
+  feedbackClass(t: Trabajo): string {
+    if (t.estado === 'APROBADO') return 'trabajo-feedback--ok';
+    if (t.estado === 'APROBADO_CON_CORRECCIONES' || (t.precheckIntentos ?? 0) > 0) {
+      return 'trabajo-feedback--warn';
+    }
+    if (t.estado === 'RECHAZADO') return 'trabajo-feedback--error';
+    return 'trabajo-feedback--info';
+  }
+
+  puedeReenviar(t: Trabajo): boolean {
+    if (t.estado === 'ENVIADO' && (t.precheckIntentos ?? 0) > 0 && (t.precheckIntentos ?? 0) < 3) {
+      return true;
+    }
+    return (
+      t.estado === 'APROBADO_CON_CORRECCIONES' && (t.revisionIntentos ?? 0) < 2
+    );
   }
 }

@@ -3,11 +3,14 @@ package ar.edu.unlp.jyaa.grupo1.rest;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ConfirmarComiteRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.DocumentoUploadForm;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.EnviarTrabajoRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.PrecheckRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoCreateRequest;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoUpdateRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.servicio.TrabajoService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaTrabajosDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoEnvioResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoResumenDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -21,6 +24,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
@@ -35,6 +39,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
 @Path("/trabajos")
@@ -69,13 +74,42 @@ public class TrabajoResource {
   }
 
   @GET
+  @Path("/comite")
+  @Operation(summary = "Listar trabajos visibles para el comité académico")
+  public List<TrabajoResumenDTO> listarParaComite(@Context ContainerRequestContext ctx) {
+    if (!AuthenticatedUser.from(ctx).canListAllTrabajos()) {
+      throw new NotAuthorizedException("Solo comité académico o administrador");
+    }
+    return trabajoService.listarParaComite();
+  }
+
+  @GET
+  @Path("/resumen-envio")
+  @Operation(summary = "Resumen de cupos y límites de envío para un autor")
+  public TrabajoEnvioResumenDTO resumenEnvio(
+      @QueryParam("autorId") Long autorId,
+      @QueryParam("rolEnvio") @DefaultValue("ASISTENTE") String rolEnvio,
+      @Context ContainerRequestContext ctx) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    Long effectiveAutorId = autorId != null ? autorId : auth.userId();
+    if (!auth.canListAllTrabajos() && !auth.userId().equals(effectiveAutorId)) {
+      throw new NotAuthorizedException("No autorizado");
+    }
+    try {
+      return trabajoService.obtenerResumenEnvio(effectiveAutorId, rolEnvio);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @GET
   @Path("/{id}")
   @Operation(summary = "Buscar trabajo por id")
   @ApiResponse(responseCode = "200", description = "Trabajo encontrado")
   @ApiResponse(responseCode = "404", description = "Trabajo no encontrado")
   public TrabajoResumenDTO buscar(@PathParam("id") Long id) {
     try {
-      return TrabajoResumenDTO.from(trabajoService.buscar(id));
+      return trabajoService.buscarResumen(id);
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }
@@ -92,16 +126,28 @@ public class TrabajoResource {
   }
 
   @PUT
+  @Path("/{id}")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Operation(summary = "Modificar trabajo (borrador u observado)")
+  public TrabajoResumenDTO modificar(@PathParam("id") Long id, TrabajoUpdateRequest request) {
+    try {
+      return TrabajoResumenDTO.from(trabajoService.modificar(id, request));
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @PUT
   @Path("/{id}/enviar")
+  @Consumes(MediaType.APPLICATION_JSON)
   @Operation(summary = "Enviar trabajo a evaluación")
   @ApiResponse(responseCode = "200", description = "Trabajo enviado")
   @ApiResponse(responseCode = "404", description = "Trabajo no encontrado")
-  public TrabajoResumenDTO enviar(@PathParam("id") Long id) {
+  public TrabajoResumenDTO enviar(
+      @PathParam("id") Long id, EnviarTrabajoRequest request) {
     try {
-      Trabajo trabajo = trabajoService.enviar(id);
-      if (trabajo == null) {
-        throw new NotFoundException("Trabajo no encontrado");
-      }
+      String rolEnvio = request != null ? request.rolEnvio() : null;
+      Trabajo trabajo = trabajoService.enviar(id, rolEnvio);
       return TrabajoResumenDTO.from(trabajo);
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
@@ -113,7 +159,9 @@ public class TrabajoResource {
   @Operation(summary = "Precheck del comité académico (apto u observado)")
   public TrabajoResumenDTO precheck(@PathParam("id") Long id, PrecheckRequest request) {
     try {
-      return TrabajoResumenDTO.from(trabajoService.registrarPrecheck(id, request.apto()));
+      return TrabajoResumenDTO.from(
+          trabajoService.registrarPrecheck(
+              id, request.apto(), request.observaciones()));
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }
@@ -158,9 +206,6 @@ public class TrabajoResource {
     String nombre = fileDetail != null ? fileDetail.getFileName() : "documento.pdf";
     try {
       Trabajo trabajo = trabajoService.adjuntarDocumento(id, file, nombre);
-      if (trabajo == null) {
-        throw new NotFoundException("Trabajo no encontrado");
-      }
       return TrabajoResumenDTO.from(trabajo);
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());

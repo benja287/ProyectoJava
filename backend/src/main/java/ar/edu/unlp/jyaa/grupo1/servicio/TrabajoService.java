@@ -1,34 +1,42 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.AsignacionEvaluacionDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.TrabajoFiltro;
+import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EjesTematicos;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
+import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoUpdateRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaTrabajosDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoEnvioResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoResumenDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @RequestScoped
 public class TrabajoService {
 
   private static final int MAX_PRECHECK_INTENTOS = 3;
+  private static final int MAX_REVISION_INTENTOS = 2;
 
   @Inject private TrabajoDAO trabajoDAO;
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
+  @Inject private CongresoDAO congresoDAO;
   @Inject private DocumentStorageService documentStorageService;
   @Inject private NotificacionService notificacionService;
 
@@ -50,6 +58,16 @@ public class TrabajoService {
       throw new NegocioException("Autor no encontrado: " + autorId);
     }
     return listarFiltrado(page, size, new TrabajoFiltro(null, null, null, null, null, null, autorId));
+  }
+
+  public List<TrabajoResumenDTO> listarParaComite() {
+    TrabajoFiltro filtro = new TrabajoFiltro(null, null, null, null, null, null, null);
+    return trabajoDAO.listarFiltrado(filtro, 0, 500).stream()
+        .filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER)
+        .filter(t -> t.getEstado() != EstadoTrabajo.RECHAZADO)
+        .filter(t -> t.getEstado() != EstadoTrabajo.BORRADOR)
+        .map(this::toResumenConAsignaciones)
+        .toList();
   }
 
   public static TrabajoFiltro parseFiltro(
@@ -112,17 +130,28 @@ public class TrabajoService {
     long total = trabajoDAO.contarFiltrado(filtro);
     List<TrabajoResumenDTO> items =
         trabajoDAO.listarFiltrado(filtro, offset, safeSize).stream()
-            .map(TrabajoResumenDTO::from)
+            .map(this::toResumenConAsignaciones)
             .toList();
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
 
     return new PaginaTrabajosDTO(items, safePage, safeSize, total, totalPages);
   }
 
+  private TrabajoResumenDTO toResumenConAsignaciones(Trabajo t) {
+    if (t.getId() == null) {
+      return TrabajoResumenDTO.from(t);
+    }
+    return TrabajoResumenDTO.from(t, asignacionEvaluacionDAO.listarPorTrabajo(t.getId()));
+  }
+
   public Trabajo buscar(Long id) {
     return trabajoDAO
         .recuperarPorIdConAutor(id)
         .orElseThrow(() -> new NegocioException("Trabajo no encontrado: " + id));
+  }
+
+  public TrabajoResumenDTO buscarResumen(Long id) {
+    return toResumenConAsignaciones(buscar(id));
   }
 
   public Trabajo crear(Long autorId, Trabajo trabajo) {
@@ -147,32 +176,157 @@ public class TrabajoService {
     return trabajoDAO.alta(trabajo);
   }
 
-  public Trabajo enviar(Long id) {
+  public Trabajo modificar(Long id, TrabajoUpdateRequest request) {
     Trabajo trabajo = buscar(id);
-    if (trabajo.getEstado() != EstadoTrabajo.BORRADOR
-        && trabajo.getEstado() != EstadoTrabajo.APROBADO_CON_CORRECCIONES) {
+    if (!puedeEditar(trabajo)) {
       throw new NegocioException(
-          "Solo se pueden enviar trabajos en borrador o reenviar correcciones pendientes");
+          "Solo se pueden editar borradores, trabajos observados en precheck o con correcciones pendientes");
     }
+    if (request.titulo() != null && !request.titulo().isBlank()) {
+      trabajo.setTitulo(request.titulo().trim());
+    }
+    if (request.resumen() != null) {
+      trabajo.setResumen(request.resumen());
+    }
+    if (request.ejeTematico() != null) {
+      trabajo.setEjeTematico(request.ejeTematico());
+    }
+    if (request.modalidad() != null && !request.modalidad().isBlank()) {
+      try {
+        trabajo.setModalidad(ModalidadPresentacion.valueOf(request.modalidad().trim().toUpperCase()));
+      } catch (IllegalArgumentException e) {
+        throw new NegocioException("Modalidad inválida");
+      }
+    }
+    if (request.tipo() != null && !request.tipo().isBlank()) {
+      try {
+        trabajo.setTipo(TipoTrabajo.valueOf(request.tipo().trim().toUpperCase()));
+      } catch (IllegalArgumentException e) {
+        throw new NegocioException("Tipo de trabajo inválido");
+      }
+    }
+    if (request.coautores() != null) {
+      trabajo.setCoautores(new ArrayList<>(request.coautores()));
+    }
+    validarDatosPostulacion(trabajo);
+    return trabajoDAO.modificar(trabajo);
+  }
+
+  public Trabajo enviar(Long id, String rolEnvioRaw) {
+    Trabajo trabajo = buscar(id);
+    boolean reenvioPrecheck =
+        trabajo.getEstado() == EstadoTrabajo.ENVIADO
+            && trabajo.getPrecheckIntentos() > 0
+            && trabajo.getPrecheckIntentos() < MAX_PRECHECK_INTENTOS;
+    boolean reenvioRevision = trabajo.getEstado() == EstadoTrabajo.APROBADO_CON_CORRECCIONES;
+    boolean primerEnvio = trabajo.getEstado() == EstadoTrabajo.BORRADOR;
+
+    if (!primerEnvio && !reenvioPrecheck && !reenvioRevision) {
+      throw new NegocioException(
+          "Solo se pueden enviar borradores, reenviar correcciones o reenviar tras observación de precheck");
+    }
+
+    Usuario autor = trabajo.getAutor();
+    Rol rolEnvio = resolverRolEnvio(rolEnvioRaw, autor);
+    if (primerEnvio) {
+      validarLimiteNuevoEnvio(autor, rolEnvio);
+    }
+
     validarDatosPostulacion(trabajo);
     if (trabajo.getDocumentoUrl() == null || trabajo.getDocumentoUrl().isBlank()) {
       throw new NegocioException("Debe adjuntar el PDF antes de enviar el trabajo");
     }
+
+    if (reenvioRevision) {
+      limpiarAsignaciones(trabajo.getId());
+    }
+
+    if (primerEnvio || trabajo.getRolEnvio() == null) {
+      trabajo.setRolEnvio(rolEnvio);
+    }
     trabajo.setEstado(EstadoTrabajo.ENVIADO);
     notificarAutor(
         trabajo,
-        "Trabajo enviado",
-        "Tu trabajo \"" + trabajo.getTitulo() + "\" fue enviado y está pendiente de revisión del comité.");
+        reenvioPrecheck || reenvioRevision ? "Trabajo reenviado" : "Trabajo enviado",
+        reenvioPrecheck || reenvioRevision
+            ? "Tu trabajo \"" + trabajo.getTitulo() + "\" fue reenviado y está pendiente de prevalidación."
+            : "Tu trabajo \"" + trabajo.getTitulo() + "\" fue enviado y está pendiente de revisión del comité.");
     return trabajoDAO.modificar(trabajo);
   }
 
-  public Trabajo registrarPrecheck(Long id, boolean apto) {
+  public TrabajoEnvioResumenDTO obtenerResumenEnvio(Long autorId, String rolEnvioRaw) {
+    Usuario autor = usuarioDAO.recuperarPorId(autorId);
+    if (autor == null) {
+      throw new NegocioException("Autor no encontrado: " + autorId);
+    }
+    Rol rolEnvio = resolverRolEnvio(rolEnvioRaw, autor);
+    boolean tieneAutor = autor.getRoles().contains(Rol.AUTOR);
+    boolean tieneAsistente = autor.getRoles().contains(Rol.ASISTENTE);
+    boolean bloqueadoPorDobleRol =
+        rolEnvio == Rol.ASISTENTE && tieneAutor && tieneAsistente;
+
+    List<Trabajo> todos =
+        trabajoDAO.listarFiltrado(
+            new TrabajoFiltro(null, null, null, null, null, null, autorId), 0, 200);
+    List<Trabajo> cientificos =
+        todos.stream().filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER).toList();
+
+    List<Trabajo> delRol = filtrarPorRolEnvio(cientificos, rolEnvio, tieneAutor, tieneAsistente);
+    int totalHistorico = delRol.size();
+    int trabajosActivos = (int) delRol.stream().filter(this::esTrabajoActivoParaCupo).count();
+    int reenviosDisponibles = (int) delRol.stream().filter(this::puedeReenviar).count();
+
+    int limiteActivos = limiteActivos(autor, rolEnvio);
+    LocalDate deadline = congresoDAO.obtenerPrincipal().getEnvioTrabajosHasta();
+    boolean fechaLimitePasada = deadline != null && LocalDate.now().isAfter(deadline);
+
+    boolean puedeEnviarNuevo = false;
+    String mensajeBloqueo = null;
+    if (bloqueadoPorDobleRol) {
+      mensajeBloqueo =
+          "Tu cuenta tiene rol autor y asistente. Cambiá a rol autor y enviá desde el panel Autor.";
+    } else if (reenviosDisponibles > 0) {
+      puedeEnviarNuevo = true;
+    } else if (fechaLimitePasada) {
+      mensajeBloqueo =
+          "No se permiten envíos nuevos: se superó la fecha límite"
+              + (deadline != null ? " (" + deadline + ")." : ".");
+    } else if (trabajosActivos >= limiteActivos) {
+      mensajeBloqueo =
+          "Ya alcanzaste el máximo de "
+              + limiteActivos
+              + " trabajo"
+              + (limiteActivos > 1 ? "s" : "")
+              + " activo"
+              + (limiteActivos > 1 ? "s" : "")
+              + ".";
+    } else {
+      puedeEnviarNuevo = true;
+    }
+
+    return new TrabajoEnvioResumenDTO(
+        delRol.size(),
+        cientificos.size(),
+        trabajosActivos,
+        reenviosDisponibles,
+        limiteActivos,
+        puedeEnviarNuevo,
+        bloqueadoPorDobleRol,
+        mensajeBloqueo,
+        deadline,
+        fechaLimitePasada);
+  }
+
+  public Trabajo registrarPrecheck(Long id, boolean apto, String observaciones) {
     Trabajo trabajo = buscar(id);
     if (trabajo.getEstado() != EstadoTrabajo.ENVIADO) {
       throw new NegocioException("Solo se puede hacer precheck de trabajos en estado ENVIADO");
     }
     if (apto) {
       trabajo.setEstado(EstadoTrabajo.PRECHECK_OK);
+      if (observaciones != null && !observaciones.isBlank()) {
+        trabajo.setObservacionesPrecheck(observaciones.trim());
+      }
       notificarAutor(
           trabajo,
           "Precheck aprobado",
@@ -181,6 +335,9 @@ public class TrabajoService {
     }
     int intentos = trabajo.getPrecheckIntentos() + 1;
     trabajo.setPrecheckIntentos(intentos);
+    if (observaciones != null && !observaciones.isBlank()) {
+      trabajo.setObservacionesPrecheck(observaciones.trim());
+    }
     if (intentos >= MAX_PRECHECK_INTENTOS) {
       trabajo.setEstado(EstadoTrabajo.RECHAZADO);
       notificarAutor(
@@ -191,7 +348,9 @@ public class TrabajoService {
       notificarAutor(
           trabajo,
           "Trabajo observado en precheck",
-          "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. Revisá los requisitos y reenviá si corresponde.");
+          observaciones != null && !observaciones.isBlank()
+              ? "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. " + observaciones.trim()
+              : "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. Revisá los requisitos y reenviá si corresponde.");
     }
     return trabajoDAO.modificar(trabajo);
   }
@@ -231,7 +390,7 @@ public class TrabajoService {
         asignaciones.stream()
             .filter(a -> a.isAceptada() && a.getEvaluacion() != null)
             .count();
-    if (evaluacionesCompletas < 2) {
+    if (evaluacionesCompletas < 1) {
       return;
     }
     long aprobaciones =
@@ -240,11 +399,9 @@ public class TrabajoService {
                 a ->
                     a.isAceptada()
                         && a.getEvaluacion() != null
-                        && (a.getEvaluacion().getRecomendacion()
-                                == ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion.APROBADO
+                        && (a.getEvaluacion().getRecomendacion() == RecomendacionEvaluacion.APROBADO
                             || a.getEvaluacion().getRecomendacion()
-                                == ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion
-                                    .APROBADO_CON_CORRECCIONES))
+                                == RecomendacionEvaluacion.APROBADO_CON_CORRECCIONES))
             .count();
     long rechazos =
         asignaciones.stream()
@@ -252,9 +409,9 @@ public class TrabajoService {
                 a ->
                     a.isAceptada()
                         && a.getEvaluacion() != null
-                        && a.getEvaluacion().getRecomendacion()
-                            == ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion.RECHAZADO)
+                        && a.getEvaluacion().getRecomendacion() == RecomendacionEvaluacion.RECHAZADO)
             .count();
+
     if (aprobaciones >= 2) {
       trabajo.setEstado(EstadoTrabajo.PENDIENTE_APROBACION_COMITE);
       notificarAutor(
@@ -268,10 +425,27 @@ public class TrabajoService {
           null);
     } else if (rechazos >= 2) {
       trabajo.setEstado(EstadoTrabajo.RECHAZADO);
-      notificarAutor(trabajo, "Trabajo rechazado", "Tu trabajo \"" + trabajo.getTitulo() + "\" fue rechazado por los evaluadores.");
+      notificarAutor(
+          trabajo,
+          "Trabajo rechazado",
+          "Tu trabajo \"" + trabajo.getTitulo() + "\" fue rechazado por los evaluadores.");
     } else if (rechazos >= 1 && aprobaciones < 2) {
-      trabajo.setEstado(EstadoTrabajo.RECHAZADO);
-      notificarAutor(trabajo, "Trabajo rechazado", "Tu trabajo \"" + trabajo.getTitulo() + "\" no alcanzó las aprobaciones necesarias.");
+      int intentos = trabajo.getRevisionIntentos() + 1;
+      trabajo.setRevisionIntentos(intentos);
+      if (intentos >= MAX_REVISION_INTENTOS) {
+        trabajo.setEstado(EstadoTrabajo.RECHAZADO);
+        notificarAutor(
+            trabajo,
+            "Trabajo rechazado final",
+            "Tu trabajo \"" + trabajo.getTitulo() + "\" agotó los reenvíos por evaluación.");
+      } else {
+        trabajo.setEstado(EstadoTrabajo.APROBADO_CON_CORRECCIONES);
+        limpiarAsignaciones(trabajoId);
+        notificarAutor(
+            trabajo,
+            "Trabajo observado en evaluación",
+            "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado por evaluadores. Podés corregirlo y reenviarlo.");
+      }
     }
     trabajoDAO.modificar(trabajo);
   }
@@ -293,6 +467,118 @@ public class TrabajoService {
     Trabajo trabajo = buscar(id);
     documentStorageService.eliminarPorUrl(trabajo.getDocumentoUrl());
     trabajoDAO.baja(id);
+  }
+
+  private void validarLimiteNuevoEnvio(Usuario autor, Rol rolEnvio) {
+    boolean tieneAutor = autor.getRoles().contains(Rol.AUTOR);
+    boolean tieneAsistente = autor.getRoles().contains(Rol.ASISTENTE);
+    if (rolEnvio == Rol.ASISTENTE && tieneAutor && tieneAsistente) {
+      throw new NegocioException(
+          "Tu cuenta tiene rol autor y asistente. Enviá trabajos desde el panel Autor.");
+    }
+    LocalDate deadline = congresoDAO.obtenerPrincipal().getEnvioTrabajosHasta();
+    if (deadline != null && LocalDate.now().isAfter(deadline)) {
+      throw new NegocioException("No se permiten envíos nuevos: se superó la fecha límite.");
+    }
+    List<Trabajo> todos =
+        trabajoDAO.listarFiltrado(
+            new TrabajoFiltro(null, null, null, null, null, null, autor.getId()), 0, 200);
+    List<Trabajo> cientificos =
+        todos.stream().filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER).toList();
+    List<Trabajo> delRol = filtrarPorRolEnvio(cientificos, rolEnvio, tieneAutor, tieneAsistente);
+    long activos = delRol.stream().filter(this::esTrabajoActivoParaCupo).count();
+    int limite = limiteActivos(autor, rolEnvio);
+    if (activos >= limite) {
+      throw new NegocioException(
+          "Ya alcanzaste el máximo de " + limite + " trabajo(s) activo(s) como " + rolEnvio.name().toLowerCase());
+    }
+  }
+
+  private int limiteActivos(Usuario autor, Rol rolEnvio) {
+    boolean tieneAutor = autor.getRoles().contains(Rol.AUTOR);
+    boolean tieneAsistente = autor.getRoles().contains(Rol.ASISTENTE);
+    if (rolEnvio == Rol.ASISTENTE) {
+      return 1;
+    }
+    if (tieneAutor && tieneAsistente) {
+      return 1;
+    }
+    return 2;
+  }
+
+  private List<Trabajo> filtrarPorRolEnvio(
+      List<Trabajo> trabajos, Rol rolEnvio, boolean tieneAutor, boolean tieneAsistente) {
+    return trabajos.stream()
+        .filter(
+            t -> {
+              if (t.getRolEnvio() != null) {
+                return t.getRolEnvio() == rolEnvio;
+              }
+              if (tieneAutor && tieneAsistente) {
+                return rolEnvio == Rol.AUTOR;
+              }
+              if (tieneAutor) {
+                return rolEnvio == Rol.AUTOR;
+              }
+              return rolEnvio == Rol.ASISTENTE;
+            })
+        .toList();
+  }
+
+  private boolean esTrabajoActivoParaCupo(Trabajo t) {
+    if (t.getEstado() == EstadoTrabajo.RECHAZADO || t.getEstado() == EstadoTrabajo.BORRADOR) {
+      return false;
+    }
+    if (t.getEstado() == EstadoTrabajo.APROBADO_CON_CORRECCIONES) {
+      return false;
+    }
+    if (t.getEstado() == EstadoTrabajo.ENVIADO && t.getPrecheckIntentos() > 0) {
+      return false;
+    }
+    return true;
+  }
+
+  private boolean puedeReenviar(Trabajo t) {
+    if (t.getEstado() == EstadoTrabajo.ENVIADO
+        && t.getPrecheckIntentos() > 0
+        && t.getPrecheckIntentos() < MAX_PRECHECK_INTENTOS) {
+      return true;
+    }
+    return t.getEstado() == EstadoTrabajo.APROBADO_CON_CORRECCIONES
+        && t.getRevisionIntentos() < MAX_REVISION_INTENTOS;
+  }
+
+  private boolean puedeEditar(Trabajo t) {
+    return t.getEstado() == EstadoTrabajo.BORRADOR
+        || puedeReenviar(t);
+  }
+
+  private Rol resolverRolEnvio(String rolEnvioRaw, Usuario autor) {
+    if (rolEnvioRaw != null && !rolEnvioRaw.isBlank()) {
+      try {
+        Rol rol = Rol.valueOf(rolEnvioRaw.trim().toUpperCase());
+        if (rol != Rol.ASISTENTE && rol != Rol.AUTOR) {
+          throw new NegocioException("rolEnvio debe ser ASISTENTE o AUTOR");
+        }
+        return rol;
+      } catch (IllegalArgumentException e) {
+        throw new NegocioException("rolEnvio inválido");
+      }
+    }
+    if (autor.getRoles().contains(Rol.AUTOR) && !autor.getRoles().contains(Rol.ASISTENTE)) {
+      return Rol.AUTOR;
+    }
+    if (autor.getRoles().contains(Rol.ASISTENTE) && !autor.getRoles().contains(Rol.AUTOR)) {
+      return Rol.ASISTENTE;
+    }
+    return Rol.AUTOR;
+  }
+
+  private void limpiarAsignaciones(Long trabajoId) {
+    List<AsignacionEvaluacion> actuales = asignacionEvaluacionDAO.listarPorTrabajo(trabajoId);
+    for (AsignacionEvaluacion a : actuales) {
+      asignacionEvaluacionDAO.baja(a.getId());
+    }
   }
 
   private void validarDatosPostulacion(Trabajo trabajo) {

@@ -19,8 +19,6 @@ import { PagosPendientesComponent } from './pages/admin/pagos-pendientes/pagos-p
 import { PagosListaComponent } from './pages/admin/pagos-lista/pagos-lista.component';
 import { ActividadesAdminComponent } from './pages/admin/actividades/actividades-admin.component';
 import { TrabajosAdminComponent } from './pages/admin/trabajos/trabajos-admin.component';
-import { AsignacionesOcComponent } from './pages/organizador/asignaciones/asignaciones-oc.component';
-import { PromoverEvaluadorComponent } from './pages/organizador/promover-evaluador/promover-evaluador.component';
 import { AsignacionesEvaluadorComponent } from './pages/evaluador/asignaciones/asignaciones-evaluador.component';
 import { TrabajosAutorComponent } from './pages/autor/trabajos/trabajos-autor.component';
 import { CronogramaParticipanteComponent } from './pages/participante/cronograma/cronograma-participante.component';
@@ -131,30 +129,16 @@ export const routes: Routes = [
     canActivate: [organizador],
     data: {
       titulo: 'Comité Académico',
-      descripcion: 'Precheck, asignación de evaluadores y confirmación final.',
+      descripcion: 'Prevalidación formal, evaluadores por eje y asignación de trabajos.',
       colorTema: 'indigo',
       iconoTema: '🎓',
       acciones: [
         {
-          label: 'Precheck y confirmación',
+          label: 'Panel del Comité Académico',
           route: '/organizador/comite',
-          descripcion: 'Revisá trabajos enviados y confirmá aprobaciones finales.',
+          descripcion: 'Precheck, evaluadores por eje, asignaciones y confirmación final.',
           icono: '✓',
           color: 'violeta',
-        },
-        {
-          label: 'Asignar evaluadores',
-          route: '/organizador/asignaciones',
-          descripcion: 'Asigná 2 evaluadores por trabajo con precheck OK.',
-          icono: '👥',
-          color: 'azul',
-        },
-        {
-          label: 'Promover evaluadores',
-          route: '/organizador/promover',
-          descripcion: 'Otorgá el rol evaluador a usuarios del congreso.',
-          icono: '⭐',
-          color: 'naranja',
         },
       ],
     },
@@ -166,13 +150,13 @@ export const routes: Routes = [
   },
   {
     path: 'organizador/asignaciones',
-    component: AsignacionesOcComponent,
-    canActivate: [organizador],
+    redirectTo: 'organizador/comite',
+    pathMatch: 'full',
   },
   {
     path: 'organizador/promover',
-    component: PromoverEvaluadorComponent,
-    canActivate: [organizador],
+    redirectTo: 'organizador/comite',
+    pathMatch: 'full',
   },
 
   // --- Perfil Evaluador ---

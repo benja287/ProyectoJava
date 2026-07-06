@@ -3,7 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { PaginaTrabajos, Trabajo, TrabajoCreateRequest } from '../models/trabajo.model';
+import {
+  PaginaTrabajos,
+  Trabajo,
+  TrabajoCreateRequest,
+  TrabajoEnvioResumen,
+} from '../models/trabajo.model';
 import { buildListHttpParams } from '../utils/filtro-params.util';
 
 export interface TrabajoListFiltro {
@@ -37,6 +42,16 @@ export class TrabajoService {
     return this.http.get<PaginaTrabajos>(this.baseUrl, { params }).pipe(map((p) => p.items));
   }
 
+  listarComite(): Observable<Trabajo[]> {
+    return this.http.get<Trabajo[]>(`${this.baseUrl}/comite`);
+  }
+
+  resumenEnvio(autorId: number, rolEnvio: 'ASISTENTE' | 'AUTOR'): Observable<TrabajoEnvioResumen> {
+    return this.http.get<TrabajoEnvioResumen>(`${this.baseUrl}/resumen-envio`, {
+      params: { autorId, rolEnvio },
+    });
+  }
+
   buscar(id: number): Observable<Trabajo> {
     return this.http.get<Trabajo>(`${this.baseUrl}/${id}`);
   }
@@ -45,12 +60,29 @@ export class TrabajoService {
     return this.http.post<Trabajo>(this.baseUrl, request);
   }
 
-  enviar(id: number): Observable<Trabajo> {
-    return this.http.put<Trabajo>(`${this.baseUrl}/${id}/enviar`, {});
+  modificar(
+    id: number,
+    datos: Partial<{
+      titulo: string;
+      resumen: string;
+      ejeTematico: string;
+      modalidad: string;
+      tipo: string;
+      coautores: string[];
+    }>
+  ): Observable<Trabajo> {
+    return this.http.put<Trabajo>(`${this.baseUrl}/${id}`, datos);
   }
 
-  precheck(id: number, apto: boolean): Observable<Trabajo> {
-    return this.http.put<Trabajo>(`${this.baseUrl}/${id}/precheck`, { apto });
+  enviar(id: number, rolEnvio?: string): Observable<Trabajo> {
+    return this.http.put<Trabajo>(`${this.baseUrl}/${id}/enviar`, { rolEnvio: rolEnvio ?? null });
+  }
+
+  precheck(id: number, apto: boolean, observaciones?: string): Observable<Trabajo> {
+    return this.http.put<Trabajo>(`${this.baseUrl}/${id}/precheck`, {
+      apto,
+      observaciones: observaciones ?? null,
+    });
   }
 
   confirmarComite(id: number, aprobar: boolean, observaciones?: string): Observable<Trabajo> {

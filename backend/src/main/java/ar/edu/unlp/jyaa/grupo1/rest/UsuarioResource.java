@@ -39,6 +39,7 @@ import java.net.URI;
 public class UsuarioResource {
 
   @Inject private UsuarioService usuarioService;
+  @Inject private ar.edu.unlp.jyaa.grupo1.servicio.EvaluadorEjeService evaluadorEjeService;
 
   @GET
   @Operation(summary = "Listar usuarios")
@@ -140,5 +141,29 @@ public class UsuarioResource {
       throw new NotFoundException("Usuario no encontrado");
     }
     return UsuarioDTO.from(actualizado);
+  }
+
+  @PUT
+  @Path("/{id}/evaluador-eje")
+  @Operation(summary = "Asignar evaluador a un eje temático (máx. 3 por eje)")
+  public UsuarioDTO asignarEvaluadorEje(
+      @PathParam("id") Long id, ar.edu.unlp.jyaa.grupo1.rest.dto.EvaluadorEjeRequest request) {
+    try {
+      return UsuarioDTO.from(
+          evaluadorEjeService.asignarEvaluadorAEje(id, request.ejeTematico()));
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @DELETE
+  @Path("/{id}/evaluador-eje")
+  @Operation(summary = "Quitar evaluador de su eje temático")
+  public UsuarioDTO quitarEvaluadorEje(@PathParam("id") Long id) {
+    try {
+      return UsuarioDTO.from(evaluadorEjeService.quitarEvaluadorDeEje(id));
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
   }
 }

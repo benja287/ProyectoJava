@@ -58,6 +58,25 @@ public class AsignacionEvaluacionResource {
   }
 
   @POST
+  @Path("/batch")
+  @Operation(summary = "Asignar varios evaluadores a un trabajo")
+  public Response asignarVarios(
+      ar.edu.unlp.jyaa.grupo1.rest.dto.AsignarEvaluadoresRequest request, @Context UriInfo uriInfo) {
+    try {
+      var creadas =
+          asignacionService.asignarVarios(
+              request.trabajoId(),
+              request.evaluadorIds(),
+              request.tercerEvaluadorEmpate());
+      return Response.ok(
+              creadas.stream().map(AsignacionEvaluacionDTO::from).toList())
+          .build();
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new BadRequestException(e.getMessage());
+    }
+  }
+
+  @POST
   @Operation(summary = "Asignar evaluador a trabajo")
   @ApiResponse(responseCode = "201", description = "Asignación creada")
   @ApiResponse(responseCode = "400", description = "Error de validación")

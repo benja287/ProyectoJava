@@ -133,6 +133,27 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
   }
 
   @Override
+  public long contarEvaluadoresPorEje(String ejeTematico, Long excluirUsuarioId) {
+    EntityManager em = entityManagerParaConsulta();
+    try {
+      StringBuilder jpql =
+          new StringBuilder(
+              "SELECT COUNT(u) FROM Usuario u JOIN u.roles r WHERE r = ar.edu.unlp.jyaa.grupo1.modelo.Rol.EVALUADOR"
+                  + " AND u.ejeTematicoEvaluador = :eje");
+      if (excluirUsuarioId != null) {
+        jpql.append(" AND u.id <> :excluirId");
+      }
+      TypedQuery<Long> q = em.createQuery(jpql.toString(), Long.class).setParameter("eje", ejeTematico);
+      if (excluirUsuarioId != null) {
+        q.setParameter("excluirId", excluirUsuarioId);
+      }
+      return q.getSingleResult();
+    } finally {
+      cerrarSiLegacy(em);
+    }
+  }
+
+  @Override
   public void flush() {
     super.flush();
   }

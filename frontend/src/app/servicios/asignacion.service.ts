@@ -29,6 +29,18 @@ export class AsignacionService {
     return this.http.post<AsignacionEvaluacion>(this.baseUrl, request);
   }
 
+  asignarVarios(
+    trabajoId: number,
+    evaluadorIds: number[],
+    tercerEvaluadorEmpate = false
+  ): Observable<AsignacionEvaluacion[]> {
+    return this.http.post<AsignacionEvaluacion[]>(`${this.baseUrl}/batch`, {
+      trabajoId,
+      evaluadorIds,
+      tercerEvaluadorEmpate,
+    });
+  }
+
   desasignar(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }

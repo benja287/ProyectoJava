@@ -9,6 +9,7 @@ export interface Usuario {
   roles?: string[];
   rolActual?: string | null;
   categoriaInscripcion?: string | null;
+  ejeTematicoEvaluador?: string | null;
 }
 
 export interface PaginaUsuarios {

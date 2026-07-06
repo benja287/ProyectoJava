@@ -18,6 +18,7 @@ export class CongresoConfigService {
     cambios: Partial<{
       programaPublicado: boolean;
       certificadosDisponiblesDesde: string | null;
+      envioTrabajosHasta: string | null;
     }>
   ): Observable<CongresoConfig> {
     return this.http.put<CongresoConfig>(this.baseUrl, cambios);

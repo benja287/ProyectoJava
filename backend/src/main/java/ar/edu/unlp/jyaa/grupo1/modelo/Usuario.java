@@ -43,6 +43,10 @@ public class Usuario implements Serializable {
   @Column(name = "categoria_inscripcion", length = 80)
   private String categoriaInscripcion;
 
+  /** Eje temático asignado cuando el usuario actúa como evaluador (máx. 3 por eje). */
+  @Column(name = "eje_tematico_evaluador", length = 300)
+  private String ejeTematicoEvaluador;
+
   @OneToMany(mappedBy = "autor", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Trabajo> trabajos = new ArrayList<>();
 
@@ -130,6 +134,14 @@ public class Usuario implements Serializable {
 
   public void setCategoriaInscripcion(String categoriaInscripcion) {
     this.categoriaInscripcion = categoriaInscripcion;
+  }
+
+  public String getEjeTematicoEvaluador() {
+    return ejeTematicoEvaluador;
+  }
+
+  public void setEjeTematicoEvaluador(String ejeTematicoEvaluador) {
+    this.ejeTematicoEvaluador = ejeTematicoEvaluador;
   }
 
   public List<Trabajo> getTrabajos() {

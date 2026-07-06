@@ -37,6 +37,17 @@ public class Trabajo implements Serializable {
   @Column(name = "precheck_intentos", nullable = false)
   private int precheckIntentos = 0;
 
+  @Column(name = "revision_intentos", nullable = false)
+  private int revisionIntentos = 0;
+
+  @Column(name = "observaciones_precheck", columnDefinition = "TEXT")
+  private String observacionesPrecheck;
+
+  /** Rol con el que se envió el trabajo (ASISTENTE o AUTOR) para cupos por perfil. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "rol_envio", length = 20)
+  private Rol rolEnvio;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private EstadoTrabajo estado = EstadoTrabajo.BORRADOR;
@@ -115,6 +126,30 @@ public class Trabajo implements Serializable {
 
   public void setPrecheckIntentos(int precheckIntentos) {
     this.precheckIntentos = precheckIntentos;
+  }
+
+  public int getRevisionIntentos() {
+    return revisionIntentos;
+  }
+
+  public void setRevisionIntentos(int revisionIntentos) {
+    this.revisionIntentos = revisionIntentos;
+  }
+
+  public String getObservacionesPrecheck() {
+    return observacionesPrecheck;
+  }
+
+  public void setObservacionesPrecheck(String observacionesPrecheck) {
+    this.observacionesPrecheck = observacionesPrecheck;
+  }
+
+  public Rol getRolEnvio() {
+    return rolEnvio;
+  }
+
+  public void setRolEnvio(Rol rolEnvio) {
+    this.rolEnvio = rolEnvio;
   }
 
   public TipoTrabajo getTipo() {

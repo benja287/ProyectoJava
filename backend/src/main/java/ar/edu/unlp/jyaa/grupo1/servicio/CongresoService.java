@@ -35,6 +35,18 @@ public class CongresoService {
         }
       }
     }
+    if (request.envioTrabajosHasta() != null) {
+      String raw = request.envioTrabajosHasta().trim();
+      if (raw.isEmpty()) {
+        congreso.setEnvioTrabajosHasta(null);
+      } else {
+        try {
+          congreso.setEnvioTrabajosHasta(LocalDate.parse(raw));
+        } catch (DateTimeParseException e) {
+          throw new NegocioException("Fecha límite de envíos inválida (use AAAA-MM-DD)");
+        }
+      }
+    }
     congresoDAO.modificar(congreso);
     return CongresoConfigDTO.from(congreso);
   }

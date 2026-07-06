@@ -13,7 +13,28 @@ export interface Trabajo {
   autorId?: number;
   autorNombre?: string;
   autorApellido?: string;
+  autorCategoria?: string;
   precheckIntentos?: number;
+  revisionIntentos?: number;
+  observacionesPrecheck?: string;
+  rolEnvio?: string;
+  asignacionesCount?: number;
+  evaluacionesCompletas?: number;
+  aprobaciones?: number;
+  rechazos?: number;
+}
+
+export interface TrabajoEnvioResumen {
+  trabajosEnviadosRol: number;
+  totalHistorico: number;
+  trabajosActivos: number;
+  reenviosDisponibles: number;
+  limiteActivos: number;
+  puedeEnviarNuevo: boolean;
+  bloqueadoPorDobleRol: boolean;
+  mensajeBloqueo?: string | null;
+  envioTrabajosHasta?: string | null;
+  fechaLimitePasada: boolean;
 }
 
 export interface PaginaTrabajos {

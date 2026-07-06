@@ -15,7 +15,7 @@ import {
   MODALIDADES_PRESENTACION,
   MODALIDAD_LABELS,
 } from '../../../constants/ejes-tematicos';
-import { Trabajo } from '../../../models/trabajo.model';
+import { Trabajo, TrabajoEnvioResumen } from '../../../models/trabajo.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
@@ -43,8 +43,47 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
         <p class="ok">{{ mensaje }}</p>
       }
 
-      <h2>{{ perfilAsistente ? 'Enviar trabajo' : 'Nuevo trabajo' }}</h2>
-      @if (perfilAsistente) {
+      @if (perfilAsistente && resumen) {
+        <p class="muted">
+          Trabajos enviados (asistente): {{ resumen.trabajosEnviadosRol }} | Total histórico:
+          {{ resumen.totalHistorico }}
+        </p>
+        <div
+          class="limite-envio-box"
+          [class.limite-envio-box--ok]="!resumen.fechaLimitePasada"
+          [class.limite-envio-box--error]="resumen.fechaLimitePasada"
+        >
+          <strong>Límite de envíos</strong>
+          <p>
+            {{
+              resumen.envioTrabajosHasta
+                ? 'Fecha límite para enviar trabajos nuevos: ' + resumen.envioTrabajosHasta
+                : 'El Comité Académico aún no definió fecha límite de entrega: por ahora se permiten envíos nuevos.'
+            }}
+          </p>
+        </div>
+        @if (!puedeEnviarFormulario) {
+          <div class="limite-envio-box limite-envio-box--warn">
+            <p><strong>No podés enviar un nuevo trabajo en este momento.</strong></p>
+            @if (resumen.mensajeBloqueo) {
+              <p>{{ resumen.mensajeBloqueo }}</p>
+            }
+            <p class="muted">
+              Trabajos activos (asistente): {{ resumen.trabajosActivos }} | Reenvíos disponibles:
+              {{ resumen.reenviosDisponibles }}
+            </p>
+          </div>
+        }
+      }
+
+      <h2>{{ tituloFormulario }}</h2>
+      @if (perfilAsistente && trabajoReenvio) {
+        <div class="limite-envio-box limite-envio-box--ok">
+          Estás corrigiendo y reenviando: <strong>{{ trabajoReenvio.titulo }}</strong>. Al enviar se
+          actualiza el mismo trabajo.
+        </div>
+      }
+      @if (perfilAsistente && puedeEnviarFormulario) {
         <form [formGroup]="form" (ngSubmit)="crearYEnviar()" class="form-grid trabajo-form-asistente">
           <label>
             Título
@@ -94,7 +133,7 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
             {{ guardando ? 'Enviando...' : 'Enviar trabajo' }}
           </button>
         </form>
-      } @else {
+      } @else if (!perfilAsistente) {
       <form [formGroup]="form" (ngSubmit)="crear()" class="form-grid">
         <label>
           Título
@@ -137,6 +176,25 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
       </form>
       }
 
+      @if (perfilAsistente) {
+        <h2>Mis trabajos (rol asistente)</h2>
+        @if (trabajos.length === 0) {
+          <p>No tenés trabajos cargados.</p>
+        } @else {
+          @for (t of trabajos; track t.id) {
+            <article class="trabajo-item-detalle">
+              <div class="trabajo-item-detalle-header">
+                <strong>{{ t.titulo }}</strong>
+                <span class="estado-badge estado-badge--enviado">{{ t.estado }}</span>
+              </div>
+              <p class="trabajo-item-meta">
+                {{ t.ejeTematico }} • Precheck {{ Math.min(t.precheckIntentos ?? 0, 3) }}/3 • Revisión
+                {{ Math.min(t.revisionIntentos ?? 0, 2) }}/2
+              </p>
+            </article>
+          }
+        }
+      } @else {
       <h2>Listado</h2>
 
       <app-filter-bar
@@ -197,6 +255,7 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
           </tbody>
         </table>
       }
+      }
 
       <p><a [routerLink]="menuVolver">← {{ etiquetaVolver }}</a></p>
     </section>
@@ -204,6 +263,7 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
 })
 export class TrabajosAutorComponent implements OnInit {
   private fb = inject(FormBuilder);
+  readonly Math = Math;
 
   readonly filterFields: FilterFieldConfig[] = [
     { key: 'titulo', label: 'Título', placeholder: 'Buscar por título' },
@@ -232,6 +292,8 @@ export class TrabajosAutorComponent implements OnInit {
   mensaje = '';
   autorId?: number;
   perfilAsistente = false;
+  resumen?: TrabajoEnvioResumen;
+  trabajoReenvio?: Trabajo;
   menuVolver = '/autor';
   etiquetaVolver = 'Menú autor';
 
@@ -266,7 +328,46 @@ export class TrabajosAutorComponent implements OnInit {
 
     this.route.queryParamMap.subscribe((params) => {
       this.filtros = filtroFromParams(params, this.filterKeys);
+      const resubmitId = Number(params.get('resubmit'));
+      if (resubmitId) {
+        this.trabajoService.buscar(resubmitId).subscribe({
+          next: (t) => {
+            this.trabajoReenvio = t;
+            this.cargarFormularioReenvio(t);
+          },
+        });
+      } else {
+        this.trabajoReenvio = undefined;
+      }
       this.cargar();
+    });
+
+    if (this.perfilAsistente && this.autorId) {
+      this.trabajoService.resumenEnvio(this.autorId, 'ASISTENTE').subscribe({
+        next: (r) => (this.resumen = r),
+      });
+    }
+  }
+
+  get tituloFormulario(): string {
+    if (!this.perfilAsistente) return 'Nuevo trabajo';
+    return this.trabajoReenvio ? 'Reenviar trabajo' : 'Enviar trabajo';
+  }
+
+  get puedeEnviarFormulario(): boolean {
+    if (!this.perfilAsistente) return true;
+    if (this.trabajoReenvio) return true;
+    return this.resumen?.puedeEnviarNuevo ?? true;
+  }
+
+  private cargarFormularioReenvio(t: Trabajo): void {
+    this.form.patchValue({
+      titulo: t.titulo,
+      resumen: t.resumen || '',
+      ejeTematico: t.ejeTematico || '',
+      modalidad: (t.modalidad || 'ORAL') as 'ORAL' | 'POSTER',
+      tipo: t.tipo as (typeof TIPOS_TRABAJO)[number],
+      coautoresTexto: (t.coautores || []).join(', '),
     });
   }
 
@@ -299,6 +400,31 @@ export class TrabajosAutorComponent implements OnInit {
     const pdf = this.pdfNuevo;
     this.guardando = true;
     this.error = '';
+
+    if (this.trabajoReenvio?.id) {
+      this.trabajoService
+        .modificar(this.trabajoReenvio.id, {
+          titulo: raw.titulo!,
+          resumen: raw.resumen || undefined,
+          ejeTematico: raw.ejeTematico || undefined,
+          modalidad: raw.modalidad || undefined,
+          tipo: raw.tipo!,
+          coautores,
+        })
+        .pipe(
+          switchMap(() => this.trabajoService.adjuntarDocumento(this.trabajoReenvio!.id!, pdf)),
+          switchMap((conPdf) => this.trabajoService.enviar(conPdf.id!, 'ASISTENTE'))
+        )
+        .subscribe({
+          next: () => this.finalizarEnvioAsistente(),
+          error: (err) => {
+            this.error = mensajeErrorApi(err, 'No se pudo reenviar el trabajo.');
+            this.guardando = false;
+          },
+        });
+      return;
+    }
+
     this.trabajoService
       .crear({
         autorId: this.autorId,
@@ -322,27 +448,29 @@ export class TrabajosAutorComponent implements OnInit {
           if (!conPdf.id) {
             throw new Error('Trabajo sin id');
           }
-          return this.trabajoService.enviar(conPdf.id);
+          return this.trabajoService.enviar(conPdf.id, 'ASISTENTE');
         })
       )
       .subscribe({
-        next: () => {
-          this.loginService.refreshUser().subscribe({
-            next: () => {
-              this.guardando = false;
-              this.router.navigate(['/asistente'], { queryParams: { trabajoEnviado: '1' } });
-            },
-            error: () => {
-              this.guardando = false;
-              this.router.navigate(['/asistente'], { queryParams: { trabajoEnviado: '1' } });
-            },
-          });
-        },
+        next: () => this.finalizarEnvioAsistente(),
         error: (err) => {
           this.error = mensajeErrorApi(err, 'No se pudo enviar el trabajo.');
           this.guardando = false;
         },
       });
+  }
+
+  private finalizarEnvioAsistente(): void {
+    this.loginService.refreshUser().subscribe({
+      next: () => {
+        this.guardando = false;
+        this.router.navigate(['/asistente'], { queryParams: { trabajoEnviado: '1' } });
+      },
+      error: () => {
+        this.guardando = false;
+        this.router.navigate(['/asistente'], { queryParams: { trabajoEnviado: '1' } });
+      },
+    });
   }
 
   crear(): void {
@@ -424,7 +552,7 @@ export class TrabajosAutorComponent implements OnInit {
     if (!trabajo.id) {
       return;
     }
-    this.trabajoService.enviar(trabajo.id).subscribe({
+    this.trabajoService.enviar(trabajo.id, this.perfilAsistente ? 'ASISTENTE' : 'AUTOR').subscribe({
       next: (actualizado) => {
         this.mensaje =
           trabajo.estado === 'APROBADO_CON_CORRECCIONES'
@@ -451,7 +579,13 @@ export class TrabajosAutorComponent implements OnInit {
       .listar(1, 100, { ...this.filtros, autorId: this.autorId })
       .subscribe({
         next: (items) => {
-          this.trabajos = items.filter((t) => t.tipo !== 'PROPUESTA_TALLER');
+          this.trabajos = items.filter((t) => {
+            if (t.tipo === 'PROPUESTA_TALLER') return false;
+            if (this.perfilAsistente) {
+              return t.rolEnvio === 'ASISTENTE' || !t.rolEnvio;
+            }
+            return true;
+          });
           this.cargando = false;
         },
       error: (err) => {

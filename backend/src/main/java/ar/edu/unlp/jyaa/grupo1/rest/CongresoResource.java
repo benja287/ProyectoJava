@@ -36,11 +36,18 @@ public class CongresoResource {
 
   @PUT
   @Path("/config")
-  @Operation(summary = "Actualizar configuración del congreso (admin)")
+  @Operation(summary = "Actualizar configuración del congreso (admin u organizador para fecha límite)")
   public CongresoConfigDTO actualizarConfig(
       CongresoConfigUpdateRequest request, @Context ContainerRequestContext ctx) {
-    if (!AuthenticatedUser.from(ctx).isAdmin()) {
-      throw new NotAuthorizedException("Solo administradores");
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    boolean esAdmin = auth.isAdmin();
+    boolean esComite = auth.hasRole("ORGANIZADOR_CIENTIFICO");
+    if (!esAdmin && !esComite) {
+      throw new NotAuthorizedException("Solo administradores u organizador científico");
+    }
+    if (!esAdmin
+        && (request.programaPublicado() != null || request.certificadosDisponiblesDesde() != null)) {
+      throw new NotAuthorizedException("Solo administradores pueden modificar programa o certificados");
     }
     return congresoService.actualizarConfig(request);
   }

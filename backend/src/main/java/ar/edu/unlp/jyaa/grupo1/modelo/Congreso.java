@@ -30,6 +30,9 @@ public class Congreso implements Serializable {
   @Column(name = "certificados_disponibles_desde")
   private LocalDate certificadosDisponiblesDesde;
 
+  @Column(name = "envio_trabajos_hasta")
+  private LocalDate envioTrabajosHasta;
+
   public Congreso() {}
 
   public Long getId() {
@@ -78,5 +81,13 @@ public class Congreso implements Serializable {
 
   public void setCertificadosDisponiblesDesde(LocalDate certificadosDisponiblesDesde) {
     this.certificadosDisponiblesDesde = certificadosDisponiblesDesde;
+  }
+
+  public LocalDate getEnvioTrabajosHasta() {
+    return envioTrabajosHasta;
+  }
+
+  public void setEnvioTrabajosHasta(LocalDate envioTrabajosHasta) {
+    this.envioTrabajosHasta = envioTrabajosHasta;
   }
 }

@@ -1490,3 +1490,296 @@ textarea {
 .acciones-tabla .btn-link + .btn-link {
   margin-left: 0.5rem;
 }
+
+/* Comité académico */
+.comite-pasos {
+  margin: 0;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.comite-deadline-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.comite-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.comite-section-header h2 {
+  margin: 0;
+}
+
+.comite-counter {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.evaluadores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.evaluador-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #fff;
+}
+
+.evaluador-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.evaluador-email {
+  font-size: 0.85rem;
+  margin: 0.15rem 0 0.5rem;
+}
+
+.rol-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.rol-badge {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.evaluador-estado {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  white-space: nowrap;
+  height: fit-content;
+}
+
+.evaluador-estado--ok {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.eval-select-label {
+  display: block;
+  font-size: 0.85rem;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.btn-primary-full {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-quitar-eje {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  background: #fff;
+  color: #dc2626;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.comite-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .comite-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.comite-trabajos-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.comite-trabajo-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.85rem;
+  margin-bottom: 0.65rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.comite-trabajo-item--activo {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+
+.comite-trabajo-titulo {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.comite-trabajo-meta,
+.comite-trabajo-stats {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0.25rem 0;
+}
+
+.comite-badges-progreso {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.badge-progreso {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+}
+
+.badge-progreso--precheck {
+  color: #c2410c;
+  border-color: #fdba74;
+  background: #fff7ed;
+}
+
+.badge-progreso--revision {
+  color: #6d28d9;
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+}
+
+.estado-badge--enviado {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.comite-checks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.5rem;
+}
+
+.aviso-amarillo {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  padding: 0.85rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.comite-asignacion-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(200px, 280px);
+  gap: 1rem;
+}
+
+.ejes-disponibles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.eje-item {
+  font-size: 0.78rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.eje-item--activo {
+  background: #eef2ff;
+  border-color: #818cf8;
+}
+
+.limite-envio-box {
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.limite-envio-box--ok {
+  background: #ecfdf5;
+  border: 1px solid #86efac;
+  color: #065f46;
+}
+
+.limite-envio-box--warn {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+}
+
+.limite-envio-box--error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+
+.trabajo-item-detalle {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.85rem;
+  margin-bottom: 0.65rem;
+}
+
+.trabajo-item-detalle-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.trabajo-item-meta {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0.35rem 0;
+}
+
+.trabajo-feedback {
+  font-size: 0.78rem;
+  margin-top: 0.35rem;
+}
+
+.trabajo-feedback--info { color: #2563eb; }
+.trabajo-feedback--warn { color: #b45309; }
+.trabajo-feedback--ok { color: #15803d; }
+.trabajo-feedback--error { color: #b91c1c; }
