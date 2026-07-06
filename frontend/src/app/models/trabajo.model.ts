@@ -37,6 +37,21 @@ export interface TrabajoEnvioResumen {
   fechaLimitePasada: boolean;
 }
 
+export interface PresentacionAutor {
+  trabajoId: number;
+  trabajoTitulo: string;
+  ejeTematico?: string;
+  modalidad?: string;
+  actividadId: number;
+  actividadTitulo: string;
+  actividadCodigo?: string;
+  tipoActividad: 'MESA_TEMATICA' | 'POSTER' | string;
+  sala?: string;
+  inicio?: string;
+  fin?: string;
+  numeroPanel?: number | null;
+}
+
 export interface PaginaTrabajos {
   items: Trabajo[];
   page: number;

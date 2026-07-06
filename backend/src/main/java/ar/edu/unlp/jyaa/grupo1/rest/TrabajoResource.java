@@ -10,6 +10,7 @@ import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoCreateRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoUpdateRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.servicio.TrabajoService;
+import ar.edu.unlp.jyaa.grupo1.web.dto.PresentacionAutorDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaTrabajosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoEnvioResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoResumenDTO;
@@ -98,6 +99,23 @@ public class TrabajoResource {
     }
     try {
       return trabajoService.obtenerResumenEnvio(effectiveAutorId, rolEnvio);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @GET
+  @Path("/mis-presentaciones")
+  @Operation(summary = "Presentaciones programadas del autor (mesas y pósters)")
+  public List<PresentacionAutorDTO> misPresentaciones(
+      @QueryParam("autorId") Long autorId, @Context ContainerRequestContext ctx) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    Long effectiveAutorId = autorId != null ? autorId : auth.userId();
+    if (!auth.canListAllTrabajos() && !auth.userId().equals(effectiveAutorId)) {
+      throw new NotAuthorizedException("No autorizado");
+    }
+    try {
+      return trabajoService.listarPresentacionesAutor(effectiveAutorId);
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }

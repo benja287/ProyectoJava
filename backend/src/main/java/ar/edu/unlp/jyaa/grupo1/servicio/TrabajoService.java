@@ -1,21 +1,25 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.AsignacionEvaluacionDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.ActividadDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.TrabajoFiltro;
+import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EjesTematicos;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
+import ar.edu.unlp.jyaa.grupo1.modelo.TipoActividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoUpdateRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
+import ar.edu.unlp.jyaa.grupo1.web.dto.PresentacionAutorDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaTrabajosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoEnvioResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoResumenDTO;
@@ -26,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +42,7 @@ public class TrabajoService {
   private static final int MAX_REVISION_INTENTOS = 2;
 
   @Inject private TrabajoDAO trabajoDAO;
+  @Inject private ActividadDAO actividadDAO;
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
   @Inject private CongresoDAO congresoDAO;
@@ -127,6 +133,49 @@ public class TrabajoService {
         .filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER)
         .map(this::toResumenConAsignaciones)
         .toList();
+  }
+
+  /** Mesas temáticas y sesiones de pósters donde el autor tiene trabajos programados. */
+  public List<PresentacionAutorDTO> listarPresentacionesAutor(Long autorId) {
+    if (usuarioDAO.recuperarPorId(autorId) == null) {
+      throw new NegocioException("Autor no encontrado: " + autorId);
+    }
+    List<PresentacionAutorDTO> result = new ArrayList<>();
+    for (Actividad actividad : actividadDAO.listarCronogramaCompleto()) {
+      TipoActividad tipo = actividad.getTipoActividad();
+      if (tipo != TipoActividad.MESA_TEMATICA && tipo != TipoActividad.POSTER) {
+        continue;
+      }
+      List<Trabajo> trabajos = actividad.getTrabajos();
+      if (trabajos == null) {
+        continue;
+      }
+      for (int i = 0; i < trabajos.size(); i++) {
+        Trabajo t = trabajos.get(i);
+        if (t.getAutor() == null || !autorId.equals(t.getAutor().getId())) {
+          continue;
+        }
+        Integer panel = tipo == TipoActividad.POSTER ? i + 1 : null;
+        result.add(
+            new PresentacionAutorDTO(
+                t.getId(),
+                t.getTitulo(),
+                t.getEjeTematico(),
+                t.getModalidad(),
+                actividad.getId(),
+                actividad.getTitulo(),
+                actividad.getCodigo(),
+                tipo,
+                actividad.getSala(),
+                actividad.getInicio(),
+                actividad.getFin(),
+                panel));
+      }
+    }
+    result.sort(
+        Comparator.comparing(PresentacionAutorDTO::inicio, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(PresentacionAutorDTO::trabajoTitulo, Comparator.nullsLast(String::compareToIgnoreCase)));
+    return result;
   }
 
   public static TrabajoFiltro parseFiltro(

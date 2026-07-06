@@ -26,8 +26,11 @@ const ETIQUETAS_TIPO: Record<string, string> = {
       <header class="programa-hero">
         <h1>Programa del congreso</h1>
         <p class="muted">V Congreso Argentino de Agroecología · La Plata 2027</p>
-        @if (loginService.esAsistenteCongreso()) {
-          <a routerLink="/asistente/cronograma" class="btn-primary programa-agenda-link">
+        @if (loginService.esAsistenteCongreso() || loginService.hasRole('AUTOR')) {
+          <a
+            [routerLink]="loginService.hasRole('AUTOR') ? '/autor/cronograma' : '/asistente/cronograma'"
+            class="btn-primary programa-agenda-link"
+          >
             Ver mi agenda personal
           </a>
         }

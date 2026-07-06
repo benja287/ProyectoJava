@@ -73,7 +73,13 @@ export function feedbackTextoTrabajo(t: Trabajo, vista: 'asistente' | 'autor'): 
   if (t.estado === 'APROBADO') {
     return esAsistente
       ? 'Trabajo aprobado por el comité. El administrador debe habilitarte el rol Autor para gestionar trabajos como autor.'
-      : 'Trabajo aprobado por el comité académico.';
+      : 'Trabajo aprobado por el comité académico. El organizador lo programará en mesa temática o sesión de pósters.';
+  }
+  if (t.estado === 'PROGRAMADO') {
+    return 'Tu trabajo fue incluido en el cronograma del congreso. Consultá "Mis presentaciones programadas" en tu panel.';
+  }
+  if (t.estado === 'NOTIFICADO') {
+    return 'Recibiste la notificación de presentación. Revisá fecha, sala y modalidad en tu panel.';
   }
   if (t.estado === 'PRECHECK_OK') {
     return 'Precheck aprobado. El comité asignará evaluadores.';

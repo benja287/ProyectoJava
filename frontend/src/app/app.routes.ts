@@ -20,6 +20,7 @@ import { PagosListaComponent } from './pages/admin/pagos-lista/pagos-lista.compo
 import { TrabajosAdminComponent } from './pages/admin/trabajos/trabajos-admin.component';
 import { PanelEvaluadorComponent } from './pages/evaluador/panel-evaluador.component';
 import { TrabajosAutorComponent } from './pages/autor/trabajos/trabajos-autor.component';
+import { PanelAutorComponent } from './pages/autor/panel-autor.component';
 import { CronogramaParticipanteComponent } from './pages/participante/cronograma/cronograma-participante.component';
 import { InscripcionParticipanteComponent } from './pages/participante/inscripcion/inscripcion-participante.component';
 import { PagoParticipanteComponent } from './pages/participante/pago/pago-participante.component';
@@ -71,6 +72,7 @@ export const routes: Routes = [
     path: 'asistente/cronograma',
     component: CronogramaParticipanteComponent,
     canActivate: [asistenteGuard],
+    data: { perfilParticipante: 'asistente' },
   },
   {
     path: 'asistente/trabajos',
@@ -178,23 +180,14 @@ export const routes: Routes = [
   // --- Perfil Autor ---
   {
     path: 'autor',
-    component: PanelRolComponent,
+    component: PanelAutorComponent,
     canActivate: [autor],
-    data: {
-      titulo: 'Panel Autor',
-      descripcion: 'Gestioná tus trabajos científicos y su estado de evaluación.',
-      colorTema: 'naranja',
-      iconoTema: '📄',
-      acciones: [
-        {
-          label: 'Mis trabajos',
-          route: '/autor/trabajos',
-          descripcion: 'Creá borradores, adjuntá PDFs y seguí el estado.',
-          icono: '📑',
-          color: 'naranja',
-        },
-      ],
-    },
+  },
+  {
+    path: 'autor/cronograma',
+    component: CronogramaParticipanteComponent,
+    canActivate: [autor],
+    data: { perfilParticipante: 'autor' },
   },
   { path: 'autor/trabajos', component: TrabajosAutorComponent, canActivate: [autor], data: { perfilTrabajos: 'autor' } },
 

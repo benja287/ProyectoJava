@@ -5,6 +5,7 @@ import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import {
   PaginaTrabajos,
+  PresentacionAutor,
   Trabajo,
   TrabajoCreateRequest,
   TrabajoEnvioResumen,
@@ -68,6 +69,12 @@ export class TrabajoService {
   resumenEnvio(autorId: number, rolEnvio: 'ASISTENTE' | 'AUTOR'): Observable<TrabajoEnvioResumen> {
     return this.http.get<TrabajoEnvioResumen>(`${this.baseUrl}/resumen-envio`, {
       params: { autorId, rolEnvio },
+    });
+  }
+
+  listarPresentaciones(autorId: number): Observable<PresentacionAutor[]> {
+    return this.http.get<PresentacionAutor[]>(`${this.baseUrl}/mis-presentaciones`, {
+      params: { autorId },
     });
   }
 

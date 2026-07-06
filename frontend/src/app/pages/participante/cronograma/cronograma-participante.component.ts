@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LoginService } from '../../../auth/login.service';
 import { Actividad } from '../../../models/actividad.model';
 import { Cronograma } from '../../../models/cronograma.model';
@@ -17,7 +17,9 @@ import { formatFechaActividad } from '../../../utils/fecha.util';
   template: `
     <section class="card">
       <h1>Mi agenda</h1>
-      <p class="muted">Rol <strong>asistente</strong> — actividades que agregaste al cronograma.</p>
+      <p class="muted">
+        Rol <strong>{{ etiquetaPerfil }}</strong> — actividades que agregaste al cronograma del congreso.
+      </p>
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -34,11 +36,12 @@ import { formatFechaActividad } from '../../../utils/fecha.util';
           <p class="muted small">
             Cuando el administrador publique el cronograma, vas a poder ver las actividades y armar tu agenda personal.
           </p>
+          <a routerLink="/programa" class="btn-secundario">Ver programa del congreso</a>
         </div>
       } @else {
         <h2>Actividades en mi agenda</h2>
         @if (!cronograma?.actividades?.length) {
-          <p>Tu cronograma está vacío.</p>
+          <p>Tu cronograma está vacío. Podés sumar actividades desde el programa del congreso.</p>
         } @else {
           <ul class="menu">
             @for (a of cronograma!.actividades; track a.id) {
@@ -65,7 +68,7 @@ import { formatFechaActividad } from '../../../utils/fecha.util';
         }
       }
 
-      <p><a routerLink="/asistente">← Panel asistente</a></p>
+      <p><a [routerLink]="panelRoute">← {{ etiquetaVolver }}</a></p>
     </section>
   `,
 })
@@ -77,6 +80,13 @@ export class CronogramaParticipanteComponent implements OnInit {
   error = '';
   mensaje = '';
   usuarioId?: number;
+  perfilParticipante: 'asistente' | 'autor' = 'asistente';
+  panelRoute = '/asistente';
+  etiquetaVolver = 'Panel asistente';
+
+  get etiquetaPerfil(): string {
+    return this.perfilParticipante;
+  }
 
   get actividadesDisponibles(): Actividad[] {
     const enCronograma = new Set(this.cronograma?.actividades?.map((a) => a.id));
@@ -87,10 +97,18 @@ export class CronogramaParticipanteComponent implements OnInit {
     private loginService: LoginService,
     private cronogramaService: CronogramaService,
     private actividadService: ActividadService,
-    private congresoConfigService: CongresoConfigService
+    private congresoConfigService: CongresoConfigService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
+    const perfil = this.route.snapshot.data['perfilParticipante'];
+    if (perfil === 'autor') {
+      this.perfilParticipante = 'autor';
+      this.panelRoute = '/autor';
+      this.etiquetaVolver = 'Panel autor';
+    }
+
     this.usuarioId = this.loginService.getUser()?.id;
     if (!this.usuarioId) {
       this.error = 'Sesión inválida.';
