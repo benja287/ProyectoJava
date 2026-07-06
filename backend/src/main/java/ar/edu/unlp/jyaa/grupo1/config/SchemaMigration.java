@@ -17,6 +17,7 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarColumnaEstadoTrabajo);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarTrabajosObservadosPrecheck);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarEstadoObservadoEvaluacion);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresoConfig);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -68,6 +69,35 @@ public final class SchemaMigration {
     if (actualizados > 0) {
       log.info("Migrados {} trabajos APROBADO_CON_CORRECCIONES → OBSERVADO_EVALUACION", actualizados);
     }
+  }
+
+  /** Columnas de configuración del congreso (programa publicado, certificados, límite envíos). */
+  private static void migrarCongresoConfig(EntityManager em) {
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "programa_publicado",
+        "ALTER TABLE congresos ADD COLUMN programa_publicado TINYINT(1) NOT NULL DEFAULT 0");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "certificados_disponibles_desde",
+        "ALTER TABLE congresos ADD COLUMN certificados_disponibles_desde DATE NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "envio_trabajos_hasta",
+        "ALTER TABLE congresos ADD COLUMN envio_trabajos_hasta DATE NULL");
+  }
+
+  private static void agregarColumnaSiFalta(
+      EntityManager em, String tabla, String columna, String ddl) {
+    if (leerTipoColumna(em, tabla, columna) != null) {
+      log.info("{}.{} ya existe", tabla, columna);
+      return;
+    }
+    em.createNativeQuery(ddl).executeUpdate();
+    log.info("Migración aplicada: {}.{}", tabla, columna);
   }
 
   @SuppressWarnings("unchecked")

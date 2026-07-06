@@ -28,8 +28,8 @@ public class CongresoDAOImpl extends AbstractJpaDAO<Congreso> implements Congres
 
   @Override
   public Congreso obtenerPrincipal() {
-    EntityManager em = emConsulta();
-    try {
+    EntityManager em = getEntityManager();
+    if (em != null) {
       List<Congreso> list =
           em.createQuery("SELECT c FROM Congreso c ORDER BY c.id ASC", Congreso.class)
               .setMaxResults(1)
@@ -40,10 +40,28 @@ public class CongresoDAOImpl extends AbstractJpaDAO<Congreso> implements Congres
       Congreso c = new Congreso();
       c.setNombre("Congreso Argentino de Agroecología");
       c.setEdicion("V");
-      alta(c);
+      em.persist(c);
+      return c;
+    }
+    EntityManager legacy = JpaUtil.createEntityManager();
+    try {
+      List<Congreso> list =
+          legacy
+              .createQuery("SELECT c FROM Congreso c ORDER BY c.id ASC", Congreso.class)
+              .setMaxResults(1)
+              .getResultList();
+      if (!list.isEmpty()) {
+        return list.getFirst();
+      }
+      Congreso c = new Congreso();
+      c.setNombre("Congreso Argentino de Agroecología");
+      c.setEdicion("V");
+      legacy.getTransaction().begin();
+      legacy.persist(c);
+      legacy.getTransaction().commit();
       return c;
     } finally {
-      closeLegacy(em);
+      legacy.close();
     }
   }
 

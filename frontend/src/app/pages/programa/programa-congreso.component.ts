@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { Actividad } from '../../models/actividad.model';
 import { LoginService } from '../../auth/login.service';
 import { ActividadService } from '../../servicios/actividad.service';
@@ -8,6 +8,7 @@ import { CongresoConfigService } from '../../servicios/congreso-config.service';
 import { CongresoConfig } from '../../models/congreso-config.model';
 import { formatFechaActividad } from '../../utils/fecha.util';
 import { mensajeErrorApi } from '../../utils/api-error.util';
+import { filter, Subscription } from 'rxjs';
 
 const ETIQUETAS_TIPO: Record<string, string> = {
   MESA_TEMATICA: 'Mesa temática',
@@ -41,7 +42,11 @@ const ETIQUETAS_TIPO: Record<string, string> = {
       }
       @if (cargando) {
         <p>Cargando programa...</p>
-      } @else if (!config?.programaPublicado) {
+      } @else if (!config) {
+        <div class="panel-card programa-empty">
+          <p>No se pudo cargar el estado de publicación del programa.</p>
+        </div>
+      } @else if (!config.programaPublicado) {
         <div class="panel-card programa-empty">
           <p>El programa aún no fue publicado por el organizador.</p>
         </div>
@@ -124,21 +129,37 @@ const ETIQUETAS_TIPO: Record<string, string> = {
     </section>
   `,
 })
-export class ProgramaCongresoComponent implements OnInit {
+export class ProgramaCongresoComponent implements OnInit, OnDestroy {
   config?: CongresoConfig;
   actividades: Actividad[] = [];
   dias: string[] = [];
   diaSeleccionado = '';
   cargando = true;
   error = '';
+  private navSub?: Subscription;
 
   constructor(
     public loginService: LoginService,
     private congresoConfigService: CongresoConfigService,
-    private actividadService: ActividadService
+    private actividadService: ActividadService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
+    this.cargarPrograma();
+    this.navSub = this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd))
+      .subscribe(() => this.cargarPrograma());
+  }
+
+  ngOnDestroy(): void {
+    this.navSub?.unsubscribe();
+  }
+
+  private cargarPrograma(): void {
+    this.cargando = true;
+    this.error = '';
+    this.actividades = [];
     this.congresoConfigService.obtener().subscribe({
       next: (c) => {
         this.config = c;
@@ -149,6 +170,7 @@ export class ProgramaCongresoComponent implements OnInit {
         this.cargarActividades();
       },
       error: (err) => {
+        this.config = undefined;
         this.error = mensajeErrorApi(err, 'No se pudo cargar la configuración del congreso.');
         this.cargando = false;
       },

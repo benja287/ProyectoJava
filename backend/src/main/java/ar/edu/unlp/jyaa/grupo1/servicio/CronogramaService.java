@@ -1,7 +1,6 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.ActividadDAO;
-import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.CronogramaPersonalDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
@@ -16,7 +15,7 @@ public class CronogramaService {
   @Inject private CronogramaPersonalDAO cronogramaPersonalDAO;
   @Inject private ActividadDAO actividadDAO;
   @Inject private UsuarioDAO usuarioDAO;
-  @Inject private CongresoDAO congresoDAO;
+  @Inject private CongresoService congresoService;
 
   public CronogramaPersonal obtenerCronograma(Long usuarioId) {
     return cronogramaPersonalDAO
@@ -74,7 +73,7 @@ public class CronogramaService {
   }
 
   private void validarProgramaPublicado() {
-    if (!congresoDAO.obtenerPrincipal().isProgramaPublicado()) {
+    if (!congresoService.isProgramaPublicado()) {
       throw new NegocioException("El programa del congreso aún no fue publicado");
     }
   }

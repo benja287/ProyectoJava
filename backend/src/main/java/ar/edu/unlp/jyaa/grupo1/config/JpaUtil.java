@@ -51,4 +51,22 @@ public final class JpaUtil {
       em.close();
     }
   }
+
+  public static <T> T ejecutarEnTransaccionReturning(java.util.function.Function<EntityManager, T> trabajo) {
+    EntityManager em = createEntityManager();
+    EntityTransaction tx = em.getTransaction();
+    try {
+      tx.begin();
+      T result = trabajo.apply(em);
+      tx.commit();
+      return result;
+    } catch (RuntimeException e) {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+      throw e;
+    } finally {
+      em.close();
+    }
+  }
 }

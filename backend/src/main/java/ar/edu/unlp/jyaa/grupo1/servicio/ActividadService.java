@@ -1,7 +1,6 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.ActividadDAO;
-import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.ActividadFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
@@ -41,7 +40,7 @@ public class ActividadService {
 
   @Inject private ActividadDAO actividadDAO;
   @Inject private TrabajoDAO trabajoDAO;
-  @Inject private CongresoDAO congresoDAO;
+  @Inject private CongresoService congresoService;
   @Inject private NotificacionService notificacionService;
 
   public PaginaActividadesDTO listar(int page, int size, ActividadFiltro filtro, AuthenticatedUser auth) {
@@ -52,7 +51,7 @@ public class ActividadService {
   }
 
   public PaginaActividadesDTO listarPublico(int page, int size, ActividadFiltro filtro) {
-    if (!congresoDAO.obtenerPrincipal().isProgramaPublicado()) {
+    if (!congresoService.isProgramaPublicado()) {
       int safePage = Math.max(PAGE_DEFAULT, page);
       int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
       return new PaginaActividadesDTO(List.of(), safePage, safeSize, 0, 0);
