@@ -23,7 +23,7 @@ public class UsuarioService {
 
   private static final int PAGE_DEFAULT = 1;
   private static final int SIZE_DEFAULT = 20;
-  private static final int SIZE_MAX = 100;
+  private static final int SIZE_MAX = 500;
 
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private InscripcionCongresoDAO inscripcionDAO;

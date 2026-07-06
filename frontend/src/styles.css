@@ -1580,10 +1580,36 @@ textarea {
   color: #166534;
 }
 
+.categoria-inscripcion {
+  display: block;
+  font-size: 0.82rem;
+  margin: 0.75rem 0;
+}
+
+.categoria-inscripcion-valor {
+  display: block;
+  margin-top: 0.25rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 500;
+}
+
 .eval-select-label {
   display: block;
   font-size: 0.85rem;
   margin: 0.75rem 0 0.5rem;
+}
+
+.eval-select-label select {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.85rem;
 }
 
 .btn-primary-full {

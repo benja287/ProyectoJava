@@ -12,6 +12,7 @@ import { CongresoConfigService } from '../../../servicios/congreso-config.servic
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { UsuarioService } from '../../../servicios/usuario.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { etiquetaCategoria } from '../../../models/inscripcion.model';
 
 interface PrecheckChecks {
   pdfOk: boolean;
@@ -69,6 +70,13 @@ interface PrecheckChecks {
           <span class="comite-counter">Evaluadores: {{ evaluadores.length }}</span>
         </div>
         <div class="evaluadores-grid">
+          @if (cargandoUsuarios) {
+            <p class="muted">Cargando usuarios...</p>
+          } @else if (usuarios.length === 0) {
+            <p class="error">
+              No se pudieron cargar los usuarios. Verificá que estés logueado como Comité Académico.
+            </p>
+          } @else {
           @for (u of usuarios; track u.id) {
             <article class="evaluador-card">
               <div class="evaluador-card-top">
@@ -88,9 +96,9 @@ interface PrecheckChecks {
                   {{ esEvaluadorConEje(u) ? 'Evaluador' : 'No evaluador' }}
                 </span>
               </div>
-              <p class="muted">
-                Categoría de inscripción:
-                <strong>{{ u.categoriaInscripcion || 'Sin categoría' }}</strong>
+              <p class="muted categoria-inscripcion">
+                Categoría de inscripción
+                <span class="categoria-inscripcion-valor">{{ categoriaLabel(u.categoriaInscripcion) }}</span>
               </p>
               @if (!esEvaluadorConEje(u)) {
                 <label class="eval-select-label">
@@ -133,6 +141,7 @@ interface PrecheckChecks {
                 </p>
               }
             </article>
+          }
           }
         </div>
       </section>
@@ -360,6 +369,7 @@ export class ComiteOcComponent implements OnInit {
 
   trabajos: Trabajo[] = [];
   usuarios: Usuario[] = [];
+  cargandoUsuarios = true;
   seleccionado?: Trabajo;
   asignaciones: AsignacionEvaluacion[] = [];
   evaluadoresSeleccionados = new Set<number>();
@@ -433,7 +443,11 @@ export class ComiteOcComponent implements OnInit {
   }
 
   esEvaluadorConEje(u: Usuario): boolean {
-    return !!u.roles?.includes('EVALUADOR') && !!u.ejeTematicoEvaluador;
+    return !!u.ejeTematicoEvaluador?.trim();
+  }
+
+  categoriaLabel(categoria?: string | null): string {
+    return etiquetaCategoria(categoria ?? '') || 'Sin categoría';
   }
 
   modalidadLabel(modalidad?: string): string {
@@ -509,14 +523,16 @@ export class ComiteOcComponent implements OnInit {
     if (!u.id) return;
     const eje = this.ejeDraft[u.id];
     if (!eje) {
-      this.error = 'Elegí un eje temático.';
+      this.error = 'Elegí un eje temático del desplegable.';
       return;
     }
     this.procesando = true;
+    this.error = '';
     this.usuarioService.asignarEvaluadorEje(u.id, eje).subscribe({
       next: () => {
-        this.mensaje = 'Evaluador asignado al eje.';
+        this.mensaje = `${u.nombre} ${u.apellido} quedó como evaluador en el eje seleccionado.`;
         this.procesando = false;
+        this.ejeDraft = { ...this.ejeDraft, [u.id!]: '' };
         this.cargarUsuarios();
       },
       error: (err) => {
@@ -642,9 +658,17 @@ export class ComiteOcComponent implements OnInit {
   }
 
   private cargarUsuarios(): void {
-    this.usuarioService.listar(1, 200).subscribe({
-      next: (items) => (this.usuarios = items),
-      error: () => (this.usuarios = []),
+    this.cargandoUsuarios = true;
+    this.usuarioService.listar(1, 500).subscribe({
+      next: (items) => {
+        this.usuarios = items.filter((u) => u.activo !== false);
+        this.cargandoUsuarios = false;
+      },
+      error: (err) => {
+        this.usuarios = [];
+        this.cargandoUsuarios = false;
+        this.error = mensajeErrorApi(err, 'No se pudieron cargar los usuarios para asignar evaluadores.');
+      },
     });
   }
 

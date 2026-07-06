@@ -26,7 +26,11 @@ public record AuthenticatedUser(Long userId, List<String> roles) {
   }
 
   public boolean canListAllUsuarios() {
-    return isAdmin();
+    return isAdmin() || hasRole("ORGANIZADOR_CIENTIFICO");
+  }
+
+  public boolean canGestionarEvaluadoresEje() {
+    return isAdmin() || hasRole("ORGANIZADOR_CIENTIFICO");
   }
 
   public boolean canListAllTrabajos() {

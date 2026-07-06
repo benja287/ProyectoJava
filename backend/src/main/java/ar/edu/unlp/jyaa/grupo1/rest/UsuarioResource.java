@@ -26,6 +26,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
@@ -147,7 +148,10 @@ public class UsuarioResource {
   @Path("/{id}/evaluador-eje")
   @Operation(summary = "Asignar evaluador a un eje temático (máx. 3 por eje)")
   public UsuarioDTO asignarEvaluadorEje(
-      @PathParam("id") Long id, ar.edu.unlp.jyaa.grupo1.rest.dto.EvaluadorEjeRequest request) {
+      @PathParam("id") Long id,
+      ar.edu.unlp.jyaa.grupo1.rest.dto.EvaluadorEjeRequest request,
+      @Context ContainerRequestContext ctx) {
+    requireGestionEvaluadores(ctx);
     try {
       return UsuarioDTO.from(
           evaluadorEjeService.asignarEvaluadorAEje(id, request.ejeTematico()));
@@ -159,11 +163,19 @@ public class UsuarioResource {
   @DELETE
   @Path("/{id}/evaluador-eje")
   @Operation(summary = "Quitar evaluador de su eje temático")
-  public UsuarioDTO quitarEvaluadorEje(@PathParam("id") Long id) {
+  public UsuarioDTO quitarEvaluadorEje(
+      @PathParam("id") Long id, @Context ContainerRequestContext ctx) {
+    requireGestionEvaluadores(ctx);
     try {
       return UsuarioDTO.from(evaluadorEjeService.quitarEvaluadorDeEje(id));
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  private void requireGestionEvaluadores(ContainerRequestContext ctx) {
+    if (!AuthenticatedUser.from(ctx).canGestionarEvaluadoresEje()) {
+      throw new NotAuthorizedException("Solo comité académico o administrador");
     }
   }
 }
