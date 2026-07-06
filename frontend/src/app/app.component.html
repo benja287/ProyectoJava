@@ -61,8 +61,8 @@
             @if (loginService.necesitaInscripcionCongreso()) {
               <a class="user-menu-item" routerLink="/inscripcion" (click)="cerrarMenu()">
                 Inscripción al congreso
-              </a>
-            }
+          </a>
+        }
             @if (loginService.esAsistenteCongreso()) {
               <a class="user-menu-item" routerLink="/asistente" (click)="cerrarMenu()">
                 Panel asistente

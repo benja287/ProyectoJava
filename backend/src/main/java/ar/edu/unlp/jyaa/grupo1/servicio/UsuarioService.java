@@ -27,6 +27,7 @@ public class UsuarioService {
 
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private InscripcionCongresoDAO inscripcionDAO;
+  @Inject private NotificacionService notificacionService;
 
   public PaginaUsuariosDTO listar(int page, int size, UsuarioFiltro filtro, AuthenticatedUser auth) {
     if (!auth.canListAllUsuarios()) {
@@ -133,6 +134,38 @@ public class UsuarioService {
     }
     usuario.getRoles().add(Rol.EVALUADOR);
     return usuarioDAO.modificar(usuario);
+  }
+
+  public Usuario promoverAutor(Long id) {
+    Usuario usuario = usuarioDAO.recuperarPorId(id);
+    if (usuario == null) {
+      return null;
+    }
+    if (usuario.getRoles().contains(Rol.AUTOR)) {
+      if (usuario.getRolActual() == Rol.AUTOR) {
+        throw new NegocioException("El usuario ya tiene rol autor habilitado");
+      }
+      usuario.setRolActual(Rol.AUTOR);
+      Usuario actualizado = usuarioDAO.modificar(usuario);
+      notificacionService.enviar(
+          actualizado.getId(),
+          "Rol autor habilitado",
+          "El administrador habilitó tu rol de autor. Ya podés gestionar trabajos desde el panel Autor.");
+      return actualizado;
+    }
+    if (!usuario.getRoles().contains(Rol.ASISTENTE)) {
+      throw new NegocioException("Solo asistentes pueden solicitar el rol autor");
+    }
+    usuario.getRoles().add(Rol.AUTOR);
+    if (usuario.getRolActual() == null || usuario.getRolActual() == Rol.ASISTENTE) {
+      usuario.setRolActual(Rol.AUTOR);
+    }
+    Usuario actualizado = usuarioDAO.modificar(usuario);
+    notificacionService.enviar(
+        actualizado.getId(),
+        "Rol autor habilitado",
+        "El administrador habilitó tu rol de autor. Ya podés gestionar trabajos desde el panel Autor.");
+    return actualizado;
   }
 
   public Usuario registrarParticipante(Usuario usuario) {

@@ -132,6 +132,25 @@ public class UsuarioResource {
   }
 
   @PUT
+  @Path("/{id}/promover-autor")
+  @Operation(summary = "Habilitar rol autor para un asistente con trabajos aprobados")
+  public UsuarioDTO promoverAutor(
+      @PathParam("id") Long id, @Context ContainerRequestContext ctx) {
+    if (!AuthenticatedUser.from(ctx).isAdmin()) {
+      throw new NotAuthorizedException("Solo administradores");
+    }
+    try {
+      Usuario actualizado = usuarioService.promoverAutor(id);
+      if (actualizado == null) {
+        throw new NotFoundException("Usuario no encontrado");
+      }
+      return UsuarioDTO.from(actualizado);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @PUT
   @Path("/{id}/promover-evaluador")
   @Operation(summary = "Promover usuario a evaluador")
   @ApiResponse(responseCode = "200", description = "Usuario promovido")

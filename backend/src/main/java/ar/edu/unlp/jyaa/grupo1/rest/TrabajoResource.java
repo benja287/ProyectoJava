@@ -156,6 +156,22 @@ public class TrabajoResource {
   }
 
   @GET
+  @Path("/aprobados")
+  @Operation(summary = "Trabajos aprobados por el comité listos para programar en cronograma")
+  public List<TrabajoResumenDTO> listarAprobados(
+      @QueryParam("modalidad") String modalidad, @Context ContainerRequestContext ctx) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    if (!auth.isAdmin() && !auth.canListAllTrabajos()) {
+      throw new NotAuthorizedException("No autorizado");
+    }
+    try {
+      return trabajoService.listarAprobadosParaProgramacion(modalidad);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @GET
   @Path("/propuestas-taller/pendientes")
   @Operation(summary = "Listar propuestas de taller pendientes para evaluadores")
   public List<TrabajoResumenDTO> listarPropuestasTallerPendientes(

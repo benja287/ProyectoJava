@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AdminReport, AdminStats } from '../models/notificacion.model';
+import { SolicitudAutor } from '../models/solicitud-autor.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdminStatsService {
@@ -16,5 +17,9 @@ export class AdminStatsService {
 
   obtenerReporte(): Observable<AdminReport> {
     return this.http.get<AdminReport>(`${this.baseUrl}/reporte`);
+  }
+
+  solicitudesAutor(): Observable<SolicitudAutor[]> {
+    return this.http.get<SolicitudAutor[]>(`${this.baseUrl}/solicitudes-autor`);
   }
 }

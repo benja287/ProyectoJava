@@ -197,7 +197,7 @@ export class MesasTematicasAdminComponent implements OnInit {
   }
 
   private cargarTrabajos(): void {
-    this.trabajoService.listar(1, 200, { estado: 'APROBADO', modalidad: 'ORAL' }).subscribe({
+    this.trabajoService.listarAprobadosProgramables('ORAL').subscribe({
       next: (items) => {
         this.trabajosAprobados = items;
         this.aplicarFiltro();

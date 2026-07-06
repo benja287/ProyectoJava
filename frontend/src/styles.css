@@ -2095,3 +2095,34 @@ textarea {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.solicitudes-autor-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.solicitud-autor-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  background: #f8fafc;
+}
+
+.solicitud-autor-trabajos-titulo {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.solicitud-autor-trabajos {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.solicitud-autor-trabajo-titulo {
+  font-weight: 600;
+}

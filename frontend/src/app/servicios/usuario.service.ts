@@ -103,6 +103,10 @@ export class UsuarioService {
     return this.http.put<Usuario>(`${this.baseUrl}/${id}/promover-evaluador`, {});
   }
 
+  promoverAutor(id: number): Observable<Usuario> {
+    return this.http.put<Usuario>(`${this.baseUrl}/${id}/promover-autor`, {});
+  }
+
   asignarEvaluadorEje(id: number, ejeTematico: string): Observable<Usuario> {
     return this.http.put<Usuario>(`${this.baseUrl}/${id}/evaluador-eje`, { ejeTematico });
   }

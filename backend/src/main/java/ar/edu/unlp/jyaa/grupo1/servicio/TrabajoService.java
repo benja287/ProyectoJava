@@ -19,13 +19,16 @@ import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaTrabajosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoEnvioResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoResumenDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.SolicitudAutorDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RequestScoped
 public class TrabajoService {
@@ -66,6 +69,62 @@ public class TrabajoService {
         .filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER)
         .filter(t -> t.getEstado() != EstadoTrabajo.RECHAZADO)
         .filter(t -> t.getEstado() != EstadoTrabajo.BORRADOR)
+        .map(this::toResumenConAsignaciones)
+        .toList();
+  }
+
+  /**
+   * Asistentes con al menos un trabajo confirmado por el comité (APROBADO) pendientes de
+   * habilitación explícita del rol AUTOR por el administrador.
+   */
+  public List<SolicitudAutorDTO> listarSolicitudesAutor() {
+    List<Trabajo> trabajos =
+        trabajoDAO
+            .listarFiltrado(new TrabajoFiltro(null, null, null, null, null, null, null), 0, 500)
+            .stream()
+            .filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER)
+            .filter(t -> t.getEstado() == EstadoTrabajo.APROBADO)
+            .toList();
+
+    Map<Long, List<Trabajo>> porAutor = new LinkedHashMap<>();
+    for (Trabajo t : trabajos) {
+      if (t.getAutor() == null || t.getAutor().getId() == null) {
+        continue;
+      }
+      porAutor.computeIfAbsent(t.getAutor().getId(), k -> new ArrayList<>()).add(t);
+    }
+
+    List<SolicitudAutorDTO> solicitudes = new ArrayList<>();
+    for (Map.Entry<Long, List<Trabajo>> entry : porAutor.entrySet()) {
+      Usuario autor = usuarioDAO.recuperarPorId(entry.getKey());
+      if (autor == null) {
+        continue;
+      }
+      if (!pendienteHabilitacionAutor(autor)) {
+        continue;
+      }
+      List<TrabajoResumenDTO> resumenes =
+          entry.getValue().stream().map(this::toResumenConAsignaciones).toList();
+      solicitudes.add(SolicitudAutorDTO.of(autor, resumenes));
+    }
+    return solicitudes;
+  }
+
+  /** Trabajos en estado APROBADO listos para mesas temáticas o sesiones de pósters. */
+  public List<TrabajoResumenDTO> listarAprobadosParaProgramacion(String modalidadRaw) {
+    ModalidadPresentacion modalidad;
+    if (modalidadRaw == null || modalidadRaw.isBlank()) {
+      throw new NegocioException("Debe indicar la modalidad (ORAL o POSTER)");
+    }
+    try {
+      modalidad = ModalidadPresentacion.valueOf(modalidadRaw.trim().toUpperCase());
+    } catch (IllegalArgumentException e) {
+      throw new NegocioException("Modalidad inválida: " + modalidadRaw);
+    }
+    TrabajoFiltro filtro =
+        new TrabajoFiltro(null, null, null, EstadoTrabajo.APROBADO, modalidad, null, null);
+    return trabajoDAO.listarFiltrado(filtro, 0, 500).stream()
+        .filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER)
         .map(this::toResumenConAsignaciones)
         .toList();
   }
@@ -158,10 +217,6 @@ public class TrabajoService {
     Usuario autor = usuarioDAO.recuperarPorId(autorId);
     if (autor == null) {
       throw new NegocioException("Autor no encontrado: " + autorId);
-    }
-    if (trabajo.getTipo() != TipoTrabajo.PROPUESTA_TALLER && !autor.getRoles().contains(Rol.AUTOR)) {
-      autor.getRoles().add(Rol.AUTOR);
-      usuarioDAO.modificar(autor);
     }
     validarDatosPostulacion(trabajo);
     if (trabajo.getTipo() == TipoTrabajo.PROPUESTA_TALLER) {
@@ -364,10 +419,12 @@ public class TrabajoService {
     }
     if (aprobar) {
       trabajo.setEstado(EstadoTrabajo.APROBADO);
+      Trabajo guardado = trabajoDAO.modificar(trabajo);
       notificarAutor(
-          trabajo,
+          guardado,
           "Trabajo aprobado",
-          "Tu trabajo \"" + trabajo.getTitulo() + "\" fue aprobado por el comité académico.");
+          "Tu trabajo \"" + guardado.getTitulo() + "\" fue aprobado por el comité académico.");
+      return guardado;
     } else {
       if (observaciones == null || observaciones.isBlank()) {
         throw new NegocioException("Debe indicar el motivo del rechazo definitivo");
@@ -552,6 +609,17 @@ public class TrabajoService {
   private boolean puedeEditar(Trabajo t) {
     return t.getEstado() == EstadoTrabajo.BORRADOR
         || puedeReenviar(t);
+  }
+
+  /** Asistente sin AUTOR, o con AUTOR otorgado por error al crear el borrador (sin habilitación admin). */
+  private boolean pendienteHabilitacionAutor(Usuario usuario) {
+    if (!usuario.getRoles().contains(Rol.ASISTENTE)) {
+      return false;
+    }
+    if (!usuario.getRoles().contains(Rol.AUTOR)) {
+      return true;
+    }
+    return usuario.getRolActual() == null || usuario.getRolActual() == Rol.ASISTENTE;
   }
 
   private Rol resolverRolEnvio(String rolEnvioRaw, Usuario autor) {

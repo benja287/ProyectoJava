@@ -186,7 +186,7 @@ export class SesionPostersAdminComponent implements OnInit {
   }
 
   private cargarTrabajos(): void {
-    this.trabajoService.listar(1, 200, { estado: 'APROBADO', modalidad: 'POSTER' }).subscribe({
+    this.trabajoService.listarAprobadosProgramables('POSTER').subscribe({
       next: (items) => {
         this.trabajosAprobados = items;
         this.aplicarFiltro();

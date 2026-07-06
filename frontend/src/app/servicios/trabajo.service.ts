@@ -61,6 +61,10 @@ export class TrabajoService {
     });
   }
 
+  listarAprobadosProgramables(modalidad: 'ORAL' | 'POSTER'): Observable<Trabajo[]> {
+    return this.http.get<Trabajo[]>(`${this.baseUrl}/aprobados`, { params: { modalidad } });
+  }
+
   resumenEnvio(autorId: number, rolEnvio: 'ASISTENTE' | 'AUTOR'): Observable<TrabajoEnvioResumen> {
     return this.http.get<TrabajoEnvioResumen>(`${this.baseUrl}/resumen-envio`, {
       params: { autorId, rolEnvio },
