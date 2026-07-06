@@ -4,6 +4,7 @@ import { LoginService } from '../../auth/login.service';
 import { Trabajo, TrabajoEnvioResumen } from '../../models/trabajo.model';
 import { MODALIDAD_LABELS } from '../../constants/ejes-tematicos';
 import { TrabajoService } from '../../servicios/trabajo.service';
+import { feedbackTextoTrabajo } from '../../utils/trabajo-rol.util';
 
 @Component({
   selector: 'app-panel-asistente',
@@ -219,25 +220,7 @@ export class PanelAsistenteComponent implements OnInit {
   }
 
   feedbackTexto(t: Trabajo): string {
-    if (t.estado === 'ENVIADO' && (t.precheckIntentos ?? 0) === 0) {
-      return 'Trabajo enviado. Esperando prevalidación del Comité Académico.';
-    }
-    if (t.estado === 'PRECHECK_OBSERVADO') {
-      return 'Trabajo observado en precheck. Podés corregirlo y reenviarlo.';
-    }
-    if (t.estado === 'OBSERVADO_EVALUACION') {
-      return 'Rechazado por evaluadores. Podés corregirlo y reenviarlo.';
-    }
-    if (t.estado === 'PENDIENTE_APROBACION_COMITE') {
-      return 'Evaluaciones favorables. Pendiente de confirmación final del comité.';
-    }
-    if (t.estado === 'EN_EVALUACION') {
-      return 'En evaluación por los evaluadores asignados.';
-    }
-    if (t.estado === 'APROBADO') {
-      return 'Trabajo aprobado por el comité académico.';
-    }
-    return '';
+    return feedbackTextoTrabajo(t, 'asistente');
   }
 
   feedbackClass(t: Trabajo): string {

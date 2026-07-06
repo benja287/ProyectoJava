@@ -13,6 +13,12 @@ import { TrabajoService } from '../../../servicios/trabajo.service';
 import { UsuarioService } from '../../../servicios/usuario.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { etiquetaCategoria } from '../../../models/inscripcion.model';
+import {
+  etiquetaRolEnvio,
+  esEnvioAsistente,
+  mensajeComiteEvaluacionObservado,
+  mensajeComitePrecheckObservado,
+} from '../../../utils/trabajo-rol.util';
 
 interface PrecheckChecks {
   pdfOk: boolean;
@@ -170,7 +176,8 @@ interface PrecheckChecks {
                     </div>
                     <p class="muted">{{ t.ejeTematico }}</p>
                     <p class="comite-trabajo-meta">
-                      {{ t.tipo }} • Modalidad: {{ modalidadLabel(t.modalidad) }}
+                      {{ t.tipo }} • Modalidad: {{ modalidadLabel(t.modalidad) }} • Enviado como:
+                      {{ etiquetaRolEnvio(t) }}
                     </p>
                     <p class="muted">Categoría autor/a: {{ t.autorCategoria || 'Sin categoría' }}</p>
                     <p class="comite-trabajo-stats">
@@ -203,20 +210,34 @@ interface PrecheckChecks {
             </div>
             <p>{{ seleccionado.resumen || '—' }}</p>
             <p class="muted">
-              Autor/a: {{ seleccionado.autorNombre }} {{ seleccionado.autorApellido }}
+              Participante: {{ seleccionado.autorNombre }} {{ seleccionado.autorApellido }}
+              <span class="estado-badge estado-badge--rol-envio">
+                Enviado como {{ etiquetaRolEnvio(seleccionado) }}
+              </span>
             </p>
+            @if (esEnvioAsistente(seleccionado)) {
+              <p class="muted small">
+                Este trabajo se presentó con cupo de asistente. Tras la aprobación final, el administrador
+                debe habilitar el rol Autor para que gestione trabajos como autor.
+              </p>
+            }
 
-            @if (esperandoReenvioAutor) {
+            @if (esperandoReenvioPrecheck) {
               <div class="comite-bloque comite-bloque--aviso">
                 <p class="notice-box notice-box--amber">
-                  Este trabajo fue <strong>observado en precheck</strong> ({{
-                    Math.min(seleccionado!.precheckIntentos ?? 0, 3)
-                  }}/3).
-                  El autor debe corregirlo y reenviarlo antes de una nueva prevalidación.
+                  {{ mensajeComitePrecheckObservado(seleccionado!) }}
                 </p>
                 @if (seleccionado!.observacionesPrecheck) {
                   <p class="muted"><strong>Observaciones:</strong> {{ seleccionado!.observacionesPrecheck }}</p>
                 }
+              </div>
+            }
+
+            @if (esperandoReenvioEvaluacion) {
+              <div class="comite-bloque comite-bloque--aviso">
+                <p class="notice-box notice-box--amber">
+                  {{ mensajeComiteEvaluacionObservado(seleccionado!) }}
+                </p>
               </div>
             }
 
@@ -240,7 +261,7 @@ interface PrecheckChecks {
                 }
               </div>
               <label>
-                Observaciones (se envían al autor)
+                Observaciones (se envían al {{ participanteObservaciones(seleccionado) }})
                 <textarea [formControl]="observacionesCtrl" rows="4" placeholder="Ej: El PDF contiene nombres de autores / excede las 5 páginas / falta resumen, etc."></textarea>
               </label>
               <div class="actions">
@@ -521,8 +542,21 @@ export class ComiteOcComponent implements OnInit {
     return this.seleccionado?.estado === 'ENVIADO';
   }
 
-  get esperandoReenvioAutor(): boolean {
+  get esperandoReenvioPrecheck(): boolean {
     return this.seleccionado?.estado === 'PRECHECK_OBSERVADO';
+  }
+
+  get esperandoReenvioEvaluacion(): boolean {
+    return this.seleccionado?.estado === 'OBSERVADO_EVALUACION';
+  }
+
+  readonly etiquetaRolEnvio = etiquetaRolEnvio;
+  readonly esEnvioAsistente = esEnvioAsistente;
+  readonly mensajeComitePrecheckObservado = mensajeComitePrecheckObservado;
+  readonly mensajeComiteEvaluacionObservado = mensajeComiteEvaluacionObservado;
+
+  participanteObservaciones(t: Trabajo): string {
+    return esEnvioAsistente(t) ? 'asistente' : 'autor';
   }
 
   get mostrarAsignacion(): boolean {

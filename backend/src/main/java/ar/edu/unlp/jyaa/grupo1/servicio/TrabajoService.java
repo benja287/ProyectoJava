@@ -386,7 +386,7 @@ public class TrabajoService {
       notificarAutor(
           guardado,
           "Precheck aprobado",
-          "Tu trabajo \"" + guardado.getTitulo() + "\" pasó el precheck del comité.");
+          "Tu trabajo \"" + guardado.getTitulo() + "\" pasó el precheck del comité." + sufijoRolEnvio(guardado));
       return guardado;
     }
     int intentos = trabajo.getPrecheckIntentos() + 1;
@@ -402,12 +402,14 @@ public class TrabajoService {
           "Tu trabajo \"" + trabajo.getTitulo() + "\" no superó el precheck tras " + intentos + " intentos.");
     } else {
       trabajo.setEstado(EstadoTrabajo.PRECHECK_OBSERVADO);
+      String baseObservado =
+          observaciones != null && !observaciones.isBlank()
+              ? "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. " + observaciones.trim()
+              : "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. Revisá los requisitos y reenviá si corresponde.";
       notificarAutor(
           trabajo,
           "Trabajo observado en precheck",
-          observaciones != null && !observaciones.isBlank()
-              ? "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. " + observaciones.trim()
-              : "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. Revisá los requisitos y reenviá si corresponde.");
+          baseObservado + instruccionReenvio(trabajo));
     }
     Trabajo guardado = trabajoDAO.modificar(trabajo);
     return guardado;
@@ -504,7 +506,8 @@ public class TrabajoService {
         notificarAutor(
             trabajo,
             "Trabajo rechazado en evaluación",
-            "Tu trabajo \"" + trabajo.getTitulo() + "\" fue rechazado por un evaluador. Podés corregirlo y reenviarlo.");
+            "Tu trabajo \"" + trabajo.getTitulo() + "\" fue rechazado por un evaluador."
+                + instruccionReenvio(trabajo));
       }
     }
     trabajoDAO.modificar(trabajo);
@@ -737,6 +740,21 @@ public class TrabajoService {
                     ? " Comentario: " + comentario.trim()
                     : ""));
     return guardado;
+  }
+
+  private boolean esEnvioAsistente(Trabajo trabajo) {
+    return trabajo.getRolEnvio() == null || trabajo.getRolEnvio() == Rol.ASISTENTE;
+  }
+
+  private String sufijoRolEnvio(Trabajo trabajo) {
+    return esEnvioAsistente(trabajo) ? " (enviado como asistente)" : " (enviado como autor)";
+  }
+
+  private String instruccionReenvio(Trabajo trabajo) {
+    if (esEnvioAsistente(trabajo)) {
+      return " Reenviá desde el panel asistente. Si el trabajo se aprueba, el administrador te habilitará el rol Autor.";
+    }
+    return " Reenviá desde Mis trabajos.";
   }
 
   private void notificarAutor(Trabajo trabajo, String asunto, String mensaje) {

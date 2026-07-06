@@ -1739,6 +1739,13 @@ textarea {
   color: #c2410c;
 }
 
+.estado-badge--rol-envio {
+  margin-left: 0.5rem;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.75rem;
+}
+
 .estado-badge--evaluacion {
   background: #e0e7ff;
   color: #3730a3;

@@ -19,6 +19,7 @@ import { Trabajo, TrabajoEnvioResumen } from '../../../models/trabajo.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
+import { feedbackTextoTrabajo, etiquetaRolEnvio } from '../../../utils/trabajo-rol.util';
 
 @Component({
   selector: 'app-trabajos-autor',
@@ -185,12 +186,16 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
             <article class="trabajo-item-detalle">
               <div class="trabajo-item-detalle-header">
                 <strong>{{ t.titulo }}</strong>
-                <span class="estado-badge estado-badge--enviado">{{ t.estado }}</span>
+                <div>
+                  <span class="estado-badge">Enviado como {{ etiquetaRolEnvio(t) }}</span>
+                  <span class="estado-badge estado-badge--enviado">{{ etiquetaEstado(t) }}</span>
+                </div>
               </div>
               <p class="trabajo-item-meta">
                 {{ t.ejeTematico }} • Precheck {{ Math.min(t.precheckIntentos ?? 0, 3) }}/3 • Revisión
                 {{ Math.min(t.revisionIntentos ?? 0, 2) }}/2
               </p>
+              <p class="trabajo-feedback" [class]="feedbackClass(t)">{{ feedbackTexto(t) }}</p>
             </article>
           }
         }
@@ -224,7 +229,7 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
               <tr>
                 <td>{{ t.id }}</td>
                 <td>{{ t.titulo }}</td>
-                <td>{{ t.estado }}</td>
+                <td>{{ etiquetaEstado(t) }}</td>
                 <td>
                   @if (t.documentoUrl) {
                     <app-archivo-link [url]="t.documentoUrl" label="Ver" />
@@ -558,10 +563,15 @@ export class TrabajosAutorComponent implements OnInit {
     }
     this.trabajoService.enviar(trabajo.id, this.perfilAsistente ? 'ASISTENTE' : 'AUTOR').subscribe({
       next: (actualizado) => {
-        this.mensaje =
-          trabajo.estado === 'OBSERVADO_EVALUACION'
-            ? 'Correcciones reenviadas.'
-            : 'Trabajo enviado a evaluación.';
+        if (trabajo.estado === 'OBSERVADO_EVALUACION') {
+          this.mensaje = this.perfilAsistente
+            ? 'Trabajo reenviado tras rechazo de evaluadores.'
+            : 'Correcciones reenviadas.';
+        } else if (trabajo.estado === 'PRECHECK_OBSERVADO') {
+          this.mensaje = 'Trabajo reenviado tras observación de precheck.';
+        } else {
+          this.mensaje = 'Trabajo enviado a evaluación.';
+        }
         const idx = this.trabajos.findIndex((t) => t.id === trabajo.id);
         if (idx >= 0) {
           this.trabajos[idx] = actualizado;
@@ -573,6 +583,35 @@ export class TrabajosAutorComponent implements OnInit {
       error: (err) => (this.error = mensajeErrorApi(err, 'No se pudo enviar el trabajo.')),
     });
   }
+
+  etiquetaEstado(t: Trabajo): string {
+    const map: Record<string, string> = {
+      ENVIADO: 'Enviado',
+      PRECHECK_OK: 'Precheck OK',
+      PRECHECK_OBSERVADO: 'Observado (precheck)',
+      EN_EVALUACION: 'En evaluación',
+      PENDIENTE_APROBACION_COMITE: 'Pendiente comité',
+      APROBADO: 'Aprobado',
+      OBSERVADO_EVALUACION: 'Rechazado (reenvío)',
+      RECHAZADO: 'Rechazado',
+    };
+    return t.estado ? map[t.estado] ?? t.estado : '—';
+  }
+
+  feedbackTexto(t: Trabajo): string {
+    return feedbackTextoTrabajo(t, this.perfilAsistente ? 'asistente' : 'autor');
+  }
+
+  feedbackClass(t: Trabajo): string {
+    if (t.estado === 'APROBADO') return 'trabajo-feedback--ok';
+    if (t.estado === 'OBSERVADO_EVALUACION' || t.estado === 'PRECHECK_OBSERVADO') {
+      return 'trabajo-feedback--warn';
+    }
+    if (t.estado === 'RECHAZADO') return 'trabajo-feedback--error';
+    return 'trabajo-feedback--info';
+  }
+
+  readonly etiquetaRolEnvio = etiquetaRolEnvio;
 
   private cargar(): void {
     if (!this.autorId) {
