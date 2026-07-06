@@ -1041,6 +1041,10 @@ textarea {
   background: linear-gradient(135deg, #c2410c, #ea580c);
 }
 
+.panel-hero--violeta {
+  background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+}
+
 .panel-hero h1 {
   margin: 0 0 0.25rem;
   font-size: 1.75rem;
@@ -1095,6 +1099,11 @@ textarea {
 .stat-card--amarillo { border-left-color: #eab308; background: #fffbeb; }
 .stat-card--verde { border-left-color: #16a34a; background: #f0fdf4; }
 .stat-card--violeta { border-left-color: #7c3aed; background: #f5f3ff; }
+.stat-card--azul { border-left-color: #2563eb; background: #eff6ff; }
+
+.stat-value--amber { color: #d97706; }
+.stat-value--green { color: #16a34a; }
+.stat-value--blue { color: #2563eb; }
 
 .stat-label {
   display: block;
@@ -1908,4 +1917,181 @@ textarea {
   background: #111827;
   border-color: #111827;
   color: #fff;
+}
+
+/* Panel evaluador (estilo React) */
+.evaluador-stats {
+  margin-bottom: 1.5rem;
+}
+
+.evaluador-seccion {
+  margin-bottom: 1.5rem;
+}
+
+.evaluador-seccion-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.evaluador-seccion-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.evaluador-seccion-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.evaluador-seccion-icon--teal {
+  filter: saturate(1.1);
+}
+
+.evaluador-vacio {
+  text-align: center;
+  color: #64748b;
+  padding: 2.5rem 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+}
+
+.evaluador-panel-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.evaluador-panel-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.evaluador-panel-card h3 {
+  margin: 0 0 0.65rem;
+  font-size: 1.15rem;
+}
+
+.evaluador-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.tag--tipo {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.tag--modalidad {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.tag--eje {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.tag--pendiente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.evaluador-pdf {
+  margin: 0.5rem 0 0;
+}
+
+.evaluador-sin-pdf {
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.evaluador-descripcion,
+.evaluador-metodologia {
+  margin: 0.35rem 0;
+  font-size: 0.92rem;
+  color: #334155;
+}
+
+.evaluador-fecha {
+  font-size: 0.8rem;
+  margin-bottom: 0.35rem;
+}
+
+.evaluador-toggle-comentario {
+  background: none;
+  border: none;
+  color: #7c3aed;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.evaluador-toggle-comentario:hover {
+  color: #5b21b6;
+  text-decoration: underline;
+}
+
+.evaluador-panel-card textarea {
+  width: 100%;
+  margin-bottom: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.65rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.evaluador-certificado {
+  margin-top: 1.5rem;
+}
+
+.btn-certificado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  background: #4f46e5;
+  color: #fff;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.btn-certificado:hover {
+  background: #4338ca;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

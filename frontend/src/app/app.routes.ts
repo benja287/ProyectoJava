@@ -19,7 +19,7 @@ import { PagosPendientesComponent } from './pages/admin/pagos-pendientes/pagos-p
 import { PagosListaComponent } from './pages/admin/pagos-lista/pagos-lista.component';
 import { ActividadesAdminComponent } from './pages/admin/actividades/actividades-admin.component';
 import { TrabajosAdminComponent } from './pages/admin/trabajos/trabajos-admin.component';
-import { AsignacionesEvaluadorComponent } from './pages/evaluador/asignaciones/asignaciones-evaluador.component';
+import { PanelEvaluadorComponent } from './pages/evaluador/panel-evaluador.component';
 import { TrabajosAutorComponent } from './pages/autor/trabajos/trabajos-autor.component';
 import { CronogramaParticipanteComponent } from './pages/participante/cronograma/cronograma-participante.component';
 import { InscripcionParticipanteComponent } from './pages/participante/inscripcion/inscripcion-participante.component';
@@ -162,27 +162,17 @@ export const routes: Routes = [
   // --- Perfil Evaluador ---
   {
     path: 'evaluador',
-    component: PanelRolComponent,
+    component: PanelEvaluadorComponent,
     canActivate: [evaluador],
-    data: {
-      titulo: 'Panel Evaluador',
-      descripcion: 'Aceptá asignaciones y registrá evaluaciones de trabajos.',
-      colorTema: 'teal',
-      iconoTema: '📝',
-      acciones: [
-        {
-          label: 'Mis asignaciones',
-          route: '/evaluador/asignaciones',
-          descripcion: 'Aceptá convocatorias, revisá PDFs y enviá tu dictamen.',
-          icono: '📄',
-          color: 'teal',
-        },
-      ],
-    },
   },
   {
     path: 'evaluador/asignaciones',
-    component: AsignacionesEvaluadorComponent,
+    redirectTo: 'evaluador',
+    pathMatch: 'full',
+  },
+  {
+    path: 'evaluador/certificado',
+    component: CertificadoAsistenteComponent,
     canActivate: [evaluador],
   },
 

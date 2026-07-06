@@ -7,6 +7,10 @@ export interface AsignacionEvaluacion {
   trabajoEstado?: string;
   trabajoEjeTematico?: string;
   trabajoDocumentoUrl?: string | null;
+  trabajoTipo?: string;
+  trabajoModalidad?: string;
+  trabajoResumen?: string;
+  trabajoMetodologia?: string;
   evaluadorId?: number;
   evaluadorNombre?: string;
   evaluadorApellido?: string;

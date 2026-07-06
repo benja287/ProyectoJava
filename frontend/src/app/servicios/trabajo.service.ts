@@ -46,6 +46,21 @@ export class TrabajoService {
     return this.http.get<Trabajo[]>(`${this.baseUrl}/comite`);
   }
 
+  listarPropuestasTallerPendientes(): Observable<Trabajo[]> {
+    return this.http.get<Trabajo[]>(`${this.baseUrl}/propuestas-taller/pendientes`);
+  }
+
+  evaluarPropuestaTaller(
+    id: number,
+    aprobar: boolean,
+    comentario?: string
+  ): Observable<Trabajo> {
+    return this.http.put<Trabajo>(`${this.baseUrl}/${id}/evaluar-propuesta-taller`, {
+      aprobar,
+      comentario: comentario ?? null,
+    });
+  }
+
   resumenEnvio(autorId: number, rolEnvio: 'ASISTENTE' | 'AUTOR'): Observable<TrabajoEnvioResumen> {
     return this.http.get<TrabajoEnvioResumen>(`${this.baseUrl}/resumen-envio`, {
       params: { autorId, rolEnvio },

@@ -615,6 +615,60 @@ public class TrabajoService {
     }
   }
 
+  public List<TrabajoResumenDTO> listarPropuestasTallerPendientes(Long evaluadorId) {
+    Usuario evaluador = usuarioDAO.recuperarPorId(evaluadorId);
+    if (evaluador == null || !evaluador.getRoles().contains(Rol.EVALUADOR)) {
+      throw new NegocioException("Solo evaluadores pueden listar propuestas de taller");
+    }
+    TrabajoFiltro filtro =
+        new TrabajoFiltro(
+            null, null, null, EstadoTrabajo.ENVIADO, null, TipoTrabajo.PROPUESTA_TALLER, null);
+    return trabajoDAO.listarFiltrado(filtro, 0, 200).stream()
+        .filter(t -> t.getAutor() == null || !evaluadorId.equals(t.getAutor().getId()))
+        .map(TrabajoResumenDTO::from)
+        .toList();
+  }
+
+  public Trabajo evaluarPropuestaTaller(
+      Long id, boolean aprobar, String comentario, Long evaluadorId) {
+    Usuario evaluador = usuarioDAO.recuperarPorId(evaluadorId);
+    if (evaluador == null || !evaluador.getRoles().contains(Rol.EVALUADOR)) {
+      throw new NegocioException("Solo evaluadores pueden evaluar propuestas de taller");
+    }
+    Trabajo trabajo = buscar(id);
+    if (trabajo.getTipo() != TipoTrabajo.PROPUESTA_TALLER) {
+      throw new NegocioException("El trabajo no es una propuesta de taller");
+    }
+    if (trabajo.getEstado() != EstadoTrabajo.ENVIADO) {
+      throw new NegocioException("La propuesta ya fue evaluada");
+    }
+    if (trabajo.getAutor() != null && evaluadorId.equals(trabajo.getAutor().getId())) {
+      throw new NegocioException("No podés evaluar tu propia propuesta");
+    }
+    trabajo.setEstado(aprobar ? EstadoTrabajo.APROBADO : EstadoTrabajo.RECHAZADO);
+    if (comentario != null && !comentario.isBlank()) {
+      trabajo.setObservacionesPrecheck(comentario.trim());
+    }
+    Trabajo guardado = trabajoDAO.modificar(trabajo);
+    notificarAutor(
+        guardado,
+        aprobar ? "Taller aprobado" : "Taller no aprobado",
+        aprobar
+            ? "Tu propuesta de taller \""
+                + guardado.getTitulo()
+                + "\" fue aprobada."
+                + (comentario != null && !comentario.isBlank()
+                    ? " Comentario: " + comentario.trim()
+                    : "")
+            : "Tu propuesta de taller \""
+                + guardado.getTitulo()
+                + "\" no fue aprobada."
+                + (comentario != null && !comentario.isBlank()
+                    ? " Comentario: " + comentario.trim()
+                    : ""));
+    return guardado;
+  }
+
   private void notificarAutor(Trabajo trabajo, String asunto, String mensaje) {
     if (trabajo.getAutor() != null && trabajo.getAutor().getId() != null) {
       notificacionService.enviar(trabajo.getAutor().getId(), asunto, mensaje);

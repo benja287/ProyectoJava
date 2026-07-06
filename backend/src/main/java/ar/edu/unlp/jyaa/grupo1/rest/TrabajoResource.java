@@ -4,6 +4,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ConfirmarComiteRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.DocumentoUploadForm;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.EnviarTrabajoRequest;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.EvaluarPropuestaTallerRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.PrecheckRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoCreateRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoUpdateRequest;
@@ -149,6 +150,47 @@ public class TrabajoResource {
       String rolEnvio = request != null ? request.rolEnvio() : null;
       Trabajo trabajo = trabajoService.enviar(id, rolEnvio);
       return TrabajoResumenDTO.from(trabajo);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @GET
+  @Path("/propuestas-taller/pendientes")
+  @Operation(summary = "Listar propuestas de taller pendientes para evaluadores")
+  public List<TrabajoResumenDTO> listarPropuestasTallerPendientes(
+      @Context ContainerRequestContext ctx) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    if (!auth.hasRole("EVALUADOR")) {
+      throw new NotAuthorizedException("Solo evaluadores");
+    }
+    try {
+      return trabajoService.listarPropuestasTallerPendientes(auth.userId());
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @PUT
+  @Path("/{id}/evaluar-propuesta-taller")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Operation(summary = "Aprobar o rechazar propuesta de taller")
+  public TrabajoResumenDTO evaluarPropuestaTaller(
+      @PathParam("id") Long id,
+      EvaluarPropuestaTallerRequest request,
+      @Context ContainerRequestContext ctx) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    if (!auth.hasRole("EVALUADOR")) {
+      throw new NotAuthorizedException("Solo evaluadores");
+    }
+    if (request == null) {
+      throw new ar.edu.unlp.jyaa.grupo1.servicio.NegocioException(
+          "Debe indicar si aprueba (aprobar: true/false)");
+    }
+    try {
+      return TrabajoResumenDTO.from(
+          trabajoService.evaluarPropuestaTaller(
+              id, request.aprobar(), request.comentario(), auth.userId()));
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }
