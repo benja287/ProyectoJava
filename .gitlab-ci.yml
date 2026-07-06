@@ -5,8 +5,16 @@ buildDocker:
   only:
     - main
   script:
-    - echo "Construimos la imagen de Docker"
-    - docker buildx build . -t grupo1-docker
+    - echo "Construimos la imagen de Docker (sin caché — siempre frontend + WAR frescos)"
+    - docker buildx build --no-cache --pull -t grupo1-docker .
+    - echo "Verificamos que el WAR dentro de la imagen contiene la SPA Angular nueva"
+    - docker create --name grupo1-warcheck grupo1-docker
+    - docker cp grupo1-warcheck:/usr/local/tomcat/webapps/ROOT.war /tmp/grupo1.war
+    - docker rm grupo1-warcheck
+    - unzip -l /tmp/grupo1.war | grep -q 'main-.*\.js'
+    - unzip -p /tmp/grupo1.war index.html | grep -q 'app-root'
+    - unzip -p /tmp/grupo1.war styles-*.css | grep -q 'panel-hero--admin'
+    - echo "OK — WAR verificado:" && unzip -l /tmp/grupo1.war | grep -E 'main-|version.json' && unzip -p /tmp/grupo1.war version.json
 
 detenemosContainer:
   stage: test
