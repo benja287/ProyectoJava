@@ -1809,3 +1809,73 @@ textarea {
 .trabajo-feedback--warn { color: #b45309; }
 .trabajo-feedback--ok { color: #15803d; }
 .trabajo-feedback--error { color: #b91c1c; }
+
+.comite-bloque {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  margin-top: 1.25rem;
+  background: #fff;
+}
+
+.comite-bloque--asignacion {
+  margin-top: 1rem;
+}
+
+.comite-eje-trabajo {
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.comite-seleccionados {
+  margin: 0.75rem 0;
+}
+
+.comite-evaluadores-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.comite-evaluador-opcion {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.comite-evaluador-opcion--activo {
+  border-color: #818cf8;
+  background: #eef2ff;
+}
+
+.comite-estado-evaluadores {
+  margin: 1rem 0;
+  padding: 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 0.85rem;
+}
+
+.comite-estado-evaluadores ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.comite-bloque--solo-lectura {
+  background: #f8fafc;
+}
+
+.comite-evaluadores-lista--lectura .comite-evaluador-opcion--lectura {
+  opacity: 0.95;
+  cursor: default;
+}
+
+.comite-evaluador-opcion--lectura {
+  pointer-events: none;
+}
+
+.comite-btn-asignar {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}

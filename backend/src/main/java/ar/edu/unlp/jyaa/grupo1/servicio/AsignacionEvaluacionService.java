@@ -140,6 +140,10 @@ public class AsignacionEvaluacionService {
   }
 
   private void validarEstadoParaAsignar(Trabajo trabajo) {
+    if (trabajo.getEstado() == EstadoTrabajo.ENVIADO) {
+      throw new NegocioException(
+          "Debe marcar el trabajo como apto (precheck OK) antes de asignar evaluadores");
+    }
     if (trabajo.getEstado() != EstadoTrabajo.PRECHECK_OK
         && trabajo.getEstado() != EstadoTrabajo.EN_EVALUACION) {
       throw new NegocioException(

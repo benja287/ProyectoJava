@@ -206,7 +206,8 @@ interface PrecheckChecks {
               Autor/a: {{ seleccionado.autorNombre }} {{ seleccionado.autorApellido }}
             </p>
 
-            @if (seleccionado.estado === 'ENVIADO') {
+            @if (mostrarPrecheck) {
+              <div class="comite-bloque comite-bloque--precheck">
               <h3>Prevalidación formal (checklist)</h3>
               @if (seleccionado.documentoUrl) {
                 <p>
@@ -241,36 +242,86 @@ interface PrecheckChecks {
                   Observar (precheck NO)
                 </button>
               </div>
+              </div>
             }
 
-            @if (
-              seleccionado.estado === 'PRECHECK_OK' || seleccionado.estado === 'EN_EVALUACION'
-            ) {
+            @if (mostrarAsignacion) {
+              <div
+                class="comite-bloque comite-bloque--asignacion"
+                [class.comite-bloque--solo-lectura]="!puedeAsignarEvaluadores"
+              >
               <h3>Asignación a evaluadores</h3>
-              <p>
-                <strong>Eje temático del trabajo:</strong> {{ seleccionado.ejeTematico }}
-              </p>
-              <p class="muted">
-                Seleccioná 2 evaluadores del eje (el autor del trabajo no aparece en la lista).
+              <p class="comite-eje-trabajo">
+                Eje temático del trabajo:
+                <strong>{{ seleccionado.ejeTematico || '—' }}</strong>
               </p>
 
-              @if (evaluadoresDelEje.length < 2) {
+              @if (!puedeAsignarEvaluadores) {
+                <div class="aviso-amarillo">
+                  <strong>Solo lectura.</strong> Primero marcá el trabajo como
+                  <strong>apto (precheck OK)</strong> arriba. Recién entonces podrás seleccionar y
+                  asignar evaluadores de este eje.
+                </div>
+              } @else {
+                <p class="muted">
+                  Seleccioná {{ maxEvaluadoresRequeridos }} evaluador(es) del eje (el autor del trabajo no
+                  aparece en la lista).
+                </p>
+              }
+
+              <label class="eval-select-label">
+                Eje temático del trabajo
+                <select disabled [value]="seleccionado.ejeTematico || ''">
+                  <option value="">(sin eje)</option>
+                  @for (eje of ejesTematicos; track eje) {
+                    <option [value]="eje">{{ eje }}</option>
+                  }
+                </select>
+              </label>
+
+              @if (!seleccionado.ejeTematico) {
+                <div class="aviso-amarillo">El trabajo no tiene eje temático.</div>
+              } @else if (evaluadoresDelEje.length < 2) {
                 <div class="aviso-amarillo">
                   No hay suficientes evaluadores configurados para este eje (mínimo 2 disponibles).
                   Primero asigná evaluadores a este eje en "Evaluadores por eje temático" (máximo 3
                   por eje).
                 </div>
+              } @else if (!puedeAsignarEvaluadores) {
+                <div class="comite-evaluadores-lista comite-evaluadores-lista--lectura">
+                  @for (ev of evaluadoresDelEje; track ev.id) {
+                    <div class="check-row comite-evaluador-opcion comite-evaluador-opcion--lectura">
+                      <div>
+                        <strong>{{ ev.nombre }} {{ ev.apellido }}</strong>
+                        <p class="muted evaluador-email">{{ ev.email }}</p>
+                      </div>
+                    </div>
+                  }
+                </div>
               } @else {
+                <p class="muted comite-seleccionados">
+                  Seleccionados: {{ evaluadoresSeleccionados.size }}/{{ maxEvaluadoresRequeridos }}
+                  @if (hayEmpate) {
+                    <span>(empate 1/1: se permite 3er evaluador)</span>
+                  }
+                </p>
                 <div class="comite-asignacion-row">
-                  <div>
+                  <div class="comite-evaluadores-lista">
                     @for (ev of evaluadoresDelEje; track ev.id) {
-                      <label class="check-row">
+                      <label
+                        class="check-row comite-evaluador-opcion"
+                        [class.comite-evaluador-opcion--activo]="evaluadoresSeleccionados.has(ev.id!)"
+                      >
+                        <div>
+                          <strong>{{ ev.nombre }} {{ ev.apellido }}</strong>
+                          <p class="muted evaluador-email">{{ ev.email }}</p>
+                        </div>
                         <input
                           type="checkbox"
                           [checked]="evaluadoresSeleccionados.has(ev.id!)"
+                          [disabled]="!puedeAsignarEvaluadores || evaluadorCheckboxDeshabilitado(ev.id!)"
                           (change)="toggleEvaluador(ev.id!, $any($event.target).checked)"
                         />
-                        <span>{{ ev.apellido }}, {{ ev.nombre }}</span>
                       </label>
                     }
                   </div>
@@ -286,32 +337,50 @@ interface PrecheckChecks {
                     }
                   </div>
                 </div>
-                <div class="actions">
+              }
+
+              @if (asignaciones.length > 0) {
+                <div class="comite-estado-evaluadores">
+                  <strong>Estado por evaluador</strong>
+                  <ul>
+                    @for (a of asignaciones; track a.id) {
+                      <li>
+                        <span>{{ a.evaluadorNombre }} {{ a.evaluadorApellido }}</span>
+                        — {{ estadoAsignacion(a) }}
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+
+              @if (puedeAsignarEvaluadores && evaluadoresDelEje.length >= 2) {
+              <div class="actions">
+                <button
+                  type="button"
+                  class="btn-primary comite-btn-asignar"
+                  (click)="asignarEvaluadores(false)"
+                  [disabled]="procesando"
+                >
+                  Asignar evaluadores
+                </button>
+                @if (hayEmpate) {
                   <button
                     type="button"
-                    class="btn-primary"
-                    (click)="asignarEvaluadores(false)"
+                    class="btn-secundario"
+                    (click)="asignarEvaluadores(true)"
                     [disabled]="procesando"
                   >
-                    Asignar evaluadores
+                    Asignar 3er evaluador (solo empate)
                   </button>
-                  @if (hayEmpate) {
-                    <button
-                      type="button"
-                      class="btn-secundario"
-                      (click)="asignarEvaluadores(true)"
-                      [disabled]="procesando"
-                    >
-                      Asignar 3er evaluador (solo empate)
-                    </button>
-                  }
-                </div>
-                <p class="form-hint">
-                  Los evaluadores deben aceptar la asignación en su panel antes de emitir un
-                  veredicto. Con 2 evaluaciones favorables el trabajo pasa a confirmación final del
-                  comité. En empate 1/1 asigná un tercer evaluador.
-                </p>
+                }
+              </div>
+              <p class="form-hint">
+                Los evaluadores deben aceptar la asignación en su panel antes de emitir un veredicto.
+                Con 2 evaluaciones favorables el trabajo pasa a confirmación final del comité. En empate
+                1/1 asigná un tercer evaluador.
+              </p>
               }
+              </div>
             }
 
             @if (seleccionado.estado === 'PENDIENTE_APROBACION_COMITE') {
@@ -422,16 +491,51 @@ export class ComiteOcComponent implements OnInit {
   }
 
   get evaluadores(): Usuario[] {
-    return this.usuarios.filter((u) => u.roles?.includes('EVALUADOR'));
+    return this.usuarios.filter((u) => !!u.ejeTematicoEvaluador?.trim());
   }
 
   get evaluadoresDelEje(): Usuario[] {
     const eje = this.seleccionado?.ejeTematico;
     const autorId = this.seleccionado?.autorId;
     if (!eje) return [];
-    return this.evaluadores.filter(
+    return this.usuarios.filter(
       (u) => u.ejeTematicoEvaluador === eje && u.id !== autorId
     );
+  }
+
+  get mostrarPrecheck(): boolean {
+    return this.seleccionado?.estado === 'ENVIADO';
+  }
+
+  get mostrarAsignacion(): boolean {
+    const e = this.seleccionado?.estado;
+    return e === 'ENVIADO' || e === 'PRECHECK_OK' || e === 'EN_EVALUACION';
+  }
+
+  get puedeAsignarEvaluadores(): boolean {
+    const e = this.seleccionado?.estado;
+    return e === 'PRECHECK_OK' || e === 'EN_EVALUACION';
+  }
+
+  get maxEvaluadoresRequeridos(): number {
+    return this.hayEmpate ? 3 : 2;
+  }
+
+  evaluadorCheckboxDeshabilitado(evaluadorId: number): boolean {
+    if (this.evaluadoresSeleccionados.has(evaluadorId)) {
+      return false;
+    }
+    return this.evaluadoresSeleccionados.size >= this.maxEvaluadoresRequeridos;
+  }
+
+  estadoAsignacion(a: AsignacionEvaluacion): string {
+    if (!a.aceptada) {
+      return 'Invitación pendiente (debe aceptar o rechazar en su panel).';
+    }
+    if (a.evaluacionRecomendacion) {
+      return 'Evaluación cargada.';
+    }
+    return 'Asignación aceptada — pendiente de dictamen.';
   }
 
   get hayEmpate(): boolean {
@@ -569,9 +673,13 @@ export class ComiteOcComponent implements OnInit {
     this.procesando = true;
     this.trabajoService.precheck(this.seleccionado.id, apto, obs).subscribe({
       next: (t) => {
-        this.mensaje = apto ? 'Precheck OK registrado.' : 'Observación registrada.';
+        this.mensaje = apto ? 'Precheck OK registrado. Ya podés asignar evaluadores.' : 'Observación registrada.';
         this.procesando = false;
         this.actualizarTrabajo(t);
+        this.seleccionado = t;
+        if (apto) {
+          this.evaluadoresSeleccionados = new Set();
+        }
         this.cargarTrabajos();
       },
       error: (err) => {
@@ -583,6 +691,10 @@ export class ComiteOcComponent implements OnInit {
 
   asignarEvaluadores(tercerEvaluador: boolean): void {
     if (!this.seleccionado?.id) return;
+    if (!this.puedeAsignarEvaluadores) {
+      this.error = 'Primero marcá el trabajo como apto (precheck OK) antes de asignar evaluadores.';
+      return;
+    }
     const ids = [...this.evaluadoresSeleccionados];
     const requeridos = tercerEvaluador || this.hayEmpate ? 3 : 2;
     if (ids.length < requeridos) {
@@ -609,6 +721,9 @@ export class ComiteOcComponent implements OnInit {
   }
 
   toggleEvaluador(id: number, checked: boolean): void {
+    if (!this.puedeAsignarEvaluadores) {
+      return;
+    }
     if (checked) {
       this.evaluadoresSeleccionados.add(id);
     } else {
@@ -674,8 +789,17 @@ export class ComiteOcComponent implements OnInit {
 
   private cargarAsignaciones(trabajoId: number): void {
     this.asignacionService.listarPorTrabajo(trabajoId).subscribe({
-      next: (items) => (this.asignaciones = items),
-      error: () => (this.asignaciones = []),
+      next: (items) => {
+        this.asignaciones = items;
+        const ids = items
+          .map((a) => a.evaluadorId)
+          .filter((id): id is number => id != null);
+        this.evaluadoresSeleccionados = new Set(ids);
+      },
+      error: () => {
+        this.asignaciones = [];
+        this.evaluadoresSeleccionados = new Set();
+      },
     });
   }
 }
