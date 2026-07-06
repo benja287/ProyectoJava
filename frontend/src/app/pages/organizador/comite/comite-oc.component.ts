@@ -166,7 +166,7 @@ interface PrecheckChecks {
                   >
                     <div class="comite-trabajo-titulo">
                       <strong>{{ t.titulo }}</strong>
-                      <span class="estado-badge estado-badge--enviado">{{ etiquetaEstado(t.estado) }}</span>
+                      <span class="estado-badge" [ngClass]="claseEstadoBadge(t.estado)">{{ etiquetaEstado(t.estado) }}</span>
                     </div>
                     <p class="muted">{{ t.ejeTematico }}</p>
                     <p class="comite-trabajo-meta">
@@ -199,7 +199,7 @@ interface PrecheckChecks {
           } @else {
             <div class="comite-detalle-header">
               <h2>{{ seleccionado.titulo }}</h2>
-              <span class="estado-badge estado-badge--enviado">{{ etiquetaEstado(seleccionado.estado) }}</span>
+              <span class="estado-badge" [ngClass]="claseEstadoBadge(seleccionado.estado)">{{ etiquetaEstado(seleccionado.estado) }}</span>
             </div>
             <p>{{ seleccionado.resumen || '—' }}</p>
             <p class="muted">
@@ -570,6 +570,19 @@ export class ComiteOcComponent implements OnInit {
       RECHAZADO: 'Rechazado',
     };
     return estado ? map[estado] ?? estado : '—';
+  }
+
+  claseEstadoBadge(estado?: string): string {
+    const map: Record<string, string> = {
+      ENVIADO: 'estado-badge--enviado',
+      PRECHECK_OK: 'estado-badge--precheck-ok',
+      EN_EVALUACION: 'estado-badge--evaluacion',
+      PENDIENTE_APROBACION_COMITE: 'estado-badge--pendiente',
+      APROBADO: 'estado-badge--aprobado',
+      APROBADO_CON_CORRECCIONES: 'estado-badge--correcciones',
+      RECHAZADO: 'estado-badge--rechazado',
+    };
+    return estado ? map[estado] ?? 'estado-badge--enviado' : 'estado-badge--enviado';
   }
 
   setEjeDraft(userId: number, eje: string): void {

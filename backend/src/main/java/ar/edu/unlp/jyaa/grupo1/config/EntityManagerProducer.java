@@ -20,6 +20,7 @@ public class EntityManagerProducer {
   public void dispose(@Disposes EntityManager em) {
     try {
       if (em.getTransaction().isActive()) {
+        em.flush();
         em.getTransaction().commit();
       }
     } catch (RuntimeException e) {

@@ -156,8 +156,19 @@ public class TrabajoResource {
 
   @PUT
   @Path("/{id}/precheck")
+  @Consumes(MediaType.APPLICATION_JSON)
   @Operation(summary = "Precheck del comité académico (apto u observado)")
-  public TrabajoResumenDTO precheck(@PathParam("id") Long id, PrecheckRequest request) {
+  public TrabajoResumenDTO precheck(
+      @PathParam("id") Long id,
+      PrecheckRequest request,
+      @Context ContainerRequestContext ctx) {
+    if (!AuthenticatedUser.from(ctx).canListAllTrabajos()) {
+      throw new NotAuthorizedException("Solo comité académico o administrador");
+    }
+    if (request == null) {
+      throw new ar.edu.unlp.jyaa.grupo1.servicio.NegocioException(
+          "Debe indicar si el trabajo es apto (apto: true/false)");
+    }
     try {
       return TrabajoResumenDTO.from(
           trabajoService.registrarPrecheck(
@@ -169,9 +180,19 @@ public class TrabajoResource {
 
   @PUT
   @Path("/{id}/confirmar-comite")
+  @Consumes(MediaType.APPLICATION_JSON)
   @Operation(summary = "Confirmación final del comité tras evaluaciones")
   public TrabajoResumenDTO confirmarComite(
-      @PathParam("id") Long id, ConfirmarComiteRequest request) {
+      @PathParam("id") Long id,
+      ConfirmarComiteRequest request,
+      @Context ContainerRequestContext ctx) {
+    if (!AuthenticatedUser.from(ctx).canListAllTrabajos()) {
+      throw new NotAuthorizedException("Solo comité académico o administrador");
+    }
+    if (request == null) {
+      throw new ar.edu.unlp.jyaa.grupo1.servicio.NegocioException(
+          "Debe indicar si se aprueba (aprobar: true/false)");
+    }
     try {
       return TrabajoResumenDTO.from(
           trabajoService.confirmarAprobacionComite(id, request.aprobar(), request.observaciones()));

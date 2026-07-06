@@ -327,11 +327,12 @@ public class TrabajoService {
       if (observaciones != null && !observaciones.isBlank()) {
         trabajo.setObservacionesPrecheck(observaciones.trim());
       }
+      Trabajo guardado = trabajoDAO.modificar(trabajo);
       notificarAutor(
-          trabajo,
+          guardado,
           "Precheck aprobado",
-          "Tu trabajo \"" + trabajo.getTitulo() + "\" pasó el precheck del comité.");
-      return trabajoDAO.modificar(trabajo);
+          "Tu trabajo \"" + guardado.getTitulo() + "\" pasó el precheck del comité.");
+      return guardado;
     }
     int intentos = trabajo.getPrecheckIntentos() + 1;
     trabajo.setPrecheckIntentos(intentos);

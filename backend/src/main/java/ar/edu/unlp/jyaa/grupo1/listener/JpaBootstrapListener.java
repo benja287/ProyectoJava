@@ -1,6 +1,7 @@
 package ar.edu.unlp.jyaa.grupo1.listener;
 
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
+import ar.edu.unlp.jyaa.grupo1.config.SchemaMigration;
 import ar.edu.unlp.jyaa.grupo1.seed.DatosInicialesService;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -25,6 +26,7 @@ public class JpaBootstrapListener implements ServletContextListener {
               try {
                 log.info("Inicializando EntityManagerFactory (jyaaPU)...");
                 JpaUtil.getEntityManagerFactory();
+                SchemaMigration.aplicarMigraciones();
                 DatosInicialesService.cargarSiVacio();
                 sce.getServletContext().setAttribute("jyaa.jpa.ready", Boolean.TRUE);
                 log.info("JPA listo para grupo1.");
