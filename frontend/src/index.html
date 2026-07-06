@@ -12,42 +12,33 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  <script>window.__JYAA_BUILD__='__JYAA_BUILD_ID__';</script>
   <script>
     (function () {
-      var mainRe = /main-([A-Za-z0-9]+)\.js/;
-      var reloadKey = 'jyaa-app-reload-attempt';
+      var embedded = window.__JYAA_BUILD__;
+      if (!embedded || embedded === '__JYAA_BUILD_ID__' || embedded === 'dev') return;
 
-      function hashFrom(value) {
-        var match = String(value || '').match(mainRe);
-        return match ? match[1] : null;
-      }
-
-      function tryReload(serverHash) {
-        var localEl = document.querySelector('script[src*="main-"]');
-        if (!localEl || !serverHash) return;
-        var localHash = hashFrom(localEl.getAttribute('src'));
-        if (!localHash || localHash === serverHash) return;
+      function forceReload(remoteBuild) {
         try {
-          if (sessionStorage.getItem(reloadKey) === serverHash) return;
-          sessionStorage.setItem(reloadKey, serverHash);
+          var k = 'jyaa-app-reload-attempt';
+          if (sessionStorage.getItem(k) === remoteBuild) return;
+          sessionStorage.setItem(k, remoteBuild);
         } catch (e) {}
         var url = new URL(location.href);
-        url.searchParams.set('_cb', serverHash);
+        url.searchParams.set('_cb', remoteBuild);
         location.replace(url.href);
       }
 
-      var serverHash = null;
-      fetch('/index.html?_=' + Date.now(), { cache: 'no-store' })
-        .then(function (r) { return r.ok ? r.text() : ''; })
-        .then(function (html) {
-          serverHash = hashFrom(html);
-          tryReload(serverHash);
+      fetch('/version.json?_=' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (!data || !data.build || data.build === embedded) return;
+          forceReload(data.build);
         })
         .catch(function () {});
-
-      document.addEventListener('DOMContentLoaded', function () {
-        tryReload(serverHash);
-      });
     })();
   </script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">

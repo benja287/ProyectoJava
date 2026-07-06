@@ -30,9 +30,10 @@ public class StaticCacheFilter implements Filter {
       if (isHashedAsset(path)) {
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
       } else if (isSpaShell(path)) {
-        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
         res.setHeader("Pragma", "no-cache");
         res.setDateHeader("Expires", 0);
+        res.setHeader("Surrogate-Control", "no-store");
       }
     }
 

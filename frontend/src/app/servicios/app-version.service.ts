@@ -1,11 +1,17 @@
 import { Injectable, OnDestroy } from '@angular/core';
+import { APP_BUILD_ID } from '../../environments/build-version';
 import { environment } from '../../environments/environment';
+
+declare global {
+  interface Window {
+    __JYAA_BUILD__?: string;
+  }
+}
 
 @Injectable({ providedIn: 'root' })
 export class AppVersionService implements OnDestroy {
   private readonly storageKey = 'jyaa-app-build';
   private readonly reloadAttemptKey = 'jyaa-app-reload-attempt';
-  private readonly mainScriptPattern = /main-([A-Za-z0-9]+)\.js/;
   private pollTimer?: ReturnType<typeof setInterval>;
   private readonly onVisibilityChange = (): void => {
     if (document.visibilityState === 'visible') {
@@ -13,7 +19,19 @@ export class AppVersionService implements OnDestroy {
     }
   };
 
-  /** Comprueba si hay un deploy nuevo y recarga antes de seguir con bundle viejo. */
+  /**
+   * Bloquea el bootstrap de Angular si el bundle cargado no coincide con version.json.
+   * Se ejecuta vía APP_INITIALIZER antes de montar componentes.
+   */
+  async ensureCurrentBuild(): Promise<void> {
+    const staleTag = await this.detectStaleBuild();
+    if (staleTag) {
+      this.forceReload(staleTag);
+      await new Promise<void>(() => {});
+    }
+  }
+
+  /** Comprueba si hay un deploy nuevo y recarga si el bundle en memoria quedó viejo. */
   checkForUpdate(): void {
     if (!environment.production) {
       return;
@@ -40,49 +58,55 @@ export class AppVersionService implements OnDestroy {
 
   private async evaluateUpdate(): Promise<void> {
     try {
-      const bust = Date.now();
-      const [versionData, indexHtml] = await Promise.all([
-        fetch(`/version.json?_=${bust}`, { cache: 'no-store' })
-          .then((r) => (r.ok ? r.json() : null))
-          .catch(() => null),
-        fetch(`/index.html?_=${bust}`, { cache: 'no-store' })
-          .then((r) => (r.ok ? r.text() : null))
-          .catch(() => null),
-      ]);
-
-      const serverMainHash = this.mainHashFrom(indexHtml ?? '');
-      const loadedMainHash = this.mainHashFrom(this.loadedMainScriptSrc());
-
-      if (serverMainHash && loadedMainHash && serverMainHash !== loadedMainHash) {
-        this.forceReload(serverMainHash);
+      const staleTag = await this.detectStaleBuild();
+      if (staleTag) {
+        this.forceReload(staleTag);
         return;
       }
-
-      const remoteBuild = versionData?.build as string | undefined;
-      if (!remoteBuild) {
-        return;
+      const remoteBuild = await this.fetchRemoteBuild();
+      if (remoteBuild) {
+        localStorage.setItem(this.storageKey, remoteBuild);
       }
-
-      const prev = localStorage.getItem(this.storageKey);
-      if (prev && prev !== remoteBuild) {
-        this.forceReload(remoteBuild);
-        return;
-      }
-
-      localStorage.setItem(this.storageKey, remoteBuild);
     } catch {
       // Sin bloquear la app si falla la red
     }
   }
 
-  private loadedMainScriptSrc(): string {
-    const script = document.querySelector('script[src*="main-"]');
-    return script?.getAttribute('src') ?? '';
+  private async detectStaleBuild(): Promise<string | null> {
+    if (!environment.production) {
+      return null;
+    }
+    const embedded = this.embeddedBuildId();
+    if (!embedded || embedded === 'dev' || embedded === '__JYAA_BUILD_ID__') {
+      return null;
+    }
+    const remoteBuild = await this.fetchRemoteBuild();
+    if (!remoteBuild || remoteBuild === embedded) {
+      return null;
+    }
+    return remoteBuild;
   }
 
-  private mainHashFrom(value: string): string | null {
-    const match = value.match(this.mainScriptPattern);
-    return match?.[1] ?? null;
+  private embeddedBuildId(): string {
+    const fromWindow = window.__JYAA_BUILD__;
+    if (fromWindow && fromWindow !== '__JYAA_BUILD_ID__') {
+      return fromWindow;
+    }
+    return APP_BUILD_ID;
+  }
+
+  private async fetchRemoteBuild(): Promise<string | null> {
+    const bust = Date.now();
+    const data = await fetch(`/version.json?_=${bust}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+      },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+    return (data?.build as string | undefined) ?? null;
   }
 
   private forceReload(tag: string): void {

@@ -4,9 +4,8 @@
  */
 import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
-import { AppVersionService } from '../../servicios/app-version.service';
 import { mensajeErrorApi, isCuentaDeshabilitada } from '../../utils/api-error.util';
 
 @Component({
@@ -63,8 +62,6 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private loginService: LoginService,
-    private appVersionService: AppVersionService,
-    private router: Router,
     private route: ActivatedRoute
   ) {}
 
@@ -81,8 +78,12 @@ export class LoginComponent implements OnInit {
       return;
     }
     if (this.loginService.isLogged()) {
-      this.router.navigateByUrl(this.loginService.rutaPanel());
+      window.location.replace(this.loginService.rutaPanel());
     }
+  }
+
+  private irTrasLogin(): void {
+    window.location.replace(this.loginService.rutaTrasLogin());
   }
 
   ingresar(): void {
@@ -101,8 +102,7 @@ export class LoginComponent implements OnInit {
         if (this.loginService.tieneVariosRoles()) {
           this.loginService.limpiarRolActualLocal();
         }
-        this.appVersionService.checkForUpdate();
-        this.router.navigateByUrl(this.loginService.rutaTrasLogin());
+        this.irTrasLogin();
       },
       error: (err) => {
         this.cargando = false;
