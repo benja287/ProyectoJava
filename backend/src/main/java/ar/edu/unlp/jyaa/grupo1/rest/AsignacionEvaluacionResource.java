@@ -62,18 +62,12 @@ public class AsignacionEvaluacionResource {
   @Operation(summary = "Asignar varios evaluadores a un trabajo")
   public Response asignarVarios(
       ar.edu.unlp.jyaa.grupo1.rest.dto.AsignarEvaluadoresRequest request, @Context UriInfo uriInfo) {
-    try {
-      var creadas =
-          asignacionService.asignarVarios(
-              request.trabajoId(),
-              request.evaluadorIds(),
-              request.tercerEvaluadorEmpate());
-      return Response.ok(
-              creadas.stream().map(AsignacionEvaluacionDTO::from).toList())
-          .build();
-    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
-      throw new BadRequestException(e.getMessage());
-    }
+    var creadas =
+        asignacionService.asignarVarios(
+            request.trabajoId(),
+            request.evaluadorIds(),
+            request.tercerEvaluadorEmpate());
+    return Response.ok(creadas.stream().map(AsignacionEvaluacionDTO::from).toList()).build();
   }
 
   @POST

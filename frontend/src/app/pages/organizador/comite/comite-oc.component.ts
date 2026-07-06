@@ -389,12 +389,17 @@ interface PrecheckChecks {
               }
 
               @if (puedeAsignarEvaluadores && evaluadoresDelEje.length >= 2) {
+              @if (evaluadoresNuevosIds.length === 0 && asignaciones.length > 0) {
+                <p class="muted comite-asignacion-ok">
+                  Los evaluadores seleccionados ya están asignados a este trabajo.
+                </p>
+              }
               <div class="actions">
                 <button
                   type="button"
                   class="btn-primary comite-btn-asignar"
                   (click)="asignarEvaluadores(false)"
-                  [disabled]="procesando"
+                  [disabled]="procesando || !puedeEnviarAsignacion(false)"
                 >
                   Asignar evaluadores
                 </button>
@@ -403,7 +408,7 @@ interface PrecheckChecks {
                     type="button"
                     class="btn-secundario"
                     (click)="asignarEvaluadores(true)"
-                    [disabled]="procesando"
+                    [disabled]="procesando || !puedeEnviarAsignacion(true)"
                   >
                     Asignar 3er evaluador (solo empate)
                   </button>
@@ -756,6 +761,22 @@ export class ComiteOcComponent implements OnInit {
     });
   }
 
+  get evaluadoresNuevosIds(): number[] {
+    const ya = new Set(
+      this.asignaciones.map((a) => a.evaluadorId).filter((id): id is number => id != null)
+    );
+    return [...this.evaluadoresSeleccionados].filter((id) => !ya.has(id));
+  }
+
+  puedeEnviarAsignacion(tercerEvaluador: boolean): boolean {
+    const requeridos = tercerEvaluador || this.hayEmpate ? 3 : 2;
+    const ids = [...this.evaluadoresSeleccionados];
+    if (ids.length < requeridos) {
+      return false;
+    }
+    return this.evaluadoresNuevosIds.length > 0;
+  }
+
   asignarEvaluadores(tercerEvaluador: boolean): void {
     if (!this.seleccionado?.id) return;
     if (!this.puedeAsignarEvaluadores) {
@@ -768,7 +789,13 @@ export class ComiteOcComponent implements OnInit {
       this.error = `Seleccioná ${requeridos} evaluador(es).`;
       return;
     }
+    if (this.evaluadoresNuevosIds.length === 0) {
+      this.mensaje = 'Los evaluadores seleccionados ya están asignados.';
+      this.error = '';
+      return;
+    }
     this.procesando = true;
+    this.error = '';
     this.asignacionService
       .asignarVarios(this.seleccionado.id, ids, tercerEvaluador || this.hayEmpate)
       .subscribe({

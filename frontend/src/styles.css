@@ -1739,6 +1739,12 @@ textarea {
   color: #c2410c;
 }
 
+.comite-asignacion-ok {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  color: #166534;
+}
+
 .estado-badge--rol-envio {
   margin-left: 0.5rem;
   background: #f1f5f9;

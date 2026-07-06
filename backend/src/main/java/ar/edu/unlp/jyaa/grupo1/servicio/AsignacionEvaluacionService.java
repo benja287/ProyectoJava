@@ -66,6 +66,14 @@ public class AsignacionEvaluacionService {
       creadas.add(asignarInterno(trabajoId, evaluadorId, empate || tercerEvaluadorEmpate));
     }
     if (creadas.isEmpty()) {
+      boolean todosYaAsignados =
+          unicos.stream()
+              .allMatch(id -> asignacionEvaluacionDAO.buscarActiva(trabajoId, id).isPresent());
+      if (todosYaAsignados) {
+        return actuales.stream()
+            .filter(a -> a.getEvaluador() != null && unicos.contains(a.getEvaluador().getId()))
+            .toList();
+      }
       throw new NegocioException("No hay evaluadores nuevos para asignar");
     }
     return creadas;
