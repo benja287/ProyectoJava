@@ -15,6 +15,8 @@ public final class SchemaMigration {
 
   public static void aplicarMigraciones() {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarColumnaEstadoTrabajo);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarTrabajosObservadosPrecheck);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarEstadoObservadoEvaluacion);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -43,6 +45,29 @@ public final class SchemaMigration {
       return;
     }
     log.info("trabajos.estado tiene tipo {} — sin cambios automáticos", tipo);
+  }
+
+  /** Trabajos observados en precheck que quedaron ENVIADO por versiones anteriores. */
+  private static void migrarTrabajosObservadosPrecheck(EntityManager em) {
+    int actualizados =
+        em.createNativeQuery(
+                "UPDATE trabajos SET estado = 'PRECHECK_OBSERVADO'"
+                    + " WHERE estado = 'ENVIADO' AND precheck_intentos > 0 AND precheck_intentos < 3")
+            .executeUpdate();
+    if (actualizados > 0) {
+      log.info("Migrados {} trabajos ENVIADO+precheck → PRECHECK_OBSERVADO", actualizados);
+    }
+  }
+
+  private static void migrarEstadoObservadoEvaluacion(EntityManager em) {
+    int actualizados =
+        em.createNativeQuery(
+                "UPDATE trabajos SET estado = 'OBSERVADO_EVALUACION'"
+                    + " WHERE estado = 'APROBADO_CON_CORRECCIONES'")
+            .executeUpdate();
+    if (actualizados > 0) {
+      log.info("Migrados {} trabajos APROBADO_CON_CORRECCIONES → OBSERVADO_EVALUACION", actualizados);
+    }
   }
 
   @SuppressWarnings("unchecked")

@@ -208,10 +208,11 @@ export class PanelAsistenteComponent implements OnInit {
     const map: Record<string, string> = {
       ENVIADO: 'Enviado',
       PRECHECK_OK: 'Precheck OK',
+      PRECHECK_OBSERVADO: 'Observado (precheck)',
       EN_EVALUACION: 'En evaluación',
       PENDIENTE_APROBACION_COMITE: 'Pendiente comité',
       APROBADO: 'Aprobado',
-      APROBADO_CON_CORRECCIONES: 'Correcciones',
+      OBSERVADO_EVALUACION: 'Rechazado (reenvío)',
       RECHAZADO: 'Rechazado',
     };
     return t.estado ? map[t.estado] ?? t.estado : '—';
@@ -221,11 +222,11 @@ export class PanelAsistenteComponent implements OnInit {
     if (t.estado === 'ENVIADO' && (t.precheckIntentos ?? 0) === 0) {
       return 'Trabajo enviado. Esperando prevalidación del Comité Académico.';
     }
-    if (t.estado === 'ENVIADO' && (t.precheckIntentos ?? 0) > 0) {
+    if (t.estado === 'PRECHECK_OBSERVADO') {
       return 'Trabajo observado en precheck. Podés corregirlo y reenviarlo.';
     }
-    if (t.estado === 'APROBADO_CON_CORRECCIONES') {
-      return 'Correcciones solicitadas por evaluadores. Podés reenviar el trabajo.';
+    if (t.estado === 'OBSERVADO_EVALUACION') {
+      return 'Rechazado por evaluadores. Podés corregirlo y reenviarlo.';
     }
     if (t.estado === 'PENDIENTE_APROBACION_COMITE') {
       return 'Evaluaciones favorables. Pendiente de confirmación final del comité.';
@@ -241,7 +242,7 @@ export class PanelAsistenteComponent implements OnInit {
 
   feedbackClass(t: Trabajo): string {
     if (t.estado === 'APROBADO') return 'trabajo-feedback--ok';
-    if (t.estado === 'APROBADO_CON_CORRECCIONES' || (t.precheckIntentos ?? 0) > 0) {
+    if (t.estado === 'OBSERVADO_EVALUACION' || t.estado === 'PRECHECK_OBSERVADO') {
       return 'trabajo-feedback--warn';
     }
     if (t.estado === 'RECHAZADO') return 'trabajo-feedback--error';
@@ -249,11 +250,15 @@ export class PanelAsistenteComponent implements OnInit {
   }
 
   puedeReenviar(t: Trabajo): boolean {
-    if (t.estado === 'ENVIADO' && (t.precheckIntentos ?? 0) > 0 && (t.precheckIntentos ?? 0) < 3) {
+    if (
+      t.estado === 'PRECHECK_OBSERVADO' &&
+      (t.precheckIntentos ?? 0) > 0 &&
+      (t.precheckIntentos ?? 0) < 3
+    ) {
       return true;
     }
     return (
-      t.estado === 'APROBADO_CON_CORRECCIONES' && (t.revisionIntentos ?? 0) < 2
+      t.estado === 'OBSERVADO_EVALUACION' && (t.revisionIntentos ?? 0) < 2
     );
   }
 }

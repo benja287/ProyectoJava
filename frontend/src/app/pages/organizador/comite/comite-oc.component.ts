@@ -206,6 +206,20 @@ interface PrecheckChecks {
               Autor/a: {{ seleccionado.autorNombre }} {{ seleccionado.autorApellido }}
             </p>
 
+            @if (esperandoReenvioAutor) {
+              <div class="comite-bloque comite-bloque--aviso">
+                <p class="notice-box notice-box--amber">
+                  Este trabajo fue <strong>observado en precheck</strong> ({{
+                    Math.min(seleccionado!.precheckIntentos ?? 0, 3)
+                  }}/3).
+                  El autor debe corregirlo y reenviarlo antes de una nueva prevalidación.
+                </p>
+                @if (seleccionado!.observacionesPrecheck) {
+                  <p class="muted"><strong>Observaciones:</strong> {{ seleccionado!.observacionesPrecheck }}</p>
+                }
+              </div>
+            }
+
             @if (mostrarPrecheck) {
               <div class="comite-bloque comite-bloque--precheck">
               <h3>Prevalidación formal (checklist)</h3>
@@ -507,6 +521,10 @@ export class ComiteOcComponent implements OnInit {
     return this.seleccionado?.estado === 'ENVIADO';
   }
 
+  get esperandoReenvioAutor(): boolean {
+    return this.seleccionado?.estado === 'PRECHECK_OBSERVADO';
+  }
+
   get mostrarAsignacion(): boolean {
     const e = this.seleccionado?.estado;
     return e === 'ENVIADO' || e === 'PRECHECK_OK' || e === 'EN_EVALUACION';
@@ -563,10 +581,11 @@ export class ComiteOcComponent implements OnInit {
     const map: Record<string, string> = {
       ENVIADO: 'Enviado',
       PRECHECK_OK: 'Precheck OK',
+      PRECHECK_OBSERVADO: 'Observado (precheck)',
       EN_EVALUACION: 'En evaluación',
       PENDIENTE_APROBACION_COMITE: 'Pendiente comité',
       APROBADO: 'Aprobado',
-      APROBADO_CON_CORRECCIONES: 'Correcciones',
+      OBSERVADO_EVALUACION: 'Rechazado (reenvío)',
       RECHAZADO: 'Rechazado',
     };
     return estado ? map[estado] ?? estado : '—';
@@ -576,10 +595,11 @@ export class ComiteOcComponent implements OnInit {
     const map: Record<string, string> = {
       ENVIADO: 'estado-badge--enviado',
       PRECHECK_OK: 'estado-badge--precheck-ok',
+      PRECHECK_OBSERVADO: 'estado-badge--observado',
       EN_EVALUACION: 'estado-badge--evaluacion',
       PENDIENTE_APROBACION_COMITE: 'estado-badge--pendiente',
       APROBADO: 'estado-badge--aprobado',
-      APROBADO_CON_CORRECCIONES: 'estado-badge--correcciones',
+      OBSERVADO_EVALUACION: 'estado-badge--observado-evaluacion',
       RECHAZADO: 'estado-badge--rechazado',
     };
     return estado ? map[estado] ?? 'estado-badge--enviado' : 'estado-badge--enviado';

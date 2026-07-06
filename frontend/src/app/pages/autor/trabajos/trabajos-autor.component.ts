@@ -240,13 +240,17 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
                     </label>
                     <button type="button" (click)="enviar(t)" [disabled]="!t.documentoUrl">Enviar</button>
                   }
-                  @if (t.estado === 'APROBADO_CON_CORRECCIONES') {
+                  @if (t.estado === 'OBSERVADO_EVALUACION' || t.estado === 'PRECHECK_OBSERVADO') {
                     <label class="file-inline">
                       PDF corregido
                       <input type="file" accept=".pdf" (change)="subirPdf(t, $event)" />
                     </label>
                     <button type="button" (click)="enviar(t)" [disabled]="!t.documentoUrl">
-                      Reenviar correcciones
+                      {{
+                        t.estado === 'PRECHECK_OBSERVADO'
+                          ? 'Reenviar tras observación'
+                          : 'Reenviar tras rechazo'
+                      }}
                     </button>
                   }
                 </td>
@@ -555,7 +559,7 @@ export class TrabajosAutorComponent implements OnInit {
     this.trabajoService.enviar(trabajo.id, this.perfilAsistente ? 'ASISTENTE' : 'AUTOR').subscribe({
       next: (actualizado) => {
         this.mensaje =
-          trabajo.estado === 'APROBADO_CON_CORRECCIONES'
+          trabajo.estado === 'OBSERVADO_EVALUACION'
             ? 'Correcciones reenviadas.'
             : 'Trabajo enviado a evaluación.';
         const idx = this.trabajos.findIndex((t) => t.id === trabajo.id);

@@ -270,10 +270,10 @@ public class TrabajoService {
   public Trabajo enviar(Long id, String rolEnvioRaw) {
     Trabajo trabajo = buscar(id);
     boolean reenvioPrecheck =
-        trabajo.getEstado() == EstadoTrabajo.ENVIADO
+        trabajo.getEstado() == EstadoTrabajo.PRECHECK_OBSERVADO
             && trabajo.getPrecheckIntentos() > 0
             && trabajo.getPrecheckIntentos() < MAX_PRECHECK_INTENTOS;
-    boolean reenvioRevision = trabajo.getEstado() == EstadoTrabajo.APROBADO_CON_CORRECCIONES;
+    boolean reenvioRevision = trabajo.getEstado() == EstadoTrabajo.OBSERVADO_EVALUACION;
     boolean primerEnvio = trabajo.getEstado() == EstadoTrabajo.BORRADOR;
 
     if (!primerEnvio && !reenvioPrecheck && !reenvioRevision) {
@@ -401,6 +401,7 @@ public class TrabajoService {
           "Trabajo no prevalidado",
           "Tu trabajo \"" + trabajo.getTitulo() + "\" no superó el precheck tras " + intentos + " intentos.");
     } else {
+      trabajo.setEstado(EstadoTrabajo.PRECHECK_OBSERVADO);
       notificarAutor(
           trabajo,
           "Trabajo observado en precheck",
@@ -408,7 +409,8 @@ public class TrabajoService {
               ? "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. " + observaciones.trim()
               : "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. Revisá los requisitos y reenviá si corresponde.");
     }
-    return trabajoDAO.modificar(trabajo);
+    Trabajo guardado = trabajoDAO.modificar(trabajo);
+    return guardado;
   }
 
   public Trabajo confirmarAprobacionComite(Long id, boolean aprobar, String observaciones) {
@@ -497,12 +499,12 @@ public class TrabajoService {
             "Trabajo rechazado final",
             "Tu trabajo \"" + trabajo.getTitulo() + "\" agotó los reenvíos por evaluación.");
       } else {
-        trabajo.setEstado(EstadoTrabajo.APROBADO_CON_CORRECCIONES);
+        trabajo.setEstado(EstadoTrabajo.OBSERVADO_EVALUACION);
         limpiarAsignaciones(trabajoId);
         notificarAutor(
             trabajo,
-            "Trabajo observado en evaluación",
-            "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado por evaluadores. Podés corregirlo y reenviarlo.");
+            "Trabajo rechazado en evaluación",
+            "Tu trabajo \"" + trabajo.getTitulo() + "\" fue rechazado por un evaluador. Podés corregirlo y reenviarlo.");
       }
     }
     trabajoDAO.modificar(trabajo);
@@ -587,22 +589,22 @@ public class TrabajoService {
     if (t.getEstado() == EstadoTrabajo.RECHAZADO || t.getEstado() == EstadoTrabajo.BORRADOR) {
       return false;
     }
-    if (t.getEstado() == EstadoTrabajo.APROBADO_CON_CORRECCIONES) {
+    if (t.getEstado() == EstadoTrabajo.OBSERVADO_EVALUACION) {
       return false;
     }
-    if (t.getEstado() == EstadoTrabajo.ENVIADO && t.getPrecheckIntentos() > 0) {
+    if (t.getEstado() == EstadoTrabajo.PRECHECK_OBSERVADO) {
       return false;
     }
     return true;
   }
 
   private boolean puedeReenviar(Trabajo t) {
-    if (t.getEstado() == EstadoTrabajo.ENVIADO
+    if (t.getEstado() == EstadoTrabajo.PRECHECK_OBSERVADO
         && t.getPrecheckIntentos() > 0
         && t.getPrecheckIntentos() < MAX_PRECHECK_INTENTOS) {
       return true;
     }
-    return t.getEstado() == EstadoTrabajo.APROBADO_CON_CORRECCIONES
+    return t.getEstado() == EstadoTrabajo.OBSERVADO_EVALUACION
         && t.getRevisionIntentos() < MAX_REVISION_INTENTOS;
   }
 

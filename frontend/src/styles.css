@@ -1729,6 +1729,16 @@ textarea {
   color: #1e40af;
 }
 
+.estado-badge--observado {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.estado-badge--observado-evaluacion {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
 .estado-badge--evaluacion {
   background: #e0e7ff;
   color: #3730a3;
