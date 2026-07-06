@@ -31,7 +31,7 @@ public class CongresoDAOImpl extends AbstractJpaDAO<Congreso> implements Congres
     EntityManager em = getEntityManager();
     if (em != null) {
       List<Congreso> list =
-          em.createQuery("SELECT c FROM Congreso c ORDER BY c.id ASC", Congreso.class)
+          em.createQuery("SELECT c FROM Congreso c ORDER BY c.id DESC", Congreso.class)
               .setMaxResults(1)
               .getResultList();
       if (!list.isEmpty()) {
@@ -47,7 +47,7 @@ public class CongresoDAOImpl extends AbstractJpaDAO<Congreso> implements Congres
     try {
       List<Congreso> list =
           legacy
-              .createQuery("SELECT c FROM Congreso c ORDER BY c.id ASC", Congreso.class)
+              .createQuery("SELECT c FROM Congreso c ORDER BY c.id DESC", Congreso.class)
               .setMaxResults(1)
               .getResultList();
       if (!list.isEmpty()) {

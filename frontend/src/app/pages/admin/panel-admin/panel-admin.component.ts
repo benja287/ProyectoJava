@@ -105,8 +105,19 @@ import { PagoService } from '../../../servicios/pago.service';
         </div>
         @if (config && !config.programaPublicado) {
           <p class="notice-box notice-box--amber">
-            Mientras el programa esté "No publicado", el público verá el mensaje de aún no publicado.
+            El cronograma ya está cargado en admin, pero el público aún no lo ve. Hacé clic en
+            <strong>Publicar programa</strong> para que aparezca en la cabecera → Programa.
           </p>
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="guardandoConfig"
+            (click)="publicarPrograma()"
+          >
+            Publicar programa ahora
+          </button>
+        } @else if (config?.programaPublicado) {
+          <p class="ok">El programa está visible para todos en <strong>Programa</strong>.</p>
         }
       </section>
 
@@ -646,15 +657,24 @@ export class PanelAdminComponent implements OnInit {
 
   togglePrograma(): void {
     if (!this.config || this.guardandoConfig) return;
+    this.actualizarProgramaPublicado(!this.config.programaPublicado);
+  }
+
+  publicarPrograma(): void {
+    if (!this.config || this.guardandoConfig || this.config.programaPublicado) return;
+    this.actualizarProgramaPublicado(true);
+  }
+
+  private actualizarProgramaPublicado(publicado: boolean): void {
     this.guardandoConfig = true;
     this.congresoConfigService
-      .actualizar({ programaPublicado: !this.config.programaPublicado })
+      .actualizar({ programaPublicado: publicado })
       .subscribe({
         next: (c) => {
           this.config = c;
           this.guardandoConfig = false;
           this.mensaje = c.programaPublicado
-            ? 'El programa quedó publicado.'
+            ? 'El programa quedó publicado. Abrí Programa en la cabecera para verificar.'
             : 'El programa quedó como no publicado.';
         },
         error: (err) => {

@@ -1,12 +1,10 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
-import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CongresoConfigUpdateRequest;
 import ar.edu.unlp.jyaa.grupo1.web.dto.CongresoConfigDTO;
 import jakarta.enterprise.context.RequestScoped;
-import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -14,8 +12,6 @@ import java.util.List;
 
 @RequestScoped
 public class CongresoService {
-
-  @Inject private CongresoDAO congresoDAO;
 
   public CongresoConfigDTO obtenerConfig() {
     return JpaUtil.ejecutarEnTransaccionReturning(this::leerConfigDesdeEm);
@@ -26,16 +22,9 @@ public class CongresoService {
   }
 
   public CongresoConfigDTO actualizarConfig(CongresoConfigUpdateRequest request) {
-    Long congresoId = congresoDAO.obtenerPrincipal().getId();
-    if (congresoId == null) {
-      throw new NegocioException("No hay congreso configurado");
-    }
     return JpaUtil.ejecutarEnTransaccionReturning(
         em -> {
-          Congreso congreso = em.find(Congreso.class, congresoId);
-          if (congreso == null) {
-            throw new NegocioException("Congreso no encontrado: " + congresoId);
-          }
+          Congreso congreso = resolverCongresoPrincipal(em);
           if (request.programaPublicado() != null) {
             congreso.setProgramaPublicado(request.programaPublicado());
           }
@@ -51,19 +40,24 @@ public class CongresoService {
   }
 
   private CongresoConfigDTO leerConfigDesdeEm(EntityManager em) {
+    Congreso congreso = resolverCongresoPrincipal(em);
+    return CongresoConfigDTO.from(congreso);
+  }
+
+  private Congreso resolverCongresoPrincipal(EntityManager em) {
     List<Congreso> list =
-        em.createQuery("SELECT c FROM Congreso c ORDER BY c.id ASC", Congreso.class)
+        em.createQuery("SELECT c FROM Congreso c ORDER BY c.id DESC", Congreso.class)
             .setMaxResults(1)
             .getResultList();
-    if (list.isEmpty()) {
-      Congreso congreso = new Congreso();
-      congreso.setNombre("Congreso Argentino de Agroecología");
-      congreso.setEdicion("V");
-      em.persist(congreso);
-      em.flush();
-      return CongresoConfigDTO.from(congreso);
+    if (!list.isEmpty()) {
+      return list.getFirst();
     }
-    return CongresoConfigDTO.from(list.getFirst());
+    Congreso congreso = new Congreso();
+    congreso.setNombre("Congreso Argentino de Agroecología");
+    congreso.setEdicion("V");
+    em.persist(congreso);
+    em.flush();
+    return congreso;
   }
 
   private static LocalDate parseFechaOpcional(String raw) {
