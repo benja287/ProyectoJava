@@ -1,5 +1,6 @@
 package ar.edu.unlp.jyaa.grupo1.config;
 
+import ar.edu.unlp.jyaa.grupo1.modelo.PlantillaEmail;
 import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarEstadoObservadoEvaluacion);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresoConfig);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCirculares);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasEmail);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -104,6 +106,153 @@ public final class SchemaMigration {
         "circulares",
         "documento_nombre",
         "ALTER TABLE circulares ADD COLUMN documento_nombre VARCHAR(255) NULL");
+  }
+
+  private static void migrarPlantillasEmail(EntityManager em) {
+    insertarPlantillaSiFalta(
+        em,
+        "PRECHECK_OK",
+        "[PRECHECK OK] Tu trabajo \"{{titulo}}\" pasó la prevalidación",
+        """
+            Hola {{nombre}},
+
+            Tu trabajo "{{titulo}}" superó el filtro inicial del comité académico y está listo para asignación de evaluadores.
+
+            Ingresá a la plataforma para ver el estado actualizado:
+            {{url_plataforma}}
+
+            Comité Académico""");
+    insertarPlantillaSiFalta(
+        em,
+        "PRECHECK_OBSERVADO",
+        "[PRECHECK OBSERVADO] Observaciones sobre \"{{titulo}}\"",
+        """
+            Hola {{nombre}},
+
+            Tu trabajo "{{titulo}}" fue observado en la prevalidación formal.
+
+            Observaciones: {{observaciones}}
+
+            {{instruccion_reenvio}}
+
+            Ingresá a la plataforma para corregir y reenviar:
+            {{url_plataforma}}
+
+            Comité Académico""");
+    insertarPlantillaSiFalta(
+        em,
+        "ASIGNACION_EVALUADOR",
+        "[EVALUACIÓN] Nuevo trabajo asignado: \"{{titulo}}\"",
+        """
+            Hola {{nombre}},
+
+            Se te asignó el trabajo "{{titulo}}" (eje temático: {{eje}}).
+
+            Ingresá al panel de evaluador para aceptar o rechazar la asignación:
+            {{url_plataforma}}
+
+            Comité Académico""");
+    insertarPlantillaSiFalta(
+        em,
+        "EVALUACION_FAVORABLE",
+        "[EVALUACIÓN] Tu trabajo \"{{titulo}}\" recibió evaluaciones favorables",
+        """
+            Hola {{nombre}},
+
+            Tu trabajo "{{titulo}}" recibió evaluaciones favorables de los evaluadores.
+            El comité académico confirmará el resultado final.
+
+            Ingresá a la plataforma:
+            {{url_plataforma}}
+
+            Comité Académico""");
+    insertarPlantillaSiFalta(
+        em,
+        "EVALUACION_RECHAZADO_REENVIO",
+        "[RECHAZADO] Tu trabajo \"{{titulo}}\" requiere correcciones",
+        """
+            Hola {{nombre}},
+
+            Tu trabajo "{{titulo}}" fue rechazado en evaluación.
+
+            {{instruccion_reenvio}}
+
+            Ingresá a la plataforma para corregir y reenviar:
+            {{url_plataforma}}
+
+            Comité Evaluador""");
+    insertarPlantillaSiFalta(
+        em,
+        "EVALUACION_RECHAZADO_FINAL",
+        "[RECHAZADO FINAL] Tu trabajo \"{{titulo}}\"",
+        """
+            Hola {{nombre}},
+
+            Tu trabajo "{{titulo}}" fue rechazado en evaluación y no admite más reenvíos.
+
+            Ingresá a la plataforma para consultar el estado:
+            {{url_plataforma}}
+
+            Comité Evaluador""");
+    insertarPlantillaSiFalta(
+        em,
+        "REENVIO_ORGANIZADOR",
+        "[REENVÍO] Trabajo \"{{titulo}}\" pendiente de prevalidación",
+        """
+            Hola {{nombre}},
+
+            El autor {{nombre_autor}} reenvió el trabajo "{{titulo}}".
+            Revisá la prevalidación y, si corresponde, asigná evaluadores.
+
+            Panel del comité:
+            {{url_plataforma}}
+
+            Sistema de gestión del congreso""");
+    insertarPlantillaSiFalta(
+        em,
+        "PROMOCION_AUTOR_ADMIN",
+        "[ADMIN] Asistente listo para promoción a Autor: {{nombre_asistente}}",
+        """
+            Hola {{nombre}},
+
+            El asistente {{nombre_asistente}} ({{email_asistente}}) tiene el trabajo aprobado "{{titulo}}".
+            Podés habilitarle el rol Autor desde el panel de administración.
+
+            Panel admin:
+            {{url_plataforma}}
+
+            Sistema de gestión del congreso""");
+    insertarPlantillaSiFalta(
+        em,
+        "COMITE_APROBADO",
+        "[APROBADO] Tu trabajo \"{{titulo}}\" fue aprobado por el comité",
+        """
+            Hola {{nombre}},
+
+            Tu trabajo "{{titulo}}" fue aprobado definitivamente por el comité académico.
+
+            Ingresá a la plataforma:
+            {{url_plataforma}}
+
+            Comité Académico""");
+  }
+
+  private static void insertarPlantillaSiFalta(
+      EntityManager em, String nombre, String asunto, String cuerpo) {
+    Long existentes =
+        em.createQuery(
+                "SELECT COUNT(p) FROM PlantillaEmail p WHERE p.nombre = :nombre", Long.class)
+            .setParameter("nombre", nombre)
+            .getSingleResult();
+    if (existentes != null && existentes > 0) {
+      return;
+    }
+    PlantillaEmail plantilla = new PlantillaEmail();
+    plantilla.setNombre(nombre);
+    plantilla.setAsunto(asunto);
+    plantilla.setCuerpo(cuerpo);
+    em.persist(plantilla);
+    log.info("Plantilla de email insertada: {}", nombre);
   }
 
   private static void agregarColumnaSiFalta(

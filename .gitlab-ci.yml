@@ -43,4 +43,18 @@ deploy1:
     - main
   script:
     - echo "Deploy del nuevo contenedor con los cambios"
-    - docker run --network javaproyec_jyaa-network -p 8091:8080 -l "traefik.enable=true" -l "traefik.http.routers.grupo1.rule=Host(\`grupo1.jyaa-ci.linti.unlp.edu.ar\`)" -l "traefik.http.routers.grupo1.entrypoints=websecure" -l "traefik.http.routers.grupo1.tls.certresolver=le" -l "traefik.http.services.grupo1.loadbalancer.server.port=8080" -l io.portainer.accesscontrol.users=grupo1_2026 -d --name grupo1 grupo1-docker
+    - |
+      docker run --network javaproyec_jyaa-network -p 8091:8080 \
+        -e SPRING_MAIL_HOST="${SPRING_MAIL_HOST:-smtp.gmail.com}" \
+        -e SPRING_MAIL_PORT="${SPRING_MAIL_PORT:-587}" \
+        -e SPRING_MAIL_USERNAME="$SPRING_MAIL_USERNAME" \
+        -e SPRING_MAIL_PASSWORD="$SPRING_MAIL_PASSWORD" \
+        -e SPRING_MAIL_FROM="$SPRING_MAIL_FROM" \
+        -e APP_PUBLIC_URL="${APP_PUBLIC_URL:-https://grupo1.jyaa-ci.linti.unlp.edu.ar}" \
+        -l "traefik.enable=true" \
+        -l "traefik.http.routers.grupo1.rule=Host(\`grupo1.jyaa-ci.linti.unlp.edu.ar\`)" \
+        -l "traefik.http.routers.grupo1.entrypoints=websecure" \
+        -l "traefik.http.routers.grupo1.tls.certresolver=le" \
+        -l "traefik.http.services.grupo1.loadbalancer.server.port=8080" \
+        -l io.portainer.accesscontrol.users=grupo1_2026 \
+        -d --name grupo1 grupo1-docker

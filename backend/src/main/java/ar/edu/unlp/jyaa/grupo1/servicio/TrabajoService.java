@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -355,6 +356,16 @@ public class TrabajoService {
         reenvioPrecheck || reenvioRevision
             ? "Tu trabajo \"" + trabajo.getTitulo() + "\" fue reenviado y está pendiente de prevalidación."
             : "Tu trabajo \"" + trabajo.getTitulo() + "\" fue enviado y está pendiente de revisión del comité.");
+    if (reenvioPrecheck || reenvioRevision) {
+      Map<String, String> vars = variablesBaseTrabajo(trabajo);
+      if (trabajo.getAutor() != null) {
+        vars.put(
+            "nombre_autor",
+            trabajo.getAutor().getNombre() + " " + trabajo.getAutor().getApellido());
+      }
+      notificacionService.enviarPorRolConPlantilla(
+          Rol.ORGANIZADOR_CIENTIFICO, "REENVIO_ORGANIZADOR", vars, null);
+    }
     return trabajoDAO.modificar(trabajo);
   }
 
@@ -432,10 +443,7 @@ public class TrabajoService {
         trabajo.setObservacionesPrecheck(observaciones.trim());
       }
       Trabajo guardado = trabajoDAO.modificar(trabajo);
-      notificarAutor(
-          guardado,
-          "Precheck aprobado",
-          "Tu trabajo \"" + guardado.getTitulo() + "\" pasó el precheck del comité." + sufijoRolEnvio(guardado));
+      notificarAutorPlantilla(guardado, "PRECHECK_OK", null);
       return guardado;
     }
     int intentos = trabajo.getPrecheckIntentos() + 1;
@@ -451,14 +459,14 @@ public class TrabajoService {
           "Tu trabajo \"" + trabajo.getTitulo() + "\" no superó el precheck tras " + intentos + " intentos.");
     } else {
       trabajo.setEstado(EstadoTrabajo.PRECHECK_OBSERVADO);
-      String baseObservado =
+      Map<String, String> vars = new HashMap<>();
+      vars.put(
+          "observaciones",
           observaciones != null && !observaciones.isBlank()
-              ? "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. " + observaciones.trim()
-              : "Tu trabajo \"" + trabajo.getTitulo() + "\" fue observado. Revisá los requisitos y reenviá si corresponde.";
-      notificarAutor(
-          trabajo,
-          "Trabajo observado en precheck",
-          baseObservado + instruccionReenvio(trabajo));
+              ? observaciones.trim()
+              : "Revisá los requisitos del congreso y corregí el trabajo.");
+      vars.put("instruccion_reenvio", instruccionReenvio(trabajo));
+      notificarAutorPlantilla(trabajo, "PRECHECK_OBSERVADO", vars);
     }
     Trabajo guardado = trabajoDAO.modificar(trabajo);
     return guardado;
@@ -473,10 +481,15 @@ public class TrabajoService {
     if (aprobar) {
       trabajo.setEstado(EstadoTrabajo.APROBADO);
       Trabajo guardado = trabajoDAO.modificar(trabajo);
-      notificarAutor(
-          guardado,
-          "Trabajo aprobado",
-          "Tu trabajo \"" + guardado.getTitulo() + "\" fue aprobado por el comité académico.");
+      notificarAutorPlantilla(guardado, "COMITE_APROBADO", null);
+      if (guardado.getAutor() != null && pendienteHabilitacionAutor(guardado.getAutor())) {
+        Map<String, String> vars = variablesBaseTrabajo(guardado);
+        Usuario asistente = guardado.getAutor();
+        vars.put("nombre_asistente", asistente.getNombre() + " " + asistente.getApellido());
+        vars.put("email_asistente", asistente.getEmail() != null ? asistente.getEmail() : "");
+        notificacionService.enviarPorRolConPlantilla(
+            Rol.ADMINISTRADOR, "PROMOCION_AUTOR_ADMIN", vars, null);
+      }
       return guardado;
     } else {
       if (observaciones == null || observaciones.isBlank()) {
@@ -525,10 +538,7 @@ public class TrabajoService {
 
     if (aprobaciones >= 2) {
       trabajo.setEstado(EstadoTrabajo.PENDIENTE_APROBACION_COMITE);
-      notificarAutor(
-          trabajo,
-          "Evaluaciones favorables",
-          "Tu trabajo \"" + trabajo.getTitulo() + "\" recibió 2 evaluaciones favorables. El comité confirmará el resultado final.");
+      notificarAutorPlantilla(trabajo, "EVALUACION_FAVORABLE", null);
       notificacionService.enviarPorRol(
           Rol.ORGANIZADOR_CIENTIFICO,
           "Confirmar trabajo tras evaluaciones",
@@ -536,27 +546,19 @@ public class TrabajoService {
           null);
     } else if (rechazos >= 2) {
       trabajo.setEstado(EstadoTrabajo.RECHAZADO);
-      notificarAutor(
-          trabajo,
-          "Trabajo rechazado",
-          "Tu trabajo \"" + trabajo.getTitulo() + "\" fue rechazado por los evaluadores.");
+      notificarAutorPlantilla(trabajo, "EVALUACION_RECHAZADO_FINAL", null);
     } else if (rechazos >= 1 && aprobaciones < 2) {
       int intentos = trabajo.getRevisionIntentos() + 1;
       trabajo.setRevisionIntentos(intentos);
       if (intentos >= MAX_REVISION_INTENTOS) {
         trabajo.setEstado(EstadoTrabajo.RECHAZADO);
-        notificarAutor(
-            trabajo,
-            "Trabajo rechazado final",
-            "Tu trabajo \"" + trabajo.getTitulo() + "\" agotó los reenvíos por evaluación.");
+        notificarAutorPlantilla(trabajo, "EVALUACION_RECHAZADO_FINAL", null);
       } else {
         trabajo.setEstado(EstadoTrabajo.OBSERVADO_EVALUACION);
         limpiarAsignaciones(trabajoId);
-        notificarAutor(
-            trabajo,
-            "Trabajo rechazado en evaluación",
-            "Tu trabajo \"" + trabajo.getTitulo() + "\" fue rechazado por un evaluador."
-                + instruccionReenvio(trabajo));
+        Map<String, String> vars = new HashMap<>();
+        vars.put("instruccion_reenvio", instruccionReenvio(trabajo));
+        notificarAutorPlantilla(trabajo, "EVALUACION_RECHAZADO_REENVIO", vars);
       }
     }
     trabajoDAO.modificar(trabajo);
@@ -810,5 +812,29 @@ public class TrabajoService {
     if (trabajo.getAutor() != null && trabajo.getAutor().getId() != null) {
       notificacionService.enviar(trabajo.getAutor().getId(), asunto, mensaje);
     }
+  }
+
+  private void notificarAutorPlantilla(
+      Trabajo trabajo, String nombrePlantilla, Map<String, String> variablesExtra) {
+    if (trabajo.getAutor() == null || trabajo.getAutor().getId() == null) {
+      return;
+    }
+    Map<String, String> vars = variablesBaseTrabajo(trabajo);
+    if (variablesExtra != null) {
+      vars.putAll(variablesExtra);
+    }
+    notificacionService.enviarConPlantilla(
+        trabajo.getAutor().getId(), nombrePlantilla, vars);
+  }
+
+  private Map<String, String> variablesBaseTrabajo(Trabajo trabajo) {
+    Map<String, String> vars = new HashMap<>();
+    vars.put("titulo", trabajo.getTitulo() != null ? trabajo.getTitulo() : "");
+    if (trabajo.getAutor() != null) {
+      vars.put(
+          "nombre",
+          (trabajo.getAutor().getNombre() + " " + trabajo.getAutor().getApellido()).trim());
+    }
+    return vars;
   }
 }

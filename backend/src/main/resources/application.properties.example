@@ -1,0 +1,18 @@
+# Copiá este archivo a application.properties y completá los valores.
+# En producción (Tomcat) también podés definir las mismas claves como variables de entorno
+# o System properties (tienen prioridad sobre este archivo).
+
+# --- SMTP Gmail (mismas claves que Spring Boot Mail) ---
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=tu-cuenta@gmail.com
+spring.mail.password=xxxx-xxxx-xxxx-xxxx
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+
+# Remitente visible en el correo (por defecto usa spring.mail.username)
+spring.mail.from=Congreso Agroecología <tu-cuenta@gmail.com>
+
+# URL pública de la app (enlaces en los correos)
+app.public.url=https://tu-dominio.unlp.edu.ar

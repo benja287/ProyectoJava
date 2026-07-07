@@ -13,8 +13,10 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @RequestScoped
@@ -122,10 +124,12 @@ public class AsignacionEvaluacionService {
     trabajo.setEstado(EstadoTrabajo.EN_EVALUACION);
     trabajoDAO.modificar(trabajo);
     AsignacionEvaluacion creada = asignacionEvaluacionDAO.alta(asignacion);
-    notificacionService.enviar(
-        evaluador.getId(),
-        "Nueva asignación de evaluación",
-        "Te asignaron el trabajo \"" + trabajo.getTitulo() + "\". Aceptá o rechazá la convocatoria.");
+    Map<String, String> vars = new HashMap<>();
+    vars.put("titulo", trabajo.getTitulo());
+    vars.put("nombre", evaluador.getNombre() + " " + evaluador.getApellido());
+    vars.put("eje", trabajo.getEjeTematico() != null ? trabajo.getEjeTematico() : "");
+    notificacionService.enviarConPlantilla(
+        evaluador.getId(), "ASIGNACION_EVALUADOR", vars);
     return creada;
   }
 
