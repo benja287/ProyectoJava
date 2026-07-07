@@ -7,6 +7,8 @@ import ar.edu.unlp.jyaa.grupo1.web.dto.CircularResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaCircularesDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -20,6 +22,7 @@ public class CircularService {
 
   @Inject private CircularDAO circularDAO;
   @Inject private NotificacionService notificacionService;
+  @Inject private DocumentStorageService documentStorageService;
 
   public PaginaCircularesDTO listarPublicadas(int page, int size) {
     int safePage = Math.max(PAGE_DEFAULT, page);
@@ -82,7 +85,28 @@ public class CircularService {
     if (c == null) {
       throw new NegocioException("Circular no encontrada");
     }
+    documentStorageService.eliminarPorUrl(c.getDocumentoUrl());
     circularDAO.baja(id);
+  }
+
+  public CircularResumenDTO adjuntarDocumento(Long id, InputStream contenido, String filename) {
+    Circular c = circularDAO.recuperarPorId(id);
+    if (c == null) {
+      throw new NegocioException("Circular no encontrada");
+    }
+    try {
+      documentStorageService.eliminarPorUrl(c.getDocumentoUrl());
+      String url =
+          documentStorageService.guardar(
+              DocumentStorageService.TipoArchivo.CIRCULAR, filename, contenido);
+      c.setDocumentoUrl(url);
+      c.setDocumentoNombre(
+          filename != null && !filename.isBlank() ? filename.trim() : "documento.pdf");
+      circularDAO.modificar(c);
+      return CircularResumenDTO.from(c);
+    } catch (IOException e) {
+      throw new NegocioException("No se pudo guardar el documento: " + e.getMessage());
+    }
   }
 
   public CircularResumenDTO alternarPublicacion(Long id) {
@@ -92,8 +116,11 @@ public class CircularService {
     }
     boolean eraPublicada = c.isPublicada();
     c.setPublicada(!c.isPublicada());
-    if (c.isPublicada() && c.getFechaPublicacion() == null) {
-      c.setFechaPublicacion(LocalDate.now());
+    if (c.isPublicada()) {
+      validarPublicacion(c);
+      if (c.getFechaPublicacion() == null) {
+        c.setFechaPublicacion(LocalDate.now());
+      }
     }
     circularDAO.modificar(c);
     if (!eraPublicada && c.isPublicada()) {
@@ -110,6 +137,7 @@ public class CircularService {
       throw new NegocioException("El contenido es obligatorio");
     }
     c.setTitulo(request.titulo().trim());
+    c.setResumen(request.resumen() != null ? request.resumen().trim() : null);
     c.setContenido(request.contenido().trim());
     if (request.fechaPublicacion() != null && !request.fechaPublicacion().isBlank()) {
       try {
@@ -120,9 +148,18 @@ public class CircularService {
     }
     if (request.publicada() != null) {
       c.setPublicada(request.publicada());
-      if (c.isPublicada() && c.getFechaPublicacion() == null) {
-        c.setFechaPublicacion(LocalDate.now());
+      if (c.isPublicada()) {
+        validarPublicacion(c);
+        if (c.getFechaPublicacion() == null) {
+          c.setFechaPublicacion(LocalDate.now());
+        }
       }
+    }
+  }
+
+  private void validarPublicacion(Circular c) {
+    if (c.getDocumentoUrl() == null || c.getDocumentoUrl().isBlank()) {
+      throw new NegocioException("Para publicar, debés adjuntar un PDF");
     }
   }
 

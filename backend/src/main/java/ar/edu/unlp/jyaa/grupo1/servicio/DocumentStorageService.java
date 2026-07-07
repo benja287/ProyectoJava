@@ -20,7 +20,8 @@ public class DocumentStorageService {
   public enum TipoArchivo {
     TRABAJO(TipoArchivoAlmacenado.TRABAJO),
     COMPROBANTE(TipoArchivoAlmacenado.COMPROBANTE),
-    CERTIFICADO_INSCRIPCION(TipoArchivoAlmacenado.CERTIFICADO_INSCRIPCION);
+    CERTIFICADO_INSCRIPCION(TipoArchivoAlmacenado.CERTIFICADO_INSCRIPCION),
+    CIRCULAR(TipoArchivoAlmacenado.CIRCULAR);
 
     private final TipoArchivoAlmacenado entidad;
 

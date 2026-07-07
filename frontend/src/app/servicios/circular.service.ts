@@ -7,6 +7,7 @@ import { Circular, PaginaCirculares } from '../models/circular.model';
 
 export interface CircularRequest {
   titulo: string;
+  resumen?: string;
   contenido: string;
   fechaPublicacion?: string;
   publicada?: boolean;
@@ -44,6 +45,12 @@ export class CircularService {
 
   alternarPublicacion(id: number): Observable<Circular> {
     return this.http.put<Circular>(`${this.baseUrl}/${id}/publicar`, {});
+  }
+
+  adjuntarDocumento(id: number, file: File): Observable<Circular> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<Circular>(`${this.baseUrl}/${id}/documento`, form);
   }
 
   eliminar(id: number): Observable<void> {

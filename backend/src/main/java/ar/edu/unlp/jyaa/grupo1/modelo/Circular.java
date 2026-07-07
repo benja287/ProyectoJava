@@ -18,6 +18,15 @@ public class Circular implements Serializable {
   @Column(nullable = false, columnDefinition = "TEXT")
   private String contenido;
 
+  @Column(columnDefinition = "TEXT")
+  private String resumen;
+
+  @Column(name = "documento_url", length = 500)
+  private String documentoUrl;
+
+  @Column(name = "documento_nombre", length = 255)
+  private String documentoNombre;
+
   @Column(nullable = false)
   private boolean publicada;
 
@@ -48,6 +57,30 @@ public class Circular implements Serializable {
 
   public void setContenido(String contenido) {
     this.contenido = contenido;
+  }
+
+  public String getResumen() {
+    return resumen;
+  }
+
+  public void setResumen(String resumen) {
+    this.resumen = resumen;
+  }
+
+  public String getDocumentoUrl() {
+    return documentoUrl;
+  }
+
+  public void setDocumentoUrl(String documentoUrl) {
+    this.documentoUrl = documentoUrl;
+  }
+
+  public String getDocumentoNombre() {
+    return documentoNombre;
+  }
+
+  public void setDocumentoNombre(String documentoNombre) {
+    this.documentoNombre = documentoNombre;
   }
 
   public boolean isPublicada() {

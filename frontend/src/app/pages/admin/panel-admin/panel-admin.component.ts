@@ -393,7 +393,19 @@ import { PagoService } from '../../../servicios/pago.service';
                     }
                   </div>
                   <h3>{{ c.titulo }}</h3>
-                  <p class="muted circular-snippet">{{ c.contenido }}</p>
+                  @if (c.resumen) {
+                    <p class="muted circular-snippet">{{ c.resumen }}</p>
+                  } @else if (c.contenido) {
+                    <p class="muted circular-snippet">{{ c.contenido }}</p>
+                  }
+                  @if (c.documentoNombre) {
+                    <p class="muted small circular-pdf-name">PDF: {{ c.documentoNombre }}</p>
+                  }
+                  @if (c.documentoUrl) {
+                    <p class="circular-pdf-link">
+                      <app-archivo-link [url]="c.documentoUrl" label="Ver PDF" />
+                    </p>
+                  }
                 </div>
                 <div class="circular-admin-actions">
                   <a [routerLink]="['/admin/circulares/editar', c.id]" class="btn-secundario">Editar</a>

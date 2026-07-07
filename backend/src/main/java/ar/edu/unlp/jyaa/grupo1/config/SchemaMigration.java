@@ -18,6 +18,7 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarTrabajosObservadosPrecheck);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarEstadoObservadoEvaluacion);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresoConfig);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCirculares);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -88,6 +89,21 @@ public final class SchemaMigration {
         "congresos",
         "envio_trabajos_hasta",
         "ALTER TABLE congresos ADD COLUMN envio_trabajos_hasta DATE NULL");
+  }
+
+  private static void migrarCirculares(EntityManager em) {
+    agregarColumnaSiFalta(
+        em, "circulares", "resumen", "ALTER TABLE circulares ADD COLUMN resumen TEXT NULL");
+    agregarColumnaSiFalta(
+        em,
+        "circulares",
+        "documento_url",
+        "ALTER TABLE circulares ADD COLUMN documento_url VARCHAR(500) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "circulares",
+        "documento_nombre",
+        "ALTER TABLE circulares ADD COLUMN documento_nombre VARCHAR(255) NULL");
   }
 
   private static void agregarColumnaSiFalta(

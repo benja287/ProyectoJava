@@ -1291,6 +1291,19 @@ textarea {
   min-width: 120px;
 }
 
+.circular-pdf-name {
+  margin: 0.35rem 0 0;
+}
+
+.circular-pdf-link {
+  margin: 0.35rem 0 0;
+}
+
+.circular-summary {
+  margin: 0.5rem 0;
+  color: #475569;
+}
+
 .dashed-box {
   border: 1px dashed #cbd5e1;
   border-radius: 12px;

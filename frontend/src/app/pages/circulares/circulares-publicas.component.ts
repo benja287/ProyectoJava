@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Circular } from '../../models/circular.model';
 import { CircularService } from '../../servicios/circular.service';
+import { ArchivoLinkComponent } from '../../components/archivo-link/archivo-link.component';
 import { mensajeErrorApi } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-circulares-publicas',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ArchivoLinkComponent],
   template: `
     <section class="card">
       <h1>Circulares del congreso</h1>
@@ -29,7 +30,18 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
               @if (c.fechaPublicacion) {
                 <p class="muted small">{{ c.fechaPublicacion }}</p>
               }
+              @if (c.resumen) {
+                <p class="circular-summary">{{ c.resumen }}</p>
+              }
               <p class="circular-content">{{ c.contenido }}</p>
+              @if (c.documentoUrl) {
+                <p class="circular-pdf-link">
+                  @if (c.documentoNombre) {
+                    <span class="muted small">PDF: {{ c.documentoNombre }} — </span>
+                  }
+                  <app-archivo-link [url]="c.documentoUrl" label="Ver PDF" />
+                </p>
+              }
             </article>
           }
         </div>

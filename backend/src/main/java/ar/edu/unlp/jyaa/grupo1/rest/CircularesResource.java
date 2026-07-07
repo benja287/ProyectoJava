@@ -25,6 +25,9 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.io.IOException;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 
 @Path("/circulares")
 @Produces(MediaType.APPLICATION_JSON)
@@ -86,6 +89,24 @@ public class CircularesResource {
       @PathParam("id") Long id, @Context ContainerRequestContext ctx) {
     requireAdmin(ctx);
     return circularService.alternarPublicacion(id);
+  }
+
+  @POST
+  @Path("/{id}/documento")
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  @Operation(summary = "Adjuntar PDF a circular (admin)")
+  public CircularResumenDTO adjuntarDocumento(
+      @PathParam("id") Long id,
+      @FormDataParam("file") java.io.InputStream file,
+      @FormDataParam("file") FormDataContentDisposition fileDetail,
+      @Context ContainerRequestContext ctx)
+      throws IOException {
+    requireAdmin(ctx);
+    if (file == null) {
+      throw new ar.edu.unlp.jyaa.grupo1.servicio.NegocioException("Debe adjuntar un archivo");
+    }
+    String nombre = fileDetail != null ? fileDetail.getFileName() : "documento.pdf";
+    return circularService.adjuntarDocumento(id, file, nombre);
   }
 
   @DELETE
