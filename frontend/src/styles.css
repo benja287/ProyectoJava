@@ -2409,3 +2409,191 @@ textarea {
 .italic {
   font-style: italic;
 }
+
+/* --- Mi agenda (asistente / autor) --- */
+.agenda-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 0 2rem;
+}
+
+.agenda-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #fff;
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+}
+
+.agenda-hero h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+}
+
+.agenda-hero p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.agenda-hero-icon {
+  font-size: 2.25rem;
+}
+
+.agenda-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.agenda-feedback {
+  margin-bottom: 1rem;
+}
+
+.agenda-seccion {
+  margin-bottom: 2rem;
+}
+
+.agenda-seccion--agregar {
+  padding-top: 0.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.agenda-seccion-titulo {
+  font-size: 1.2rem;
+  color: #1e293b;
+  margin: 0 0 1rem;
+}
+
+.agenda-empty {
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  padding: 2.5rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  color: #64748b;
+}
+
+.agenda-dia-grupo {
+  margin-bottom: 1.5rem;
+}
+
+.agenda-dia-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 0 0.75rem;
+  text-transform: capitalize;
+}
+
+.agenda-dia-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.agenda-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-left: 4px solid #94a3b8;
+}
+
+.agenda-card--mesa { border-left-color: #16a34a; }
+.agenda-card--redonda { border-left-color: #2563eb; }
+.agenda-card--poster { border-left-color: #d97706; }
+.agenda-card--taller { border-left-color: #0d9488; }
+.agenda-card--conferencia { border-left-color: #4f46e5; }
+
+.agenda-card--disponible {
+  background: #fafafa;
+}
+
+.agenda-card-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.agenda-card-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.agenda-card-info h4 {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 1.05rem;
+  color: #1e293b;
+}
+
+.agenda-tipo-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.agenda-card--mesa .agenda-tipo-badge { background: #dcfce7; color: #166534; }
+.agenda-card--redonda .agenda-tipo-badge { background: #dbeafe; color: #1e40af; }
+.agenda-card--poster .agenda-tipo-badge { background: #fef9c3; color: #a16207; }
+.agenda-card--taller .agenda-tipo-badge { background: #ccfbf1; color: #0f766e; }
+.agenda-card--conferencia .agenda-tipo-badge { background: #e0e7ff; color: #3730a3; }
+
+.agenda-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.agenda-btn-quitar {
+  flex-shrink: 0;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agenda-btn-quitar:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.agenda-btn-agregar {
+  flex-shrink: 0;
+  border: none;
+  background: #4f46e5;
+  color: #fff;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agenda-btn-agregar:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.agenda-btn-quitar:disabled,
+.agenda-btn-agregar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

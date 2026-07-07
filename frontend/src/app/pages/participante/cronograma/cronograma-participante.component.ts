@@ -8,68 +8,148 @@ import { ActividadService } from '../../../servicios/actividad.service';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { CronogramaService } from '../../../servicios/cronograma.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
-import { formatFechaActividad } from '../../../utils/fecha.util';
+import {
+  etiquetaFechaCongreso,
+  fechaClaveActividad,
+  horaActividad,
+} from '../../../utils/fecha.util';
+
+const ETIQUETAS_TIPO: Record<string, string> = {
+  MESA_TEMATICA: 'Mesa temática',
+  MESA_REDONDA: 'Mesa redonda',
+  POSTER: 'Sesión de pósters',
+  TALLER: 'Taller',
+  CONFERENCIA: 'Conferencia',
+};
+
+const ORDEN_TIPO: Record<string, number> = {
+  MESA_TEMATICA: 1,
+  MESA_REDONDA: 2,
+  POSTER: 3,
+  TALLER: 4,
+  CONFERENCIA: 5,
+};
 
 @Component({
   selector: 'app-cronograma-participante',
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <section class="card">
-      <h1>Mi agenda</h1>
-      <p class="muted">
-        Rol <strong>{{ etiquetaPerfil }}</strong> — actividades que agregaste al cronograma del congreso.
-      </p>
+    <div class="agenda-page">
+      <header class="agenda-hero">
+        <span class="agenda-hero-icon" aria-hidden="true">📅</span>
+        <div>
+          <h1>Mi agenda</h1>
+          <p>Tus actividades seleccionadas del congreso (rol {{ etiquetaPerfil }})</p>
+        </div>
+      </header>
 
       @if (error) {
         <p class="error">{{ error }}</p>
       }
       @if (mensaje) {
-        <p class="ok">{{ mensaje }}</p>
+        <p class="ok agenda-feedback">{{ mensaje }}</p>
       }
 
+      <div class="agenda-toolbar">
+        <a routerLink="/programa" class="btn-secundario">Ver programa completo</a>
+        <a [routerLink]="panelRoute" class="btn-link">← {{ etiquetaVolver }}</a>
+      </div>
+
       @if (cargando) {
-        <p>Cargando...</p>
+        <p class="muted">Cargando agenda...</p>
       } @else if (!programaPublicado) {
         <div class="panel-card programa-empty">
           <p>El programa aún no fue publicado por el organizador.</p>
           <p class="muted small">
-            Cuando el administrador publique el cronograma, vas a poder ver las actividades y armar tu agenda personal.
+            Cuando el administrador publique el cronograma, vas a poder armar tu agenda personal.
           </p>
-          <a routerLink="/programa" class="btn-secundario">Ver programa del congreso</a>
         </div>
       } @else {
-        <h2>Actividades en mi agenda</h2>
-        @if (!cronograma?.actividades?.length) {
-          <p>Tu cronograma está vacío. Podés sumar actividades desde el programa del congreso.</p>
-        } @else {
-          <ul class="menu">
-            @for (a of cronograma!.actividades; track a.id) {
-              <li>
-                <strong>{{ a.titulo }}</strong> — {{ formatFecha(a.inicio) }} ({{ a.sala || 'sin sala' }})
-                <button type="button" class="btn-link" (click)="quitar(a)">Quitar</button>
-              </li>
-            }
-          </ul>
-        }
+        <section class="agenda-seccion">
+          <h2 class="agenda-seccion-titulo">Actividades en mi agenda</h2>
 
-        <h2>Agregar actividad del congreso</h2>
-        @if (actividadesDisponibles.length === 0) {
-          <p>No hay más actividades para agregar.</p>
-        } @else {
-          <ul class="menu">
-            @for (a of actividadesDisponibles; track a.id) {
-              <li>
-                {{ a.titulo }} ({{ a.tipoActividad }}) — {{ formatFecha(a.inicio) }}
-                <button type="button" (click)="agregar(a)">Agregar</button>
-              </li>
+          @if (!cronograma?.actividades?.length) {
+            <div class="agenda-empty">
+              <p>Todavía no agregaste actividades a tu agenda.</p>
+              <p class="muted small">Elegí actividades del listado de abajo o desde el programa del congreso.</p>
+            </div>
+          } @else {
+            @for (fecha of fechasAgenda; track fecha) {
+              <div class="agenda-dia-grupo">
+                <h3 class="agenda-dia-titulo">📅 {{ etiquetaFecha(fecha) }}</h3>
+                <div class="agenda-dia-items">
+                  @for (a of actividadesAgendaPorFecha(fecha); track a.id) {
+                    <article class="agenda-card" [ngClass]="claseTipo(a.tipoActividad)">
+                      <div class="agenda-card-body">
+                        <div class="agenda-card-info">
+                          <span class="agenda-tipo-badge">{{ etiquetaTipo(a.tipoActividad) }}</span>
+                          <h4>{{ tituloActividad(a) }}</h4>
+                          <div class="agenda-card-meta">
+                            <span>🕐 {{ horario(a) }}</span>
+                            @if (a.sala) {
+                              <span>📍 {{ a.sala }}</span>
+                            }
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          class="agenda-btn-quitar"
+                          [disabled]="procesandoQuitarId === a.id"
+                          (click)="quitar(a)"
+                        >
+                          {{ procesandoQuitarId === a.id ? 'Quitando...' : 'Quitar de mi agenda' }}
+                        </button>
+                      </div>
+                    </article>
+                  }
+                </div>
+              </div>
             }
-          </ul>
-        }
+          }
+        </section>
+
+        <section class="agenda-seccion agenda-seccion--agregar">
+          <h2 class="agenda-seccion-titulo">Agregar actividad del congreso</h2>
+
+          @if (actividadesDisponibles.length === 0) {
+            <p class="muted">No hay más actividades para agregar. Ya sumaste todo el programa a tu agenda.</p>
+          } @else {
+            @for (fecha of fechasDisponibles; track fecha) {
+              <div class="agenda-dia-grupo">
+                <h3 class="agenda-dia-titulo">📅 {{ etiquetaFecha(fecha) }}</h3>
+                <div class="agenda-dia-items">
+                  @for (a of actividadesDisponiblesPorFecha(fecha); track a.id) {
+                    <article class="agenda-card agenda-card--disponible" [ngClass]="claseTipo(a.tipoActividad)">
+                      <div class="agenda-card-body">
+                        <div class="agenda-card-info">
+                          <span class="agenda-tipo-badge">{{ etiquetaTipo(a.tipoActividad) }}</span>
+                          <h4>{{ tituloActividad(a) }}</h4>
+                          <div class="agenda-card-meta">
+                            <span>🕐 {{ horario(a) }}</span>
+                            @if (a.sala) {
+                              <span>📍 {{ a.sala }}</span>
+                            }
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          class="agenda-btn-agregar"
+                          [disabled]="procesandoAgregarId === a.id"
+                          (click)="agregar(a)"
+                        >
+                          {{ procesandoAgregarId === a.id ? 'Agregando...' : 'Agregar a mi agenda' }}
+                        </button>
+                      </div>
+                    </article>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </section>
       }
-
-      <p><a [routerLink]="panelRoute">← {{ etiquetaVolver }}</a></p>
-    </section>
+    </div>
   `,
 })
 export class CronogramaParticipanteComponent implements OnInit {
@@ -80,6 +160,8 @@ export class CronogramaParticipanteComponent implements OnInit {
   error = '';
   mensaje = '';
   usuarioId?: number;
+  procesandoAgregarId?: number;
+  procesandoQuitarId?: number;
   perfilParticipante: 'asistente' | 'autor' = 'asistente';
   panelRoute = '/asistente';
   etiquetaVolver = 'Panel asistente';
@@ -90,7 +172,21 @@ export class CronogramaParticipanteComponent implements OnInit {
 
   get actividadesDisponibles(): Actividad[] {
     const enCronograma = new Set(this.cronograma?.actividades?.map((a) => a.id));
-    return this.todasActividades.filter((a) => a.id && !enCronograma.has(a.id));
+    return this.todasActividades
+      .filter((a) => a.id && !enCronograma.has(a.id))
+      .sort((a, b) => this.compararActividades(a, b));
+  }
+
+  get fechasAgenda(): string[] {
+    const fechas = new Set(
+      (this.cronograma?.actividades ?? []).map((a) => fechaClaveActividad(a.inicio)).filter(Boolean)
+    );
+    return [...fechas].sort();
+  }
+
+  get fechasDisponibles(): string[] {
+    const fechas = new Set(this.actividadesDisponibles.map((a) => fechaClaveActividad(a.inicio)).filter(Boolean));
+    return [...fechas].sort();
   }
 
   constructor(
@@ -115,12 +211,18 @@ export class CronogramaParticipanteComponent implements OnInit {
       this.cargando = false;
       return;
     }
+
     this.congresoConfigService.obtener().subscribe({
       next: (config) => {
         this.programaPublicado = config.programaPublicado;
         if (this.programaPublicado) {
           this.actividadService.listar(1, 100).subscribe({
-            next: (items) => (this.todasActividades = items),
+            next: (items) => {
+              this.todasActividades = [...items].sort((a, b) => this.compararActividades(a, b));
+            },
+            error: (err) => {
+              this.error = mensajeErrorApi(err, 'No se pudieron cargar las actividades del congreso.');
+            },
           });
         }
         this.cargarCronograma();
@@ -132,8 +234,46 @@ export class CronogramaParticipanteComponent implements OnInit {
     });
   }
 
-  formatFecha(valor: unknown): string {
-    return formatFechaActividad(valor);
+  actividadesAgendaPorFecha(fecha: string): Actividad[] {
+    return (this.cronograma?.actividades ?? [])
+      .filter((a) => fechaClaveActividad(a.inicio) === fecha)
+      .sort((a, b) => this.compararActividades(a, b));
+  }
+
+  actividadesDisponiblesPorFecha(fecha: string): Actividad[] {
+    return this.actividadesDisponibles.filter((a) => fechaClaveActividad(a.inicio) === fecha);
+  }
+
+  etiquetaFecha(fechaIso: string): string {
+    return etiquetaFechaCongreso(fechaIso);
+  }
+
+  etiquetaTipo(tipo?: string): string {
+    return tipo ? ETIQUETAS_TIPO[tipo] ?? tipo : 'Actividad';
+  }
+
+  claseTipo(tipo?: string): string {
+    const map: Record<string, string> = {
+      MESA_TEMATICA: 'agenda-card--mesa',
+      MESA_REDONDA: 'agenda-card--redonda',
+      POSTER: 'agenda-card--poster',
+      TALLER: 'agenda-card--taller',
+      CONFERENCIA: 'agenda-card--conferencia',
+    };
+    return map[tipo ?? ''] ?? '';
+  }
+
+  tituloActividad(a: Actividad): string {
+    if (a.codigo && a.tipoActividad === 'MESA_TEMATICA') {
+      return `${a.codigo} — ${a.titulo}`;
+    }
+    return a.titulo;
+  }
+
+  horario(a: Actividad): string {
+    const hi = horaActividad(a.inicio);
+    const hf = horaActividad(a.fin);
+    return hf && hf !== '—' && hf !== hi ? `${hi} – ${hf}` : hi;
   }
 
   agregar(actividad: Actividad): void {
@@ -142,12 +282,15 @@ export class CronogramaParticipanteComponent implements OnInit {
     }
     this.error = '';
     this.mensaje = '';
+    this.procesandoAgregarId = actividad.id;
     this.cronogramaService.agregarActividad(this.usuarioId, actividad.id).subscribe({
       next: (c) => {
         this.cronograma = c;
-        this.mensaje = 'Actividad agregada.';
+        this.procesandoAgregarId = undefined;
+        this.mensaje = `"${actividad.titulo}" agregada a tu agenda.`;
       },
       error: (err) => {
+        this.procesandoAgregarId = undefined;
         this.error = mensajeErrorApi(err, 'No se pudo agregar la actividad.');
       },
     });
@@ -159,12 +302,19 @@ export class CronogramaParticipanteComponent implements OnInit {
     }
     this.error = '';
     this.mensaje = '';
+    this.procesandoQuitarId = actividad.id;
     this.cronogramaService.quitarActividad(this.usuarioId, actividad.id).subscribe({
       next: () => {
-        this.mensaje = 'Actividad quitada.';
-        this.cargarCronograma();
+        const id = actividad.id!;
+        this.cronograma = {
+          ...this.cronograma!,
+          actividades: (this.cronograma?.actividades ?? []).filter((a) => a.id !== id),
+        };
+        this.procesandoQuitarId = undefined;
+        this.mensaje = `"${actividad.titulo}" eliminada de tu agenda.`;
       },
       error: (err) => {
+        this.procesandoQuitarId = undefined;
         this.error = mensajeErrorApi(err, 'No se pudo quitar la actividad.');
       },
     });
@@ -177,7 +327,10 @@ export class CronogramaParticipanteComponent implements OnInit {
     this.cargando = true;
     this.cronogramaService.obtener(this.usuarioId).subscribe({
       next: (c) => {
-        this.cronograma = c;
+        this.cronograma = {
+          ...c,
+          actividades: [...(c.actividades ?? [])].sort((a, b) => this.compararActividades(a, b)),
+        };
         this.cargando = false;
       },
       error: (err) => {
@@ -185,5 +338,22 @@ export class CronogramaParticipanteComponent implements OnInit {
         this.cargando = false;
       },
     });
+  }
+
+  private compararActividades(a: Actividad, b: Actividad): number {
+    const ta = this.timestampDe(a.inicio);
+    const tb = this.timestampDe(b.inicio);
+    if (ta !== tb) return ta - tb;
+    const oa = ORDEN_TIPO[a.tipoActividad] ?? 99;
+    const ob = ORDEN_TIPO[b.tipoActividad] ?? 99;
+    return oa - ob;
+  }
+
+  private timestampDe(inicio: unknown): number {
+    const clave = fechaClaveActividad(inicio);
+    const hora = horaActividad(inicio);
+    if (!clave) return 0;
+    const t = Date.parse(`${clave}T${hora === '—' ? '00:00' : hora}:00`);
+    return Number.isNaN(t) ? 0 : t;
   }
 }
