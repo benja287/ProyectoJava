@@ -41,6 +41,7 @@ import { ProgramaCongresoComponent } from './pages/programa/programa-congreso.co
 import { MesaRedondaAdminComponent } from './pages/admin/mesa-redonda/mesa-redonda-admin.component';
 import { CrearTallerAdminComponent } from './pages/admin/crear-taller/crear-taller-admin.component';
 import { CrearConferenciaAdminComponent } from './pages/admin/crear-conferencia/crear-conferencia-admin.component';
+import { EmailsAdminComponent } from './pages/admin/emails/emails-admin.component';
 
 const admin = roleGuard(['ADMINISTRADOR']);
 const organizador = roleGuard(['ORGANIZADOR_CIENTIFICO']);
@@ -120,6 +121,7 @@ export const routes: Routes = [
   { path: 'admin/crear-conferencia', component: CrearConferenciaAdminComponent, canActivate: [admin] },
   { path: 'admin/trabajos', component: TrabajosAdminComponent, canActivate: [admin] },
   { path: 'admin/estadisticas', component: AdminEstadisticasComponent, canActivate: [admin] },
+  { path: 'admin/emails', component: EmailsAdminComponent, canActivate: [admin] },
   { path: 'admin/circulares/nueva', component: CircularFormAdminComponent, canActivate: [admin] },
   { path: 'admin/circulares/editar/:id', component: CircularFormAdminComponent, canActivate: [admin] },
 

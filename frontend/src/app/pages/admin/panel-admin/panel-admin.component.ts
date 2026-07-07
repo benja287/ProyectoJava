@@ -264,6 +264,18 @@ import { PagoService } from '../../../servicios/pago.service';
               <p class="muted small">Mostrando los últimos {{ pagosLimpieza.length }} pagos.</p>
             }
           </div>
+
+          <div class="limpieza-bloque">
+            <div class="limpieza-bloque-header">
+              <h3>Historial de emails</h3>
+              <a routerLink="/admin/emails" class="btn-link">Ver historial completo →</a>
+            </div>
+            <p class="muted small">
+              Correos enviados por precheck, evaluaciones, inscripciones y otras acciones del sistema.
+              Podés liberar espacio en la base eliminando registros de prueba o fallidos.
+            </p>
+            <a routerLink="/admin/emails" class="btn-secundario">Gestionar emails</a>
+          </div>
         </div>
       </section>
 
