@@ -23,4 +23,7 @@ public interface ActividadDAO extends GenericDAO<Actividad> {
 
   /** Actividades del programa con trabajos y autores (panel admin). */
   List<Actividad> listarCronogramaCompleto();
+
+  /** Quita el trabajo de mesas/pósters y referencias como propuesta de taller. */
+  void desvincularTrabajo(Long trabajoId);
 }

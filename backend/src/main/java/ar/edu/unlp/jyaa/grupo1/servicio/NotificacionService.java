@@ -46,7 +46,7 @@ public class NotificacionService {
       String asunto = contenido.get().asunto();
       String mensaje = contenido.get().cuerpo();
       notificacionDAO.alta(crearNotificacion(usuario, asunto, mensaje, CanalNotificacion.EMAIL));
-      emailService.enviarConPlantilla(nombrePlantilla, emailDestino(usuario), vars);
+      emailService.enviarConPlantillaEnSegundoPlano(nombrePlantilla, emailDestino(usuario), vars);
       return;
     }
     notificacionDAO.alta(
@@ -88,7 +88,8 @@ public class NotificacionService {
         notificacionDAO.alta(
             crearNotificacion(
                 u, contenido.get().asunto(), contenido.get().cuerpo(), CanalNotificacion.EMAIL));
-        emailService.enviarConPlantilla(nombrePlantilla, emailDestino(u), vars);
+        emailService.enviarConPlantillaEnSegundoPlano(
+            nombrePlantilla, emailDestino(u), vars);
       } else {
         notificacionDAO.alta(
             crearNotificacion(
@@ -149,7 +150,7 @@ public class NotificacionService {
     if (email.isBlank()) {
       return;
     }
-    emailService.enviar(email, asunto, mensaje);
+    emailService.enviarEnSegundoPlano(email, asunto, mensaje);
   }
 
   private Map<String, String> enriquecerVariables(Usuario usuario, Map<String, String> variables) {

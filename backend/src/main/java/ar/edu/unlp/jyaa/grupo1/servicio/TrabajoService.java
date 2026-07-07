@@ -350,23 +350,24 @@ public class TrabajoService {
       trabajo.setRolEnvio(rolEnvio);
     }
     trabajo.setEstado(EstadoTrabajo.ENVIADO);
+    Trabajo guardado = trabajoDAO.modificar(trabajo);
     notificarAutor(
-        trabajo,
+        guardado,
         reenvioPrecheck || reenvioRevision ? "Trabajo reenviado" : "Trabajo enviado",
         reenvioPrecheck || reenvioRevision
-            ? "Tu trabajo \"" + trabajo.getTitulo() + "\" fue reenviado y está pendiente de prevalidación."
-            : "Tu trabajo \"" + trabajo.getTitulo() + "\" fue enviado y está pendiente de revisión del comité.");
-    Map<String, String> varsComite = variablesBaseTrabajo(trabajo);
-    if (trabajo.getAutor() != null) {
+            ? "Tu trabajo \"" + guardado.getTitulo() + "\" fue reenviado y está pendiente de prevalidación."
+            : "Tu trabajo \"" + guardado.getTitulo() + "\" fue enviado y está pendiente de revisión del comité.");
+    Map<String, String> varsComite = variablesBaseTrabajo(guardado);
+    if (guardado.getAutor() != null) {
       varsComite.put(
           "nombre_autor",
-          trabajo.getAutor().getNombre() + " " + trabajo.getAutor().getApellido());
+          guardado.getAutor().getNombre() + " " + guardado.getAutor().getApellido());
     }
     String plantillaComite =
         reenvioPrecheck || reenvioRevision ? "REENVIO_ORGANIZADOR" : "ENVIO_TRABAJO_ORGANIZADOR";
     notificacionService.enviarPorRolConPlantilla(
         Rol.ORGANIZADOR_CIENTIFICO, plantillaComite, varsComite, null);
-    return trabajoDAO.modificar(trabajo);
+    return guardado;
   }
 
   public TrabajoEnvioResumenDTO obtenerResumenEnvio(Long autorId, String rolEnvioRaw) {
@@ -566,12 +567,15 @@ public class TrabajoService {
 
   public Trabajo adjuntarDocumento(Long id, InputStream contenido, String filename) {
     Trabajo trabajo = buscar(id);
+    String urlAnterior = trabajo.getDocumentoUrl();
     try {
       String url =
           documentStorageService.guardar(
               DocumentStorageService.TipoArchivo.TRABAJO, filename, contenido);
       trabajo.setDocumentoUrl(url);
-      return trabajoDAO.modificar(trabajo);
+      Trabajo guardado = trabajoDAO.modificar(trabajo);
+      documentStorageService.eliminarPorUrl(urlAnterior);
+      return guardado;
     } catch (IOException e) {
       throw new NegocioException("No se pudo guardar el documento: " + e.getMessage());
     }
@@ -579,8 +583,11 @@ public class TrabajoService {
 
   public void baja(Long id) {
     Trabajo trabajo = buscar(id);
-    documentStorageService.eliminarPorUrl(trabajo.getDocumentoUrl());
+    String documentoUrl = trabajo.getDocumentoUrl();
+    actividadDAO.desvincularTrabajo(id);
+    limpiarAsignaciones(id);
     trabajoDAO.baja(id);
+    documentStorageService.eliminarPorUrl(documentoUrl);
   }
 
   private void validarLimiteNuevoEnvio(Usuario autor, Rol rolEnvio) {

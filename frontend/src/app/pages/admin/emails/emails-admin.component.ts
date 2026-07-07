@@ -48,6 +48,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           Liberá espacio en la base de datos eliminando registros de prueba o envíos fallidos.
           Los correos ya enviados no se reenvían al borrar el historial.
         </p>
+        <p class="muted small emails-plantillas-nota">
+          Las <strong>plantillas de email</strong> (textos reutilizables del sistema en
+          <code>plantillas_email</code>) <strong>no se eliminan</strong> con esta limpieza: solo se borra
+          el historial de envíos en <code>envios_email</code>.
+        </p>
         <div class="emails-limpieza-actions">
           <button type="button" class="btn-warn" [disabled]="limpiando" (click)="limpiar('fallidos')">
             Eliminar solo fallidos

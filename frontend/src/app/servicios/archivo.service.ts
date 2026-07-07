@@ -1,13 +1,30 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+
+export interface LimpiezaArchivoResult {
+  eliminados: number;
+  huerfanosRestantes: number;
+  mensaje: string;
+}
 
 /** Host del API en dev cuando apiUrl es relativa (mismo target que proxy.conf.json). */
 const DEV_API_ORIGIN = 'https://grupo1.jyaa-ci.linti.unlp.edu.ar';
 
 @Injectable({ providedIn: 'root' })
 export class ArchivoService {
+  private readonly adminUrl = `${environment.apiUrl}/admin/archivos`;
+
   constructor(private http: HttpClient) {}
+
+  resumenHuerfanos(): Observable<LimpiezaArchivoResult> {
+    return this.http.get<LimpiezaArchivoResult>(`${this.adminUrl}/huerfanos/resumen`);
+  }
+
+  limpiarHuerfanos(): Observable<LimpiezaArchivoResult> {
+    return this.http.delete<LimpiezaArchivoResult>(`${this.adminUrl}/huerfanos`);
+  }
 
   /** Abre PDF/comprobante en pestaña nueva (evita que Angular dev server sirva index.html). */
   abrir(storedUrl: string | null | undefined): void {

@@ -8,6 +8,7 @@ import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Persiste PDFs y comprobantes en la tabla {@code archivos} (columna BLOB). En {@link
@@ -64,6 +65,19 @@ public class DocumentStorageService {
       return;
     }
     archivoDAO.baja(id);
+  }
+
+  /**
+   * Elimina PDFs/comprobantes en {@code archivos} que ya no están referenciados por trabajos,
+   * pagos, inscripciones ni circulares.
+   */
+  public int eliminarArchivosHuerfanos() {
+    List<Long> ids = archivoDAO.listarIdsHuerfanos();
+    return archivoDAO.eliminarPorIds(ids);
+  }
+
+  public long contarArchivosHuerfanos() {
+    return archivoDAO.listarIdsHuerfanos().size();
   }
 
   private Long extraerId(String url) {

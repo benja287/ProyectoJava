@@ -156,6 +156,37 @@ public class ActividadDAOImpl extends AbstractJpaDAO<Actividad> implements Activ
     }
   }
 
+  @Override
+  public void desvincularTrabajo(Long trabajoId) {
+    if (trabajoId == null) {
+      return;
+    }
+    EntityManager em = emConsulta();
+    boolean legacy = getEntityManager() == null;
+    try {
+      if (legacy) {
+        em.getTransaction().begin();
+      }
+      em.createNativeQuery("DELETE FROM actividad_trabajos WHERE trabajo_id = :id")
+          .setParameter("id", trabajoId)
+          .executeUpdate();
+      em.createNativeQuery(
+              "UPDATE actividades SET propuesta_taller_id = NULL WHERE propuesta_taller_id = :id")
+          .setParameter("id", trabajoId)
+          .executeUpdate();
+      if (legacy) {
+        em.getTransaction().commit();
+      }
+    } catch (RuntimeException e) {
+      if (legacy && em.getTransaction().isActive()) {
+        em.getTransaction().rollback();
+      }
+      throw e;
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
   private EntityManager emConsulta() {
     EntityManager cdi = getEntityManager();
     return cdi != null ? cdi : JpaUtil.createEntityManager();

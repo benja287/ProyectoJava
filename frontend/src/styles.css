@@ -2290,6 +2290,19 @@ textarea {
   white-space: nowrap;
 }
 
+.limpieza-archivos-count {
+  margin: 0.75rem 0;
+  font-size: 0.95rem;
+}
+
+.emails-plantillas-nota {
+  margin-top: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 3px solid #94a3b8;
+}
+
 .emails-stats {
   margin-bottom: 1.25rem;
 }

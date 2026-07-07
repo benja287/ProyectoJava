@@ -21,6 +21,7 @@ import { Pago } from '../../../models/pago.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronograma-congreso-admin.component';
 import { PagoService } from '../../../servicios/pago.service';
+import { ArchivoService } from '../../../servicios/archivo.service';
 
 @Component({
   selector: 'app-panel-admin',
@@ -273,8 +274,34 @@ import { PagoService } from '../../../servicios/pago.service';
             <p class="muted small">
               Correos enviados por precheck, evaluaciones, inscripciones y otras acciones del sistema.
               Podés liberar espacio en la base eliminando registros de prueba o fallidos.
+              Las plantillas reutilizables no se borran con esa limpieza.
             </p>
             <a routerLink="/admin/emails" class="btn-secundario">Gestionar emails</a>
+          </div>
+
+          <div class="limpieza-bloque">
+            <div class="limpieza-bloque-header">
+              <h3>Archivos huérfanos</h3>
+            </div>
+            @if (cargandoArchivosHuerfanos) {
+              <p class="muted">Detectando archivos sin referencia...</p>
+            } @else {
+              <p class="muted small">
+                PDFs y comprobantes guardados en la base que ya no están vinculados a ningún trabajo,
+                pago, inscripción ni circular (por ejemplo, tras reemplazar un documento).
+              </p>
+              <p class="limpieza-archivos-count">
+                Detectados: <strong>{{ archivosHuerfanos }}</strong>
+              </p>
+              <button
+                type="button"
+                class="btn-warn"
+                [disabled]="limpiandoArchivosHuerfanos || archivosHuerfanos === 0"
+                (click)="limpiarArchivosHuerfanos()"
+              >
+                {{ limpiandoArchivosHuerfanos ? 'Limpiando...' : 'Eliminar archivos huérfanos' }}
+              </button>
+            }
           </div>
         </div>
       </section>
@@ -499,6 +526,9 @@ export class PanelAdminComponent implements OnInit {
   pagosLimpieza: Pago[] = [];
   cargandoTrabajosLimpieza = true;
   cargandoPagosLimpieza = true;
+  cargandoArchivosHuerfanos = true;
+  limpiandoArchivosHuerfanos = false;
+  archivosHuerfanos = 0;
   limpiezaFeedback = '';
   error = '';
   mensaje = '';
@@ -525,7 +555,8 @@ export class PanelAdminComponent implements OnInit {
     private usuarioService: UsuarioService,
     private usuarioEdicionDialog: UsuarioEdicionDialogService,
     private trabajoService: TrabajoService,
-    private pagoService: PagoService
+    private pagoService: PagoService,
+    private archivoService: ArchivoService
   ) {}
 
   ngOnInit(): void {
@@ -576,9 +607,12 @@ export class PanelAdminComponent implements OnInit {
     this.error = '';
     this.trabajoService.baja(t.id).subscribe({
       next: () => {
-        this.limpiezaFeedback = `Trabajo #${t.id} eliminado.`;
+        this.limpiezaFeedback = `Trabajo #${t.id} eliminado (incluye PDF si tenía).`;
         this.trabajosLimpieza = this.trabajosLimpieza.filter((x) => x.id !== t.id);
         this.statsService.obtener().subscribe({ next: (s) => (this.stats = s) });
+        this.archivoService.resumenHuerfanos().subscribe({
+          next: (r) => (this.archivosHuerfanos = r.huerfanosRestantes),
+        });
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo eliminar el trabajo.');
@@ -603,7 +637,39 @@ export class PanelAdminComponent implements OnInit {
     });
   }
 
+  limpiarArchivosHuerfanos(): void {
+    if (
+      this.archivosHuerfanos === 0 ||
+      !confirm(`¿Eliminar ${this.archivosHuerfanos} archivo(s) huérfano(s) de la base?`)
+    ) {
+      return;
+    }
+    this.limpiezaFeedback = '';
+    this.error = '';
+    this.limpiandoArchivosHuerfanos = true;
+    this.archivoService.limpiarHuerfanos().subscribe({
+      next: (r) => {
+        this.archivosHuerfanos = r.huerfanosRestantes;
+        this.limpiezaFeedback = r.mensaje;
+        this.limpiandoArchivosHuerfanos = false;
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudieron eliminar los archivos huérfanos.');
+        this.limpiandoArchivosHuerfanos = false;
+      },
+    });
+  }
+
   private cargarLimpieza(): void {
+    this.archivoService.resumenHuerfanos().subscribe({
+      next: (r) => {
+        this.archivosHuerfanos = r.huerfanosRestantes;
+        this.cargandoArchivosHuerfanos = false;
+      },
+      error: () => {
+        this.cargandoArchivosHuerfanos = false;
+      },
+    });
     this.trabajoService.listar(1, 20).subscribe({
       next: (items) => {
         this.trabajosLimpieza = items;
