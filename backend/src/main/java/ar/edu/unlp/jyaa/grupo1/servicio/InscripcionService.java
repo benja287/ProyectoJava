@@ -21,7 +21,9 @@ import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RequestScoped
 public class InscripcionService {
@@ -35,6 +37,7 @@ public class InscripcionService {
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private DocumentStorageService documentStorageService;
   @Inject private UsuarioService usuarioService;
+  @Inject private NotificacionService notificacionService;
 
   public InscripcionCongresoDTO crear(
       AuthenticatedUser auth,
@@ -126,7 +129,44 @@ public class InscripcionService {
       usuarioDAO.modificar(usuario);
     }
 
+    notificarAdminInscripcionPendiente(usuario, categoria, monto, metodoPago);
+
     return InscripcionCongresoDTO.from(recuperarConRelaciones(creada.getId()));
+  }
+
+  private void notificarAdminInscripcionPendiente(
+      Usuario solicitante, CategoriaInscripcion categoria, Double monto, MetodoPago metodoPago) {
+    Map<String, String> vars = new HashMap<>();
+    vars.put(
+        "nombre_solicitante",
+        (solicitante.getNombre() + " " + solicitante.getApellido()).trim());
+    vars.put("email_solicitante", solicitante.getEmail() != null ? solicitante.getEmail() : "");
+    vars.put("categoria", etiquetaCategoria(categoria));
+    vars.put("monto", monto != null ? String.format("%.0f", monto) : "0");
+    vars.put("metodo_pago", etiquetaMetodoPago(metodoPago));
+    notificacionService.enviarPorRolConPlantilla(
+        Rol.ADMINISTRADOR, "INSCRIPCION_PENDIENTE_ADMIN", vars, null);
+  }
+
+  private static String etiquetaCategoria(CategoriaInscripcion categoria) {
+    return switch (categoria) {
+      case SOCIO_SAAE -> "Socio/a SAAE";
+      case NO_SOCIO -> "No socio";
+      case ESTUDIANTE -> "Estudiante";
+      case PRODUCTOR -> "Productor";
+      case INVESTIGADOR -> "Investigador";
+      case EXTENSIONISTA -> "Extensionista";
+      case DOCENTE -> "Docente";
+      case EXTRANJERO -> "Extranjero";
+    };
+  }
+
+  private static String etiquetaMetodoPago(MetodoPago metodoPago) {
+    return switch (metodoPago) {
+      case EFECTIVO -> "Efectivo / presencial";
+      case TRANSFERENCIA -> "Transferencia bancaria";
+      case TARJETA -> "Tarjeta";
+    };
   }
 
   public EstadoInscripcionParticipanteDTO estadoParticipante(AuthenticatedUser auth) {

@@ -356,16 +356,16 @@ public class TrabajoService {
         reenvioPrecheck || reenvioRevision
             ? "Tu trabajo \"" + trabajo.getTitulo() + "\" fue reenviado y está pendiente de prevalidación."
             : "Tu trabajo \"" + trabajo.getTitulo() + "\" fue enviado y está pendiente de revisión del comité.");
-    if (reenvioPrecheck || reenvioRevision) {
-      Map<String, String> vars = variablesBaseTrabajo(trabajo);
-      if (trabajo.getAutor() != null) {
-        vars.put(
-            "nombre_autor",
-            trabajo.getAutor().getNombre() + " " + trabajo.getAutor().getApellido());
-      }
-      notificacionService.enviarPorRolConPlantilla(
-          Rol.ORGANIZADOR_CIENTIFICO, "REENVIO_ORGANIZADOR", vars, null);
+    Map<String, String> varsComite = variablesBaseTrabajo(trabajo);
+    if (trabajo.getAutor() != null) {
+      varsComite.put(
+          "nombre_autor",
+          trabajo.getAutor().getNombre() + " " + trabajo.getAutor().getApellido());
     }
+    String plantillaComite =
+        reenvioPrecheck || reenvioRevision ? "REENVIO_ORGANIZADOR" : "ENVIO_TRABAJO_ORGANIZADOR";
+    notificacionService.enviarPorRolConPlantilla(
+        Rol.ORGANIZADOR_CIENTIFICO, plantillaComite, varsComite, null);
     return trabajoDAO.modificar(trabajo);
   }
 

@@ -196,6 +196,20 @@ public final class SchemaMigration {
             Comité Evaluador""");
     insertarPlantillaSiFalta(
         em,
+        "ENVIO_TRABAJO_ORGANIZADOR",
+        "[ENVÍO] Nuevo trabajo \"{{titulo}}\" pendiente de prevalidación",
+        """
+            Hola {{nombre}},
+
+            El participante {{nombre_autor}} envió el trabajo "{{titulo}}".
+            Revisá la prevalidación y, si corresponde, asigná evaluadores.
+
+            Panel del comité:
+            {{url_plataforma}}
+
+            Sistema de gestión del congreso""");
+    insertarPlantillaSiFalta(
+        em,
         "REENVIO_ORGANIZADOR",
         "[REENVÍO] Trabajo \"{{titulo}}\" pendiente de prevalidación",
         """
@@ -235,6 +249,23 @@ public final class SchemaMigration {
             {{url_plataforma}}
 
             Comité Académico""");
+    insertarPlantillaSiFalta(
+        em,
+        "INSCRIPCION_PENDIENTE_ADMIN",
+        "[INSCRIPCIÓN] Nueva solicitud de {{nombre_solicitante}}",
+        """
+            Hola {{nombre}},
+
+            {{nombre_solicitante}} ({{email_solicitante}}) solicitó inscripción al congreso.
+
+            Categoría: {{categoria}}
+            Monto: ${{monto}}
+            Forma de pago: {{metodo_pago}}
+
+            Revisá y aprobá el pago desde el panel de administración:
+            {{url_plataforma}}/admin/inscripciones
+
+            Sistema de gestión del congreso""");
   }
 
   private static void insertarPlantillaSiFalta(
