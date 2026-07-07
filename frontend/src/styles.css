@@ -1358,6 +1358,20 @@ textarea {
   color: #64748b;
 }
 
+.programa-dia-grupo {
+  margin-bottom: 2rem;
+}
+
+.programa-dia-titulo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 1rem;
+  text-transform: capitalize;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
 .programa-dias {
   display: flex;
   flex-wrap: wrap;
@@ -1427,7 +1441,8 @@ textarea {
   color: #334155;
 }
 
-.programa-item h2 {
+.programa-item h2,
+.programa-item h3 {
   margin: 0 0 0.5rem;
   font-size: 1.1rem;
 }
