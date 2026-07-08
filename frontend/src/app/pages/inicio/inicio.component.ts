@@ -74,6 +74,41 @@ import { InscripcionService } from '../../servicios/inscripcion.service';
         }
       </div>
     </section>
+
+    <section class="inicio-contexto">
+      <h2>Contexto del Congreso</h2>
+      <div class="inicio-contexto-texto">
+        <p>
+          El V Congreso Argentino de Agroecología representa un espacio fundamental para el
+          encuentro, debate e intercambio de experiencias en torno a la agroecología en Argentina y
+          Latinoamérica.
+        </p>
+        <p>
+          Este evento reúne a productores, investigadores, estudiantes, organizaciones y todos
+          aquellos comprometidos con la construcción de sistemas agroalimentarios sustentables que
+          promuevan la soberanía alimentaria y el cuidado del ambiente.
+        </p>
+        <p>
+          Los congresos de agroecología se caracterizan por su enfoque participativo, donde se
+          combinan presentaciones científicas, talleres temáticos, ferias agroecológicas y espacios
+          de intercambio horizontal entre todos los participantes.
+        </p>
+      </div>
+    </section>
+
+    <section class="inicio-historia">
+      <a routerLink="/historia" class="inicio-historia-banner" aria-label="Ir a Historia del Congreso">
+        <div class="inicio-historia-overlay">
+          <span class="inicio-historia-badge">Historia del congreso</span>
+          <h2>Evolución y memorias de las ediciones anteriores</h2>
+          <p>
+            Línea de tiempo con información breve, enlaces a los sitios oficiales y (cuando
+            corresponde) a las memorias/actas.
+          </p>
+          <span class="inicio-historia-cta">Ver historia →</span>
+        </div>
+      </a>
+    </section>
   `,
 })
 export class InicioComponent implements OnInit {

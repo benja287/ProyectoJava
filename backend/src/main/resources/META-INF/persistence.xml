@@ -24,6 +24,7 @@
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Anuncio</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Certificado</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Archivo</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.CongresoAnterior</class>
     <!-- RangoFechas y EtapaCongreso son @Embeddable, no se listan -->
 
     <properties>

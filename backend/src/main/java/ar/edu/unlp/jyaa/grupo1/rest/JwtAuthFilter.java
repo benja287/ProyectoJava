@@ -112,6 +112,9 @@ public class JwtAuthFilter implements ContainerRequestFilter {
       if ("circulares".equals(path)) {
         return true;
       }
+      if ("historia/congresos".equals(path)) {
+        return true;
+      }
       if ("actividades".equals(path)) {
         return true;
       }

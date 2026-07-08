@@ -2742,3 +2742,343 @@ textarea {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* --- Inicio: contexto + banner historia --- */
+.inicio-contexto {
+  margin-top: 2.5rem;
+  padding: 2rem 1.25rem;
+  background: linear-gradient(135deg, #faf8f5 0%, #f3f1ed 100%);
+  border-radius: 12px;
+}
+
+.inicio-contexto h2 {
+  text-align: center;
+  margin: 0 0 1.5rem;
+  color: #1f2937;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.inicio-contexto-texto {
+  max-width: 48rem;
+  margin: 0 auto;
+  color: #374151;
+  line-height: 1.7;
+  font-size: 1.05rem;
+}
+
+.inicio-contexto-texto p {
+  margin: 0 0 1rem;
+}
+
+.inicio-contexto-texto p:last-child {
+  margin-bottom: 0;
+}
+
+.inicio-historia {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.inicio-historia-banner {
+  display: block;
+  border-radius: 16px;
+  overflow: hidden;
+  text-decoration: none;
+  border: 1px solid #d1fae5;
+  box-shadow: 0 8px 24px rgba(45, 80, 22, 0.12);
+  background:
+    radial-gradient(900px 280px at 15% 20%, rgba(45, 80, 22, 0.45), transparent 60%),
+    radial-gradient(700px 260px at 85% 75%, rgba(139, 155, 92, 0.5), transparent 55%),
+    linear-gradient(135deg, #1a3310 0%, #2d5016 45%, #4d7c33 100%);
+  min-height: 280px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.inicio-historia-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(45, 80, 22, 0.18);
+}
+
+.inicio-historia-overlay {
+  padding: 2rem 1.75rem;
+  color: #fff;
+  max-width: 36rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 280px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.15) 70%, transparent);
+}
+
+.inicio-historia-badge {
+  display: inline-block;
+  width: fit-content;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  margin-bottom: 0.75rem;
+}
+
+.inicio-historia-overlay h2 {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  line-height: 1.25;
+  color: #fff;
+}
+
+.inicio-historia-overlay p {
+  margin: 0.75rem 0 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.95rem;
+}
+
+.inicio-historia-cta {
+  margin-top: 1.1rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* --- Página historia / línea de tiempo --- */
+.historia-page {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding-bottom: 2rem;
+}
+
+.historia-back {
+  margin: 0 0 1rem;
+}
+
+.historia-back a {
+  color: #2d5016;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.historia-back a:hover {
+  text-decoration: underline;
+}
+
+.historia-hero {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(700px 200px at 10% 20%, rgba(45, 80, 22, 0.12), transparent 60%),
+    radial-gradient(600px 180px at 90% 80%, rgba(139, 155, 92, 0.16), transparent 55%),
+    #fff;
+}
+
+.historia-hero h1 {
+  margin: 0 0 0.5rem;
+  color: #111827;
+}
+
+.historia-hero-icon {
+  flex-shrink: 0;
+  width: 3.25rem;
+  height: 3.25rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  background: #ecfdf5;
+  border: 1px solid #d1fae5;
+  border-radius: 12px;
+}
+
+.historia-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+}
+
+.historia-timeline-block {
+  margin-top: 2.25rem;
+}
+
+.historia-timeline-block h2 {
+  margin: 0 0 0.4rem;
+  color: #111827;
+}
+
+.historia-timeline {
+  position: relative;
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.historia-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.85rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, #2d5016, #8b9b5c);
+  opacity: 0.55;
+}
+
+@media (min-width: 768px) {
+  .historia-timeline::before {
+    left: 50%;
+    transform: translateX(-1px);
+  }
+}
+
+.historia-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  margin-left: 2rem;
+}
+
+@media (min-width: 768px) {
+  .historia-card {
+    width: calc(50% - 1.25rem);
+    margin-left: 0;
+  }
+
+  .historia-card--right {
+    margin-left: auto;
+  }
+}
+
+.historia-card::before {
+  content: '';
+  position: absolute;
+  left: -1.55rem;
+  top: 2.1rem;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: #2d5016;
+  box-shadow: 0 0 0 4px rgba(139, 155, 92, 0.35);
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .historia-card::before {
+    left: auto;
+    right: -1.7rem;
+  }
+
+  .historia-card--right::before {
+    right: auto;
+    left: -1.7rem;
+  }
+}
+
+.historia-card-cover {
+  height: 5.5rem;
+  background:
+    radial-gradient(800px 220px at 20% 30%, rgba(45, 80, 22, 0.28), transparent 55%),
+    radial-gradient(600px 180px at 80% 70%, rgba(139, 155, 92, 0.32), transparent 60%),
+    #f8fafc;
+}
+
+.historia-card-cover[data-year='2021'] {
+  background:
+    radial-gradient(800px 220px at 20% 30%, rgba(13, 148, 136, 0.28), transparent 55%),
+    radial-gradient(600px 180px at 80% 70%, rgba(45, 80, 22, 0.25), transparent 60%),
+    #f0fdfa;
+}
+
+.historia-card-cover[data-year='2023'] {
+  background:
+    radial-gradient(800px 220px at 20% 30%, rgba(59, 130, 246, 0.22), transparent 55%),
+    radial-gradient(600px 180px at 80% 70%, rgba(45, 80, 22, 0.25), transparent 60%),
+    #eff6ff;
+}
+
+.historia-card-cover[data-year='2025'] {
+  background:
+    radial-gradient(800px 220px at 20% 30%, rgba(245, 158, 11, 0.28), transparent 55%),
+    radial-gradient(600px 180px at 80% 70%, rgba(45, 80, 22, 0.25), transparent 60%),
+    #fffbeb;
+}
+
+.historia-card-body {
+  padding: 1.25rem 1.35rem 1.4rem;
+}
+
+.historia-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.historia-year {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #2d5016;
+  line-height: 1.1;
+}
+
+.historia-meta {
+  margin: 0.35rem 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.historia-card-body h3 {
+  margin: 1rem 0 0.4rem;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.historia-card-body > p {
+  margin: 0;
+  color: #374151;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.btn-sitio {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  background: #111827;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.btn-sitio:hover {
+  background: #000;
+}
+
+.historia-memorias {
+  display: inline-block;
+  margin-top: 0.9rem;
+  color: #2d5016;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.historia-memorias:hover {
+  text-decoration: underline;
+}
+
+.historia-nota {
+  margin-top: 1.75rem;
+}

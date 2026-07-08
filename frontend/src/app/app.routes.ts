@@ -42,6 +42,7 @@ import { MesaRedondaAdminComponent } from './pages/admin/mesa-redonda/mesa-redon
 import { CrearTallerAdminComponent } from './pages/admin/crear-taller/crear-taller-admin.component';
 import { CrearConferenciaAdminComponent } from './pages/admin/crear-conferencia/crear-conferencia-admin.component';
 import { EmailsAdminComponent } from './pages/admin/emails/emails-admin.component';
+import { HistoriaCongresoComponent } from './pages/historia/historia-congreso.component';
 
 const admin = roleGuard(['ADMINISTRADOR']);
 const organizador = roleGuard(['ORGANIZADOR_CIENTIFICO']);
@@ -52,6 +53,7 @@ export const routes: Routes = [
   { path: '', component: InicioComponent },
   { path: 'programa', component: ProgramaCongresoComponent },
   { path: 'circulares', component: CircularesPublicasComponent },
+  { path: 'historia', component: HistoriaCongresoComponent },
   { path: 'login', component: LoginComponent },
   { path: 'seleccion-rol', component: SeleccionRolComponent, canActivate: [authGuard, seleccionRolGuard] },
   { path: 'registro', component: RegistroComponent },

@@ -1,5 +1,6 @@
 package ar.edu.unlp.jyaa.grupo1.config;
 
+import ar.edu.unlp.jyaa.grupo1.modelo.CongresoAnterior;
 import ar.edu.unlp.jyaa.grupo1.modelo.PlantillaEmail;
 import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
@@ -21,6 +22,7 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresoConfig);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCirculares);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasEmail);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresosAnteriores);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -266,6 +268,81 @@ public final class SchemaMigration {
             {{url_plataforma}}/admin/inscripciones
 
             Sistema de gestión del congreso""");
+  }
+
+  /** Seed de ediciones anteriores (historia pública) — idempotente por año. */
+  private static void migrarCongresosAnteriores(EntityManager em) {
+    insertarCongresoAnteriorSiFalta(
+        em,
+        1,
+        2019,
+        "I Congreso Argentino de Agroecología",
+        "Mendoza (UNCuyo)",
+        "18–20 sep 2019",
+        "Primera edición: consolidó el espacio federal de intercambio entre ciencia, producción y territorios.",
+        "https://fca.uncuyo.edu.ar/1-congreso-argentino-de-agroecologia-concurrencia-masiva",
+        "https://fca.uncuyo.edu.ar/ya-se-encuentra-disponible-el-libro-de-resumenes-del-primer-congreso-argentino-de-agroecologia");
+    insertarCongresoAnteriorSiFalta(
+        em,
+        2,
+        2021,
+        "II Congreso Argentino de Agroecología",
+        "Resistencia (Chaco) — virtual",
+        "13–15 oct 2021",
+        "Edición virtual que amplió la participación federal bajo el lema “Entrelazando saberes hacia el Buen Vivir”.",
+        "https://agroecologiasaae2021.uncaus.edu.ar/",
+        "https://rid.unam.edu.ar/handle/20.500.12219/3883");
+    insertarCongresoAnteriorSiFalta(
+        em,
+        3,
+        2023,
+        "III Congreso Argentino de Agroecología",
+        "El Bolsón (Río Negro)",
+        "29 nov – 1 dic 2023",
+        "Edición organizada junto a UNRN. Se publicaron actas/memorias y resúmenes extendidos por eje temático.",
+        "https://congresoagroecologia2023.unrn.edu.ar/",
+        "https://publicaciones.unrn.edu.ar/index.php/CyJ/issue/view/agro-cong-III");
+    insertarCongresoAnteriorSiFalta(
+        em,
+        4,
+        2025,
+        "IV Congreso Argentino de Agroecología",
+        "San Salvador de Jujuy",
+        "12–14 nov 2025",
+        "Edición previa al congreso 2027. Sitio del evento con información de organización, programa y comunicación.",
+        "https://ivcaaejujuy.unju.edu.ar/",
+        null);
+  }
+
+  private static void insertarCongresoAnteriorSiFalta(
+      EntityManager em,
+      int orden,
+      int anio,
+      String titulo,
+      String ubicacion,
+      String fechaEtiqueta,
+      String destacado,
+      String urlSitio,
+      String urlMemorias) {
+    Long existentes =
+        em.createQuery(
+                "SELECT COUNT(c) FROM CongresoAnterior c WHERE c.anio = :anio", Long.class)
+            .setParameter("anio", anio)
+            .getSingleResult();
+    if (existentes != null && existentes > 0) {
+      return;
+    }
+    CongresoAnterior c = new CongresoAnterior();
+    c.setOrden(orden);
+    c.setAnio(anio);
+    c.setTitulo(titulo);
+    c.setUbicacion(ubicacion);
+    c.setFechaEtiqueta(fechaEtiqueta);
+    c.setDestacado(destacado);
+    c.setUrlSitio(urlSitio);
+    c.setUrlMemorias(urlMemorias);
+    em.persist(c);
+    log.info("Congreso anterior insertado: {} ({})", titulo, anio);
   }
 
   private static void insertarPlantillaSiFalta(

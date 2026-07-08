@@ -36,6 +36,7 @@ public class JaxRsApplication extends Application {
         ArchivoResource.class,
         LoginResource.class,
         CircularesResource.class,
+        CongresoAnteriorResource.class,
         CongresoResource.class,
         InscripcionResource.class,
         NotificacionResource.class,

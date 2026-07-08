@@ -64,4 +64,8 @@ public final class DAOFactory {
   public static CertificadoDAO getCertificadoDAO() {
     return new CertificadoDAOImpl();
   }
+
+  public static CongresoAnteriorDAO getCongresoAnteriorDAO() {
+    return new CongresoAnteriorDAOImpl();
+  }
 }
