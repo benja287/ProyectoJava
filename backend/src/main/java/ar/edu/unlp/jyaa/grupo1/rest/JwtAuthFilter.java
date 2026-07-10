@@ -31,38 +31,48 @@ public class JwtAuthFilter implements ContainerRequestFilter {
   public void filter(ContainerRequestContext requestContext) {
     String method = requestContext.getMethod();
     if ("OPTIONS".equalsIgnoreCase(method)) {
+      // Preflight CORS: no autenticar acá (lo resuelve CorsRequestFilter).
       return;
     }
 
     String path = normalizePath(requestContext.getUriInfo().getPath());
     if (isPublicPath(path, method)) {
+      // Endpoints públicos: login, registro, swagger y algunos GET (programa, circulares, etc.).
       return;
     }
 
     String authorization = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
     if (authorization == null || !authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
+      // Sin header Authorization o sin prefijo "Bearer " → no hay credencial.
       abortUnauthorized(requestContext, "Token requerido");
       return;
     }
 
     String token = authorization.substring(7).trim();
     if (token.isEmpty()) {
+      // Evita "Bearer    " (vacío).
       abortUnauthorized(requestContext, "Token requerido");
       return;
     }
 
     try {
+      // 1) Valida firma + issuer + expiración (JwtService.parse).
       var claims = jwtService.parse(token);
+
+      // 2) Publica info en el request context para que Resources/Services la lean vía AuthenticatedUser.
       requestContext.setProperty("jwtSubject", claims.getSubject());
       requestContext.setProperty("jwtEmail", claims.get("email", String.class));
       @SuppressWarnings("unchecked")
       var roles = (java.util.List<String>) claims.get("roles", java.util.List.class);
       requestContext.setProperty("jwtRoles", roles != null ? roles : java.util.List.of());
 
+      // 3) Seguridad adicional: la cuenta debe seguir activa en BD.
+      // Esto evita que un usuario deshabilitado siga operando con un token aún vigente.
       if (!isAccountActive(claims.getSubject(), requestContext)) {
         return;
       }
     } catch (JwtException e) {
+      // Token inválido/expirado (mensaje ya normalizado en JwtService.parse).
       abortUnauthorized(requestContext, e.getMessage());
     }
   }
@@ -70,6 +80,7 @@ public class JwtAuthFilter implements ContainerRequestFilter {
   private boolean isAccountActive(String subject, ContainerRequestContext requestContext) {
     Long userId;
     try {
+      // subject = userId (string) definido por JwtService.generate().subject(...)
       userId = Long.parseLong(subject);
     } catch (NumberFormatException e) {
       abortUnauthorized(requestContext, "Token inválido");
@@ -82,6 +93,7 @@ public class JwtAuthFilter implements ContainerRequestFilter {
       return false;
     }
     if (!activo.get()) {
+      // Caso especial para UX: el frontend detecta accountDisabled y muestra mensaje específico.
       abortForbidden(requestContext, "Cuenta deshabilitada");
       return false;
     }

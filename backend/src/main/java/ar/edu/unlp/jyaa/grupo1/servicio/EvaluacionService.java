@@ -1,8 +1,10 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.AsignacionEvaluacionDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.EvaluacionDAO;
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
+import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.Evaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
 import jakarta.enterprise.context.RequestScoped;
@@ -14,6 +16,7 @@ public class EvaluacionService {
 
   @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
   @Inject private EvaluacionDAO evaluacionDAO;
+  @Inject private CongresoDAO congresoDAO;
   @Inject private TrabajoService trabajoService;
 
   public Evaluacion registrar(Long asignacionId, RecomendacionEvaluacion recomendacion, String comentario) {
@@ -30,6 +33,7 @@ public class EvaluacionService {
     if (asignacion.getTrabajo().getEstado() != ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo.EN_EVALUACION) {
       throw new NegocioException("El trabajo no está en evaluación");
     }
+    validarVentanaEvaluacion();
 
     Evaluacion evaluacion = new Evaluacion();
     evaluacion.setAsignacion(asignacion);
@@ -42,5 +46,14 @@ public class EvaluacionService {
     Long trabajoId = asignacion.getTrabajo().getId();
     trabajoService.actualizarEstadoTrasEvaluaciones(trabajoId);
     return guardada;
+  }
+
+  private void validarVentanaEvaluacion() {
+    Congreso congreso = congresoDAO.obtenerPrincipal();
+    LocalDate hasta = congreso.getEvaluacionHasta();
+    if (hasta != null && LocalDate.now().isAfter(hasta)) {
+      throw new NegocioException(
+          "El período de evaluación cerró el " + hasta + ". Ya no se pueden registrar dictámenes.");
+    }
   }
 }

@@ -29,11 +29,28 @@ public class CongresoService {
             congreso.setProgramaPublicado(request.programaPublicado());
           }
           if (request.certificadosDisponiblesDesde() != null) {
-            congreso.setCertificadosDisponiblesDesde(parseFechaOpcional(request.certificadosDisponiblesDesde()));
+            congreso.setCertificadosDisponiblesDesde(
+                parseFechaOpcional(request.certificadosDisponiblesDesde()));
           }
           if (request.envioTrabajosHasta() != null) {
             congreso.setEnvioTrabajosHasta(parseFechaOpcional(request.envioTrabajosHasta()));
           }
+          if (request.congresoDesde() != null) {
+            congreso.setCongresoDesde(parseFechaOpcional(request.congresoDesde()));
+          }
+          if (request.congresoHasta() != null) {
+            congreso.setCongresoHasta(parseFechaOpcional(request.congresoHasta()));
+          }
+          if (request.inscripcionesDesde() != null) {
+            congreso.setInscripcionesDesde(parseFechaOpcional(request.inscripcionesDesde()));
+          }
+          if (request.inscripcionesHasta() != null) {
+            congreso.setInscripcionesHasta(parseFechaOpcional(request.inscripcionesHasta()));
+          }
+          if (request.evaluacionHasta() != null) {
+            congreso.setEvaluacionHasta(parseFechaOpcional(request.evaluacionHasta()));
+          }
+          validarVentanas(congreso);
           em.flush();
           return CongresoConfigDTO.from(congreso);
         });
@@ -58,6 +75,33 @@ public class CongresoService {
     em.persist(congreso);
     em.flush();
     return congreso;
+  }
+
+  /** Valida coherencia de rangos. Null = sin límite (no valida). */
+  static void validarVentanas(Congreso c) {
+    exigirDesdeHasta(c.getCongresoDesde(), c.getCongresoHasta(), "del congreso");
+    exigirDesdeHasta(c.getInscripcionesDesde(), c.getInscripcionesHasta(), "de inscripción");
+
+    LocalDate finCongreso = c.getCongresoHasta();
+    if (finCongreso != null) {
+      exigirNoPosterior(c.getEnvioTrabajosHasta(), finCongreso, "envío de trabajos");
+      exigirNoPosterior(c.getEvaluacionHasta(), finCongreso, "evaluación");
+      exigirNoPosterior(c.getInscripcionesHasta(), finCongreso, "inscripción");
+    }
+  }
+
+  private static void exigirDesdeHasta(LocalDate desde, LocalDate hasta, String etiqueta) {
+    if (desde != null && hasta != null && desde.isAfter(hasta)) {
+      throw new NegocioException(
+          "La fecha de inicio " + etiqueta + " no puede ser posterior a la de fin.");
+    }
+  }
+
+  private static void exigirNoPosterior(LocalDate fecha, LocalDate limite, String etiqueta) {
+    if (fecha != null && fecha.isAfter(limite)) {
+      throw new NegocioException(
+          "La fecha límite de " + etiqueta + " no puede ser posterior al fin del congreso.");
+    }
   }
 
   private static LocalDate parseFechaOpcional(String raw) {

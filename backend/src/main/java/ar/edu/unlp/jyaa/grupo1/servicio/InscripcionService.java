@@ -1,10 +1,12 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
+import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.InscripcionCongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.PagoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.InscripcionFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.CategoriaInscripcion;
+import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
@@ -35,6 +37,7 @@ public class InscripcionService {
   @Inject private InscripcionCongresoDAO inscripcionDAO;
   @Inject private PagoDAO pagoDAO;
   @Inject private UsuarioDAO usuarioDAO;
+  @Inject private CongresoDAO congresoDAO;
   @Inject private DocumentStorageService documentStorageService;
   @Inject private UsuarioService usuarioService;
   @Inject private NotificacionService notificacionService;
@@ -67,6 +70,7 @@ public class InscripcionService {
     CategoriaInscripcion categoria = parseCategoria(categoriaEfectiva);
     MetodoPago metodoPago = parseMetodoPago(metodoPagoRaw);
     validarDatos(categoria, institucion, provincia, requiereFactura, certificado, metodoPago, monto, comprobante);
+    validarVentanaInscripcion();
 
     inscripcionDAO
         .buscarUltimaPorUsuario(auth.userId())
@@ -146,6 +150,21 @@ public class InscripcionService {
     vars.put("metodo_pago", etiquetaMetodoPago(metodoPago));
     notificacionService.enviarPorRolConPlantilla(
         Rol.ADMINISTRADOR, "INSCRIPCION_PENDIENTE_ADMIN", vars, null);
+  }
+
+  private void validarVentanaInscripcion() {
+    Congreso congreso = congresoDAO.obtenerPrincipal();
+    LocalDate hoy = LocalDate.now();
+    LocalDate desde = congreso.getInscripcionesDesde();
+    LocalDate hasta = congreso.getInscripcionesHasta();
+    if (desde != null && hoy.isBefore(desde)) {
+      throw new NegocioException(
+          "Las inscripciones abren el " + desde + ". Todavía no está habilitada la inscripción.");
+    }
+    if (hasta != null && hoy.isAfter(hasta)) {
+      throw new NegocioException(
+          "El período de inscripción cerró el " + hasta + ". Ya no se aceptan nuevas solicitudes.");
+    }
   }
 
   private static String etiquetaCategoria(CategoriaInscripcion categoria) {

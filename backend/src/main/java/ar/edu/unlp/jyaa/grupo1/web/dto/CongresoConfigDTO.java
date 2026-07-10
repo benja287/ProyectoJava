@@ -6,12 +6,22 @@ import java.time.LocalDate;
 public record CongresoConfigDTO(
     boolean programaPublicado,
     LocalDate certificadosDisponiblesDesde,
-    LocalDate envioTrabajosHasta) {
+    LocalDate envioTrabajosHasta,
+    LocalDate congresoDesde,
+    LocalDate congresoHasta,
+    LocalDate inscripcionesDesde,
+    LocalDate inscripcionesHasta,
+    LocalDate evaluacionHasta) {
 
   public static CongresoConfigDTO from(Congreso congreso) {
     return new CongresoConfigDTO(
         congreso.isProgramaPublicado(),
         congreso.getCertificadosDisponiblesDesde(),
-        congreso.getEnvioTrabajosHasta());
+        congreso.getEnvioTrabajosHasta(),
+        congreso.getCongresoDesde(),
+        congreso.getCongresoHasta(),
+        congreso.getInscripcionesDesde(),
+        congreso.getInscripcionesHasta(),
+        congreso.getEvaluacionHasta());
   }
 }

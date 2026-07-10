@@ -46,8 +46,15 @@ public class CongresoResource {
       throw new NotAuthorizedException("Solo administradores u organizador científico");
     }
     if (!esAdmin
-        && (request.programaPublicado() != null || request.certificadosDisponiblesDesde() != null)) {
-      throw new NotAuthorizedException("Solo administradores pueden modificar programa o certificados");
+        && (request.programaPublicado() != null
+            || request.certificadosDisponiblesDesde() != null
+            || request.congresoDesde() != null
+            || request.congresoHasta() != null
+            || request.inscripcionesDesde() != null
+            || request.inscripcionesHasta() != null
+            || request.evaluacionHasta() != null)) {
+      throw new NotAuthorizedException(
+          "Solo administradores pueden modificar programa, certificados o ventanas del congreso");
     }
     return congresoService.actualizarConfig(request);
   }

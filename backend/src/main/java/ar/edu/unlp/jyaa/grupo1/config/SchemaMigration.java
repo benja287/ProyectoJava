@@ -76,7 +76,7 @@ public final class SchemaMigration {
     }
   }
 
-  /** Columnas de configuración del congreso (programa publicado, certificados, límite envíos). */
+  /** Columnas de configuración del congreso (programa, certificados, ventanas de fechas). */
   private static void migrarCongresoConfig(EntityManager em) {
     agregarColumnaSiFalta(
         em,
@@ -93,6 +93,31 @@ public final class SchemaMigration {
         "congresos",
         "envio_trabajos_hasta",
         "ALTER TABLE congresos ADD COLUMN envio_trabajos_hasta DATE NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "congreso_desde",
+        "ALTER TABLE congresos ADD COLUMN congreso_desde DATE NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "congreso_hasta",
+        "ALTER TABLE congresos ADD COLUMN congreso_hasta DATE NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "inscripciones_desde",
+        "ALTER TABLE congresos ADD COLUMN inscripciones_desde DATE NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "inscripciones_hasta",
+        "ALTER TABLE congresos ADD COLUMN inscripciones_hasta DATE NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "evaluacion_hasta",
+        "ALTER TABLE congresos ADD COLUMN evaluacion_hasta DATE NULL");
   }
 
   private static void migrarCirculares(EntityManager em) {

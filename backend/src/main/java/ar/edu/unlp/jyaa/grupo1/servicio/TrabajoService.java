@@ -776,6 +776,13 @@ public class TrabajoService {
     if (trabajo.getAutor() != null && evaluadorId.equals(trabajo.getAutor().getId())) {
       throw new NegocioException("No podés evaluar tu propia propuesta");
     }
+    LocalDate evaluacionHasta = congresoDAO.obtenerPrincipal().getEvaluacionHasta();
+    if (evaluacionHasta != null && LocalDate.now().isAfter(evaluacionHasta)) {
+      throw new NegocioException(
+          "El período de evaluación cerró el "
+              + evaluacionHasta
+              + ". Ya no se pueden registrar dictámenes.");
+    }
     trabajo.setEstado(aprobar ? EstadoTrabajo.APROBADO : EstadoTrabajo.RECHAZADO);
     if (comentario != null && !comentario.isBlank()) {
       trabajo.setObservacionesPrecheck(comentario.trim());
