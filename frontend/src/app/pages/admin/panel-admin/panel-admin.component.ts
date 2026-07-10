@@ -149,6 +149,63 @@ import { ArchivoService } from '../../../servicios/archivo.service';
         </p>
       </section>
 
+      <section class="panel-card panel-card--indigo">
+        <h2>Ventanas de tiempo del congreso</h2>
+        <p class="muted">
+          Fechas configurables sin tocar código. Vacío = sin límite. Si el congreso se posterga, actualizá
+          estas fechas acá.
+        </p>
+        <div class="form-grid form-grid-wide">
+          <label>
+            Inicio del congreso
+            <input type="date" [(ngModel)]="ventanas.congresoDesde" [ngModelOptions]="{ standalone: true }" />
+          </label>
+          <label>
+            Fin del congreso
+            <input type="date" [(ngModel)]="ventanas.congresoHasta" [ngModelOptions]="{ standalone: true }" />
+          </label>
+          <label>
+            Inscripciones desde
+            <input
+              type="date"
+              [(ngModel)]="ventanas.inscripcionesDesde"
+              [ngModelOptions]="{ standalone: true }"
+            />
+          </label>
+          <label>
+            Inscripciones hasta
+            <input
+              type="date"
+              [(ngModel)]="ventanas.inscripcionesHasta"
+              [ngModelOptions]="{ standalone: true }"
+            />
+          </label>
+          <label>
+            Envío de trabajos hasta
+            <input
+              type="date"
+              [(ngModel)]="ventanas.envioTrabajosHasta"
+              [ngModelOptions]="{ standalone: true }"
+            />
+          </label>
+          <label>
+            Evaluación hasta
+            <input type="date" [(ngModel)]="ventanas.evaluacionHasta" [ngModelOptions]="{ standalone: true }" />
+          </label>
+        </div>
+        <div class="inline-form-row" style="margin-top: 0.75rem">
+          <button type="button" class="btn-primary" [disabled]="guardandoConfig" (click)="guardarVentanas()">
+            Guardar ventanas
+          </button>
+          <button type="button" class="btn-link" [disabled]="guardandoConfig" (click)="limpiarVentanas()">
+            Limpiar todas
+          </button>
+        </div>
+        <p class="muted small">
+          El comité también puede editar solo la fecha límite de envío de trabajos desde su panel.
+        </p>
+      </section>
+
       <section class="panel-card">
         <h2>Validación de inscripciones</h2>
         <p class="muted">
@@ -518,6 +575,14 @@ export class PanelAdminComponent implements OnInit {
   stats?: AdminStats;
   config?: CongresoConfig;
   certificadosInput = '';
+  ventanas = {
+    congresoDesde: '',
+    congresoHasta: '',
+    inscripcionesDesde: '',
+    inscripcionesHasta: '',
+    envioTrabajosHasta: '',
+    evaluacionHasta: '',
+  };
   usuarios: Usuario[] = [];
   circulares: Circular[] = [];
   solicitudesAutor: SolicitudAutor[] = [];
@@ -580,6 +645,7 @@ export class PanelAdminComponent implements OnInit {
       next: (c) => {
         this.config = c;
         this.certificadosInput = c.certificadosDisponiblesDesde ?? '';
+        this.aplicarVentanasDesdeConfig(c);
       },
       error: () => (this.config = undefined),
     });
@@ -796,6 +862,56 @@ export class PanelAdminComponent implements OnInit {
   limpiarCertificados(): void {
     this.certificadosInput = '';
     this.guardarCertificados();
+  }
+
+  guardarVentanas(): void {
+    if (this.guardandoConfig) return;
+    this.guardandoConfig = true;
+    this.error = '';
+    this.congresoConfigService
+      .actualizar({
+        congresoDesde: this.ventanas.congresoDesde.trim() || '',
+        congresoHasta: this.ventanas.congresoHasta.trim() || '',
+        inscripcionesDesde: this.ventanas.inscripcionesDesde.trim() || '',
+        inscripcionesHasta: this.ventanas.inscripcionesHasta.trim() || '',
+        envioTrabajosHasta: this.ventanas.envioTrabajosHasta.trim() || '',
+        evaluacionHasta: this.ventanas.evaluacionHasta.trim() || '',
+      })
+      .subscribe({
+        next: (c) => {
+          this.config = c;
+          this.aplicarVentanasDesdeConfig(c);
+          this.guardandoConfig = false;
+          this.mensaje = 'Ventanas de tiempo del congreso guardadas.';
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudieron guardar las ventanas.');
+          this.guardandoConfig = false;
+        },
+      });
+  }
+
+  limpiarVentanas(): void {
+    this.ventanas = {
+      congresoDesde: '',
+      congresoHasta: '',
+      inscripcionesDesde: '',
+      inscripcionesHasta: '',
+      envioTrabajosHasta: '',
+      evaluacionHasta: '',
+    };
+    this.guardarVentanas();
+  }
+
+  private aplicarVentanasDesdeConfig(c: CongresoConfig): void {
+    this.ventanas = {
+      congresoDesde: c.congresoDesde ?? '',
+      congresoHasta: c.congresoHasta ?? '',
+      inscripcionesDesde: c.inscripcionesDesde ?? '',
+      inscripcionesHasta: c.inscripcionesHasta ?? '',
+      envioTrabajosHasta: c.envioTrabajosHasta ?? '',
+      evaluacionHasta: c.evaluacionHasta ?? '',
+    };
   }
 
   formatFechaEs(fecha: string): string {

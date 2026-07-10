@@ -10,6 +10,13 @@ import { LoginService } from './login.service';
 import { isCuentaDeshabilitada } from '../utils/api-error.util';
 
 function isPublicAuthRequest(url: string, method: string): boolean {
+  /**
+   * Estas requests NO deben llevar Bearer:
+   * - POST /api/login
+   * - POST /api/registro
+   *
+   * Si les adjuntamos token, podríamos mezclar una sesión vieja con un login nuevo.
+   */
   if (method !== 'POST') {
     return false;
   }
@@ -31,6 +38,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   if (!isPublic) {
     const token = login.getToken();
     if (token && login.isTokenExpired()) {
+      /**
+       * Si el token ya expiró, no tiene sentido "probar" el request:
+       * el backend responderá 401 igual. Mejor cortar acá, limpiar sesión y redirigir.
+       */
       login.logout();
       router.navigate(['/login'], { queryParams: { sessionExpired: '1' } });
       return throwError(() => new Error('Sesión expirada'));
@@ -40,6 +51,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   let outgoing = req;
   const token = login.getToken();
   if (token && !isPublic) {
+    /**
+     * Acá se agrega el JWT al request.
+     *
+     * En el backend lo valida JwtAuthFilter y de ahí se construye AuthenticatedUser.
+     */
     outgoing = req.clone({
       setHeaders: { Authorization: `Bearer ${token}` },
     });
@@ -48,6 +64,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(outgoing).pipe(
     catchError((err: HttpErrorResponse) => {
       if (!isPublic && (err.status === 401 || isCuentaDeshabilitada(err))) {
+        /**
+         * 401: token inválido/expirado/faltante (según mensaje del backend).
+         * 403 con accountDisabled: el admin inhabilitó la cuenta.
+         *
+         * En ambos casos, se limpia sesión local para evitar loops de requests fallando.
+         */
         const accountDisabled = isCuentaDeshabilitada(err);
         login.logout();
         router.navigate(['/login'], {
