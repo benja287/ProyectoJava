@@ -15,7 +15,9 @@ import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RequestScoped
 public class PagoService {
@@ -194,15 +196,12 @@ public class PagoService {
       return;
     }
     if (aprobado) {
-      notificacionService.enviar(
-          usuarioId,
-          "Inscripción confirmada",
-          "Tu inscripción al congreso fue aprobada. Ya podés acceder como asistente.");
+      notificacionService.enviarConPlantilla(
+          usuarioId, "INSCRIPCION_APROBADA_USUARIO", Map.of());
     } else {
-      notificacionService.enviar(
-          usuarioId,
-          "Inscripción no aprobada",
-          "Tu pago no fue aprobado. Motivo: " + motivo);
+      Map<String, String> vars = new HashMap<>();
+      vars.put("motivo", motivo != null && !motivo.isBlank() ? motivo : "Sin motivo indicado");
+      notificacionService.enviarConPlantilla(usuarioId, "INSCRIPCION_RECHAZADA_USUARIO", vars);
     }
   }
 

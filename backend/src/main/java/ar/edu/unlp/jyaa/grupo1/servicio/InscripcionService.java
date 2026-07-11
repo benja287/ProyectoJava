@@ -134,6 +134,7 @@ public class InscripcionService {
     }
 
     notificarAdminInscripcionPendiente(usuario, categoria, monto, metodoPago);
+    notificarUsuarioInscripcionRecibida(usuario, categoria, monto, metodoPago);
 
     return InscripcionCongresoDTO.from(recuperarConRelaciones(creada.getId()));
   }
@@ -150,6 +151,19 @@ public class InscripcionService {
     vars.put("metodo_pago", etiquetaMetodoPago(metodoPago));
     notificacionService.enviarPorRolConPlantilla(
         Rol.ADMINISTRADOR, "INSCRIPCION_PENDIENTE_ADMIN", vars, null);
+  }
+
+  private void notificarUsuarioInscripcionRecibida(
+      Usuario solicitante, CategoriaInscripcion categoria, Double monto, MetodoPago metodoPago) {
+    if (solicitante.getId() == null) {
+      return;
+    }
+    Map<String, String> vars = new HashMap<>();
+    vars.put("categoria", etiquetaCategoria(categoria));
+    vars.put("monto", monto != null ? String.format("%.0f", monto) : "0");
+    vars.put("metodo_pago", etiquetaMetodoPago(metodoPago));
+    notificacionService.enviarConPlantilla(
+        solicitante.getId(), "INSCRIPCION_RECIBIDA_USUARIO", vars);
   }
 
   private void validarVentanaInscripcion() {
@@ -256,6 +270,7 @@ public class InscripcionService {
       inscripcion.setEstado(EstadoInscripcion.RECHAZADA);
       inscripcion.setMotivoRechazo(motivoRechazo.trim());
       inscripcionDAO.modificar(inscripcion);
+      notificarUsuarioInscripcionRechazada(inscripcion.getUsuario(), motivoRechazo.trim());
     } else {
       aprobarInscripcion(inscripcion, true);
     }
@@ -297,7 +312,26 @@ public class InscripcionService {
     inscripcionDAO.modificar(inscripcion);
     if (inscripcion.getUsuario() != null) {
       usuarioService.promoverAsistente(inscripcion.getUsuario().getId());
+      notificarUsuarioInscripcionAprobada(inscripcion.getUsuario());
     }
+  }
+
+  private void notificarUsuarioInscripcionAprobada(Usuario usuario) {
+    if (usuario == null || usuario.getId() == null) {
+      return;
+    }
+    notificacionService.enviarConPlantilla(
+        usuario.getId(), "INSCRIPCION_APROBADA_USUARIO", Map.of());
+  }
+
+  private void notificarUsuarioInscripcionRechazada(Usuario usuario, String motivo) {
+    if (usuario == null || usuario.getId() == null) {
+      return;
+    }
+    Map<String, String> vars = new HashMap<>();
+    vars.put("motivo", motivo != null && !motivo.isBlank() ? motivo : "Sin motivo indicado");
+    notificacionService.enviarConPlantilla(
+        usuario.getId(), "INSCRIPCION_RECHAZADA_USUARIO", vars);
   }
 
   public static InscripcionFiltro parseFiltro(String estado, String categoria) {
