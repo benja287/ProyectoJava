@@ -311,6 +311,36 @@ public final class SchemaMigration {
             {{url_plataforma}}/inscripcion
 
             Sistema de gestión del congreso""");
+    insertarPlantillaSiFalta(
+        em,
+        "INSCRIPCION_APROBADA_USUARIO",
+        "[INSCRIPCIÓN] Fuiste aceptado/a como asistente",
+        """
+            Hola {{nombre}},
+
+            Tu inscripción al congreso fue aprobada. Ya tenés el rol de asistente habilitado.
+
+            Ingresá a tu panel de asistente:
+            {{url_plataforma}}/asistente
+
+            ¡Te esperamos en el congreso!
+
+            Sistema de gestión del congreso""");
+    insertarPlantillaSiFalta(
+        em,
+        "INSCRIPCION_RECHAZADA_USUARIO",
+        "[INSCRIPCIÓN] Tu solicitud no fue aprobada",
+        """
+            Hola {{nombre}},
+
+            Tu inscripción al congreso no fue aprobada.
+
+            Motivo: {{motivo}}
+
+            Podés revisar el detalle o enviar una nueva solicitud desde:
+            {{url_plataforma}}/inscripcion
+
+            Sistema de gestión del congreso""");
   }
 
   /** Seed de ediciones anteriores (historia pública) — idempotente por año. */

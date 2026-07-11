@@ -270,6 +270,7 @@ public class InscripcionService {
       inscripcion.setEstado(EstadoInscripcion.RECHAZADA);
       inscripcion.setMotivoRechazo(motivoRechazo.trim());
       inscripcionDAO.modificar(inscripcion);
+      notificarUsuarioInscripcionRechazada(inscripcion.getUsuario(), motivoRechazo.trim());
     } else {
       aprobarInscripcion(inscripcion, true);
     }
@@ -311,7 +312,26 @@ public class InscripcionService {
     inscripcionDAO.modificar(inscripcion);
     if (inscripcion.getUsuario() != null) {
       usuarioService.promoverAsistente(inscripcion.getUsuario().getId());
+      notificarUsuarioInscripcionAprobada(inscripcion.getUsuario());
     }
+  }
+
+  private void notificarUsuarioInscripcionAprobada(Usuario usuario) {
+    if (usuario == null || usuario.getId() == null) {
+      return;
+    }
+    notificacionService.enviarConPlantilla(
+        usuario.getId(), "INSCRIPCION_APROBADA_USUARIO", Map.of());
+  }
+
+  private void notificarUsuarioInscripcionRechazada(Usuario usuario, String motivo) {
+    if (usuario == null || usuario.getId() == null) {
+      return;
+    }
+    Map<String, String> vars = new HashMap<>();
+    vars.put("motivo", motivo != null && !motivo.isBlank() ? motivo : "Sin motivo indicado");
+    notificacionService.enviarConPlantilla(
+        usuario.getId(), "INSCRIPCION_RECHAZADA_USUARIO", vars);
   }
 
   public static InscripcionFiltro parseFiltro(String estado, String categoria) {
