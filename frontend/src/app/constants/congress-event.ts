@@ -1,7 +1,11 @@
 /** Fallback si el admin aún no configuró inicio/fin del congreso (3 días). */
-export const DEFAULT_CONGRESS_EVENT_DATES = ['2027-05-10', '2027-05-11', '2027-05-12'] as const;
+export const DEFAULT_CONGRESS_EVENT_DATES: string[] = [
+  '2027-05-10',
+  '2027-05-11',
+  '2027-05-12',
+];
 
-/** @deprecated Preferí buildCongressDates(desde, hasta) desde la config del congreso. */
+/** Preferí buildCongressDates(desde, hasta) desde la config del congreso. */
 export const CONGRESS_EVENT_DATES = DEFAULT_CONGRESS_EVENT_DATES;
 
 function addDaysYmd(ymd: string, days: number): string {
