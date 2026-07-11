@@ -29,10 +29,12 @@ import { PanelAsistenteComponent } from './pages/asistente/panel-asistente.compo
 import { MesasTematicasAdminComponent } from './pages/admin/mesas-tematicas/mesas-tematicas-admin.component';
 import { SesionPostersAdminComponent } from './pages/admin/sesion-posters/sesion-posters-admin.component';
 import { ComiteOcComponent } from './pages/organizador/comite/comite-oc.component';
+import { PanelOrganizadorComponent } from './pages/organizador/panel-organizador/panel-organizador.component';
+import { PlazoEnvioOcComponent } from './pages/organizador/plazo-envio/plazo-envio-oc.component';
+import { EvaluadoresEjeOcComponent } from './pages/organizador/evaluadores-eje/evaluadores-eje-oc.component';
 import { ProponerTallerAsistenteComponent } from './pages/asistente/proponer-taller/proponer-taller-asistente.component';
 import { CertificadoAsistenteComponent } from './pages/asistente/certificado-asistente.component';
 import { PanelAdminComponent } from './pages/admin/panel-admin/panel-admin.component';
-import { PanelRolComponent } from './pages/panel-rol/panel-rol.component';
 import { NotificacionesComponent } from './pages/notificaciones/notificaciones.component';
 import { AdminEstadisticasComponent } from './pages/admin/admin-estadisticas/admin-estadisticas.component';
 import { CircularFormAdminComponent } from './pages/admin/circular-form/circular-form-admin.component';
@@ -140,27 +142,22 @@ export const routes: Routes = [
   // --- Perfil Organizador científico ---
   {
     path: 'organizador',
-    component: PanelRolComponent,
+    component: PanelOrganizadorComponent,
     canActivate: [organizador],
-    data: {
-      titulo: 'Comité Académico',
-      descripcion: 'Prevalidación formal, evaluadores por eje y asignación de trabajos.',
-      colorTema: 'indigo',
-      iconoTema: '🎓',
-      acciones: [
-        {
-          label: 'Panel del Comité Académico',
-          route: '/organizador/comite',
-          descripcion: 'Precheck, evaluadores por eje, asignaciones y confirmación final.',
-          icono: '✓',
-          color: 'violeta',
-        },
-      ],
-    },
   },
   {
     path: 'organizador/comite',
     component: ComiteOcComponent,
+    canActivate: [organizador],
+  },
+  {
+    path: 'organizador/evaluadores',
+    component: EvaluadoresEjeOcComponent,
+    canActivate: [organizador],
+  },
+  {
+    path: 'organizador/plazo-envio',
+    component: PlazoEnvioOcComponent,
     canActivate: [organizador],
   },
   {

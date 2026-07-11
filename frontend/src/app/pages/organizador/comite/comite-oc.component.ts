@@ -8,11 +8,9 @@ import { Trabajo } from '../../../models/trabajo.model';
 import { Usuario } from '../../../models/usuario.model';
 import { AsignacionEvaluacion } from '../../../models/asignacion.model';
 import { AsignacionService } from '../../../servicios/asignacion.service';
-import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { UsuarioService } from '../../../servicios/usuario.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
-import { etiquetaCategoria } from '../../../models/inscripcion.model';
 import {
   etiquetaRolEnvio,
   esEnvioAsistente,
@@ -55,102 +53,6 @@ interface PrecheckChecks {
       @if (mensaje) {
         <p class="ok">{{ mensaje }}</p>
       }
-
-      <section class="panel-card comite-deadline">
-        <h2>Límite para envíos nuevos de trabajos</h2>
-        <p class="muted">Después de esta fecha, no se podrán enviar trabajos nuevos (sí reenvíos por corrección).</p>
-        <div class="comite-deadline-row">
-          <input type="date" [formControl]="deadlineCtrl" />
-          <button type="button" class="btn-primary" (click)="guardarDeadline()" [disabled]="procesando">
-            Guardar
-          </button>
-          <button type="button" class="btn-secundario" (click)="quitarDeadline()" [disabled]="procesando">
-            Quitar
-          </button>
-        </div>
-      </section>
-
-      <section class="panel-card">
-        <div class="comite-section-header">
-          <h2>Evaluadores por eje temático</h2>
-          <span class="comite-counter">Evaluadores: {{ evaluadores.length }}</span>
-        </div>
-        <div class="evaluadores-grid">
-          @if (cargandoUsuarios) {
-            <p class="muted">Cargando usuarios...</p>
-          } @else if (usuarios.length === 0) {
-            <p class="error">
-              No se pudieron cargar los usuarios. Verificá que estés logueado como Comité Académico.
-            </p>
-          } @else {
-          @for (u of usuarios; track u.id) {
-            <article class="evaluador-card">
-              <div class="evaluador-card-top">
-                <div>
-                  <strong>{{ u.nombre }} {{ u.apellido }}</strong>
-                  <p class="muted evaluador-email">{{ u.email }}</p>
-                  <div class="rol-badges">
-                    @for (r of u.roles ?? []; track r) {
-                      <span class="rol-badge">{{ r.toLowerCase() }}</span>
-                    }
-                  </div>
-                </div>
-                <span
-                  class="evaluador-estado"
-                  [class.evaluador-estado--ok]="esEvaluadorConEje(u)"
-                >
-                  {{ esEvaluadorConEje(u) ? 'Evaluador' : 'No evaluador' }}
-                </span>
-              </div>
-              <p class="muted categoria-inscripcion">
-                Categoría de inscripción
-                <span class="categoria-inscripcion-valor">{{ categoriaLabel(u.categoriaInscripcion) }}</span>
-              </p>
-              @if (!esEvaluadorConEje(u)) {
-                <label class="eval-select-label">
-                  Elegí eje temático para hacerlo evaluador
-                  <select
-                    [value]="ejeDraft[u.id!] || ''"
-                    (change)="setEjeDraft(u.id!, $any($event.target).value)"
-                  >
-                    <option value="">Seleccionar eje...</option>
-                    @for (eje of ejesTematicos; track eje) {
-                      <option [value]="eje">{{ eje }}</option>
-                    }
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  class="btn-primary-full"
-                  (click)="hacerEvaluador(u)"
-                  [disabled]="procesando"
-                >
-                  Hacer evaluador en este eje
-                </button>
-              } @else {
-                <label class="eval-select-label">
-                  Eje temático asignado
-                  <select disabled>
-                    <option>{{ u.ejeTematicoEvaluador || '(sin eje)' }}</option>
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  class="btn-quitar-eje"
-                  (click)="quitarDelEje(u)"
-                  [disabled]="procesando"
-                >
-                  Quitar del eje temático
-                </button>
-                <p class="form-hint">
-                  Regla: máximo 3 evaluadores por eje. Si quitás a uno del eje, liberás cupo para asignar otro.
-                </p>
-              }
-            </article>
-          }
-          }
-        </div>
-      </section>
 
       <div class="comite-layout">
         <section class="panel-card comite-lista">
@@ -466,7 +368,7 @@ interface PrecheckChecks {
         </section>
       </div>
 
-      <p><a routerLink="/organizador">← Menú organizador</a></p>
+      <p><a routerLink="/organizador">← Volver al panel del comité</a></p>
     </div>
   `,
 })
@@ -478,16 +380,13 @@ export class ComiteOcComponent implements OnInit {
 
   trabajos: Trabajo[] = [];
   usuarios: Usuario[] = [];
-  cargandoUsuarios = true;
   seleccionado?: Trabajo;
   asignaciones: AsignacionEvaluacion[] = [];
   evaluadoresSeleccionados = new Set<number>();
-  ejeDraft: Record<number, string> = {};
   procesando = false;
   error = '';
   mensaje = '';
 
-  deadlineCtrl = this.fb.control('');
   observacionesCtrl = this.fb.control('');
   observacionesFinalCtrl = this.fb.control('');
 
@@ -514,24 +413,12 @@ export class ComiteOcComponent implements OnInit {
   constructor(
     private trabajoService: TrabajoService,
     private asignacionService: AsignacionService,
-    private usuarioService: UsuarioService,
-    private congresoConfigService: CongresoConfigService
+    private usuarioService: UsuarioService
   ) {}
 
   ngOnInit(): void {
     this.cargarTrabajos();
     this.cargarUsuarios();
-    this.congresoConfigService.obtener().subscribe({
-      next: (cfg) => {
-        if (cfg.envioTrabajosHasta) {
-          this.deadlineCtrl.setValue(cfg.envioTrabajosHasta);
-        }
-      },
-    });
-  }
-
-  get evaluadores(): Usuario[] {
-    return this.usuarios.filter((u) => !!u.ejeTematicoEvaluador?.trim());
   }
 
   get evaluadoresDelEje(): Usuario[] {
@@ -603,14 +490,6 @@ export class ComiteOcComponent implements OnInit {
     return Object.values(this.checkCtrls).every((c) => c.value);
   }
 
-  esEvaluadorConEje(u: Usuario): boolean {
-    return !!u.ejeTematicoEvaluador?.trim();
-  }
-
-  categoriaLabel(categoria?: string | null): string {
-    return etiquetaCategoria(categoria ?? '') || 'Sin categoría';
-  }
-
   modalidadLabel(modalidad?: string): string {
     if (!modalidad) return '—';
     return this.modalidadLabels[modalidad as keyof typeof this.modalidadLabels] ?? modalidad;
@@ -644,10 +523,6 @@ export class ComiteOcComponent implements OnInit {
     return estado ? map[estado] ?? 'estado-badge--enviado' : 'estado-badge--enviado';
   }
 
-  setEjeDraft(userId: number, eje: string): void {
-    this.ejeDraft = { ...this.ejeDraft, [userId]: eje };
-  }
-
   seleccionar(t: Trabajo): void {
     this.seleccionado = t;
     this.evaluadoresSeleccionados = new Set();
@@ -659,79 +534,6 @@ export class ComiteOcComponent implements OnInit {
     if (t.id) {
       this.cargarAsignaciones(t.id);
     }
-  }
-
-  guardarDeadline(): void {
-    const v = this.deadlineCtrl.value?.trim();
-    if (!v) {
-      this.error = 'Indicá una fecha o usá Quitar.';
-      return;
-    }
-    this.procesando = true;
-    this.congresoConfigService.actualizar({ envioTrabajosHasta: v }).subscribe({
-      next: () => {
-        this.mensaje = `Fecha límite guardada: ${v}.`;
-        this.procesando = false;
-      },
-      error: (err) => {
-        this.error = mensajeErrorApi(err, 'No se pudo guardar la fecha.');
-        this.procesando = false;
-      },
-    });
-  }
-
-  quitarDeadline(): void {
-    this.procesando = true;
-    this.congresoConfigService.actualizar({ envioTrabajosHasta: null }).subscribe({
-      next: () => {
-        this.deadlineCtrl.reset('');
-        this.mensaje = 'Se quitó la fecha límite.';
-        this.procesando = false;
-      },
-      error: (err) => {
-        this.error = mensajeErrorApi(err, 'No se pudo quitar la fecha.');
-        this.procesando = false;
-      },
-    });
-  }
-
-  hacerEvaluador(u: Usuario): void {
-    if (!u.id) return;
-    const eje = this.ejeDraft[u.id];
-    if (!eje) {
-      this.error = 'Elegí un eje temático del desplegable.';
-      return;
-    }
-    this.procesando = true;
-    this.error = '';
-    this.usuarioService.asignarEvaluadorEje(u.id, eje).subscribe({
-      next: () => {
-        this.mensaje = `${u.nombre} ${u.apellido} quedó como evaluador en el eje seleccionado.`;
-        this.procesando = false;
-        this.ejeDraft = { ...this.ejeDraft, [u.id!]: '' };
-        this.cargarUsuarios();
-      },
-      error: (err) => {
-        this.error = mensajeErrorApi(err, 'No se pudo asignar el evaluador.');
-        this.procesando = false;
-      },
-    });
-  }
-
-  quitarDelEje(u: Usuario): void {
-    if (!u.id || !confirm('¿Quitar a este usuario del eje temático?')) return;
-    this.procesando = true;
-    this.usuarioService.quitarEvaluadorEje(u.id).subscribe({
-      next: () => {
-        this.mensaje = 'Se quitó al evaluador del eje.';
-        this.procesando = false;
-        this.cargarUsuarios();
-      },
-      error: (err) => {
-        this.error = mensajeErrorApi(err, 'No se pudo quitar del eje.');
-        this.procesando = false;
-      },
-    });
   }
 
   precheck(apto: boolean): void {
@@ -867,15 +669,12 @@ export class ComiteOcComponent implements OnInit {
   }
 
   private cargarUsuarios(): void {
-    this.cargandoUsuarios = true;
     this.usuarioService.listar(1, 500).subscribe({
       next: (items) => {
         this.usuarios = items.filter((u) => u.activo !== false);
-        this.cargandoUsuarios = false;
       },
       error: (err) => {
         this.usuarios = [];
-        this.cargandoUsuarios = false;
         this.error = mensajeErrorApi(err, 'No se pudieron cargar los usuarios para asignar evaluadores.');
       },
     });
