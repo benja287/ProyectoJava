@@ -1043,7 +1043,8 @@ export class PanelAdminComponent implements OnInit {
           this.guardandoVentana = '';
           this.feedbackCongresoOk = true;
           this.feedbackCongreso =
-            'Fechas del congreso guardadas (3 días). Se notificó a todos.';
+            'Fechas del congreso guardadas (3 días). Se notificó a todos.'
+            + ' Si había plazos posteriores al nuevo fin, se ajustaron al fin del congreso.';
         },
         error: (err) => {
           this.guardandoVentana = '';

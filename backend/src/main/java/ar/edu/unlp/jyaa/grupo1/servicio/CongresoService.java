@@ -103,6 +103,27 @@ public class CongresoService {
     LocalDate hasta = desde.plusDays(DIAS_CONGRESO - 1L);
     congreso.setCongresoDesde(desde);
     congreso.setCongresoHasta(hasta);
+    // Si había plazos viejos posteriores al nuevo fin, se ajustan (no bloquean el guardado).
+    ajustarPlazosAlFinCongreso(congreso, hasta);
+  }
+
+  /**
+   * Al mover el congreso, los plazos que quedan después del nuevo fin se recortan al fin.
+   * Así guardar "fechas del congreso" no falla por una evaluación/envío/inscripción vieja.
+   */
+  private static void ajustarPlazosAlFinCongreso(Congreso congreso, LocalDate fin) {
+    if (fin == null) {
+      return;
+    }
+    if (congreso.getEvaluacionHasta() != null && congreso.getEvaluacionHasta().isAfter(fin)) {
+      congreso.setEvaluacionHasta(fin);
+    }
+    if (congreso.getEnvioTrabajosHasta() != null && congreso.getEnvioTrabajosHasta().isAfter(fin)) {
+      congreso.setEnvioTrabajosHasta(fin);
+    }
+    if (congreso.getInscripcionesHasta() != null && congreso.getInscripcionesHasta().isAfter(fin)) {
+      congreso.setInscripcionesHasta(fin);
+    }
   }
 
   private void aplicarInscripciones(Congreso congreso, CongresoConfigUpdateRequest request) {
@@ -139,13 +160,22 @@ public class CongresoService {
             && Objects.equals(antes.congresoHasta, despues.congresoHasta())) {
           return;
         }
-        String cuerpo =
-            "Se actualizaron las fechas del congreso: "
-                + rangoTexto(despues.congresoDesde(), despues.congresoHasta())
-                + " (3 días). Motivo: "
-                + motivo
-                + ". Las actividades del programa deben programarse dentro de esos días.";
-        notificacionService.enviarATodos("Cambio de fechas del congreso", truncar(cuerpo), null);
+        StringBuilder cuerpo = new StringBuilder();
+        cuerpo
+            .append("Se actualizaron las fechas del congreso: ")
+            .append(rangoTexto(despues.congresoDesde(), despues.congresoHasta()))
+            .append(" (3 días). Motivo: ")
+            .append(motivo)
+            .append(". Las actividades del programa deben programarse dentro de esos días.");
+        if (!Objects.equals(antes.evaluacionHasta, despues.evaluacionHasta())
+            || !Objects.equals(antes.envioTrabajosHasta, despues.envioTrabajosHasta())
+            || !Objects.equals(antes.inscripcionesHasta, despues.inscripcionesHasta())) {
+          cuerpo.append(
+              " Algunos plazos (envío/evaluación/inscripción) que quedaban después del nuevo fin"
+                  + " se ajustaron automáticamente al fin del congreso.");
+        }
+        notificacionService.enviarATodos(
+            "Cambio de fechas del congreso", truncar(cuerpo.toString()), null);
       }
       case GRUPO_INSCRIPCIONES -> {
         if (Objects.equals(antes.inscripcionesDesde, despues.inscripcionesDesde())
