@@ -33,6 +33,21 @@ public class Congreso implements Serializable {
   @Column(name = "envio_trabajos_hasta")
   private LocalDate envioTrabajosHasta;
 
+  @Column(name = "congreso_desde")
+  private LocalDate congresoDesde;
+
+  @Column(name = "congreso_hasta")
+  private LocalDate congresoHasta;
+
+  @Column(name = "inscripciones_desde")
+  private LocalDate inscripcionesDesde;
+
+  @Column(name = "inscripciones_hasta")
+  private LocalDate inscripcionesHasta;
+
+  @Column(name = "evaluacion_hasta")
+  private LocalDate evaluacionHasta;
+
   public Congreso() {}
 
   public Long getId() {
@@ -89,5 +104,45 @@ public class Congreso implements Serializable {
 
   public void setEnvioTrabajosHasta(LocalDate envioTrabajosHasta) {
     this.envioTrabajosHasta = envioTrabajosHasta;
+  }
+
+  public LocalDate getCongresoDesde() {
+    return congresoDesde;
+  }
+
+  public void setCongresoDesde(LocalDate congresoDesde) {
+    this.congresoDesde = congresoDesde;
+  }
+
+  public LocalDate getCongresoHasta() {
+    return congresoHasta;
+  }
+
+  public void setCongresoHasta(LocalDate congresoHasta) {
+    this.congresoHasta = congresoHasta;
+  }
+
+  public LocalDate getInscripcionesDesde() {
+    return inscripcionesDesde;
+  }
+
+  public void setInscripcionesDesde(LocalDate inscripcionesDesde) {
+    this.inscripcionesDesde = inscripcionesDesde;
+  }
+
+  public LocalDate getInscripcionesHasta() {
+    return inscripcionesHasta;
+  }
+
+  public void setInscripcionesHasta(LocalDate inscripcionesHasta) {
+    this.inscripcionesHasta = inscripcionesHasta;
+  }
+
+  public LocalDate getEvaluacionHasta() {
+    return evaluacionHasta;
+  }
+
+  public void setEvaluacionHasta(LocalDate evaluacionHasta) {
+    this.evaluacionHasta = evaluacionHasta;
   }
 }

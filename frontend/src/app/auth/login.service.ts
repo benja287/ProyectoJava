@@ -39,6 +39,13 @@ export class LoginService {
    * Si el token expiró o los datos están incompletos, limpia antes de renderizar.
    */
   initSessionFromStorage(): void {
+    /**
+     * Este método corre cuando Angular inicia la app (ver APP_INITIALIZER en app.config.ts).
+     *
+     * Objetivo: evitar “sesión fantasma”.
+     * - Si el token expiró: limpiar antes de que el usuario vea pantallas protegidas.
+     * - Si hay datos corruptos en sessionStorage: limpiar y forzar login.
+     */
     const usuario = this.readUsuarioFromStorage();
     const token = sessionStorage.getItem(TOKEN_KEY);
 
@@ -49,12 +56,14 @@ export class LoginService {
 
     // Sesión legacy (Entrega 5 sin JWT en backend): solo usuario en storage
     if (usuario && !token) {
+      // Caso transición: backend sin JWT aún. Se mantiene compatibilidad.
       this.usuario = usuario;
       this.onSessionEstablished();
       return;
     }
 
     if (!usuario || !token || this.isJwtExpired(token, 0)) {
+      // Si falta usuario/token o el JWT ya venció → cerrar sesión.
       this.logout();
       return;
     }
@@ -68,12 +77,21 @@ export class LoginService {
    * Devuelve Observable: el HTTP solo se ejecuta al hacer .subscribe()
    */
   login(email: string, password: string): Observable<Usuario> {
+    /**
+     * El backend responde LoginResponseDTO:
+     * {
+     *   token, tokenType, expiresIn, usuario
+     * }
+     *
+     * El token se guardará en sessionStorage y luego el interceptor lo enviará en cada request.
+     */
     return this.http
       .post<LoginResponse | Usuario>(`${environment.apiUrl}/login`, { email, password })
       .pipe(
         map((res) => this.applyLoginResponse(res)),
         catchError((err) => {
           if (isCuentaDeshabilitada(err)) {
+            // Si el backend detectó cuenta inactiva, borramos sesión local por si quedaba algo viejo.
             this.logout();
           }
           return throwError(() => err);
@@ -109,6 +127,10 @@ export class LoginService {
    * bufferSeconds evita enviar un token a punto de vencer.
    */
   isTokenExpired(bufferSeconds = 30): boolean {
+    /**
+     * Nota: esta validación es “del lado cliente” leyendo la claim exp del JWT.
+     * El backend igual valida expiración y firma en JwtAuthFilter/JwtService.parse.
+     */
     const token = this.getToken();
     if (!token) {
       return true;
@@ -117,6 +139,13 @@ export class LoginService {
   }
 
   isLogged(): boolean {
+    /**
+     * Usado por guards y por el header (AppComponent) para decidir qué mostrar.
+     *
+     * Regla:
+     * - si hay usuario y no hay token → modo legacy (Entrega 5) = logueado
+     * - si hay token → debe no estar expirado
+     */
     if (!this.usuario) {
       return false;
     }
@@ -315,6 +344,12 @@ export class LoginService {
   }
 
   private isJwtExpired(token: string, bufferSeconds: number): boolean {
+    /**
+     * jwtDecode NO verifica firma; solo lee el payload.
+     * La verificación real (firma/issuer/exp) la hace el backend en JwtService.parse().
+     *
+     * Aun así, esto sirve para UX: evitar requests que sabemos que van a fallar por expiración.
+     */
     try {
       const { exp } = jwtDecode<JwtPayload>(token);
       if (exp == null) {
