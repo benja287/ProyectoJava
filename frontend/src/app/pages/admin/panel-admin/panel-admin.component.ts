@@ -153,16 +153,16 @@ import { ArchivoService } from '../../../servicios/archivo.service';
       <section class="panel-card panel-card--indigo">
         <h2>Ventanas de tiempo del congreso</h2>
         <p class="muted">
-          Cada bloque se guarda por separado. El motivo se incluye en la notificación a los usuarios
-          afectados. El congreso dura exactamente <strong>3 días</strong> (el fin se calcula solo).
+          Cada bloque se guarda y notifica por separado. El congreso dura
+          <strong>3 días corridos</strong> (día 1 = inicio, día 3 = fin automático).
         </p>
 
         <div class="panel-card" style="margin-top: 0.75rem; box-shadow: none">
           <h3>1. Inicio y fin del congreso</h3>
-          <p class="muted small">Notifica a todos. Las actividades del programa deben caer en estos 3 días.</p>
+          <p class="muted small">Notifica a todos. Las actividades deben caer en estos 3 días.</p>
           <div class="form-grid form-grid-wide">
             <label>
-              Inicio del congreso
+              Inicio del congreso (día 1)
               <input
                 type="date"
                 [(ngModel)]="ventanas.congresoDesde"
@@ -171,7 +171,7 @@ import { ArchivoService } from '../../../servicios/archivo.service';
               />
             </label>
             <label>
-              Fin del congreso (automático, +2 días)
+              Fin del congreso (día 3, automático)
               <input type="date" [ngModel]="ventanas.congresoHasta" [ngModelOptions]="{ standalone: true }" disabled />
             </label>
             <label class="span-full">
@@ -188,17 +188,22 @@ import { ArchivoService } from '../../../servicios/archivo.service';
             <button
               type="button"
               class="btn-primary"
-              [disabled]="guardandoConfig"
+              [disabled]="guardandoVentana === 'CONGRESO'"
               (click)="guardarBloqueCongreso()"
             >
-              Guardar fechas del congreso
+              {{ guardandoVentana === 'CONGRESO' ? 'Guardando...' : 'Guardar fechas del congreso' }}
             </button>
           </div>
+          @if (feedbackCongreso) {
+            <p [class]="feedbackCongresoOk ? 'ok' : 'error'" style="margin-top: 0.5rem">
+              {{ feedbackCongreso }}
+            </p>
+          }
         </div>
 
         <div class="panel-card" style="margin-top: 0.75rem; box-shadow: none">
           <h3>2. Período de inscripción</h3>
-          <p class="muted small">Notifica a todos los usuarios.</p>
+          <p class="muted small">Notifica solo por este cambio (a todos).</p>
           <div class="form-grid form-grid-wide">
             <label>
               Inscripciones desde
@@ -230,19 +235,26 @@ import { ArchivoService } from '../../../servicios/archivo.service';
             <button
               type="button"
               class="btn-primary"
-              [disabled]="guardandoConfig"
+              [disabled]="guardandoVentana === 'INSCRIPCIONES'"
               (click)="guardarBloqueInscripciones()"
             >
-              Guardar período de inscripción
+              {{
+                guardandoVentana === 'INSCRIPCIONES'
+                  ? 'Guardando...'
+                  : 'Guardar período de inscripción'
+              }}
             </button>
           </div>
+          @if (feedbackInscripciones) {
+            <p [class]="feedbackInscripcionesOk ? 'ok' : 'error'" style="margin-top: 0.5rem">
+              {{ feedbackInscripciones }}
+            </p>
+          }
         </div>
 
         <div class="panel-card" style="margin-top: 0.75rem; box-shadow: none">
-          <h3>3. Plazos de envío y evaluación</h3>
-          <p class="muted small">
-            Envío → notifica a asistentes y autores. Evaluación → notifica a evaluadores.
-          </p>
+          <h3>3. Plazo de envío de trabajos</h3>
+          <p class="muted small">Notifica a asistentes y autores.</p>
           <div class="form-grid form-grid-wide">
             <label>
               Envío de trabajos hasta
@@ -252,6 +264,37 @@ import { ArchivoService } from '../../../servicios/archivo.service';
                 [ngModelOptions]="{ standalone: true }"
               />
             </label>
+            <label class="span-full">
+              Motivo del cambio
+              <input
+                type="text"
+                [(ngModel)]="motivoEnvio"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Ej. Se extiende el plazo de envío"
+              />
+            </label>
+          </div>
+          <div class="inline-form-row" style="margin-top: 0.75rem">
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="guardandoVentana === 'ENVIO'"
+              (click)="guardarBloqueEnvio()"
+            >
+              {{ guardandoVentana === 'ENVIO' ? 'Guardando...' : 'Guardar plazo de envío' }}
+            </button>
+          </div>
+          @if (feedbackEnvio) {
+            <p [class]="feedbackEnvioOk ? 'ok' : 'error'" style="margin-top: 0.5rem">
+              {{ feedbackEnvio }}
+            </p>
+          }
+        </div>
+
+        <div class="panel-card" style="margin-top: 0.75rem; box-shadow: none">
+          <h3>4. Plazo de evaluación</h3>
+          <p class="muted small">Notifica solo a evaluadores.</p>
+          <div class="form-grid form-grid-wide">
             <label>
               Evaluación hasta
               <input
@@ -264,7 +307,7 @@ import { ArchivoService } from '../../../servicios/archivo.service';
               Motivo del cambio
               <input
                 type="text"
-                [(ngModel)]="motivoPlazos"
+                [(ngModel)]="motivoEvaluacion"
                 [ngModelOptions]="{ standalone: true }"
                 placeholder="Ej. Se extiende el plazo de evaluación"
               />
@@ -274,12 +317,19 @@ import { ArchivoService } from '../../../servicios/archivo.service';
             <button
               type="button"
               class="btn-primary"
-              [disabled]="guardandoConfig"
-              (click)="guardarBloquePlazos()"
+              [disabled]="guardandoVentana === 'EVALUACION'"
+              (click)="guardarBloqueEvaluacion()"
             >
-              Guardar plazos de envío y evaluación
+              {{
+                guardandoVentana === 'EVALUACION' ? 'Guardando...' : 'Guardar plazo de evaluación'
+              }}
             </button>
           </div>
+          @if (feedbackEvaluacion) {
+            <p [class]="feedbackEvaluacionOk ? 'ok' : 'error'" style="margin-top: 0.5rem">
+              {{ feedbackEvaluacion }}
+            </p>
+          }
         </div>
 
         <p class="muted small" style="margin-top: 0.75rem">
@@ -666,7 +716,17 @@ export class PanelAdminComponent implements OnInit {
   };
   motivoCongreso = '';
   motivoInscripciones = '';
-  motivoPlazos = '';
+  motivoEnvio = '';
+  motivoEvaluacion = '';
+  feedbackCongreso = '';
+  feedbackCongresoOk = false;
+  feedbackInscripciones = '';
+  feedbackInscripcionesOk = false;
+  feedbackEnvio = '';
+  feedbackEnvioOk = false;
+  feedbackEvaluacion = '';
+  feedbackEvaluacionOk = false;
+  guardandoVentana: '' | 'CONGRESO' | 'INSCRIPCIONES' | 'ENVIO' | 'EVALUACION' = '';
   usuarios: Usuario[] = [];
   circulares: Circular[] = [];
   solicitudesAutor: SolicitudAutor[] = [];
@@ -954,21 +1014,24 @@ export class PanelAdminComponent implements OnInit {
   }
 
   guardarBloqueCongreso(): void {
-    if (this.guardandoConfig) return;
+    if (this.guardandoVentana) return;
+    this.feedbackCongreso = '';
     if (!this.ventanas.congresoDesde.trim()) {
-      this.error = 'Indicá la fecha de inicio del congreso.';
+      this.feedbackCongreso = 'Indicá la fecha de inicio del congreso.';
+      this.feedbackCongresoOk = false;
       return;
     }
     if (!this.motivoCongreso.trim()) {
-      this.error = 'Indicá el motivo del cambio de fechas del congreso.';
+      this.feedbackCongreso = 'Indicá el motivo del cambio.';
+      this.feedbackCongresoOk = false;
       return;
     }
     const hasta = finCongresoDesdeInicio(this.ventanas.congresoDesde.trim());
     this.ventanas.congresoHasta = hasta;
-    this.guardandoConfig = true;
-    this.error = '';
+    this.guardandoVentana = 'CONGRESO';
     this.congresoConfigService
       .actualizar({
+        grupo: 'CONGRESO',
         congresoDesde: this.ventanas.congresoDesde.trim(),
         congresoHasta: hasta,
         motivo: this.motivoCongreso.trim(),
@@ -977,27 +1040,34 @@ export class PanelAdminComponent implements OnInit {
         next: (c) => {
           this.config = c;
           this.aplicarVentanasDesdeConfig(c);
-          this.guardandoConfig = false;
-          this.mensaje =
-            'Fechas del congreso guardadas. Se notificó a todos los usuarios.';
+          this.guardandoVentana = '';
+          this.feedbackCongresoOk = true;
+          this.feedbackCongreso =
+            'Fechas del congreso guardadas (3 días). Se notificó a todos.';
         },
         error: (err) => {
-          this.error = mensajeErrorApi(err, 'No se pudieron guardar las fechas del congreso.');
-          this.guardandoConfig = false;
+          this.guardandoVentana = '';
+          this.feedbackCongresoOk = false;
+          this.feedbackCongreso = mensajeErrorApi(
+            err,
+            'No se pudieron guardar las fechas del congreso.'
+          );
         },
       });
   }
 
   guardarBloqueInscripciones(): void {
-    if (this.guardandoConfig) return;
+    if (this.guardandoVentana) return;
+    this.feedbackInscripciones = '';
     if (!this.motivoInscripciones.trim()) {
-      this.error = 'Indicá el motivo del cambio del período de inscripción.';
+      this.feedbackInscripciones = 'Indicá el motivo del cambio.';
+      this.feedbackInscripcionesOk = false;
       return;
     }
-    this.guardandoConfig = true;
-    this.error = '';
+    this.guardandoVentana = 'INSCRIPCIONES';
     this.congresoConfigService
       .actualizar({
+        grupo: 'INSCRIPCIONES',
         inscripcionesDesde: this.ventanas.inscripcionesDesde.trim() || '',
         inscripcionesHasta: this.ventanas.inscripcionesHasta.trim() || '',
         motivo: this.motivoInscripciones.trim(),
@@ -1006,41 +1076,85 @@ export class PanelAdminComponent implements OnInit {
         next: (c) => {
           this.config = c;
           this.aplicarVentanasDesdeConfig(c);
-          this.guardandoConfig = false;
-          this.mensaje = 'Período de inscripción guardado. Se notificó a todos.';
+          this.guardandoVentana = '';
+          this.feedbackInscripcionesOk = true;
+          this.feedbackInscripciones =
+            'Período de inscripción guardado. Se notificó a todos.';
         },
         error: (err) => {
-          this.error = mensajeErrorApi(err, 'No se pudo guardar el período de inscripción.');
-          this.guardandoConfig = false;
+          this.guardandoVentana = '';
+          this.feedbackInscripcionesOk = false;
+          this.feedbackInscripciones = mensajeErrorApi(
+            err,
+            'No se pudo guardar el período de inscripción.'
+          );
         },
       });
   }
 
-  guardarBloquePlazos(): void {
-    if (this.guardandoConfig) return;
-    if (!this.motivoPlazos.trim()) {
-      this.error = 'Indicá el motivo del cambio de plazos de envío/evaluación.';
+  guardarBloqueEnvio(): void {
+    if (this.guardandoVentana) return;
+    this.feedbackEnvio = '';
+    if (!this.motivoEnvio.trim()) {
+      this.feedbackEnvio = 'Indicá el motivo del cambio.';
+      this.feedbackEnvioOk = false;
       return;
     }
-    this.guardandoConfig = true;
-    this.error = '';
+    this.guardandoVentana = 'ENVIO';
     this.congresoConfigService
       .actualizar({
+        grupo: 'ENVIO',
         envioTrabajosHasta: this.ventanas.envioTrabajosHasta.trim() || '',
-        evaluacionHasta: this.ventanas.evaluacionHasta.trim() || '',
-        motivo: this.motivoPlazos.trim(),
+        motivo: this.motivoEnvio.trim(),
       })
       .subscribe({
         next: (c) => {
           this.config = c;
           this.aplicarVentanasDesdeConfig(c);
-          this.guardandoConfig = false;
-          this.mensaje =
-            'Plazos guardados. Se notificó a autores/asistentes y/o evaluadores según el cambio.';
+          this.guardandoVentana = '';
+          this.feedbackEnvioOk = true;
+          this.feedbackEnvio =
+            'Plazo de envío guardado. Se notificó a asistentes y autores.';
         },
         error: (err) => {
-          this.error = mensajeErrorApi(err, 'No se pudieron guardar los plazos.');
-          this.guardandoConfig = false;
+          this.guardandoVentana = '';
+          this.feedbackEnvioOk = false;
+          this.feedbackEnvio = mensajeErrorApi(err, 'No se pudo guardar el plazo de envío.');
+        },
+      });
+  }
+
+  guardarBloqueEvaluacion(): void {
+    if (this.guardandoVentana) return;
+    this.feedbackEvaluacion = '';
+    if (!this.motivoEvaluacion.trim()) {
+      this.feedbackEvaluacion = 'Indicá el motivo del cambio.';
+      this.feedbackEvaluacionOk = false;
+      return;
+    }
+    this.guardandoVentana = 'EVALUACION';
+    this.congresoConfigService
+      .actualizar({
+        grupo: 'EVALUACION',
+        evaluacionHasta: this.ventanas.evaluacionHasta.trim() || '',
+        motivo: this.motivoEvaluacion.trim(),
+      })
+      .subscribe({
+        next: (c) => {
+          this.config = c;
+          this.aplicarVentanasDesdeConfig(c);
+          this.guardandoVentana = '';
+          this.feedbackEvaluacionOk = true;
+          this.feedbackEvaluacion =
+            'Plazo de evaluación guardado. Se notificó a evaluadores.';
+        },
+        error: (err) => {
+          this.guardandoVentana = '';
+          this.feedbackEvaluacionOk = false;
+          this.feedbackEvaluacion = mensajeErrorApi(
+            err,
+            'No se pudo guardar el plazo de evaluación.'
+          );
         },
       });
   }

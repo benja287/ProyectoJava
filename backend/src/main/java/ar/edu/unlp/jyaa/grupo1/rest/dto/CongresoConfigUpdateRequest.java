@@ -9,5 +9,10 @@ public record CongresoConfigUpdateRequest(
     String inscripcionesDesde,
     String inscripcionesHasta,
     String evaluacionHasta,
-    /** Motivo obligatorio al cambiar ventanas de tiempo (se incluye en la notificación). */
-    String motivo) {}
+    /** Motivo obligatorio al cambiar ventanas (se incluye en la notificación). */
+    String motivo,
+    /**
+     * Independiza cada guardado: CONGRESO | INSCRIPCIONES | ENVIO | EVALUACION. Null = updates
+     * legacy (programa, certificados o deadline de envío del comité).
+     */
+    String grupo) {}

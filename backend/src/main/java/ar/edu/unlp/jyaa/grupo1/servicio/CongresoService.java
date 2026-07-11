@@ -13,13 +13,20 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 @RequestScoped
 public class CongresoService {
 
   private static final DateTimeFormatter FECHA_ES = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+  /** Días corridos del evento (día 1 = inicio, día 3 = fin ⇒ fin = inicio + 2). */
   private static final int DIAS_CONGRESO = 3;
+
+  public static final String GRUPO_CONGRESO = "CONGRESO";
+  public static final String GRUPO_INSCRIPCIONES = "INSCRIPCIONES";
+  public static final String GRUPO_ENVIO = "ENVIO";
+  public static final String GRUPO_EVALUACION = "EVALUACION";
 
   @Inject private NotificacionService notificacionService;
 
@@ -32,56 +39,27 @@ public class CongresoService {
   }
 
   public CongresoConfigDTO actualizarConfig(CongresoConfigUpdateRequest request) {
+    String grupo = normalizarGrupo(request.grupo());
     SnapshotAntes antes = new SnapshotAntes();
+
     CongresoConfigDTO dto =
         JpaUtil.ejecutarEnTransaccionReturning(
             em -> {
               Congreso congreso = resolverCongresoPrincipal(em);
               antes.capturar(congreso);
 
-              if (request.programaPublicado() != null) {
-                congreso.setProgramaPublicado(request.programaPublicado());
-              }
-              if (request.certificadosDisponiblesDesde() != null) {
-                congreso.setCertificadosDisponiblesDesde(
-                    parseFechaOpcional(request.certificadosDisponiblesDesde()));
-              }
-              if (request.envioTrabajosHasta() != null) {
-                congreso.setEnvioTrabajosHasta(parseFechaOpcional(request.envioTrabajosHasta()));
-              }
-              if (request.congresoDesde() != null || request.congresoHasta() != null) {
-                LocalDate desde =
-                    request.congresoDesde() != null
-                        ? parseFechaOpcional(request.congresoDesde())
-                        : congreso.getCongresoDesde();
-                LocalDate hasta =
-                    request.congresoHasta() != null
-                        ? parseFechaOpcional(request.congresoHasta())
-                        : congreso.getCongresoHasta();
-                if (desde != null && hasta == null) {
-                  hasta = desde.plusDays(DIAS_CONGRESO - 1L);
-                }
-                congreso.setCongresoDesde(desde);
-                congreso.setCongresoHasta(hasta);
-              }
-              if (request.inscripcionesDesde() != null) {
-                congreso.setInscripcionesDesde(parseFechaOpcional(request.inscripcionesDesde()));
-              }
-              if (request.inscripcionesHasta() != null) {
-                congreso.setInscripcionesHasta(parseFechaOpcional(request.inscripcionesHasta()));
-              }
-              if (request.evaluacionHasta() != null) {
-                congreso.setEvaluacionHasta(parseFechaOpcional(request.evaluacionHasta()));
-              }
-
-              boolean tocaCongreso =
-                  request.congresoDesde() != null || request.congresoHasta() != null;
-              boolean tocaInsc =
-                  request.inscripcionesDesde() != null || request.inscripcionesHasta() != null;
-              boolean tocaEval = request.evaluacionHasta() != null;
-              boolean tocaEnvio = request.envioTrabajosHasta() != null;
-              if (tocaCongreso || tocaInsc || tocaEval) {
+              if (grupo == null) {
+                aplicarUpdateLegacy(congreso, request);
+              } else {
                 exigirMotivo(request.motivo());
+                switch (grupo) {
+                  case GRUPO_CONGRESO -> aplicarCongreso(congreso, request);
+                  case GRUPO_INSCRIPCIONES -> aplicarInscripciones(congreso, request);
+                  case GRUPO_ENVIO -> aplicarEnvio(congreso, request);
+                  case GRUPO_EVALUACION -> aplicarEvaluacion(congreso, request);
+                  default -> throw new NegocioException(
+                      "grupo inválido (use CONGRESO, INSCRIPCIONES, ENVIO o EVALUACION)");
+                }
               }
 
               validarVentanas(congreso);
@@ -89,65 +67,135 @@ public class CongresoService {
               return CongresoConfigDTO.from(congreso);
             });
 
-    notificarCambiosVentanas(antes, dto, request);
+    if (grupo != null) {
+      notificarSoloGrupo(grupo, antes, dto, request.motivo().trim());
+    } else if (request.envioTrabajosHasta() != null
+        && !Objects.equals(antes.envioTrabajosHasta, dto.envioTrabajosHasta())) {
+      String motivo =
+          request.motivo() != null && !request.motivo().isBlank()
+              ? request.motivo().trim()
+              : "Actualización de la fecha límite de envío de trabajos.";
+      notificarSoloGrupo(GRUPO_ENVIO, antes, dto, motivo);
+    }
+
     return dto;
   }
 
-  private void notificarCambiosVentanas(
-      SnapshotAntes antes, CongresoConfigDTO despues, CongresoConfigUpdateRequest request) {
-    String motivo =
-        request.motivo() != null && !request.motivo().isBlank()
-            ? request.motivo().trim()
-            : "Actualización de la fecha límite de envío de trabajos.";
-
-    boolean cambioCongreso =
-        !Objects.equals(antes.congresoDesde, despues.congresoDesde())
-            || !Objects.equals(antes.congresoHasta, despues.congresoHasta());
-    boolean cambioInsc =
-        !Objects.equals(antes.inscripcionesDesde, despues.inscripcionesDesde())
-            || !Objects.equals(antes.inscripcionesHasta, despues.inscripcionesHasta());
-    boolean cambioEnvio = !Objects.equals(antes.envioTrabajosHasta, despues.envioTrabajosHasta());
-    boolean cambioEval = !Objects.equals(antes.evaluacionHasta, despues.evaluacionHasta());
-
-    if (cambioCongreso) {
-      String cuerpo =
-          "Se actualizaron las fechas del congreso: "
-              + rangoTexto(despues.congresoDesde(), despues.congresoHasta())
-              + ". Motivo: "
-              + motivo
-              + ". Las actividades del programa deben programarse dentro de esos 3 días.";
-      notificacionService.enviarATodos("Cambio de fechas del congreso", truncar(cuerpo), null);
+  private void aplicarUpdateLegacy(Congreso congreso, CongresoConfigUpdateRequest request) {
+    if (request.programaPublicado() != null) {
+      congreso.setProgramaPublicado(request.programaPublicado());
     }
-
-    if (cambioInsc) {
-      String cuerpo =
-          "Se modificó el período de inscripción: "
-              + rangoTexto(despues.inscripcionesDesde(), despues.inscripcionesHasta())
-              + ". Motivo: "
-              + motivo;
-      notificacionService.enviarATodos("Cambio en el período de inscripción", truncar(cuerpo), null);
+    if (request.certificadosDisponiblesDesde() != null) {
+      congreso.setCertificadosDisponiblesDesde(
+          parseFechaOpcional(request.certificadosDisponiblesDesde()));
     }
-
-    if (cambioEnvio) {
-      String cuerpo =
-          describirCambioPlazo(
-                  "envío de trabajos", antes.envioTrabajosHasta, despues.envioTrabajosHasta())
-              + " Motivo: "
-              + motivo;
-      notificacionService.enviarPorRol(
-          Rol.ASISTENTE, "Cambio en plazo de envío de trabajos", truncar(cuerpo), null);
-      notificacionService.enviarPorRol(
-          Rol.AUTOR, "Cambio en plazo de envío de trabajos", truncar(cuerpo), null);
+    if (request.envioTrabajosHasta() != null) {
+      congreso.setEnvioTrabajosHasta(parseFechaOpcional(request.envioTrabajosHasta()));
     }
+  }
 
-    if (cambioEval) {
-      String cuerpo =
-          describirCambioPlazo("evaluación", antes.evaluacionHasta, despues.evaluacionHasta())
-              + " Motivo: "
-              + motivo;
-      notificacionService.enviarPorRol(
-          Rol.EVALUADOR, "Cambio en plazo de evaluación", truncar(cuerpo), null);
+  private void aplicarCongreso(Congreso congreso, CongresoConfigUpdateRequest request) {
+    LocalDate desde = parseFechaOpcional(request.congresoDesde());
+    if (desde == null) {
+      throw new NegocioException("Indicá la fecha de inicio del congreso.");
     }
+    // Siempre 3 días corridos: inicio, intermedio y fin.
+    LocalDate hasta = desde.plusDays(DIAS_CONGRESO - 1L);
+    congreso.setCongresoDesde(desde);
+    congreso.setCongresoHasta(hasta);
+  }
+
+  private void aplicarInscripciones(Congreso congreso, CongresoConfigUpdateRequest request) {
+    if (request.inscripcionesDesde() == null && request.inscripcionesHasta() == null) {
+      throw new NegocioException("Indicá al menos una fecha del período de inscripción.");
+    }
+    if (request.inscripcionesDesde() != null) {
+      congreso.setInscripcionesDesde(parseFechaOpcional(request.inscripcionesDesde()));
+    }
+    if (request.inscripcionesHasta() != null) {
+      congreso.setInscripcionesHasta(parseFechaOpcional(request.inscripcionesHasta()));
+    }
+  }
+
+  private void aplicarEnvio(Congreso congreso, CongresoConfigUpdateRequest request) {
+    if (request.envioTrabajosHasta() == null) {
+      throw new NegocioException("Indicá la fecha límite de envío de trabajos (o vacío para quitarla).");
+    }
+    congreso.setEnvioTrabajosHasta(parseFechaOpcional(request.envioTrabajosHasta()));
+  }
+
+  private void aplicarEvaluacion(Congreso congreso, CongresoConfigUpdateRequest request) {
+    if (request.evaluacionHasta() == null) {
+      throw new NegocioException("Indicá la fecha límite de evaluación (o vacío para quitarla).");
+    }
+    congreso.setEvaluacionHasta(parseFechaOpcional(request.evaluacionHasta()));
+  }
+
+  private void notificarSoloGrupo(
+      String grupo, SnapshotAntes antes, CongresoConfigDTO despues, String motivo) {
+    switch (grupo) {
+      case GRUPO_CONGRESO -> {
+        if (Objects.equals(antes.congresoDesde, despues.congresoDesde())
+            && Objects.equals(antes.congresoHasta, despues.congresoHasta())) {
+          return;
+        }
+        String cuerpo =
+            "Se actualizaron las fechas del congreso: "
+                + rangoTexto(despues.congresoDesde(), despues.congresoHasta())
+                + " (3 días). Motivo: "
+                + motivo
+                + ". Las actividades del programa deben programarse dentro de esos días.";
+        notificacionService.enviarATodos("Cambio de fechas del congreso", truncar(cuerpo), null);
+      }
+      case GRUPO_INSCRIPCIONES -> {
+        if (Objects.equals(antes.inscripcionesDesde, despues.inscripcionesDesde())
+            && Objects.equals(antes.inscripcionesHasta, despues.inscripcionesHasta())) {
+          return;
+        }
+        String cuerpo =
+            "Se modificó el período de inscripción: "
+                + rangoTexto(despues.inscripcionesDesde(), despues.inscripcionesHasta())
+                + ". Motivo: "
+                + motivo;
+        notificacionService.enviarATodos(
+            "Cambio en el período de inscripción", truncar(cuerpo), null);
+      }
+      case GRUPO_ENVIO -> {
+        if (Objects.equals(antes.envioTrabajosHasta, despues.envioTrabajosHasta())) {
+          return;
+        }
+        String cuerpo =
+            describirCambioPlazo(
+                    "envío de trabajos", antes.envioTrabajosHasta, despues.envioTrabajosHasta())
+                + " Motivo: "
+                + motivo;
+        notificacionService.enviarPorRol(
+            Rol.ASISTENTE, "Cambio en plazo de envío de trabajos", truncar(cuerpo), null);
+        notificacionService.enviarPorRol(
+            Rol.AUTOR, "Cambio en plazo de envío de trabajos", truncar(cuerpo), null);
+      }
+      case GRUPO_EVALUACION -> {
+        if (Objects.equals(antes.evaluacionHasta, despues.evaluacionHasta())) {
+          return;
+        }
+        String cuerpo =
+            describirCambioPlazo("evaluación", antes.evaluacionHasta, despues.evaluacionHasta())
+                + " Motivo: "
+                + motivo;
+        notificacionService.enviarPorRol(
+            Rol.EVALUADOR, "Cambio en plazo de evaluación", truncar(cuerpo), null);
+      }
+      default -> {
+        // no-op
+      }
+    }
+  }
+
+  private static String normalizarGrupo(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return null;
+    }
+    return raw.trim().toUpperCase(Locale.ROOT);
   }
 
   private static String describirCambioPlazo(String etiqueta, LocalDate antes, LocalDate despues) {
@@ -212,8 +260,7 @@ public class CongresoService {
   }
 
   private CongresoConfigDTO leerConfigDesdeEm(EntityManager em) {
-    Congreso congreso = resolverCongresoPrincipal(em);
-    return CongresoConfigDTO.from(congreso);
+    return CongresoConfigDTO.from(resolverCongresoPrincipal(em));
   }
 
   private Congreso resolverCongresoPrincipal(EntityManager em) {
@@ -232,7 +279,6 @@ public class CongresoService {
     return congreso;
   }
 
-  /** Valida coherencia de rangos. Null = sin límite (no valida). Congreso = exactamente 3 días. */
   static void validarVentanas(Congreso c) {
     exigirDesdeHasta(c.getCongresoDesde(), c.getCongresoHasta(), "del congreso");
     exigirDesdeHasta(c.getInscripcionesDesde(), c.getInscripcionesHasta(), "de inscripción");
@@ -259,7 +305,7 @@ public class CongresoService {
       throw new NegocioException(
           "El congreso dura exactamente "
               + DIAS_CONGRESO
-              + " días. Si el inicio es "
+              + " días corridos (día 1, 2 y 3). Si el inicio es "
               + desde
               + ", el fin debe ser "
               + desde.plusDays(DIAS_CONGRESO - 1L)

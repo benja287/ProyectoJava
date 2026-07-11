@@ -52,7 +52,9 @@ public class CongresoResource {
             || request.congresoHasta() != null
             || request.inscripcionesDesde() != null
             || request.inscripcionesHasta() != null
-            || request.evaluacionHasta() != null)) {
+            || request.evaluacionHasta() != null
+            || (request.grupo() != null
+                && !"ENVIO".equalsIgnoreCase(request.grupo().trim())))) {
       throw new NotAuthorizedException(
           "Solo administradores pueden modificar programa, certificados o ventanas del congreso");
     }

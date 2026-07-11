@@ -36,7 +36,7 @@ export function buildCongressDates(
   return out.length ? out : [...DEFAULT_CONGRESS_EVENT_DATES];
 }
 
-/** Fin del congreso = inicio + 2 días (3 días en total). */
+/** Fin del congreso = día 3 = inicio + 2 (3 días corridos: 1, 2 y 3). */
 export function finCongresoDesdeInicio(desde: string): string {
   return addDaysYmd(desde, 2);
 }
