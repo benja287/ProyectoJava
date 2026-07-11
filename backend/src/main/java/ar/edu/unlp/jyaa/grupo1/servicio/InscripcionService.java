@@ -130,6 +130,7 @@ public class InscripcionService {
     }
 
     notificarAdminInscripcionPendiente(usuario, categoria, monto, metodoPago);
+    notificarUsuarioInscripcionRecibida(usuario, categoria, monto, metodoPago);
 
     return InscripcionCongresoDTO.from(recuperarConRelaciones(creada.getId()));
   }
@@ -146,6 +147,19 @@ public class InscripcionService {
     vars.put("metodo_pago", etiquetaMetodoPago(metodoPago));
     notificacionService.enviarPorRolConPlantilla(
         Rol.ADMINISTRADOR, "INSCRIPCION_PENDIENTE_ADMIN", vars, null);
+  }
+
+  private void notificarUsuarioInscripcionRecibida(
+      Usuario solicitante, CategoriaInscripcion categoria, Double monto, MetodoPago metodoPago) {
+    if (solicitante.getId() == null) {
+      return;
+    }
+    Map<String, String> vars = new HashMap<>();
+    vars.put("categoria", etiquetaCategoria(categoria));
+    vars.put("monto", monto != null ? String.format("%.0f", monto) : "0");
+    vars.put("metodo_pago", etiquetaMetodoPago(metodoPago));
+    notificacionService.enviarConPlantilla(
+        solicitante.getId(), "INSCRIPCION_RECIBIDA_USUARIO", vars);
   }
 
   private static String etiquetaCategoria(CategoriaInscripcion categoria) {

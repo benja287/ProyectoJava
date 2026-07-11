@@ -268,6 +268,24 @@ public final class SchemaMigration {
             {{url_plataforma}}/admin/inscripciones
 
             Sistema de gestión del congreso""");
+    insertarPlantillaSiFalta(
+        em,
+        "INSCRIPCION_RECIBIDA_USUARIO",
+        "[INSCRIPCIÓN] Recibimos tu solicitud al congreso",
+        """
+            Hola {{nombre}},
+
+            Recibimos tu inscripción al congreso. Está pendiente de validación por la organización.
+
+            Categoría: {{categoria}}
+            Monto: ${{monto}}
+            Forma de pago: {{metodo_pago}}
+
+            Te avisaremos cuando se apruebe o si necesitamos algún dato más.
+            Podés consultar el estado en:
+            {{url_plataforma}}/inscripcion
+
+            Sistema de gestión del congreso""");
   }
 
   /** Seed de ediciones anteriores (historia pública) — idempotente por año. */
