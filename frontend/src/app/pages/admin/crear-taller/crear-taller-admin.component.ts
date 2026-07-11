@@ -3,11 +3,13 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
   CONGRESS_EVENT_DATES,
+  buildCongressDates,
   congressDateLabels,
   isValidTimeRange,
 } from '../../../constants/congress-event';
 import { Trabajo } from '../../../models/trabajo.model';
 import { ActividadService } from '../../../servicios/actividad.service';
+import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
@@ -88,8 +90,8 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 export class CrearTallerAdminComponent implements OnInit {
   private fb = inject(FormBuilder);
 
-  readonly fechasCongreso = congressDateLabels();
-  readonly fechasPermitidas = CONGRESS_EVENT_DATES.join(', ');
+  fechasCongreso = congressDateLabels();
+  fechasPermitidas = CONGRESS_EVENT_DATES.join(', ');
   propuestasAprobadas: Trabajo[] = [];
   guardando = false;
   error = '';
@@ -108,10 +110,19 @@ export class CrearTallerAdminComponent implements OnInit {
   constructor(
     private actividadService: ActividadService,
     private trabajoService: TrabajoService,
+    private congresoConfigService: CongresoConfigService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    this.congresoConfigService.obtener().subscribe({
+      next: (c) => {
+        const dates = buildCongressDates(c.congresoDesde, c.congresoHasta);
+        this.fechasCongreso = congressDateLabels(dates);
+        this.fechasPermitidas = dates.join(', ');
+        this.form.patchValue({ fecha: dates[0] });
+      },
+    });
     this.trabajoService
       .listar(1, 100, { tipo: 'PROPUESTA_TALLER', estado: 'APROBADO' })
       .subscribe({

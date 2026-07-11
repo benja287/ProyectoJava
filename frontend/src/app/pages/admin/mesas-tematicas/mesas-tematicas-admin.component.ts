@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
   CONGRESS_EVENT_DATES,
+  buildCongressDates,
   congressDateLabels,
   isValidTimeRange,
   toLocalDateTime,
@@ -11,6 +12,7 @@ import {
 import { EJES_TEMATICOS, MODALIDAD_LABELS } from '../../../constants/ejes-tematicos';
 import { Trabajo } from '../../../models/trabajo.model';
 import { ActividadService } from '../../../servicios/actividad.service';
+import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
@@ -134,10 +136,18 @@ export class MesasTematicasAdminComponent implements OnInit {
   constructor(
     private trabajoService: TrabajoService,
     private actividadService: ActividadService,
+    private congresoConfigService: CongresoConfigService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    this.congresoConfigService.obtener().subscribe({
+      next: (c) => {
+        const dates = buildCongressDates(c.congresoDesde, c.congresoHasta);
+        this.fechasCongreso = congressDateLabels(dates);
+        this.form.patchValue({ fecha: dates[0] });
+      },
+    });
     this.cargarTrabajos();
   }
 

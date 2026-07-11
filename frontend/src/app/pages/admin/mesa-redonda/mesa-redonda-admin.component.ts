@@ -1,12 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
   CONGRESS_EVENT_DATES,
+  buildCongressDates,
   congressDateLabels,
   isValidTimeRange,
 } from '../../../constants/congress-event';
 import { ActividadService } from '../../../servicios/actividad.service';
+import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
@@ -72,11 +74,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
     </section>
   `,
 })
-export class MesaRedondaAdminComponent {
+export class MesaRedondaAdminComponent implements OnInit {
   private fb = inject(FormBuilder);
   private router = inject(Router);
 
-  readonly fechasCongreso = congressDateLabels();
+  fechasCongreso = congressDateLabels();
   guardando = false;
   error = '';
 
@@ -92,7 +94,20 @@ export class MesaRedondaAdminComponent {
     horaFin: ['10:00', Validators.required],
   });
 
-  constructor(private actividadService: ActividadService) {}
+  constructor(
+    private actividadService: ActividadService,
+    private congresoConfigService: CongresoConfigService
+  ) {}
+
+  ngOnInit(): void {
+    this.congresoConfigService.obtener().subscribe({
+      next: (c) => {
+        const dates = buildCongressDates(c.congresoDesde, c.congresoHasta);
+        this.fechasCongreso = congressDateLabels(dates);
+        this.form.patchValue({ fecha: dates[0] });
+      },
+    });
+  }
 
   guardar(): void {
     if (this.form.invalid) return;

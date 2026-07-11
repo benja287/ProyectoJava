@@ -1,12 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import {
   CONGRESS_EVENT_DATES,
+  buildCongressDates,
   congressDateLabels,
   isValidTimeRange,
 } from '../../../constants/congress-event';
 import { ActividadService } from '../../../servicios/actividad.service';
+import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
@@ -79,12 +81,12 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
     </section>
   `,
 })
-export class CrearConferenciaAdminComponent {
+export class CrearConferenciaAdminComponent implements OnInit {
   private fb = inject(FormBuilder);
   private router = inject(Router);
 
-  readonly fechasCongreso = congressDateLabels();
-  readonly fechasPermitidas = CONGRESS_EVENT_DATES.join(', ');
+  fechasCongreso = congressDateLabels();
+  fechasPermitidas = CONGRESS_EVENT_DATES.join(', ');
   guardando = false;
   error = '';
 
@@ -100,7 +102,21 @@ export class CrearConferenciaAdminComponent {
     descripcion: [''],
   });
 
-  constructor(private actividadService: ActividadService) {}
+  constructor(
+    private actividadService: ActividadService,
+    private congresoConfigService: CongresoConfigService
+  ) {}
+
+  ngOnInit(): void {
+    this.congresoConfigService.obtener().subscribe({
+      next: (c) => {
+        const dates = buildCongressDates(c.congresoDesde, c.congresoHasta);
+        this.fechasCongreso = congressDateLabels(dates);
+        this.fechasPermitidas = dates.join(', ');
+        this.form.patchValue({ fecha: dates[0] });
+      },
+    });
+  }
 
   guardar(): void {
     if (this.form.invalid) return;

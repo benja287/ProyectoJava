@@ -8,4 +8,6 @@ public record CongresoConfigUpdateRequest(
     String congresoHasta,
     String inscripcionesDesde,
     String inscripcionesHasta,
-    String evaluacionHasta) {}
+    String evaluacionHasta,
+    /** Motivo obligatorio al cambiar ventanas de tiempo (se incluye en la notificación). */
+    String motivo) {}

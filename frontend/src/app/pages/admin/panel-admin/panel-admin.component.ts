@@ -15,6 +15,7 @@ import { UsuarioEdicionDialogService } from '../../../servicios/usuario-edicion-
 import { UsuarioFilaComponent } from '../usuarios-lista/usuario-fila.component';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { finCongresoDesdeInicio } from '../../../constants/congress-event';
 import { SolicitudAutor } from '../../../models/solicitud-autor.model';
 import { Trabajo } from '../../../models/trabajo.model';
 import { Pago } from '../../../models/pago.model';
@@ -152,56 +153,136 @@ import { ArchivoService } from '../../../servicios/archivo.service';
       <section class="panel-card panel-card--indigo">
         <h2>Ventanas de tiempo del congreso</h2>
         <p class="muted">
-          Fechas configurables sin tocar código. Vacío = sin límite. Si el congreso se posterga, actualizá
-          estas fechas acá.
+          Cada bloque se guarda por separado. El motivo se incluye en la notificación a los usuarios
+          afectados. El congreso dura exactamente <strong>3 días</strong> (el fin se calcula solo).
         </p>
-        <div class="form-grid form-grid-wide">
-          <label>
-            Inicio del congreso
-            <input type="date" [(ngModel)]="ventanas.congresoDesde" [ngModelOptions]="{ standalone: true }" />
-          </label>
-          <label>
-            Fin del congreso
-            <input type="date" [(ngModel)]="ventanas.congresoHasta" [ngModelOptions]="{ standalone: true }" />
-          </label>
-          <label>
-            Inscripciones desde
-            <input
-              type="date"
-              [(ngModel)]="ventanas.inscripcionesDesde"
-              [ngModelOptions]="{ standalone: true }"
-            />
-          </label>
-          <label>
-            Inscripciones hasta
-            <input
-              type="date"
-              [(ngModel)]="ventanas.inscripcionesHasta"
-              [ngModelOptions]="{ standalone: true }"
-            />
-          </label>
-          <label>
-            Envío de trabajos hasta
-            <input
-              type="date"
-              [(ngModel)]="ventanas.envioTrabajosHasta"
-              [ngModelOptions]="{ standalone: true }"
-            />
-          </label>
-          <label>
-            Evaluación hasta
-            <input type="date" [(ngModel)]="ventanas.evaluacionHasta" [ngModelOptions]="{ standalone: true }" />
-          </label>
+
+        <div class="panel-card" style="margin-top: 0.75rem; box-shadow: none">
+          <h3>1. Inicio y fin del congreso</h3>
+          <p class="muted small">Notifica a todos. Las actividades del programa deben caer en estos 3 días.</p>
+          <div class="form-grid form-grid-wide">
+            <label>
+              Inicio del congreso
+              <input
+                type="date"
+                [(ngModel)]="ventanas.congresoDesde"
+                [ngModelOptions]="{ standalone: true }"
+                (ngModelChange)="onCongresoDesdeChange($event)"
+              />
+            </label>
+            <label>
+              Fin del congreso (automático, +2 días)
+              <input type="date" [ngModel]="ventanas.congresoHasta" [ngModelOptions]="{ standalone: true }" disabled />
+            </label>
+            <label class="span-full">
+              Motivo del cambio
+              <input
+                type="text"
+                [(ngModel)]="motivoCongreso"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Ej. Postergación por causas climáticas"
+              />
+            </label>
+          </div>
+          <div class="inline-form-row" style="margin-top: 0.75rem">
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="guardandoConfig"
+              (click)="guardarBloqueCongreso()"
+            >
+              Guardar fechas del congreso
+            </button>
+          </div>
         </div>
-        <div class="inline-form-row" style="margin-top: 0.75rem">
-          <button type="button" class="btn-primary" [disabled]="guardandoConfig" (click)="guardarVentanas()">
-            Guardar ventanas
-          </button>
-          <button type="button" class="btn-link" [disabled]="guardandoConfig" (click)="limpiarVentanas()">
-            Limpiar todas
-          </button>
+
+        <div class="panel-card" style="margin-top: 0.75rem; box-shadow: none">
+          <h3>2. Período de inscripción</h3>
+          <p class="muted small">Notifica a todos los usuarios.</p>
+          <div class="form-grid form-grid-wide">
+            <label>
+              Inscripciones desde
+              <input
+                type="date"
+                [(ngModel)]="ventanas.inscripcionesDesde"
+                [ngModelOptions]="{ standalone: true }"
+              />
+            </label>
+            <label>
+              Inscripciones hasta
+              <input
+                type="date"
+                [(ngModel)]="ventanas.inscripcionesHasta"
+                [ngModelOptions]="{ standalone: true }"
+              />
+            </label>
+            <label class="span-full">
+              Motivo del cambio
+              <input
+                type="text"
+                [(ngModel)]="motivoInscripciones"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Ej. Se amplía el plazo de inscripción"
+              />
+            </label>
+          </div>
+          <div class="inline-form-row" style="margin-top: 0.75rem">
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="guardandoConfig"
+              (click)="guardarBloqueInscripciones()"
+            >
+              Guardar período de inscripción
+            </button>
+          </div>
         </div>
-        <p class="muted small">
+
+        <div class="panel-card" style="margin-top: 0.75rem; box-shadow: none">
+          <h3>3. Plazos de envío y evaluación</h3>
+          <p class="muted small">
+            Envío → notifica a asistentes y autores. Evaluación → notifica a evaluadores.
+          </p>
+          <div class="form-grid form-grid-wide">
+            <label>
+              Envío de trabajos hasta
+              <input
+                type="date"
+                [(ngModel)]="ventanas.envioTrabajosHasta"
+                [ngModelOptions]="{ standalone: true }"
+              />
+            </label>
+            <label>
+              Evaluación hasta
+              <input
+                type="date"
+                [(ngModel)]="ventanas.evaluacionHasta"
+                [ngModelOptions]="{ standalone: true }"
+              />
+            </label>
+            <label class="span-full">
+              Motivo del cambio
+              <input
+                type="text"
+                [(ngModel)]="motivoPlazos"
+                [ngModelOptions]="{ standalone: true }"
+                placeholder="Ej. Se extiende el plazo de evaluación"
+              />
+            </label>
+          </div>
+          <div class="inline-form-row" style="margin-top: 0.75rem">
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="guardandoConfig"
+              (click)="guardarBloquePlazos()"
+            >
+              Guardar plazos de envío y evaluación
+            </button>
+          </div>
+        </div>
+
+        <p class="muted small" style="margin-top: 0.75rem">
           El comité también puede editar solo la fecha límite de envío de trabajos desde su panel.
         </p>
       </section>
@@ -583,6 +664,9 @@ export class PanelAdminComponent implements OnInit {
     envioTrabajosHasta: '',
     evaluacionHasta: '',
   };
+  motivoCongreso = '';
+  motivoInscripciones = '';
+  motivoPlazos = '';
   usuarios: Usuario[] = [];
   circulares: Circular[] = [];
   solicitudesAutor: SolicitudAutor[] = [];
@@ -864,43 +948,101 @@ export class PanelAdminComponent implements OnInit {
     this.guardarCertificados();
   }
 
-  guardarVentanas(): void {
+  onCongresoDesdeChange(desde: string): void {
+    this.ventanas.congresoDesde = desde ?? '';
+    this.ventanas.congresoHasta = desde ? finCongresoDesdeInicio(desde) : '';
+  }
+
+  guardarBloqueCongreso(): void {
     if (this.guardandoConfig) return;
+    if (!this.ventanas.congresoDesde.trim()) {
+      this.error = 'Indicá la fecha de inicio del congreso.';
+      return;
+    }
+    if (!this.motivoCongreso.trim()) {
+      this.error = 'Indicá el motivo del cambio de fechas del congreso.';
+      return;
+    }
+    const hasta = finCongresoDesdeInicio(this.ventanas.congresoDesde.trim());
+    this.ventanas.congresoHasta = hasta;
     this.guardandoConfig = true;
     this.error = '';
     this.congresoConfigService
       .actualizar({
-        congresoDesde: this.ventanas.congresoDesde.trim() || '',
-        congresoHasta: this.ventanas.congresoHasta.trim() || '',
-        inscripcionesDesde: this.ventanas.inscripcionesDesde.trim() || '',
-        inscripcionesHasta: this.ventanas.inscripcionesHasta.trim() || '',
-        envioTrabajosHasta: this.ventanas.envioTrabajosHasta.trim() || '',
-        evaluacionHasta: this.ventanas.evaluacionHasta.trim() || '',
+        congresoDesde: this.ventanas.congresoDesde.trim(),
+        congresoHasta: hasta,
+        motivo: this.motivoCongreso.trim(),
       })
       .subscribe({
         next: (c) => {
           this.config = c;
           this.aplicarVentanasDesdeConfig(c);
           this.guardandoConfig = false;
-          this.mensaje = 'Ventanas de tiempo del congreso guardadas.';
+          this.mensaje =
+            'Fechas del congreso guardadas. Se notificó a todos los usuarios.';
         },
         error: (err) => {
-          this.error = mensajeErrorApi(err, 'No se pudieron guardar las ventanas.');
+          this.error = mensajeErrorApi(err, 'No se pudieron guardar las fechas del congreso.');
           this.guardandoConfig = false;
         },
       });
   }
 
-  limpiarVentanas(): void {
-    this.ventanas = {
-      congresoDesde: '',
-      congresoHasta: '',
-      inscripcionesDesde: '',
-      inscripcionesHasta: '',
-      envioTrabajosHasta: '',
-      evaluacionHasta: '',
-    };
-    this.guardarVentanas();
+  guardarBloqueInscripciones(): void {
+    if (this.guardandoConfig) return;
+    if (!this.motivoInscripciones.trim()) {
+      this.error = 'Indicá el motivo del cambio del período de inscripción.';
+      return;
+    }
+    this.guardandoConfig = true;
+    this.error = '';
+    this.congresoConfigService
+      .actualizar({
+        inscripcionesDesde: this.ventanas.inscripcionesDesde.trim() || '',
+        inscripcionesHasta: this.ventanas.inscripcionesHasta.trim() || '',
+        motivo: this.motivoInscripciones.trim(),
+      })
+      .subscribe({
+        next: (c) => {
+          this.config = c;
+          this.aplicarVentanasDesdeConfig(c);
+          this.guardandoConfig = false;
+          this.mensaje = 'Período de inscripción guardado. Se notificó a todos.';
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudo guardar el período de inscripción.');
+          this.guardandoConfig = false;
+        },
+      });
+  }
+
+  guardarBloquePlazos(): void {
+    if (this.guardandoConfig) return;
+    if (!this.motivoPlazos.trim()) {
+      this.error = 'Indicá el motivo del cambio de plazos de envío/evaluación.';
+      return;
+    }
+    this.guardandoConfig = true;
+    this.error = '';
+    this.congresoConfigService
+      .actualizar({
+        envioTrabajosHasta: this.ventanas.envioTrabajosHasta.trim() || '',
+        evaluacionHasta: this.ventanas.evaluacionHasta.trim() || '',
+        motivo: this.motivoPlazos.trim(),
+      })
+      .subscribe({
+        next: (c) => {
+          this.config = c;
+          this.aplicarVentanasDesdeConfig(c);
+          this.guardandoConfig = false;
+          this.mensaje =
+            'Plazos guardados. Se notificó a autores/asistentes y/o evaluadores según el cambio.';
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudieron guardar los plazos.');
+          this.guardandoConfig = false;
+        },
+      });
   }
 
   private aplicarVentanasDesdeConfig(c: CongresoConfig): void {

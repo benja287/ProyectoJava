@@ -13,6 +13,7 @@ export type CongresoConfigUpdate = Partial<{
   inscripcionesDesde: string | null;
   inscripcionesHasta: string | null;
   evaluacionHasta: string | null;
+  motivo: string | null;
 }>;
 
 @Injectable({ providedIn: 'root' })

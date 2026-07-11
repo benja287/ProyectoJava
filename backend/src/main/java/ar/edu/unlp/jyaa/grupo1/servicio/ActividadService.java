@@ -1,6 +1,7 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.ActividadDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.ActividadFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
@@ -40,6 +41,7 @@ public class ActividadService {
 
   @Inject private ActividadDAO actividadDAO;
   @Inject private TrabajoDAO trabajoDAO;
+  @Inject private CongresoDAO congresoDAO;
   @Inject private CongresoService congresoService;
   @Inject private NotificacionService notificacionService;
 
@@ -450,8 +452,10 @@ public class ActividadService {
     } catch (DateTimeParseException e) {
       throw new NegocioException("Fecha inválida (use AAAA-MM-DD)");
     }
-    if (!FechasCongreso.esFechaValida(dia)) {
-      throw new NegocioException("La fecha seleccionada no es válida para este congreso");
+    var congreso = congresoDAO.obtenerPrincipal();
+    if (!FechasCongreso.esFechaValida(dia, congreso.getCongresoDesde(), congreso.getCongresoHasta())) {
+      throw new NegocioException(
+          "La fecha seleccionada no es válida para este congreso (debe caer en los 3 días del evento)");
     }
     LocalTime ini;
     LocalTime fin;
