@@ -70,7 +70,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <button type="submit" class="btn-primary" [disabled]="form.invalid || guardando">
             {{ guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Guardar' }}
           </button>
-          <a routerLink="/admin" class="btn-secundario">Cancelar</a>
+          <a routerLink="/admin/circulares" class="btn-secundario">Cancelar</a>
         </div>
       </form>
     </section>
@@ -190,7 +190,7 @@ export class CircularFormAdminComponent implements OnInit {
       .subscribe({
         next: () => {
           this.guardando = false;
-          this.router.navigate(['/admin'], {
+          this.router.navigate(['/admin/circulares'], {
             state: {
               circularesFeedback: quierePublicar
                 ? 'La circular fue publicada correctamente.'

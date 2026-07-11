@@ -42,6 +42,11 @@ import { MesaRedondaAdminComponent } from './pages/admin/mesa-redonda/mesa-redon
 import { CrearTallerAdminComponent } from './pages/admin/crear-taller/crear-taller-admin.component';
 import { CrearConferenciaAdminComponent } from './pages/admin/crear-conferencia/crear-conferencia-admin.component';
 import { EmailsAdminComponent } from './pages/admin/emails/emails-admin.component';
+import { CongresoAdminComponent } from './pages/admin/congreso-admin/congreso-admin.component';
+import { CircularesAdminComponent } from './pages/admin/circulares-admin/circulares-admin.component';
+import { LimpiezaAdminComponent } from './pages/admin/limpieza-admin/limpieza-admin.component';
+import { SolicitudesAutorAdminComponent } from './pages/admin/solicitudes-autor-admin/solicitudes-autor-admin.component';
+import { NotificacionBroadcastAdminComponent } from './pages/admin/notificacion-broadcast-admin/notificacion-broadcast-admin.component';
 import { HistoriaCongresoComponent } from './pages/historia/historia-congreso.component';
 
 const admin = roleGuard(['ADMINISTRADOR']);
@@ -124,8 +129,13 @@ export const routes: Routes = [
   { path: 'admin/trabajos', component: TrabajosAdminComponent, canActivate: [admin] },
   { path: 'admin/estadisticas', component: AdminEstadisticasComponent, canActivate: [admin] },
   { path: 'admin/emails', component: EmailsAdminComponent, canActivate: [admin] },
+  { path: 'admin/congreso', component: CongresoAdminComponent, canActivate: [admin] },
+  { path: 'admin/limpieza', component: LimpiezaAdminComponent, canActivate: [admin] },
+  { path: 'admin/solicitudes-autor', component: SolicitudesAutorAdminComponent, canActivate: [admin] },
+  { path: 'admin/notificaciones-broadcast', component: NotificacionBroadcastAdminComponent, canActivate: [admin] },
   { path: 'admin/circulares/nueva', component: CircularFormAdminComponent, canActivate: [admin] },
   { path: 'admin/circulares/editar/:id', component: CircularFormAdminComponent, canActivate: [admin] },
+  { path: 'admin/circulares', component: CircularesAdminComponent, canActivate: [admin] },
 
   // --- Perfil Organizador científico ---
   {
