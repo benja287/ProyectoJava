@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { CongresoConfig } from '../models/congreso-config.model';
+import { CongresoConfig, normalizarCongresoConfig } from '../models/congreso-config.model';
 
 export type CongresoConfigGrupo =
   | 'CONGRESO'
@@ -34,10 +35,14 @@ export class CongresoConfigService {
   constructor(private http: HttpClient) {}
 
   obtener(): Observable<CongresoConfig> {
-    return this.http.get<CongresoConfig>(this.baseUrl);
+    return this.http
+      .get<CongresoConfig>(this.baseUrl)
+      .pipe(map((c) => normalizarCongresoConfig(c)));
   }
 
   actualizar(cambios: CongresoConfigUpdate): Observable<CongresoConfig> {
-    return this.http.put<CongresoConfig>(this.baseUrl, cambios);
+    return this.http
+      .put<CongresoConfig>(this.baseUrl, cambios)
+      .pipe(map((c) => normalizarCongresoConfig(c)));
   }
 }
