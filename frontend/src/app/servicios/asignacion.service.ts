@@ -9,6 +9,16 @@ import {
   PaginaAsignaciones,
   ResumenAsignacionesEvaluador,
 } from '../models/asignacion.model';
+import { buildListHttpParams } from '../utils/filtro-params.util';
+
+export interface AsignacionListFiltro {
+  tipo?: string;
+  modalidad?: string;
+  ejeTematico?: string;
+  estado?: string;
+}
+
+const ASIGNACION_FILTER_KEYS = ['tipo', 'modalidad', 'ejeTematico', 'estado'] as const;
 
 @Injectable({ providedIn: 'root' })
 export class AsignacionService {
@@ -20,23 +30,29 @@ export class AsignacionService {
     evaluadorId: number,
     page = 1,
     size = 500,
-    soloPendientes = false
+    soloPendientes = false,
+    filtro: AsignacionListFiltro = {}
   ): Observable<AsignacionEvaluacion[]> {
-    return this.listarPorEvaluadorPagina(evaluadorId, page, size, soloPendientes).pipe(
-      map((p) => p.items)
-    );
+    return this.listarPorEvaluadorPagina(
+      evaluadorId,
+      page,
+      size,
+      soloPendientes,
+      filtro
+    ).pipe(map((p) => p.items));
   }
 
   listarPorEvaluadorPagina(
     evaluadorId: number,
     page = 1,
     size = 20,
-    soloPendientes = false
+    soloPendientes = false,
+    filtro: AsignacionListFiltro = {}
   ): Observable<PaginaAsignaciones> {
-    let params = new HttpParams()
-      .set('evaluadorId', String(evaluadorId))
-      .set('page', String(page))
-      .set('size', String(size));
+    let params = buildListHttpParams(page, size, filtro, ASIGNACION_FILTER_KEYS).set(
+      'evaluadorId',
+      String(evaluadorId)
+    );
     if (soloPendientes) {
       params = params.set('soloPendientes', 'true');
     }
@@ -52,7 +68,10 @@ export class AsignacionService {
   listarPorTrabajo(trabajoId: number): Observable<AsignacionEvaluacion[]> {
     return this.http
       .get<PaginaAsignaciones>(this.baseUrl, {
-        params: { trabajoId: String(trabajoId), page: '1', size: '50' },
+        params: new HttpParams()
+          .set('trabajoId', String(trabajoId))
+          .set('page', '1')
+          .set('size', '50'),
       })
       .pipe(map((p) => p.items));
   }

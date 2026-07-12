@@ -60,17 +60,24 @@ public class AsignacionEvaluacionResource {
       @QueryParam("evaluadorId") Long evaluadorId,
       @QueryParam("trabajoId") Long trabajoId,
       @QueryParam("soloPendientes") @DefaultValue("false") boolean soloPendientes,
+      @QueryParam("tipo") String tipo,
+      @QueryParam("modalidad") String modalidad,
+      @QueryParam("ejeTematico") String ejeTematico,
+      @QueryParam("estado") String estado,
       @QueryParam("page") @DefaultValue("1") int page,
       @QueryParam("size") @DefaultValue("20") int size) {
     if (evaluadorId != null) {
-      return asignacionService.listarPorEvaluador(evaluadorId, page, size, soloPendientes);
+      var filtro = AsignacionEvaluacionService.parseFiltro(tipo, modalidad, ejeTematico, estado);
+      return asignacionService.listarPorEvaluador(
+          evaluadorId, page, size, soloPendientes, filtro);
     }
     if (trabajoId != null) {
       List<AsignacionEvaluacionDTO> items =
           asignacionService.listarPorTrabajo(trabajoId).stream()
               .map(AsignacionEvaluacionDTO::from)
               .toList();
-      return new PaginaAsignacionesDTO(items, 1, items.size() == 0 ? size : items.size(), items.size(), 1);
+      return new PaginaAsignacionesDTO(
+          items, 1, items.isEmpty() ? size : items.size(), items.size(), items.isEmpty() ? 0 : 1);
     }
     throw new BadRequestException("Indicar evaluadorId o trabajoId");
   }

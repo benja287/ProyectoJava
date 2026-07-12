@@ -3,10 +3,13 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 import ar.edu.unlp.jyaa.grupo1.dao.AsignacionEvaluacionDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.AsignacionEvaluadorFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
+import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
+import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.web.dto.AsignacionEvaluacionDTO;
@@ -179,14 +182,16 @@ public class AsignacionEvaluacionService {
   }
 
   public PaginaAsignacionesDTO listarPorEvaluador(
-      Long evaluadorId, int page, int size, boolean soloPendientes) {
+      Long evaluadorId, int page, int size, boolean soloPendientes, AsignacionEvaluadorFiltro filtro) {
     int safePage = Math.max(1, page);
     int safeSize = Math.min(Math.max(1, size), 100);
     int offset = (safePage - 1) * safeSize;
-    long total = asignacionEvaluacionDAO.contarPorEvaluador(evaluadorId, soloPendientes);
+    AsignacionEvaluadorFiltro effective =
+        filtro != null ? filtro : AsignacionEvaluadorFiltro.vacio();
+    long total = asignacionEvaluacionDAO.contarPorEvaluador(evaluadorId, soloPendientes, effective);
     List<AsignacionEvaluacionDTO> items =
         asignacionEvaluacionDAO
-            .listarPorEvaluadorPaginado(evaluadorId, soloPendientes, offset, safeSize)
+            .listarPorEvaluadorPaginado(evaluadorId, soloPendientes, effective, offset, safeSize)
             .stream()
             .map(AsignacionEvaluacionDTO::from)
             .toList();
@@ -196,9 +201,40 @@ public class AsignacionEvaluacionService {
 
   public ResumenAsignacionesEvaluadorDTO resumenPorEvaluador(Long evaluadorId) {
     return new ResumenAsignacionesEvaluadorDTO(
-        asignacionEvaluacionDAO.contarPorEvaluador(evaluadorId, true),
+        asignacionEvaluacionDAO.contarPorEvaluador(
+            evaluadorId, true, AsignacionEvaluadorFiltro.vacio()),
         asignacionEvaluacionDAO.contarEvaluadasPorEvaluador(evaluadorId),
         asignacionEvaluacionDAO.contarAprobadasPorEvaluador(evaluadorId));
+  }
+
+  public static AsignacionEvaluadorFiltro parseFiltro(
+      String tipo, String modalidad, String ejeTematico, String estado) {
+    TipoTrabajo tipoEnum = null;
+    if (tipo != null && !tipo.isBlank()) {
+      try {
+        tipoEnum = TipoTrabajo.valueOf(tipo.trim().toUpperCase());
+      } catch (IllegalArgumentException ignored) {
+        // filtro inválido → se ignora
+      }
+    }
+    ModalidadPresentacion modalidadEnum = null;
+    if (modalidad != null && !modalidad.isBlank()) {
+      try {
+        modalidadEnum = ModalidadPresentacion.valueOf(modalidad.trim().toUpperCase());
+      } catch (IllegalArgumentException ignored) {
+        // filtro inválido → se ignora
+      }
+    }
+    EstadoTrabajo estadoEnum = null;
+    if (estado != null && !estado.isBlank()) {
+      try {
+        estadoEnum = EstadoTrabajo.valueOf(estado.trim().toUpperCase());
+      } catch (IllegalArgumentException ignored) {
+        // filtro inválido → se ignora
+      }
+    }
+    String eje = ejeTematico != null && !ejeTematico.isBlank() ? ejeTematico.trim() : null;
+    return new AsignacionEvaluadorFiltro(tipoEnum, modalidadEnum, eje, estadoEnum);
   }
 
   public List<AsignacionEvaluacion> listarPorTrabajo(Long trabajoId) {

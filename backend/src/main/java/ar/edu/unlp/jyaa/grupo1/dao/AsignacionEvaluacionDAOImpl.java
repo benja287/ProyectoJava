@@ -1,6 +1,8 @@
 package ar.edu.unlp.jyaa.grupo1.dao;
 
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.AsignacionEvaluadorFiltro;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.JpqlLikeFilters;
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
@@ -8,7 +10,9 @@ import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RequestScoped
@@ -41,32 +45,30 @@ public class AsignacionEvaluacionDAOImpl extends AbstractJpaDAO<AsignacionEvalua
 
   @Override
   public List<AsignacionEvaluacion> listarPorEvaluador(Long evaluadorId) {
-    return listarPorEvaluadorPaginado(evaluadorId, false, 0, 500);
+    return listarPorEvaluadorPaginado(
+        evaluadorId, false, AsignacionEvaluadorFiltro.vacio(), 0, 500);
   }
 
   @Override
   public List<AsignacionEvaluacion> listarPorEvaluadorPaginado(
-      Long evaluadorId, boolean soloPendientes, int offset, int limit) {
+      Long evaluadorId,
+      boolean soloPendientes,
+      AsignacionEvaluadorFiltro filtro,
+      int offset,
+      int limit) {
     EntityManager em = emConsulta();
     try {
+      Map<String, Object> params = new HashMap<>();
       String idsJpql =
-          "SELECT a.id FROM AsignacionEvaluacion a"
-              + BASE_WHERE_CIENTIFICO
-              + (soloPendientes ? PENDIENTE_WHERE : "")
+          buildWhere(
+                  "SELECT a.id FROM AsignacionEvaluacion a",
+                  soloPendientes,
+                  filtro,
+                  params)
               + " ORDER BY a.id DESC";
       TypedQuery<Long> idsQuery = em.createQuery(idsJpql, Long.class);
-      idsQuery.setParameter("id", evaluadorId);
-      idsQuery.setParameter("tipoTaller", TipoTrabajo.PROPUESTA_TALLER);
-      if (soloPendientes) {
-        idsQuery.setParameter(
-            "estadosCerrados",
-            List.of(
-                EstadoTrabajo.RECHAZADO,
-                EstadoTrabajo.APROBADO,
-                EstadoTrabajo.PENDIENTE_APROBACION_COMITE));
-      }
-      List<Long> ids =
-          idsQuery.setFirstResult(offset).setMaxResults(limit).getResultList();
+      bindBaseParams(idsQuery, evaluadorId, soloPendientes, params);
+      List<Long> ids = idsQuery.setFirstResult(offset).setMaxResults(limit).getResultList();
       if (ids.isEmpty()) {
         return List.of();
       }
@@ -83,24 +85,15 @@ public class AsignacionEvaluacionDAOImpl extends AbstractJpaDAO<AsignacionEvalua
   }
 
   @Override
-  public long contarPorEvaluador(Long evaluadorId, boolean soloPendientes) {
+  public long contarPorEvaluador(
+      Long evaluadorId, boolean soloPendientes, AsignacionEvaluadorFiltro filtro) {
     EntityManager em = emConsulta();
     try {
+      Map<String, Object> params = new HashMap<>();
       String jpql =
-          "SELECT COUNT(a) FROM AsignacionEvaluacion a"
-              + BASE_WHERE_CIENTIFICO
-              + (soloPendientes ? PENDIENTE_WHERE : "");
+          buildWhere("SELECT COUNT(a) FROM AsignacionEvaluacion a", soloPendientes, filtro, params);
       TypedQuery<Long> q = em.createQuery(jpql, Long.class);
-      q.setParameter("id", evaluadorId);
-      q.setParameter("tipoTaller", TipoTrabajo.PROPUESTA_TALLER);
-      if (soloPendientes) {
-        q.setParameter(
-            "estadosCerrados",
-            List.of(
-                EstadoTrabajo.RECHAZADO,
-                EstadoTrabajo.APROBADO,
-                EstadoTrabajo.PENDIENTE_APROBACION_COMITE));
-      }
+      bindBaseParams(q, evaluadorId, soloPendientes, params);
       return q.getSingleResult();
     } finally {
       closeLegacy(em);
@@ -192,6 +185,49 @@ public class AsignacionEvaluacionDAOImpl extends AbstractJpaDAO<AsignacionEvalua
     } finally {
       closeLegacy(em);
     }
+  }
+
+  private static String buildWhere(
+      String select,
+      boolean soloPendientes,
+      AsignacionEvaluadorFiltro filtro,
+      Map<String, Object> params) {
+    StringBuilder jpql = new StringBuilder(select).append(BASE_WHERE_CIENTIFICO);
+    if (soloPendientes) {
+      jpql.append(PENDIENTE_WHERE);
+    }
+    AsignacionEvaluadorFiltro f =
+        filtro != null ? filtro : AsignacionEvaluadorFiltro.vacio();
+    if (f.tipo() != null) {
+      jpql.append(" AND a.trabajo.tipo = :filtroTipo");
+      params.put("filtroTipo", f.tipo());
+    }
+    if (f.modalidad() != null) {
+      jpql.append(" AND a.trabajo.modalidad = :filtroModalidad");
+      params.put("filtroModalidad", f.modalidad());
+    }
+    JpqlLikeFilters.appendLike(
+        jpql, params, "a.trabajo.ejeTematico", "filtroEje", f.ejeTematico());
+    if (f.estado() != null) {
+      jpql.append(" AND a.trabajo.estado = :filtroEstado");
+      params.put("filtroEstado", f.estado());
+    }
+    return jpql.toString();
+  }
+
+  private static void bindBaseParams(
+      TypedQuery<?> q, Long evaluadorId, boolean soloPendientes, Map<String, Object> params) {
+    q.setParameter("id", evaluadorId);
+    q.setParameter("tipoTaller", TipoTrabajo.PROPUESTA_TALLER);
+    if (soloPendientes) {
+      q.setParameter(
+          "estadosCerrados",
+          List.of(
+              EstadoTrabajo.RECHAZADO,
+              EstadoTrabajo.APROBADO,
+              EstadoTrabajo.PENDIENTE_APROBACION_COMITE));
+    }
+    params.forEach(q::setParameter);
   }
 
   private EntityManager emConsulta() {
