@@ -1,21 +1,28 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import {
   FilterBarComponent,
   FilterFieldConfig,
 } from '../../../components/filter-bar/filter-bar.component';
+import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
 import { ESTADOS_TRABAJO } from '../../../models/enums';
 import { Trabajo } from '../../../models/trabajo.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
-import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
+import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
 
 @Component({
   selector: 'app-trabajos-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink, ArchivoLinkComponent, FilterBarComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ArchivoLinkComponent,
+    FilterBarComponent,
+    AppPaginatorComponent,
+  ],
   template: `
     <section class="card">
       <h1>Listado de trabajos</h1>
@@ -72,13 +79,21 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
             }
           </tbody>
         </table>
+
+        <app-paginator
+          [currentPage]="page"
+          [totalPages]="totalPages"
+          [total]="total"
+          [disabled]="cargando"
+          (pageChange)="onPageChange($event)"
+        />
       }
 
       <p><a routerLink="/admin">← Panel admin</a></p>
     </section>
   `,
 })
-export class TrabajosAdminComponent implements OnInit {
+export class TrabajosAdminComponent extends ListadoPaginadoBase {
   readonly filterFields: FilterFieldConfig[] = [
     { key: 'titulo', label: 'Título', placeholder: 'Buscar por título' },
     { key: 'resumen', label: 'Resumen', placeholder: 'Buscar en resumen' },
@@ -92,37 +107,12 @@ export class TrabajosAdminComponent implements OnInit {
   ];
   readonly filterKeys = ['titulo', 'resumen', 'ejeTematico', 'estado'] as const;
 
+  override pageSize = 20;
   trabajos: Trabajo[] = [];
-  filtros: Record<string, string> = {};
-  cargando = true;
-  error = '';
   mensaje = '';
 
-  constructor(
-    private trabajoService: TrabajoService,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {}
-
-  ngOnInit(): void {
-    this.route.queryParamMap.subscribe((params) => {
-      this.filtros = filtroFromParams(params, this.filterKeys);
-      this.cargar();
-    });
-  }
-
-  onFiltrosAplicar(values: Record<string, string>): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: queryParamsFromFiltro(values, this.filterKeys),
-    });
-  }
-
-  onFiltrosLimpiar(): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: queryParamsFromFiltro({}, this.filterKeys),
-    });
+  constructor(private trabajoService: TrabajoService) {
+    super();
   }
 
   eliminar(t: Trabajo): void {
@@ -132,7 +122,7 @@ export class TrabajosAdminComponent implements OnInit {
     this.trabajoService.baja(t.id).subscribe({
       next: () => {
         this.mensaje = `Trabajo #${t.id} eliminado.`;
-        this.cargar();
+        this.cargarPagina();
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo eliminar el trabajo.');
@@ -140,17 +130,16 @@ export class TrabajosAdminComponent implements OnInit {
     });
   }
 
-  private cargar(): void {
-    this.cargando = true;
-    this.error = '';
-    this.trabajoService.listar(1, 100, this.filtros).subscribe({
-      next: (items) => {
-        this.trabajos = items;
-        this.cargando = false;
+  protected override cargarPagina(): void {
+    this.iniciarCarga();
+    this.trabajoService.listarPagina(this.page, this.pageSize, this.filtros).subscribe({
+      next: (pagina) => {
+        this.trabajos = pagina.items;
+        this.aplicarPagina(pagina);
       },
       error: (err) => {
-        this.error = mensajeErrorApi(err, 'Error al cargar trabajos.');
-        this.cargando = false;
+        this.trabajos = [];
+        this.marcarError(mensajeErrorApi(err, 'Error al cargar trabajos.'));
       },
     });
   }

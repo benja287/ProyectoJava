@@ -2345,6 +2345,20 @@ textarea {
   margin-top: 0.75rem;
 }
 
+.app-paginator {
+  margin-top: 1rem;
+}
+
+.app-paginator-meta {
+  margin: 0 0 0.5rem;
+}
+
+.app-paginator-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .emails-modal-backdrop {
   position: fixed;
   inset: 0;

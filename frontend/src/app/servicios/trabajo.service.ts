@@ -39,8 +39,17 @@ export class TrabajoService {
   constructor(private http: HttpClient) {}
 
   listar(page = 1, size = 50, filtro: TrabajoListFiltro = {}): Observable<Trabajo[]> {
+    return this.listarPagina(page, size, filtro).pipe(map((p) => p.items));
+  }
+
+  /** Listado paginado con metadata (filtros + page/size). */
+  listarPagina(
+    page = 1,
+    size = 20,
+    filtro: TrabajoListFiltro = {}
+  ): Observable<PaginaTrabajos> {
     const params = buildListHttpParams(page, size, filtro, TRABAJO_FILTER_KEYS);
-    return this.http.get<PaginaTrabajos>(this.baseUrl, { params }).pipe(map((p) => p.items));
+    return this.http.get<PaginaTrabajos>(this.baseUrl, { params });
   }
 
   listarComite(): Observable<Trabajo[]> {
