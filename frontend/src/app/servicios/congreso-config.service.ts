@@ -4,7 +4,12 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { CongresoConfig } from '../models/congreso-config.model';
 
-export type CongresoConfigGrupo = 'CONGRESO' | 'INSCRIPCIONES' | 'ENVIO' | 'EVALUACION';
+export type CongresoConfigGrupo =
+  | 'CONGRESO'
+  | 'INSCRIPCIONES'
+  | 'ENVIO'
+  | 'EVALUACION'
+  | 'DATOS';
 
 export type CongresoConfigUpdate = Partial<{
   programaPublicado: boolean;
@@ -17,6 +22,9 @@ export type CongresoConfigUpdate = Partial<{
   evaluacionHasta: string | null;
   motivo: string | null;
   grupo: CongresoConfigGrupo | null;
+  nombre: string | null;
+  edicion: string | null;
+  sede: string | null;
 }>;
 
 @Injectable({ providedIn: 'root' })

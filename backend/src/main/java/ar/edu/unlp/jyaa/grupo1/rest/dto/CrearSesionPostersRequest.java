@@ -8,4 +8,5 @@ public record CrearSesionPostersRequest(
     String ubicacion,
     LocalDateTime inicio,
     LocalDateTime fin,
-    List<Long> trabajoIds) {}
+    List<Long> trabajoIds,
+    Long aulaId) {}

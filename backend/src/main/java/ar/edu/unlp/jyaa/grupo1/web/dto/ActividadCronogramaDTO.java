@@ -20,6 +20,8 @@ public record ActividadCronogramaDTO(
     String responsables,
     String conferencistas,
     String institucion,
+    Integer diaCongreso,
+    Long aulaId,
     List<TrabajoCronogramaItemDTO> trabajos) {
 
   public static ActividadCronogramaDTO from(Actividad a) {
@@ -42,6 +44,8 @@ public record ActividadCronogramaDTO(
         a.getResponsables(),
         a.getConferencistas(),
         a.getInstitucion(),
+        a.getDiaCongreso(),
+        a.getAula() != null ? a.getAula().getId() : null,
         trabajos);
   }
 }

@@ -119,6 +119,29 @@ public class ActividadDAOImpl extends AbstractJpaDAO<Actividad> implements Activ
   }
 
   @Override
+  public List<Actividad> buscarConflictosPorAula(
+      Long aulaId, LocalDateTime inicio, LocalDateTime fin, Long excluirId) {
+    EntityManager em = emConsulta();
+    try {
+      var q =
+          em.createQuery(
+              "SELECT a FROM Actividad a WHERE a.aula.id = :aulaId"
+                  + " AND a.inicio < :fin AND a.fin > :inicio"
+                  + (excluirId != null ? " AND a.id <> :excluir" : ""),
+              Actividad.class);
+      q.setParameter("aulaId", aulaId);
+      q.setParameter("inicio", inicio);
+      q.setParameter("fin", fin);
+      if (excluirId != null) {
+        q.setParameter("excluir", excluirId);
+      }
+      return q.getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
   public List<Actividad> buscarSolapamientoTipo(
       TipoActividad tipo, LocalDateTime inicio, LocalDateTime fin, Long excluirId) {
     EntityManager em = emConsulta();

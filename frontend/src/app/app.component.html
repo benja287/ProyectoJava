@@ -4,7 +4,7 @@
     <span class="brand-icon" aria-hidden="true">🌱</span>
     <span class="brand-text">
       <span class="brand-title">V Congreso Argentino de Agroecología</span>
-      <span class="brand-sub">La Plata 2027</span>
+      <span class="brand-sub">{{ etiquetaSede }}</span>
     </span>
   </a>
   <nav>
@@ -119,5 +119,5 @@
 </main>
 
 <footer class="app-footer">
-  V Congreso Argentino de Agroecología — La Plata 2027 · Angular + REST Jersey
+  V {{ congresoConfig?.edicion || 'V' }} Congreso Argentino de Agroecología — {{ etiquetaSede }} · Angular + REST Jersey
 </footer>

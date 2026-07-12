@@ -38,7 +38,7 @@ const ORDEN_TIPO: Record<string, number> = {
     <section class="programa-page">
       <header class="programa-hero">
         <h1>Programa del congreso</h1>
-        <p class="muted">V Congreso Argentino de Agroecología · La Plata 2027</p>
+        <p class="muted">{{ subtituloPrograma }}</p>
         @if (loginService.esAsistenteCongreso() || loginService.hasRole('AUTOR')) {
           <a
             [routerLink]="loginService.hasRole('AUTOR') ? '/autor/cronograma' : '/asistente/cronograma'"
@@ -147,6 +147,14 @@ export class ProgramaCongresoComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.navSub?.unsubscribe();
+  }
+
+  get subtituloPrograma(): string {
+    const ed = this.config?.edicion?.trim() || 'V';
+    const nom = this.config?.nombre?.trim() || 'Congreso Argentino de Agroecología';
+    const sede = this.config?.sede?.trim() || 'La Plata';
+    const anio = this.config?.congresoDesde?.slice(0, 4) || '2027';
+    return `${ed} ${nom} · ${sede} ${anio}`;
   }
 
   get fechasOrdenadas(): string[] {

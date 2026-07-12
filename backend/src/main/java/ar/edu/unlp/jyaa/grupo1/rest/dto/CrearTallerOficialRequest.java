@@ -8,4 +8,5 @@ public record CrearTallerOficialRequest(
     String sala,
     String responsables,
     String descripcion,
-    Long propuestaTallerId) {}
+    Long propuestaTallerId,
+    Long aulaId) {}

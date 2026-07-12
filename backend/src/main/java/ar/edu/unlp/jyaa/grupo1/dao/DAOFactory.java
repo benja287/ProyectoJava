@@ -68,4 +68,8 @@ public final class DAOFactory {
   public static CongresoAnteriorDAO getCongresoAnteriorDAO() {
     return new CongresoAnteriorDAOImpl();
   }
+
+  public static AulaDAO getAulaDAO() {
+    return new AulaDAOImpl();
+  }
 }

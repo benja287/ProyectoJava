@@ -4,6 +4,9 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import java.time.LocalDate;
 
 public record CongresoConfigDTO(
+    String nombre,
+    String edicion,
+    String sede,
     boolean programaPublicado,
     LocalDate certificadosDisponiblesDesde,
     LocalDate envioTrabajosHasta,
@@ -15,6 +18,9 @@ public record CongresoConfigDTO(
 
   public static CongresoConfigDTO from(Congreso congreso) {
     return new CongresoConfigDTO(
+        congreso.getNombre(),
+        congreso.getEdicion(),
+        congreso.getSede(),
         congreso.isProgramaPublicado(),
         congreso.getCertificadosDisponiblesDesde(),
         congreso.getEnvioTrabajosHasta(),

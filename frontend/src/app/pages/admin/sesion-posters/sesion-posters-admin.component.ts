@@ -10,8 +10,10 @@ import {
   toLocalDateTime,
 } from '../../../constants/congress-event';
 import { EJES_TEMATICOS, MODALIDAD_LABELS } from '../../../constants/ejes-tematicos';
+import { Aula } from '../../../models/aula.model';
 import { Trabajo } from '../../../models/trabajo.model';
 import { ActividadService } from '../../../servicios/actividad.service';
+import { AulaService } from '../../../servicios/aula.service';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -38,8 +40,15 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <input formControlName="titulo" />
         </label>
         <label>
-          Ubicación (Hall, Patio, etc.)
-          <input formControlName="ubicacion" />
+          Ubicación / Aula
+          <select formControlName="aulaId">
+            <option [ngValue]="null">— Elegí un aula —</option>
+            @for (a of aulas; track a.id) {
+              <option [ngValue]="a.id">
+                {{ a.nombre }}{{ a.capacidad ? ' (cap. ' + a.capacidad + ')' : '' }}
+              </option>
+            }
+          </select>
         </label>
         <label>
           Fecha
@@ -111,6 +120,7 @@ export class SesionPostersAdminComponent implements OnInit {
 
   ejesTematicos = [...EJES_TEMATICOS];
   fechasCongreso = congressDateLabels();
+  aulas: Aula[] = [];
   trabajosAprobados: Trabajo[] = [];
   trabajosFiltrados: Trabajo[] = [];
   seleccionados = new Set<number>();
@@ -122,7 +132,7 @@ export class SesionPostersAdminComponent implements OnInit {
 
   form = this.fb.group({
     titulo: ['', Validators.required],
-    ubicacion: ['', Validators.required],
+    aulaId: [null as number | null, Validators.required],
     fecha: [CONGRESS_EVENT_DATES[0], Validators.required],
     horaInicio: ['09:00', Validators.required],
     horaFin: ['11:00', Validators.required],
@@ -132,6 +142,7 @@ export class SesionPostersAdminComponent implements OnInit {
     private trabajoService: TrabajoService,
     private actividadService: ActividadService,
     private congresoConfigService: CongresoConfigService,
+    private aulaService: AulaService,
     private router: Router
   ) {}
 
@@ -142,6 +153,10 @@ export class SesionPostersAdminComponent implements OnInit {
         this.fechasCongreso = congressDateLabels(dates);
         this.form.patchValue({ fecha: dates[0] });
       },
+    });
+    this.aulaService.listarActivas().subscribe({
+      next: (items) => (this.aulas = items),
+      error: () => (this.aulas = []),
     });
     this.cargarTrabajos();
   }
@@ -177,7 +192,7 @@ export class SesionPostersAdminComponent implements OnInit {
     this.actividadService
       .crearSesionPosters({
         titulo: raw.titulo!,
-        ubicacion: raw.ubicacion!,
+        aulaId: Number(raw.aulaId),
         inicio: toLocalDateTime(raw.fecha!, raw.horaInicio!),
         fin: toLocalDateTime(raw.fecha!, raw.horaFin!),
         trabajoIds: ids,

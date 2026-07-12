@@ -9,4 +9,5 @@ public record CrearMesaTematicaRequest(
     String sala,
     LocalDateTime inicio,
     LocalDateTime fin,
-    List<Long> trabajoIds) {}
+    List<Long> trabajoIds,
+    Long aulaId) {}

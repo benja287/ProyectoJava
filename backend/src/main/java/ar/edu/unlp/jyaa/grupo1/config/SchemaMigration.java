@@ -23,6 +23,7 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCirculares);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasEmail);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresosAnteriores);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarAulasYPrograma);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -118,6 +119,74 @@ public final class SchemaMigration {
         "congresos",
         "evaluacion_hasta",
         "ALTER TABLE congresos ADD COLUMN evaluacion_hasta DATE NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "sede",
+        "ALTER TABLE congresos ADD COLUMN sede VARCHAR(200) NULL");
+    em.createNativeQuery(
+            "UPDATE congresos SET sede = 'La Plata' WHERE sede IS NULL OR TRIM(sede) = ''")
+        .executeUpdate();
+  }
+
+  /**
+   * Aulas del congreso + día lógico / FK en actividades (programa adaptable al postergar).
+   */
+  private static void migrarAulasYPrograma(EntityManager em) {
+    crearTablaAulasSiFalta(em);
+    agregarColumnaSiFalta(
+        em,
+        "actividades",
+        "dia_congreso",
+        "ALTER TABLE actividades ADD COLUMN dia_congreso INT NULL");
+    agregarColumnaSiFalta(
+        em,
+        "actividades",
+        "aula_id",
+        "ALTER TABLE actividades ADD COLUMN aula_id BIGINT NULL");
+    backfillDiaCongreso(em);
+  }
+
+  private static void crearTablaAulasSiFalta(EntityManager em) {
+    if (tablaExiste(em, "aulas")) {
+      log.info("Tabla aulas ya existe");
+      return;
+    }
+    em.createNativeQuery(
+            "CREATE TABLE aulas ("
+                + "id BIGINT NOT NULL AUTO_INCREMENT,"
+                + "nombre VARCHAR(120) NOT NULL,"
+                + "capacidad INT NULL,"
+                + "ubicacion VARCHAR(300) NULL,"
+                + "activa TINYINT(1) NOT NULL DEFAULT 1,"
+                + "PRIMARY KEY (id)"
+                + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
+        .executeUpdate();
+    log.info("Tabla aulas creada");
+  }
+
+  /** Rellena dia_congreso a partir de inicio vs congreso_desde cuando falta. */
+  private static void backfillDiaCongreso(EntityManager em) {
+    int actualizados =
+        em.createNativeQuery(
+                "UPDATE actividades a"
+                    + " INNER JOIN (SELECT congreso_desde FROM congresos ORDER BY id DESC LIMIT 1) c"
+                    + " SET a.dia_congreso = DATEDIFF(DATE(a.inicio), c.congreso_desde) + 1"
+                    + " WHERE a.dia_congreso IS NULL"
+                    + " AND a.inicio IS NOT NULL"
+                    + " AND c.congreso_desde IS NOT NULL"
+                    + " AND DATEDIFF(DATE(a.inicio), c.congreso_desde) BETWEEN 0 AND 2")
+            .executeUpdate();
+    if (actualizados > 0) {
+      log.info("Backfill dia_congreso en {} actividades", actualizados);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static boolean tablaExiste(EntityManager em, String tabla) {
+    var filas =
+        em.createNativeQuery("SHOW TABLES LIKE :t").setParameter("t", tabla).getResultList();
+    return !filas.isEmpty();
   }
 
   private static void migrarCirculares(EntityManager em) {

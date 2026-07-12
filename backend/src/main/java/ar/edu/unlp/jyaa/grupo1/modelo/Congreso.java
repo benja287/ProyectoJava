@@ -20,6 +20,9 @@ public class Congreso implements Serializable {
   @Column(nullable = false, length = 80)
   private String edicion;
 
+  @Column(length = 200)
+  private String sede;
+
   @ElementCollection
   @CollectionTable(name = "congreso_etapas", joinColumns = @JoinColumn(name = "congreso_id"))
   private List<EtapaCongreso> etapas = new ArrayList<>();
@@ -72,6 +75,14 @@ public class Congreso implements Serializable {
 
   public void setEdicion(String edicion) {
     this.edicion = edicion;
+  }
+
+  public String getSede() {
+    return sede;
+  }
+
+  public void setSede(String sede) {
+    this.sede = sede;
   }
 
   public List<EtapaCongreso> getEtapas() {

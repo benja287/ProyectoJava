@@ -1,14 +1,17 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
+import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CongresoConfigUpdateRequest;
+import ar.edu.unlp.jyaa.grupo1.util.FechasCongreso;
 import ar.edu.unlp.jyaa.grupo1.web.dto.CongresoConfigDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
@@ -27,6 +30,7 @@ public class CongresoService {
   public static final String GRUPO_INSCRIPCIONES = "INSCRIPCIONES";
   public static final String GRUPO_ENVIO = "ENVIO";
   public static final String GRUPO_EVALUACION = "EVALUACION";
+  public static final String GRUPO_DATOS = "DATOS";
 
   @Inject private NotificacionService notificacionService;
 
@@ -41,6 +45,7 @@ public class CongresoService {
   public CongresoConfigDTO actualizarConfig(CongresoConfigUpdateRequest request) {
     String grupo = normalizarGrupo(request.grupo());
     SnapshotAntes antes = new SnapshotAntes();
+    int[] actividadesRemapeadas = {0};
 
     CongresoConfigDTO dto =
         JpaUtil.ejecutarEnTransaccionReturning(
@@ -51,14 +56,24 @@ public class CongresoService {
               if (grupo == null) {
                 aplicarUpdateLegacy(congreso, request);
               } else {
-                exigirMotivo(request.motivo());
+                if (!GRUPO_DATOS.equals(grupo)) {
+                  exigirMotivo(request.motivo());
+                }
                 switch (grupo) {
-                  case GRUPO_CONGRESO -> aplicarCongreso(congreso, request);
+                  case GRUPO_DATOS -> aplicarDatos(congreso, request);
+                  case GRUPO_CONGRESO -> {
+                    aplicarCongreso(congreso, request);
+                    if (!Objects.equals(antes.congresoDesde, congreso.getCongresoDesde())) {
+                      actividadesRemapeadas[0] =
+                          remapearProgramaAlNuevoInicio(
+                              em, antes.congresoDesde, congreso.getCongresoDesde());
+                    }
+                  }
                   case GRUPO_INSCRIPCIONES -> aplicarInscripciones(congreso, request);
                   case GRUPO_ENVIO -> aplicarEnvio(congreso, request);
                   case GRUPO_EVALUACION -> aplicarEvaluacion(congreso, request);
                   default -> throw new NegocioException(
-                      "grupo inválido (use CONGRESO, INSCRIPCIONES, ENVIO o EVALUACION)");
+                      "grupo inválido (use CONGRESO, INSCRIPCIONES, ENVIO, EVALUACION o DATOS)");
                 }
               }
 
@@ -67,15 +82,16 @@ public class CongresoService {
               return CongresoConfigDTO.from(congreso);
             });
 
-    if (grupo != null) {
-      notificarSoloGrupo(grupo, antes, dto, request.motivo().trim());
-    } else if (request.envioTrabajosHasta() != null
+    if (grupo != null && !GRUPO_DATOS.equals(grupo)) {
+      notificarSoloGrupo(grupo, antes, dto, request.motivo().trim(), actividadesRemapeadas[0]);
+    } else if (grupo == null
+        && request.envioTrabajosHasta() != null
         && !Objects.equals(antes.envioTrabajosHasta, dto.envioTrabajosHasta())) {
       String motivo =
           request.motivo() != null && !request.motivo().isBlank()
               ? request.motivo().trim()
               : "Actualización de la fecha límite de envío de trabajos.";
-      notificarSoloGrupo(GRUPO_ENVIO, antes, dto, motivo);
+      notificarSoloGrupo(GRUPO_ENVIO, antes, dto, motivo, 0);
     }
 
     return dto;
@@ -94,6 +110,27 @@ public class CongresoService {
     }
   }
 
+  private void aplicarDatos(Congreso congreso, CongresoConfigUpdateRequest request) {
+    if (request.nombre() != null) {
+      String nombre = request.nombre().trim();
+      if (nombre.isEmpty()) {
+        throw new NegocioException("El nombre del congreso no puede quedar vacío.");
+      }
+      congreso.setNombre(nombre);
+    }
+    if (request.edicion() != null) {
+      String edicion = request.edicion().trim();
+      if (edicion.isEmpty()) {
+        throw new NegocioException("La edición del congreso no puede quedar vacía.");
+      }
+      congreso.setEdicion(edicion);
+    }
+    if (request.sede() != null) {
+      String sede = request.sede().trim();
+      congreso.setSede(sede.isEmpty() ? null : sede);
+    }
+  }
+
   private void aplicarCongreso(Congreso congreso, CongresoConfigUpdateRequest request) {
     LocalDate desde = parseFechaOpcional(request.congresoDesde());
     if (desde == null) {
@@ -105,6 +142,46 @@ public class CongresoService {
     congreso.setCongresoHasta(hasta);
     // Si había plazos viejos posteriores al nuevo fin, se ajustan (no bloquean el guardado).
     ajustarPlazosAlFinCongreso(congreso, hasta);
+  }
+
+  /**
+   * Mueve cada actividad al mismo día lógico (1/2/3) y misma hora sobre el nuevo inicio.
+   * Si no tiene diaCongreso, lo infiere con el inicio anterior del congreso.
+   */
+  private static int remapearProgramaAlNuevoInicio(
+      EntityManager em, LocalDate antiguoDesde, LocalDate nuevoDesde) {
+    if (nuevoDesde == null) {
+      return 0;
+    }
+    List<Actividad> actividades =
+        em.createQuery("SELECT a FROM Actividad a WHERE a.inicio IS NOT NULL", Actividad.class)
+            .getResultList();
+    int remapeadas = 0;
+    for (Actividad a : actividades) {
+      Integer dia = a.getDiaCongreso();
+      if (dia == null) {
+        dia = FechasCongreso.numeroDia(a.getInicio().toLocalDate(), antiguoDesde);
+      }
+      if (dia == null) {
+        continue;
+      }
+      LocalDate nuevaFecha = FechasCongreso.fechaDeDia(nuevoDesde, dia);
+      if (nuevaFecha == null) {
+        continue;
+      }
+      LocalDateTime nuevoInicio = LocalDateTime.of(nuevaFecha, a.getInicio().toLocalTime());
+      LocalDateTime nuevoFin =
+          a.getFin() != null
+              ? LocalDateTime.of(nuevaFecha, a.getFin().toLocalTime())
+              : null;
+      a.setDiaCongreso(dia);
+      a.setInicio(nuevoInicio);
+      if (nuevoFin != null) {
+        a.setFin(nuevoFin);
+      }
+      remapeadas++;
+    }
+    return remapeadas;
   }
 
   /**
@@ -153,7 +230,11 @@ public class CongresoService {
   }
 
   private void notificarSoloGrupo(
-      String grupo, SnapshotAntes antes, CongresoConfigDTO despues, String motivo) {
+      String grupo,
+      SnapshotAntes antes,
+      CongresoConfigDTO despues,
+      String motivo,
+      int actividadesRemapeadas) {
     switch (grupo) {
       case GRUPO_CONGRESO -> {
         if (Objects.equals(antes.congresoDesde, despues.congresoDesde())
@@ -166,7 +247,15 @@ public class CongresoService {
             .append(rangoTexto(despues.congresoDesde(), despues.congresoHasta()))
             .append(" (3 días). Motivo: ")
             .append(motivo)
-            .append(". Las actividades del programa deben programarse dentro de esos días.");
+            .append(".");
+        if (actividadesRemapeadas > 0) {
+          cuerpo
+              .append(" El programa se reacomodó automáticamente (")
+              .append(actividadesRemapeadas)
+              .append(" actividades conservaron su día 1/2/3 y horario).");
+        } else {
+          cuerpo.append(" Las actividades del programa deben programarse dentro de esos días.");
+        }
         if (!Objects.equals(antes.evaluacionHasta, despues.evaluacionHasta())
             || !Objects.equals(antes.envioTrabajosHasta, despues.envioTrabajosHasta())
             || !Objects.equals(antes.inscripcionesHasta, despues.inscripcionesHasta())) {
@@ -304,6 +393,7 @@ public class CongresoService {
     Congreso congreso = new Congreso();
     congreso.setNombre("Congreso Argentino de Agroecología");
     congreso.setEdicion("V");
+    congreso.setSede("La Plata");
     em.persist(congreso);
     em.flush();
     return congreso;

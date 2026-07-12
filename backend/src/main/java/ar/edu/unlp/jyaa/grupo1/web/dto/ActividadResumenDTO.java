@@ -19,7 +19,9 @@ public record ActividadResumenDTO(
     String panelistas,
     String responsables,
     String conferencistas,
-    String institucion) {
+    String institucion,
+    Integer diaCongreso,
+    Long aulaId) {
 
   public static ActividadResumenDTO from(Actividad a) {
     return new ActividadResumenDTO(
@@ -36,6 +38,8 @@ public record ActividadResumenDTO(
         a.getPanelistas(),
         a.getResponsables(),
         a.getConferencistas(),
-        a.getInstitucion());
+        a.getInstitucion(),
+        a.getDiaCongreso(),
+        a.getAula() != null ? a.getAula().getId() : null);
   }
 }

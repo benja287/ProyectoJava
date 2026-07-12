@@ -76,16 +76,18 @@ export interface TrabajoCreateRequest {
 export interface CrearMesaTematicaRequest {
   codigo: string;
   titulo: string;
-  sala: string;
+  sala?: string;
   inicio: string;
   fin: string;
   trabajoIds: number[];
+  aulaId?: number;
 }
 
 export interface CrearSesionPostersRequest {
   titulo: string;
-  ubicacion: string;
+  ubicacion?: string;
   inicio: string;
   fin: string;
   trabajoIds: number[];
+  aulaId?: number;
 }

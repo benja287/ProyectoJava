@@ -20,6 +20,14 @@ public class Actividad implements Serializable {
   @Column(length = 120)
   private String sala;
 
+  /** Día lógico del evento (1, 2 o 3). Al postergar el congreso se recalculan inicio/fin. */
+  @Column(name = "dia_congreso")
+  private Integer diaCongreso;
+
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "aula_id")
+  private Aula aula;
+
   private LocalDateTime inicio;
   private LocalDateTime fin;
 
@@ -86,6 +94,22 @@ public class Actividad implements Serializable {
 
   public void setSala(String sala) {
     this.sala = sala;
+  }
+
+  public Integer getDiaCongreso() {
+    return diaCongreso;
+  }
+
+  public void setDiaCongreso(Integer diaCongreso) {
+    this.diaCongreso = diaCongreso;
+  }
+
+  public Aula getAula() {
+    return aula;
+  }
+
+  public void setAula(Aula aula) {
+    this.aula = aula;
   }
 
   public LocalDateTime getInicio() {

@@ -53,6 +53,9 @@ public class CongresoResource {
             || request.inscripcionesDesde() != null
             || request.inscripcionesHasta() != null
             || request.evaluacionHasta() != null
+            || request.nombre() != null
+            || request.edicion() != null
+            || request.sede() != null
             || (request.grupo() != null
                 && !"ENVIO".equalsIgnoreCase(request.grupo().trim())))) {
       throw new NotAuthorizedException(

@@ -19,7 +19,7 @@ import { LoginService } from './auth/login.service';
 import { NotificacionService } from './servicios/notificacion.service';
 import { CongresoConfigService } from './servicios/congreso-config.service';
 import { AppVersionService } from './servicios/app-version.service';
-import { CongresoConfig } from './models/congreso-config.model';
+import { CongresoConfig, etiquetaSedeAnio } from './models/congreso-config.model';
 import { mensajeErrorApi } from './utils/api-error.util';
 import { etiquetaRol } from './models/role-labels';
 import { navegarConRecargaCompleta } from './utils/hard-navigation.util';
@@ -79,6 +79,10 @@ export class AppComponent implements OnInit, OnDestroy {
       next: (c) => (this.congresoConfig = c),
       error: () => (this.congresoConfig = undefined),
     });
+  }
+
+  get etiquetaSede(): string {
+    return etiquetaSedeAnio(this.congresoConfig);
   }
 
   get avisoCertificado(): string | null {

@@ -9,4 +9,5 @@ public record CrearMesaRedondaRequest(
     String sala,
     String fecha,
     String horaInicio,
-    String horaFin) {}
+    String horaFin,
+    Long aulaId) {}

@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CongresoConfig } from '../../../models/congreso-config.model';
+import { Aula } from '../../../models/aula.model';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
+import { AulaService } from '../../../servicios/aula.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { finCongresoDesdeInicio } from '../../../constants/congress-event';
 import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronograma-congreso-admin.component';
@@ -18,7 +20,7 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
         <span class="panel-hero-icon" aria-hidden="true">📅</span>
         <div>
           <h1>Congreso</h1>
-          <p>Programa, fechas, certificados y cronograma</p>
+          <p>Datos, aulas, fechas, certificados y cronograma</p>
         </div>
       </div>
 
@@ -30,6 +32,148 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
       @if (mensaje) {
         <p class="ok">{{ mensaje }}</p>
       }
+
+      <section class="panel-card panel-card--indigo">
+        <h2>Datos del congreso</h2>
+        <p class="muted">Nombre, edición y sede (aparecen en cabecera, inicio y certificados).</p>
+        <div class="form-grid form-grid-wide">
+          <label class="span-full">
+            Nombre
+            <input
+              type="text"
+              [(ngModel)]="datos.nombre"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Congreso Argentino de Agroecología"
+            />
+          </label>
+          <label>
+            Edición
+            <input
+              type="text"
+              [(ngModel)]="datos.edicion"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="V"
+            />
+          </label>
+          <label>
+            Sede
+            <input
+              type="text"
+              [(ngModel)]="datos.sede"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="La Plata"
+            />
+          </label>
+        </div>
+        <div class="inline-form-row" style="margin-top: 0.75rem">
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="guardandoVentana === 'DATOS'"
+            (click)="guardarDatos()"
+          >
+            {{ guardandoVentana === 'DATOS' ? 'Guardando...' : 'Guardar datos' }}
+          </button>
+        </div>
+        @if (feedbackDatos) {
+          <p [class]="feedbackDatosOk ? 'ok' : 'error'" style="margin-top: 0.5rem">
+            {{ feedbackDatos }}
+          </p>
+        }
+      </section>
+
+      <section class="panel-card">
+        <h2>Aulas</h2>
+        <p class="muted">
+          Recursos físicos del evento. Al programar actividades se elige un aula; se controlan
+          choques de horario en la misma aula.
+        </p>
+
+        <div class="form-grid form-grid-wide">
+          <label>
+            Nombre
+            <input
+              type="text"
+              [(ngModel)]="aulaForm.nombre"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Aula Magna"
+            />
+          </label>
+          <label>
+            Capacidad
+            <input
+              type="number"
+              min="1"
+              [(ngModel)]="aulaForm.capacidad"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="80"
+            />
+          </label>
+          <label class="span-full">
+            Ubicación
+            <input
+              type="text"
+              [(ngModel)]="aulaForm.ubicacion"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="FCAyF — edificio central"
+            />
+          </label>
+        </div>
+        <div class="inline-form-row" style="margin-top: 0.75rem">
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="guardandoAula"
+            (click)="guardarAula()"
+          >
+            {{ aulaEditId ? 'Actualizar aula' : 'Crear aula' }}
+          </button>
+          @if (aulaEditId) {
+            <button type="button" class="btn-link" [disabled]="guardandoAula" (click)="cancelarEdicionAula()">
+              Cancelar edición
+            </button>
+          }
+        </div>
+        @if (feedbackAula) {
+          <p [class]="feedbackAulaOk ? 'ok' : 'error'" style="margin-top: 0.5rem">
+            {{ feedbackAula }}
+          </p>
+        }
+
+        @if (aulas.length) {
+          <table class="tabla-simple" style="margin-top: 1rem; width: 100%">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Capacidad</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of aulas; track a.id) {
+                <tr>
+                  <td>{{ a.nombre }}</td>
+                  <td>{{ a.capacidad ?? '—' }}</td>
+                  <td>{{ a.ubicacion || '—' }}</td>
+                  <td>{{ a.activa ? 'Activa' : 'Inactiva' }}</td>
+                  <td class="inline-form-row">
+                    <button type="button" class="btn-link" (click)="editarAula(a)">Editar</button>
+                    @if (a.activa) {
+                      <button type="button" class="btn-link" (click)="desactivarAula(a)">
+                        Desactivar
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="muted" style="margin-top: 0.75rem">Todavía no hay aulas cargadas.</p>
+        }
+      </section>
 
       <section class="panel-card panel-card--indigo">
         <div class="panel-card-header-row">
@@ -104,7 +248,7 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
 
         <div class="panel-card" style="margin-top: 0.75rem; box-shadow: none">
           <h3>1. Inicio y fin del congreso</h3>
-          <p class="muted small">Notifica a todos. Las actividades deben caer en estos 3 días.</p>
+          <p class="muted small">Notifica a todos. Al guardar, el programa (día 1/2/3) se reacomoda a las nuevas fechas.</p>
           <div class="form-grid form-grid-wide">
             <label>
               Inicio del congreso (día 1)
@@ -293,6 +437,7 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
 export class CongresoAdminComponent implements OnInit {
   config?: CongresoConfig;
   certificadosInput = '';
+  datos = { nombre: '', edicion: '', sede: '' };
   ventanas = {
     congresoDesde: '',
     congresoHasta: '',
@@ -305,6 +450,8 @@ export class CongresoAdminComponent implements OnInit {
   motivoInscripciones = '';
   motivoEnvio = '';
   motivoEvaluacion = '';
+  feedbackDatos = '';
+  feedbackDatosOk = false;
   feedbackCongreso = '';
   feedbackCongresoOk = false;
   feedbackInscripciones = '';
@@ -313,12 +460,19 @@ export class CongresoAdminComponent implements OnInit {
   feedbackEnvioOk = false;
   feedbackEvaluacion = '';
   feedbackEvaluacionOk = false;
-  guardandoVentana: '' | 'CONGRESO' | 'INSCRIPCIONES' | 'ENVIO' | 'EVALUACION' = '';
+  feedbackAula = '';
+  feedbackAulaOk = false;
+  guardandoVentana: '' | 'DATOS' | 'CONGRESO' | 'INSCRIPCIONES' | 'ENVIO' | 'EVALUACION' = '';
+  aulas: Aula[] = [];
+  aulaEditId: number | null = null;
+  aulaForm = { nombre: '', capacidad: null as number | null, ubicacion: '' };
+  guardandoAula = false;
   error = '';
   mensaje = '';
   guardandoConfig = false;
 
   private congresoConfigService = inject(CongresoConfigService);
+  private aulaService = inject(AulaService);
 
   ngOnInit(): void {
     this.congresoConfigService.obtener().subscribe({
@@ -326,8 +480,116 @@ export class CongresoAdminComponent implements OnInit {
         this.config = c;
         this.certificadosInput = c.certificadosDisponiblesDesde ?? '';
         this.aplicarVentanasDesdeConfig(c);
+        this.aplicarDatosDesdeConfig(c);
       },
       error: () => (this.config = undefined),
+    });
+    this.cargarAulas();
+  }
+
+  guardarDatos(): void {
+    if (this.guardandoVentana) return;
+    this.feedbackDatos = '';
+    if (!this.datos.nombre.trim() || !this.datos.edicion.trim()) {
+      this.feedbackDatos = 'Nombre y edición son obligatorios.';
+      this.feedbackDatosOk = false;
+      return;
+    }
+    this.guardandoVentana = 'DATOS';
+    this.congresoConfigService
+      .actualizar({
+        grupo: 'DATOS',
+        nombre: this.datos.nombre.trim(),
+        edicion: this.datos.edicion.trim(),
+        sede: this.datos.sede.trim(),
+      })
+      .subscribe({
+        next: (c) => {
+          this.config = c;
+          this.aplicarDatosDesdeConfig(c);
+          this.guardandoVentana = '';
+          this.feedbackDatosOk = true;
+          this.feedbackDatos = 'Datos del congreso guardados.';
+        },
+        error: (err) => {
+          this.guardandoVentana = '';
+          this.feedbackDatosOk = false;
+          this.feedbackDatos = mensajeErrorApi(err, 'No se pudieron guardar los datos.');
+        },
+      });
+  }
+
+  cargarAulas(): void {
+    this.aulaService.listarAdmin().subscribe({
+      next: (items) => (this.aulas = items),
+      error: () => (this.aulas = []),
+    });
+  }
+
+  editarAula(a: Aula): void {
+    this.aulaEditId = a.id ?? null;
+    this.aulaForm = {
+      nombre: a.nombre,
+      capacidad: a.capacidad ?? null,
+      ubicacion: a.ubicacion ?? '',
+    };
+    this.feedbackAula = '';
+  }
+
+  cancelarEdicionAula(): void {
+    this.aulaEditId = null;
+    this.aulaForm = { nombre: '', capacidad: null, ubicacion: '' };
+  }
+
+  guardarAula(): void {
+    if (this.guardandoAula) return;
+    this.feedbackAula = '';
+    if (!this.aulaForm.nombre.trim()) {
+      this.feedbackAula = 'Indicá el nombre del aula.';
+      this.feedbackAulaOk = false;
+      return;
+    }
+    this.guardandoAula = true;
+    const body = {
+      nombre: this.aulaForm.nombre.trim(),
+      capacidad: this.aulaForm.capacidad || null,
+      ubicacion: this.aulaForm.ubicacion.trim() || null,
+      activa: true,
+    };
+    const req = this.aulaEditId
+      ? this.aulaService.modificar(this.aulaEditId, body)
+      : this.aulaService.crear(body);
+    req.subscribe({
+      next: () => {
+        this.guardandoAula = false;
+        this.feedbackAulaOk = true;
+        this.feedbackAula = this.aulaEditId ? 'Aula actualizada.' : 'Aula creada.';
+        this.cancelarEdicionAula();
+        this.cargarAulas();
+      },
+      error: (err) => {
+        this.guardandoAula = false;
+        this.feedbackAulaOk = false;
+        this.feedbackAula = mensajeErrorApi(err, 'No se pudo guardar el aula.');
+      },
+    });
+  }
+
+  desactivarAula(a: Aula): void {
+    if (!a.id || this.guardandoAula) return;
+    this.guardandoAula = true;
+    this.aulaService.desactivar(a.id).subscribe({
+      next: () => {
+        this.guardandoAula = false;
+        this.feedbackAulaOk = true;
+        this.feedbackAula = `Aula "${a.nombre}" desactivada.`;
+        this.cargarAulas();
+      },
+      error: (err) => {
+        this.guardandoAula = false;
+        this.feedbackAulaOk = false;
+        this.feedbackAula = mensajeErrorApi(err, 'No se pudo desactivar el aula.');
+      },
     });
   }
 
@@ -419,8 +681,8 @@ export class CongresoAdminComponent implements OnInit {
           this.guardandoVentana = '';
           this.feedbackCongresoOk = true;
           this.feedbackCongreso =
-            'Fechas del congreso guardadas (3 días). Se notificó a todos.'
-            + ' Si había plazos posteriores al nuevo fin, se ajustaron al fin del congreso.';
+            'Fechas del congreso guardadas (3 días). El programa se reacomodó por día lógico.'
+            + ' Se notificó a todos. Si había plazos posteriores al nuevo fin, se ajustaron.';
         },
         error: (err) => {
           this.guardandoVentana = '';
@@ -544,6 +806,14 @@ export class CongresoAdminComponent implements OnInit {
       inscripcionesHasta: c.inscripcionesHasta ?? '',
       envioTrabajosHasta: c.envioTrabajosHasta ?? '',
       evaluacionHasta: c.evaluacionHasta ?? '',
+    };
+  }
+
+  private aplicarDatosDesdeConfig(c: CongresoConfig): void {
+    this.datos = {
+      nombre: c.nombre ?? '',
+      edicion: c.edicion ?? '',
+      sede: c.sede ?? '',
     };
   }
 

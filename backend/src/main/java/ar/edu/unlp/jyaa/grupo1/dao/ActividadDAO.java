@@ -10,6 +10,9 @@ public interface ActividadDAO extends GenericDAO<Actividad> {
 
   List<Actividad> buscarConflictos(String sala, LocalDateTime inicio, LocalDateTime fin, Long excluirId);
 
+  List<Actividad> buscarConflictosPorAula(
+      Long aulaId, LocalDateTime inicio, LocalDateTime fin, Long excluirId);
+
   List<Actividad> buscarSolapamientoTipo(
       TipoActividad tipo, LocalDateTime inicio, LocalDateTime fin, Long excluirId);
 

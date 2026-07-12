@@ -1,10 +1,12 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.ActividadDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.AulaDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.ActividadFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
+import ar.edu.unlp.jyaa.grupo1.modelo.Aula;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoActividad;
@@ -40,6 +42,7 @@ public class ActividadService {
   private static final int SIZE_MAX = 100;
 
   @Inject private ActividadDAO actividadDAO;
+  @Inject private AulaDAO aulaDAO;
   @Inject private TrabajoDAO trabajoDAO;
   @Inject private CongresoDAO congresoDAO;
   @Inject private CongresoService congresoService;
@@ -110,9 +113,10 @@ public class ActividadService {
     Actividad actividad = new Actividad();
     actividad.setCodigo(request.codigo().trim());
     actividad.setTitulo(request.titulo().trim());
-    actividad.setSala(request.sala().trim());
+    asignarAulaOSala(actividad, request.aulaId(), request.sala());
     actividad.setInicio(request.inicio());
     actividad.setFin(request.fin());
+    sincronizarDiaCongreso(actividad);
     actividad.setTipoActividad(TipoActividad.MESA_TEMATICA);
     actividad.setTrabajos(new ArrayList<>(trabajos));
     validarConflictos(actividad, null);
@@ -129,9 +133,10 @@ public class ActividadService {
 
     Actividad actividad = new Actividad();
     actividad.setTitulo(request.titulo().trim());
-    actividad.setSala(request.ubicacion().trim());
+    asignarAulaOSala(actividad, request.aulaId(), request.ubicacion());
     actividad.setInicio(request.inicio());
     actividad.setFin(request.fin());
+    sincronizarDiaCongreso(actividad);
     actividad.setTipoActividad(TipoActividad.POSTER);
     actividad.setTrabajos(new ArrayList<>(trabajos));
     validarConflictos(actividad, null);
@@ -147,9 +152,6 @@ public class ActividadService {
     if (request.moderador() == null || request.moderador().isBlank()) {
       throw new NegocioException("Debe indicar el moderador");
     }
-    if (request.sala() == null || request.sala().isBlank()) {
-      throw new NegocioException("Debe indicar el lugar");
-    }
     LocalDateTime[] horario = parseHorarioCongreso(request.fecha(), request.horaInicio(), request.horaFin());
 
     Actividad actividad = new Actividad();
@@ -158,9 +160,10 @@ public class ActividadService {
     actividad.setModerador(request.moderador().trim());
     actividad.setPanelistas(blankToNull(request.panelistas()));
     actividad.setDescripcion(blankToNull(request.descripcion()));
-    actividad.setSala(request.sala().trim());
+    asignarAulaOSala(actividad, request.aulaId(), request.sala());
     actividad.setInicio(horario[0]);
     actividad.setFin(horario[1]);
+    sincronizarDiaCongreso(actividad);
     actividad.setTipoActividad(TipoActividad.MESA_REDONDA);
     validarSolapamientoTipo(actividad, null);
     validarConflictos(actividad, null);
@@ -171,9 +174,6 @@ public class ActividadService {
     if (request.titulo() == null || request.titulo().isBlank()) {
       throw new NegocioException("Debe indicar el título del taller");
     }
-    if (request.sala() == null || request.sala().isBlank()) {
-      throw new NegocioException("Debe indicar el lugar / espacio");
-    }
     if (request.responsables() == null || request.responsables().isBlank()) {
       throw new NegocioException("Debe indicar el/los responsable(s)");
     }
@@ -181,11 +181,12 @@ public class ActividadService {
 
     Actividad actividad = new Actividad();
     actividad.setTitulo(request.titulo().trim());
-    actividad.setSala(request.sala().trim());
+    asignarAulaOSala(actividad, request.aulaId(), request.sala());
     actividad.setResponsables(request.responsables().trim());
     actividad.setDescripcion(blankToNull(request.descripcion()));
     actividad.setInicio(horario[0]);
     actividad.setFin(horario[1]);
+    sincronizarDiaCongreso(actividad);
     actividad.setTipoActividad(TipoActividad.TALLER);
 
     if (request.propuestaTallerId() != null) {
@@ -214,9 +215,6 @@ public class ActividadService {
     if (request.titulo() == null || request.titulo().isBlank()) {
       throw new NegocioException("Debe indicar el título de la conferencia");
     }
-    if (request.sala() == null || request.sala().isBlank()) {
-      throw new NegocioException("Debe indicar el lugar / espacio");
-    }
     if (request.conferencistas() == null || request.conferencistas().isBlank()) {
       throw new NegocioException("Debe indicar el/los conferencista(s)");
     }
@@ -224,13 +222,14 @@ public class ActividadService {
 
     Actividad actividad = new Actividad();
     actividad.setTitulo(request.titulo().trim());
-    actividad.setSala(request.sala().trim());
+    asignarAulaOSala(actividad, request.aulaId(), request.sala());
     actividad.setConferencistas(request.conferencistas().trim());
     actividad.setModerador(blankToNull(request.moderador()));
     actividad.setInstitucion(blankToNull(request.institucion()));
     actividad.setDescripcion(blankToNull(request.descripcion()));
     actividad.setInicio(horario[0]);
     actividad.setFin(horario[1]);
+    sincronizarDiaCongreso(actividad);
     actividad.setTipoActividad(TipoActividad.CONFERENCIA);
     validarSolapamientoTipo(actividad, null);
     validarConflictos(actividad, null);
@@ -249,8 +248,8 @@ public class ActividadService {
     if (request.titulo() != null && !request.titulo().isBlank()) {
       actividad.setTitulo(request.titulo().trim());
     }
-    if (request.sala() != null && !request.sala().isBlank()) {
-      actividad.setSala(request.sala().trim());
+    if (request.aulaId() != null || (request.sala() != null && !request.sala().isBlank())) {
+      asignarAulaOSala(actividad, request.aulaId(), request.sala());
     }
     if (request.inicio() != null) {
       actividad.setInicio(request.inicio());
@@ -258,6 +257,7 @@ public class ActividadService {
     if (request.fin() != null) {
       actividad.setFin(request.fin());
     }
+    sincronizarDiaCongreso(actividad);
     if (request.codigo() != null) {
       actividad.setCodigo(blankToNull(request.codigo()));
     }
@@ -389,8 +389,8 @@ public class ActividadService {
     if (request.titulo() == null || request.titulo().isBlank()) {
       throw new NegocioException("Debe indicar la descripción de la sesión");
     }
-    if (request.sala() == null || request.sala().isBlank()) {
-      throw new NegocioException("Debe indicar la sala");
+    if (request.aulaId() == null && (request.sala() == null || request.sala().isBlank())) {
+      throw new NegocioException("Debe indicar el aula o la sala");
     }
     validarHorario(request.inicio(), request.fin());
   }
@@ -399,8 +399,9 @@ public class ActividadService {
     if (request.titulo() == null || request.titulo().isBlank()) {
       throw new NegocioException("Debe indicar el nombre de la sesión");
     }
-    if (request.ubicacion() == null || request.ubicacion().isBlank()) {
-      throw new NegocioException("Debe indicar la ubicación");
+    if (request.aulaId() == null
+        && (request.ubicacion() == null || request.ubicacion().isBlank())) {
+      throw new NegocioException("Debe indicar el aula o la ubicación");
     }
     validarHorario(request.inicio(), request.fin());
   }
@@ -414,8 +415,46 @@ public class ActividadService {
     }
   }
 
+  private void asignarAulaOSala(Actividad actividad, Long aulaId, String salaTexto) {
+    if (aulaId != null) {
+      Aula aula = aulaDAO.recuperarPorId(aulaId);
+      if (aula == null) {
+        throw new NegocioException("Aula no encontrada");
+      }
+      if (!aula.isActiva()) {
+        throw new NegocioException("El aula seleccionada está desactivada");
+      }
+      actividad.setAula(aula);
+      actividad.setSala(aula.getNombre());
+      return;
+    }
+    if (salaTexto != null && !salaTexto.isBlank()) {
+      actividad.setAula(null);
+      actividad.setSala(salaTexto.trim());
+      return;
+    }
+    throw new NegocioException("Debe indicar el aula/sala de la actividad");
+  }
+
+  private void sincronizarDiaCongreso(Actividad actividad) {
+    if (actividad.getInicio() == null) {
+      return;
+    }
+    var congreso = congresoDAO.obtenerPrincipal();
+    LocalDate desde = congreso != null ? congreso.getCongresoDesde() : null;
+    Integer dia = FechasCongreso.numeroDia(actividad.getInicio().toLocalDate(), desde);
+    if (dia == null && desde != null) {
+      throw new NegocioException(
+          "La fecha de la actividad debe caer en los "
+              + FechasCongreso.DIAS_CONGRESO
+              + " días del congreso");
+    }
+    actividad.setDiaCongreso(dia);
+  }
+
   private void validarConflictos(Actividad actividad, Long excluirId) {
-    if (actividad.getSala() == null || actividad.getSala().isBlank()) {
+    if ((actividad.getSala() == null || actividad.getSala().isBlank())
+        && actividad.getAula() == null) {
       throw new NegocioException("Debe indicar el aula/sala de la actividad");
     }
     if (actividad.getInicio() == null || actividad.getFin() == null) {
@@ -424,11 +463,25 @@ public class ActividadService {
     if (!actividad.getFin().isAfter(actividad.getInicio())) {
       throw new NegocioException("El horario de fin debe ser posterior al de inicio");
     }
-    List<Actividad> conflictos =
-        actividadDAO.buscarConflictos(
-            actividad.getSala(), actividad.getInicio(), actividad.getFin(), excluirId);
-    if (!conflictos.isEmpty()) {
-      throw new NegocioException("Conflicto de horario en la sala " + actividad.getSala());
+    List<Actividad> conflictos;
+    if (actividad.getAula() != null && actividad.getAula().getId() != null) {
+      conflictos =
+          actividadDAO.buscarConflictosPorAula(
+              actividad.getAula().getId(),
+              actividad.getInicio(),
+              actividad.getFin(),
+              excluirId);
+      if (!conflictos.isEmpty()) {
+        throw new NegocioException(
+            "Conflicto de horario en el aula " + actividad.getAula().getNombre());
+      }
+    } else {
+      conflictos =
+          actividadDAO.buscarConflictos(
+              actividad.getSala(), actividad.getInicio(), actividad.getFin(), excluirId);
+      if (!conflictos.isEmpty()) {
+        throw new NegocioException("Conflicto de horario en la sala " + actividad.getSala());
+      }
     }
   }
 

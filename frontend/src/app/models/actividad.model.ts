@@ -13,6 +13,8 @@ export interface Actividad {
   responsables?: string;
   conferencistas?: string;
   institucion?: string;
+  diaCongreso?: number | null;
+  aulaId?: number | null;
 }
 
 export interface PaginaActividades {
@@ -29,10 +31,11 @@ export interface CrearMesaRedondaRequest {
   moderador: string;
   panelistas?: string;
   descripcion?: string;
-  sala: string;
+  sala?: string;
   fecha: string;
   horaInicio: string;
   horaFin: string;
+  aulaId?: number;
 }
 
 export interface CrearTallerOficialRequest {
@@ -40,10 +43,11 @@ export interface CrearTallerOficialRequest {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  sala: string;
+  sala?: string;
   responsables: string;
   descripcion?: string;
   propuestaTallerId?: number;
+  aulaId?: number;
 }
 
 export interface CrearConferenciaRequest {
@@ -51,11 +55,12 @@ export interface CrearConferenciaRequest {
   fecha: string;
   horaInicio: string;
   horaFin: string;
-  sala: string;
+  sala?: string;
   conferencistas: string;
   moderador?: string;
   institucion?: string;
   descripcion?: string;
+  aulaId?: number;
 }
 
 export interface TrabajoCronogramaItem {
@@ -86,4 +91,5 @@ export interface ActualizarActividadProgramaRequest {
   responsables?: string;
   conferencistas?: string;
   institucion?: string;
+  aulaId?: number;
 }

@@ -5,7 +5,9 @@ import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
 import { EstadoInscripcionParticipante } from '../../models/inscripcion.model';
+import { CongresoConfig, anioCongreso } from '../../models/congreso-config.model';
 import { etiquetaRol } from '../../models/role-labels';
+import { CongresoConfigService } from '../../servicios/congreso-config.service';
 import { InscripcionService } from '../../servicios/inscripcion.service';
 
 @Component({
@@ -15,8 +17,8 @@ import { InscripcionService } from '../../servicios/inscripcion.service';
   template: `
     <section class="hero-congress">
       <div class="hero-inner">
-        <h1>V Congreso Argentino de Agroecología</h1>
-        <p class="hero-sub">La Plata, Argentina · 2027</p>
+        <h1>{{ tituloCongreso }}</h1>
+        <p class="hero-sub">{{ sedeAnio }}</p>
         <p class="hero-org">Organizado por LIRA - UNLP</p>
 
         @if (logueado) {
@@ -113,13 +115,19 @@ import { InscripcionService } from '../../servicios/inscripcion.service';
 })
 export class InicioComponent implements OnInit {
   estado?: EstadoInscripcionParticipante;
+  config?: CongresoConfig;
 
   constructor(
     public loginService: LoginService,
-    private inscripcionService: InscripcionService
+    private inscripcionService: InscripcionService,
+    private congresoConfigService: CongresoConfigService
   ) {}
 
   ngOnInit(): void {
+    this.congresoConfigService.obtener().subscribe({
+      next: (c) => (this.config = c),
+      error: () => (this.config = undefined),
+    });
     if (!this.logueado) {
       return;
     }
@@ -130,6 +138,17 @@ export class InicioComponent implements OnInit {
       },
       error: () => undefined,
     });
+  }
+
+  get tituloCongreso(): string {
+    const ed = this.config?.edicion?.trim() || 'V';
+    const nom = this.config?.nombre?.trim() || 'Congreso Argentino de Agroecología';
+    return `${ed} ${nom}`;
+  }
+
+  get sedeAnio(): string {
+    const sede = this.config?.sede?.trim() || 'La Plata';
+    return `${sede}, Argentina · ${anioCongreso(this.config)}`;
   }
 
   get logueado(): boolean {

@@ -9,4 +9,5 @@ public record CrearConferenciaRequest(
     String conferencistas,
     String moderador,
     String institucion,
-    String descripcion) {}
+    String descripcion,
+    Long aulaId) {}

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
-import { CongresoConfig } from '../../models/congreso-config.model';
+import { CongresoConfig, anioCongreso } from '../../models/congreso-config.model';
 import { CongresoConfigService } from '../../servicios/congreso-config.service';
 import { etiquetaRol } from '../../models/role-labels';
 
@@ -28,14 +28,14 @@ import { etiquetaRol } from '../../models/role-labels';
         </div>
       } @else {
         <p class="muted">
-          Tu inscripción fue confirmada. Podés generar el certificado de asistencia al V Congreso
-          Argentino de Agroecología.
+          Tu inscripción fue confirmada. Podés generar el certificado de asistencia al
+          {{ tituloCongreso }}.
         </p>
         <div class="certificado-preview panel-card">
           <h2>Certificado de asistencia</h2>
           <p><strong>{{ usuario?.nombre }} {{ usuario?.apellido }}</strong></p>
-          <p>Certifica su participación como asistente al V Congreso Argentino de Agroecología.</p>
-          <p class="muted small">La Plata, Argentina · 2027</p>
+          <p>Certifica su participación como asistente al {{ tituloCongreso }}.</p>
+          <p class="muted small">{{ sedeAnioCert }}</p>
           <button type="button" class="btn-primary" (click)="imprimir()">Imprimir / guardar PDF</button>
         </div>
       }
@@ -60,6 +60,17 @@ export class CertificadoAsistenteComponent implements OnInit {
 
   get usuario() {
     return this.loginService.getUser();
+  }
+
+  get tituloCongreso(): string {
+    const ed = this.config?.edicion?.trim() || 'V';
+    const nom = this.config?.nombre?.trim() || 'Congreso Argentino de Agroecología';
+    return `${ed} ${nom}`;
+  }
+
+  get sedeAnioCert(): string {
+    const sede = this.config?.sede?.trim() || 'La Plata';
+    return `${sede}, Argentina · ${anioCongreso(this.config)}`;
   }
 
   get certificadosHabilitados(): boolean {

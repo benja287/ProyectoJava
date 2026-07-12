@@ -14,4 +14,5 @@ public record ActualizarActividadProgramaRequest(
     String panelistas,
     String responsables,
     String conferencistas,
-    String institucion) {}
+    String institucion,
+    Long aulaId) {}

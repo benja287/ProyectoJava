@@ -7,7 +7,9 @@ import {
   congressDateLabels,
   isValidTimeRange,
 } from '../../../constants/congress-event';
+import { Aula } from '../../../models/aula.model';
 import { ActividadService } from '../../../servicios/actividad.service';
+import { AulaService } from '../../../servicios/aula.service';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
@@ -44,10 +46,23 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           Descripción
           <textarea formControlName="descripcion" rows="4" placeholder="Descripción"></textarea>
         </label>
-        <label>
-          Lugar
-          <input formControlName="sala" placeholder="Lugar" />
+        <label class="span-full">
+          Aula
+          <select formControlName="aulaId">
+            <option [ngValue]="null">— Elegí un aula —</option>
+            @for (a of aulas; track a.id) {
+              <option [ngValue]="a.id">
+                {{ a.nombre }}{{ a.capacidad ? ' (cap. ' + a.capacidad + ')' : '' }}
+              </option>
+            }
+          </select>
         </label>
+        @if (!aulas.length) {
+          <p class="muted small span-full">
+            No hay aulas activas. Crealas en
+            <a routerLink="/admin/congreso">Admin → Congreso → Aulas</a>.
+          </p>
+        }
         <label>
           Fecha
           <select formControlName="fecha">
@@ -79,6 +94,7 @@ export class MesaRedondaAdminComponent implements OnInit {
   private router = inject(Router);
 
   fechasCongreso = congressDateLabels();
+  aulas: Aula[] = [];
   guardando = false;
   error = '';
 
@@ -88,7 +104,7 @@ export class MesaRedondaAdminComponent implements OnInit {
     moderador: ['', Validators.required],
     panelistas: [''],
     descripcion: [''],
-    sala: ['', Validators.required],
+    aulaId: [null as number | null, Validators.required],
     fecha: [CONGRESS_EVENT_DATES[0], Validators.required],
     horaInicio: ['09:00', Validators.required],
     horaFin: ['10:00', Validators.required],
@@ -96,7 +112,8 @@ export class MesaRedondaAdminComponent implements OnInit {
 
   constructor(
     private actividadService: ActividadService,
-    private congresoConfigService: CongresoConfigService
+    private congresoConfigService: CongresoConfigService,
+    private aulaService: AulaService
   ) {}
 
   ngOnInit(): void {
@@ -106,6 +123,10 @@ export class MesaRedondaAdminComponent implements OnInit {
         this.fechasCongreso = congressDateLabels(dates);
         this.form.patchValue({ fecha: dates[0] });
       },
+    });
+    this.aulaService.listarActivas().subscribe({
+      next: (items) => (this.aulas = items),
+      error: () => (this.aulas = []),
     });
   }
 
@@ -125,7 +146,7 @@ export class MesaRedondaAdminComponent implements OnInit {
         moderador: raw.moderador!,
         panelistas: raw.panelistas || undefined,
         descripcion: raw.descripcion || undefined,
-        sala: raw.sala!,
+        aulaId: Number(raw.aulaId),
         fecha: raw.fecha!,
         horaInicio: raw.horaInicio!,
         horaFin: raw.horaFin!,

@@ -7,7 +7,9 @@ import {
   congressDateLabels,
   isValidTimeRange,
 } from '../../../constants/congress-event';
+import { Aula } from '../../../models/aula.model';
 import { ActividadService } from '../../../servicios/actividad.service';
+import { AulaService } from '../../../servicios/aula.service';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
@@ -48,9 +50,22 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <input formControlName="horaFin" type="time" />
         </label>
         <label class="span-full">
-          Lugar / espacio
-          <input formControlName="sala" placeholder="Ej. Aula Magna — FCAyF" />
+          Aula
+          <select formControlName="aulaId">
+            <option [ngValue]="null">— Elegí un aula —</option>
+            @for (a of aulas; track a.id) {
+              <option [ngValue]="a.id">
+                {{ a.nombre }}{{ a.capacidad ? ' (cap. ' + a.capacidad + ')' : '' }}
+              </option>
+            }
+          </select>
         </label>
+        @if (!aulas.length) {
+          <p class="muted small span-full">
+            No hay aulas activas. Crealas en
+            <a routerLink="/admin/congreso">Admin → Congreso → Aulas</a>.
+          </p>
+        }
         <label class="span-full">
           Conferencista(s)
           <input formControlName="conferencistas" placeholder="Nombre(s) y apellido(s)" />
@@ -87,6 +102,7 @@ export class CrearConferenciaAdminComponent implements OnInit {
 
   fechasCongreso = congressDateLabels();
   fechasPermitidas = CONGRESS_EVENT_DATES.join(', ');
+  aulas: Aula[] = [];
   guardando = false;
   error = '';
 
@@ -95,7 +111,7 @@ export class CrearConferenciaAdminComponent implements OnInit {
     fecha: [CONGRESS_EVENT_DATES[0], Validators.required],
     horaInicio: ['09:00', Validators.required],
     horaFin: ['10:00', Validators.required],
-    sala: ['', Validators.required],
+    aulaId: [null as number | null, Validators.required],
     conferencistas: ['', Validators.required],
     moderador: [''],
     institucion: [''],
@@ -104,7 +120,8 @@ export class CrearConferenciaAdminComponent implements OnInit {
 
   constructor(
     private actividadService: ActividadService,
-    private congresoConfigService: CongresoConfigService
+    private congresoConfigService: CongresoConfigService,
+    private aulaService: AulaService
   ) {}
 
   ngOnInit(): void {
@@ -115,6 +132,10 @@ export class CrearConferenciaAdminComponent implements OnInit {
         this.fechasPermitidas = dates.join(', ');
         this.form.patchValue({ fecha: dates[0] });
       },
+    });
+    this.aulaService.listarActivas().subscribe({
+      next: (items) => (this.aulas = items),
+      error: () => (this.aulas = []),
     });
   }
 
@@ -133,7 +154,7 @@ export class CrearConferenciaAdminComponent implements OnInit {
         fecha: raw.fecha!,
         horaInicio: raw.horaInicio!,
         horaFin: raw.horaFin!,
-        sala: raw.sala!,
+        aulaId: Number(raw.aulaId),
         conferencistas: raw.conferencistas!,
         moderador: raw.moderador || undefined,
         institucion: raw.institucion || undefined,
