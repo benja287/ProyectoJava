@@ -3,20 +3,36 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
+import {
+  FilterBarComponent,
+  FilterFieldConfig,
+} from '../../../components/filter-bar/filter-bar.component';
+import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
 import { EJES_TEMATICOS, MODALIDAD_LABELS } from '../../../constants/ejes-tematicos';
+import { AsignacionEvaluacion } from '../../../models/asignacion.model';
 import { Trabajo } from '../../../models/trabajo.model';
 import { Usuario } from '../../../models/usuario.model';
-import { AsignacionEvaluacion } from '../../../models/asignacion.model';
 import { AsignacionService } from '../../../servicios/asignacion.service';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { UsuarioService } from '../../../servicios/usuario.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
 import {
   etiquetaRolEnvio,
   esEnvioAsistente,
   mensajeComiteEvaluacionObservado,
   mensajeComitePrecheckObservado,
 } from '../../../utils/trabajo-rol.util';
+
+const ESTADOS_COMITE = [
+  'ENVIADO',
+  'PRECHECK_OK',
+  'PRECHECK_OBSERVADO',
+  'EN_EVALUACION',
+  'PENDIENTE_APROBACION_COMITE',
+  'OBSERVADO_EVALUACION',
+  'APROBADO',
+] as const;
 
 interface PrecheckChecks {
   pdfOk: boolean;
@@ -31,7 +47,14 @@ interface PrecheckChecks {
 @Component({
   selector: 'app-comite-oc',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, ArchivoLinkComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ReactiveFormsModule,
+    ArchivoLinkComponent,
+    FilterBarComponent,
+    AppPaginatorComponent,
+  ],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--indigo">
@@ -58,10 +81,20 @@ interface PrecheckChecks {
         <section class="panel-card comite-lista">
           <div class="comite-section-header">
             <h2>Trabajos</h2>
-            <span class="comite-counter">{{ trabajos.length }} total</span>
+            <span class="comite-counter">{{ total }} total</span>
           </div>
-          @if (trabajos.length === 0) {
-            <p class="muted">No hay trabajos enviados todavía.</p>
+
+          <app-filter-bar
+            [fields]="filterFields"
+            [values]="filtros"
+            (filterApply)="onFiltrosAplicar($event)"
+            (filterClear)="onFiltrosLimpiar()"
+          />
+
+          @if (cargando) {
+            <p class="muted">Cargando trabajos...</p>
+          } @else if (trabajos.length === 0) {
+            <p class="muted">No hay trabajos con esos filtros.</p>
           } @else {
             <ul class="comite-trabajos-lista">
               @for (t of trabajos; track t.id) {
@@ -99,6 +132,14 @@ interface PrecheckChecks {
                 </li>
               }
             </ul>
+
+            <app-paginator
+              [currentPage]="page"
+              [totalPages]="totalPages"
+              [total]="total"
+              [disabled]="cargando"
+              (pageChange)="onPageChange($event)"
+            />
           }
         </section>
 
@@ -372,19 +413,31 @@ interface PrecheckChecks {
     </div>
   `,
 })
-export class ComiteOcComponent implements OnInit {
+export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
   private fb = inject(FormBuilder);
   readonly Math = Math;
   readonly ejesTematicos = [...EJES_TEMATICOS];
   readonly modalidadLabels = MODALIDAD_LABELS;
 
+  readonly filterFields: FilterFieldConfig[] = [
+    { key: 'titulo', label: 'Título', placeholder: 'Buscar por título' },
+    { key: 'ejeTematico', label: 'Eje temático', placeholder: 'Buscar eje' },
+    {
+      key: 'estado',
+      label: 'Estado',
+      type: 'select',
+      options: ESTADOS_COMITE.map((e) => ({ value: e, label: e })),
+    },
+  ];
+  readonly filterKeys = ['titulo', 'ejeTematico', 'estado'] as const;
+
+  override pageSize = 15;
   trabajos: Trabajo[] = [];
   usuarios: Usuario[] = [];
   seleccionado?: Trabajo;
   asignaciones: AsignacionEvaluacion[] = [];
   evaluadoresSeleccionados = new Set<number>();
   procesando = false;
-  error = '';
   mensaje = '';
 
   observacionesCtrl = this.fb.control('');
@@ -414,10 +467,12 @@ export class ComiteOcComponent implements OnInit {
     private trabajoService: TrabajoService,
     private asignacionService: AsignacionService,
     private usuarioService: UsuarioService
-  ) {}
+  ) {
+    super();
+  }
 
-  ngOnInit(): void {
-    this.cargarTrabajos();
+  override ngOnInit(): void {
+    super.ngOnInit();
     this.cargarUsuarios();
   }
 
@@ -554,7 +609,7 @@ export class ComiteOcComponent implements OnInit {
         if (apto) {
           this.evaluadoresSeleccionados = new Set();
         }
-        this.cargarTrabajos();
+        this.cargarPagina();
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo registrar el precheck.');
@@ -604,7 +659,7 @@ export class ComiteOcComponent implements OnInit {
         next: () => {
           this.mensaje = 'Evaluadores asignados.';
           this.procesando = false;
-          this.cargarTrabajos();
+          this.cargarPagina();
           if (this.seleccionado?.id) {
             this.cargarAsignaciones(this.seleccionado.id);
           }
@@ -641,7 +696,7 @@ export class ComiteOcComponent implements OnInit {
         this.mensaje = aprobar ? 'Trabajo aprobado.' : 'Rechazo definitivo registrado.';
         this.procesando = false;
         this.actualizarTrabajo(t);
-        this.cargarTrabajos();
+        this.cargarPagina();
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo confirmar.');
@@ -656,15 +711,21 @@ export class ComiteOcComponent implements OnInit {
     if (idx >= 0) this.trabajos[idx] = t;
   }
 
-  private cargarTrabajos(): void {
-    this.trabajoService.listarComite().subscribe({
-      next: (items) => {
-        this.trabajos = items;
+  protected override cargarPagina(): void {
+    this.iniciarCarga();
+    this.trabajoService.listarComitePagina(this.page, this.pageSize, this.filtros).subscribe({
+      next: (pagina) => {
+        this.trabajos = pagina.items;
+        this.aplicarPagina(pagina);
         if (this.seleccionado?.id) {
-          this.seleccionado = this.trabajos.find((t) => t.id === this.seleccionado!.id) ?? this.seleccionado;
+          this.seleccionado =
+            this.trabajos.find((t) => t.id === this.seleccionado!.id) ?? this.seleccionado;
         }
       },
-      error: (err) => (this.error = mensajeErrorApi(err, 'No se pudieron cargar trabajos.')),
+      error: (err) => {
+        this.trabajos = [];
+        this.marcarError(mensajeErrorApi(err, 'No se pudieron cargar trabajos.'));
+      },
     });
   }
 

@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
 import { EnvioEmail, EnvioEmailResumen } from '../../../models/envio-email.model';
 import { EnvioEmailService } from '../../../servicios/envio-email.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -9,7 +10,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 @Component({
   selector: 'app-emails-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, AppPaginatorComponent],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--admin">
@@ -134,22 +135,13 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
               </tbody>
             </table>
           </div>
-          <p class="muted small">
-            Página {{ pagina }} de {{ totalPaginas || 1 }} — {{ total }} registro(s)
-          </p>
-          <div class="emails-paginacion">
-            <button type="button" class="btn-secundario" [disabled]="pagina <= 1" (click)="irPagina(pagina - 1)">
-              Anterior
-            </button>
-            <button
-              type="button"
-              class="btn-secundario"
-              [disabled]="pagina >= totalPaginas"
-              (click)="irPagina(pagina + 1)"
-            >
-              Siguiente
-            </button>
-          </div>
+          <app-paginator
+            [currentPage]="pagina"
+            [totalPages]="totalPaginas"
+            [total]="total"
+            [disabled]="cargando"
+            (pageChange)="irPagina($event)"
+          />
         }
       </section>
 

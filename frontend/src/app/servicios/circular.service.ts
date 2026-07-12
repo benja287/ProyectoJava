@@ -26,9 +26,13 @@ export class CircularService {
   }
 
   listarAdmin(page = 1, size = 50): Observable<Circular[]> {
-    return this.http
-      .get<PaginaCirculares>(`${this.baseUrl}/admin`, { params: { page, size } })
-      .pipe(map((p) => p.items));
+    return this.listarAdminPagina(page, size).pipe(map((p) => p.items));
+  }
+
+  listarAdminPagina(page = 1, size = 20): Observable<PaginaCirculares> {
+    return this.http.get<PaginaCirculares>(`${this.baseUrl}/admin`, {
+      params: { page, size },
+    });
   }
 
   obtener(id: number): Observable<Circular> {

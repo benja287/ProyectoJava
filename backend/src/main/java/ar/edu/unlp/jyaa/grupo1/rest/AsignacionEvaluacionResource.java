@@ -5,6 +5,8 @@ import ar.edu.unlp.jyaa.grupo1.rest.dto.AsignacionRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.RespuestaAsignacionRequest;
 import ar.edu.unlp.jyaa.grupo1.servicio.AsignacionEvaluacionService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.AsignacionEvaluacionDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaAsignacionesDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ResumenAsignacionesEvaluadorDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +15,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
@@ -38,21 +41,36 @@ public class AsignacionEvaluacionResource {
   @Inject private AsignacionEvaluacionService asignacionService;
 
   @GET
+  @Path("/resumen")
+  @Operation(summary = "Contadores de asignaciones del evaluador")
+  public ResumenAsignacionesEvaluadorDTO resumen(@QueryParam("evaluadorId") Long evaluadorId) {
+    if (evaluadorId == null) {
+      throw new BadRequestException("Indicar evaluadorId");
+    }
+    return asignacionService.resumenPorEvaluador(evaluadorId);
+  }
+
+  @GET
   @Operation(
       summary = "Listar asignaciones",
-      description = "Filtrar por evaluadorId o trabajoId (uno de los dos es obligatorio).")
+      description =
+          "Por evaluadorId: paginado (page/size) y filtro soloPendientes. Por trabajoId: listado completo.")
   @ApiResponse(responseCode = "200", description = "Listado de asignaciones")
-  public List<AsignacionEvaluacionDTO> listar(
-      @QueryParam("evaluadorId") Long evaluadorId, @QueryParam("trabajoId") Long trabajoId) {
+  public Object listar(
+      @QueryParam("evaluadorId") Long evaluadorId,
+      @QueryParam("trabajoId") Long trabajoId,
+      @QueryParam("soloPendientes") @DefaultValue("false") boolean soloPendientes,
+      @QueryParam("page") @DefaultValue("1") int page,
+      @QueryParam("size") @DefaultValue("20") int size) {
     if (evaluadorId != null) {
-      return asignacionService.listarPorEvaluador(evaluadorId).stream()
-          .map(AsignacionEvaluacionDTO::from)
-          .toList();
+      return asignacionService.listarPorEvaluador(evaluadorId, page, size, soloPendientes);
     }
     if (trabajoId != null) {
-      return asignacionService.listarPorTrabajo(trabajoId).stream()
-          .map(AsignacionEvaluacionDTO::from)
-          .toList();
+      List<AsignacionEvaluacionDTO> items =
+          asignacionService.listarPorTrabajo(trabajoId).stream()
+              .map(AsignacionEvaluacionDTO::from)
+              .toList();
+      return new PaginaAsignacionesDTO(items, 1, items.size() == 0 ? size : items.size(), items.size(), 1);
     }
     throw new BadRequestException("Indicar evaluadorId o trabajoId");
   }

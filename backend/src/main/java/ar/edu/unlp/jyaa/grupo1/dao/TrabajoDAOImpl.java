@@ -1,10 +1,12 @@
 package ar.edu.unlp.jyaa.grupo1.dao;
 
-import jakarta.enterprise.context.RequestScoped;
+import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.JpqlLikeFilters;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.TrabajoFiltro;
-import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
+import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
+import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import java.util.HashMap;
@@ -118,7 +120,8 @@ public class TrabajoDAOImpl extends AbstractJpaDAO<Trabajo> implements TrabajoDA
     EntityManager em = emConsulta();
     try {
       Map<String, Object> params = new HashMap<>();
-      String jpql = buildTrabajoWhere("SELECT t FROM Trabajo t JOIN FETCH t.autor", filtro, params);
+      String jpql =
+          buildTrabajoWhere("SELECT t FROM Trabajo t JOIN FETCH t.autor", filtro, params, false);
       jpql += " ORDER BY t.fechaCreacion DESC";
       TypedQuery<Trabajo> q = em.createQuery(jpql, Trabajo.class);
       params.forEach(q::setParameter);
@@ -133,7 +136,37 @@ public class TrabajoDAOImpl extends AbstractJpaDAO<Trabajo> implements TrabajoDA
     EntityManager em = emConsulta();
     try {
       Map<String, Object> params = new HashMap<>();
-      String jpql = buildTrabajoWhere("SELECT COUNT(t) FROM Trabajo t", filtro, params);
+      String jpql = buildTrabajoWhere("SELECT COUNT(t) FROM Trabajo t", filtro, params, false);
+      TypedQuery<Long> q = em.createQuery(jpql, Long.class);
+      params.forEach(q::setParameter);
+      return q.getSingleResult();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public List<Trabajo> listarFiltradoComite(TrabajoFiltro filtro, int offset, int limit) {
+    EntityManager em = emConsulta();
+    try {
+      Map<String, Object> params = new HashMap<>();
+      String jpql =
+          buildTrabajoWhere("SELECT t FROM Trabajo t JOIN FETCH t.autor", filtro, params, true);
+      jpql += " ORDER BY t.fechaCreacion DESC";
+      TypedQuery<Trabajo> q = em.createQuery(jpql, Trabajo.class);
+      params.forEach(q::setParameter);
+      return q.setFirstResult(offset).setMaxResults(limit).getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public long contarFiltradoComite(TrabajoFiltro filtro) {
+    EntityManager em = emConsulta();
+    try {
+      Map<String, Object> params = new HashMap<>();
+      String jpql = buildTrabajoWhere("SELECT COUNT(t) FROM Trabajo t", filtro, params, true);
       TypedQuery<Long> q = em.createQuery(jpql, Long.class);
       params.forEach(q::setParameter);
       return q.getSingleResult();
@@ -143,7 +176,7 @@ public class TrabajoDAOImpl extends AbstractJpaDAO<Trabajo> implements TrabajoDA
   }
 
   private static String buildTrabajoWhere(
-      String select, TrabajoFiltro filtro, Map<String, Object> params) {
+      String select, TrabajoFiltro filtro, Map<String, Object> params, boolean alcanceComite) {
     StringBuilder jpql = new StringBuilder(select).append(" WHERE 1=1");
     if (filtro.autorId() != null) {
       jpql.append(" AND t.autor.id = :autorId");
@@ -163,6 +196,16 @@ public class TrabajoDAOImpl extends AbstractJpaDAO<Trabajo> implements TrabajoDA
     if (filtro.tipo() != null) {
       jpql.append(" AND t.tipo = :tipo");
       params.put("tipo", filtro.tipo());
+    }
+    if (alcanceComite) {
+      jpql.append(" AND t.tipo <> :tipoExcluidoComite");
+      params.put("tipoExcluidoComite", TipoTrabajo.PROPUESTA_TALLER);
+      if (filtro.estado() == null) {
+        jpql.append(" AND t.estado NOT IN :estadosExcluidosComite");
+        params.put(
+            "estadosExcluidosComite",
+            List.of(EstadoTrabajo.RECHAZADO, EstadoTrabajo.BORRADOR));
+      }
     }
     return jpql.toString();
   }

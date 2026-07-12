@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
+import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
 import { LoginService } from '../../../auth/login.service';
 import { AsignacionEvaluacion } from '../../../models/asignacion.model';
 import { AsignacionService } from '../../../servicios/asignacion.service';
@@ -12,7 +13,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 @Component({
   selector: 'app-asignaciones-evaluador',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, ArchivoLinkComponent],
+  imports: [CommonModule, RouterLink, FormsModule, ArchivoLinkComponent, AppPaginatorComponent],
   template: `
     <section class="card">
       <h1>Mis asignaciones de evaluación</h1>
@@ -54,8 +55,12 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                 </td>
                 <td>
                   @if (!a.fechaRespuesta) {
-                    <button type="button" class="btn-ok" (click)="responder(a.id, true)">Aceptar</button>
-                    <button type="button" class="btn-warn" (click)="responder(a.id, false)">Rechazar</button>
+                    <button type="button" class="btn-ok" (click)="responder(a.id, true)">
+                      Aceptar
+                    </button>
+                    <button type="button" class="btn-warn" (click)="responder(a.id, false)">
+                      Rechazar
+                    </button>
                   } @else if (a.aceptada) {
                     Aceptada ({{ a.fechaRespuesta }})
                   } @else {
@@ -80,7 +85,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                       rows="2"
                       placeholder="Comentario (opcional)"
                     ></textarea>
-                    <button type="button" (click)="evaluar(a.id)" [disabled]="!decisiones[a.id] || procesando">
+                    <button
+                      type="button"
+                      (click)="evaluar(a.id)"
+                      [disabled]="!decisiones[a.id] || procesando"
+                    >
                       Enviar evaluación
                     </button>
                   } @else {
@@ -91,6 +100,14 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
             }
           </tbody>
         </table>
+
+        <app-paginator
+          [currentPage]="page"
+          [totalPages]="totalPages"
+          [total]="total"
+          [disabled]="cargando"
+          (pageChange)="onPageChange($event)"
+        />
       }
 
       <p><a routerLink="/evaluador">← Menú evaluador</a></p>
@@ -101,6 +118,10 @@ export class AsignacionesEvaluadorComponent implements OnInit {
   asignaciones: AsignacionEvaluacion[] = [];
   decisiones: Record<number, string> = {};
   comentarios: Record<number, string> = {};
+  page = 1;
+  pageSize = 15;
+  total = 0;
+  totalPages = 0;
   cargando = true;
   procesando = false;
   error = '';
@@ -113,22 +134,12 @@ export class AsignacionesEvaluadorComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const uid = this.loginService.getUser()?.id;
-    if (!uid) {
-      this.error = 'Sesión inválida.';
-      this.cargando = false;
-      return;
-    }
-    this.asignacionService.listarPorEvaluador(uid).subscribe({
-      next: (items) => {
-        this.asignaciones = items;
-        this.cargando = false;
-      },
-      error: (err) => {
-        this.error = mensajeErrorApi(err, 'No se pudieron cargar asignaciones.');
-        this.cargando = false;
-      },
-    });
+    this.recargar();
+  }
+
+  onPageChange(page: number): void {
+    this.page = page;
+    this.recargar();
   }
 
   responder(id: number, aceptar: boolean): void {
@@ -169,9 +180,24 @@ export class AsignacionesEvaluadorComponent implements OnInit {
 
   private recargar(): void {
     const uid = this.loginService.getUser()?.id;
-    if (!uid) return;
-    this.asignacionService.listarPorEvaluador(uid).subscribe({
-      next: (items) => (this.asignaciones = items),
+    if (!uid) {
+      this.error = 'Sesión inválida.';
+      this.cargando = false;
+      return;
+    }
+    this.cargando = true;
+    this.asignacionService.listarPorEvaluadorPagina(uid, this.page, this.pageSize, false).subscribe({
+      next: (pagina) => {
+        this.asignaciones = pagina.items;
+        this.page = pagina.page;
+        this.total = pagina.total;
+        this.totalPages = pagina.totalPages;
+        this.cargando = false;
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudieron cargar asignaciones.');
+        this.cargando = false;
+      },
     });
   }
 }

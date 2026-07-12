@@ -52,8 +52,21 @@ export class TrabajoService {
     return this.http.get<PaginaTrabajos>(this.baseUrl, { params });
   }
 
-  listarComite(): Observable<Trabajo[]> {
-    return this.http.get<Trabajo[]>(`${this.baseUrl}/comite`);
+  listarComite(page = 1, size = 500, filtro: TrabajoListFiltro = {}): Observable<Trabajo[]> {
+    return this.listarComitePagina(page, size, filtro).pipe(map((p) => p.items));
+  }
+
+  listarComitePagina(
+    page = 1,
+    size = 20,
+    filtro: TrabajoListFiltro = {}
+  ): Observable<PaginaTrabajos> {
+    const params = buildListHttpParams(page, size, filtro, [
+      'titulo',
+      'ejeTematico',
+      'estado',
+    ] as const);
+    return this.http.get<PaginaTrabajos>(`${this.baseUrl}/comite`, { params });
   }
 
   listarPropuestasTallerPendientes(): Observable<Trabajo[]> {

@@ -1,24 +1,31 @@
 /**
  * Listado de usuarios (admin) con modal de edición MatDialog.
  */
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Usuario } from '../../../models/usuario.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
 import { UsuarioEdicionDialogService } from '../../../servicios/usuario-edicion-dialog.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
-import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
+import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
 import {
   FilterBarComponent,
   FilterFieldConfig,
 } from '../../../components/filter-bar/filter-bar.component';
+import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
 import { UsuarioFilaComponent } from './usuario-fila.component';
 
 @Component({
   selector: 'app-usuarios-lista',
   standalone: true,
-  imports: [CommonModule, RouterLink, UsuarioFilaComponent, FilterBarComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    UsuarioFilaComponent,
+    FilterBarComponent,
+    AppPaginatorComponent,
+  ],
   template: `
     <section class="card">
       <h1>Gestión de usuarios — Listado</h1>
@@ -66,6 +73,14 @@ import { UsuarioFilaComponent } from './usuario-fila.component';
             </tbody>
           </table>
         </div>
+
+        <app-paginator
+          [currentPage]="page"
+          [totalPages]="totalPages"
+          [total]="total"
+          [disabled]="cargando"
+          (pageChange)="onPageChange($event)"
+        />
       }
 
       <p class="actions-top">
@@ -76,7 +91,7 @@ import { UsuarioFilaComponent } from './usuario-fila.component';
     </section>
   `,
 })
-export class UsuariosListaComponent implements OnInit {
+export class UsuariosListaComponent extends ListadoPaginadoBase {
   readonly filterFields: FilterFieldConfig[] = [
     { key: 'apellido', label: 'Apellido', placeholder: 'Buscar por apellido' },
     { key: 'nombre', label: 'Nombre', placeholder: 'Buscar por nombre' },
@@ -84,38 +99,15 @@ export class UsuariosListaComponent implements OnInit {
   ];
   readonly filterKeys = ['apellido', 'nombre', 'email'] as const;
 
+  override pageSize = 20;
   usuarios: Usuario[] = [];
-  filtros: Record<string, string> = {};
-  cargando = true;
-  error = '';
   mensaje = '';
 
   constructor(
     private usuarioService: UsuarioService,
-    private usuarioEdicionDialog: UsuarioEdicionDialogService,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {}
-
-  ngOnInit(): void {
-    this.route.queryParamMap.subscribe((params) => {
-      this.filtros = filtroFromParams(params, this.filterKeys);
-      this.cargar();
-    });
-  }
-
-  onFiltrosAplicar(values: Record<string, string>): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: queryParamsFromFiltro(values, this.filterKeys),
-    });
-  }
-
-  onFiltrosLimpiar(): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: queryParamsFromFiltro({}, this.filterKeys),
-    });
+    private usuarioEdicionDialog: UsuarioEdicionDialogService
+  ) {
+    super();
   }
 
   abrirEdicion(usuario: Usuario): void {
@@ -153,9 +145,9 @@ export class UsuariosListaComponent implements OnInit {
     }
     this.usuarioService.baja(usuario.id).subscribe({
       next: () => {
-        this.usuarios = this.usuarios.filter((u) => u.id !== usuario.id);
         this.mensaje = `Usuario ${usuario.id} eliminado.`;
         this.error = '';
+        this.cargarPagina();
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo eliminar el usuario.');
@@ -172,17 +164,16 @@ export class UsuariosListaComponent implements OnInit {
     }
   }
 
-  private cargar(): void {
-    this.cargando = true;
-    this.error = '';
-    this.usuarioService.listar(1, 100, this.filtros).subscribe({
-      next: (data) => {
-        this.usuarios = data;
-        this.cargando = false;
+  protected override cargarPagina(): void {
+    this.iniciarCarga();
+    this.usuarioService.listarPagina(this.page, this.pageSize, this.filtros).subscribe({
+      next: (pagina) => {
+        this.usuarios = pagina.items;
+        this.aplicarPagina(pagina);
       },
       error: (err) => {
-        this.error = mensajeErrorApi(err, 'No se pudo cargar el listado. Verificá el backend.');
-        this.cargando = false;
+        this.usuarios = [];
+        this.marcarError(mensajeErrorApi(err, 'No se pudo cargar el listado. Verificá el backend.'));
       },
     });
   }

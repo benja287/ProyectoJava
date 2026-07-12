@@ -22,15 +22,25 @@ export class PagoService {
   constructor(private http: HttpClient) {}
 
   listarPendientes(page = 1, size = 50, filtro: PagoListFiltro = {}): Observable<Pago[]> {
+    return this.listarPendientesPagina(page, size, filtro).pipe(map((p) => p.items));
+  }
+
+  listarPendientesPagina(
+    page = 1,
+    size = 20,
+    filtro: PagoListFiltro = {}
+  ): Observable<PaginaPagos> {
     const params = buildListHttpParams(page, size, filtro, PAGO_PENDIENTE_FILTER_KEYS);
-    return this.http
-      .get<PaginaPagos>(`${this.baseUrl}/pendientes`, { params })
-      .pipe(map((p) => p.items));
+    return this.http.get<PaginaPagos>(`${this.baseUrl}/pendientes`, { params });
   }
 
   listar(page = 1, size = 50, filtro: PagoListFiltro = {}): Observable<Pago[]> {
+    return this.listarPagina(page, size, filtro).pipe(map((p) => p.items));
+  }
+
+  listarPagina(page = 1, size = 20, filtro: PagoListFiltro = {}): Observable<PaginaPagos> {
     const params = buildListHttpParams(page, size, filtro, PAGO_FILTER_KEYS);
-    return this.http.get<PaginaPagos>(this.baseUrl, { params }).pipe(map((p) => p.items));
+    return this.http.get<PaginaPagos>(this.baseUrl, { params });
   }
 
   consultarEstadoPorUsuario(usuarioId: number): Observable<Pago> {

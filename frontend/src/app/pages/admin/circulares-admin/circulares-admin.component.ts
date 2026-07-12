@@ -1,15 +1,17 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Circular } from '../../../models/circular.model';
 import { CircularService } from '../../../servicios/circular.service';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
+import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
 
 @Component({
   selector: 'app-circulares-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink, ArchivoLinkComponent],
+  imports: [CommonModule, RouterLink, ArchivoLinkComponent, AppPaginatorComponent],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--admin">
@@ -40,7 +42,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <a routerLink="/admin/circulares/nueva" class="btn-primary">+ Nueva circular</a>
         </div>
 
-        @if (cargandoCirculares) {
+        @if (cargando) {
           <p>Cargando circulares...</p>
         } @else if (!circulares.length) {
           <p class="muted dashed-box">Todavía no cargaste circulares.</p>
@@ -94,27 +96,38 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
               </article>
             }
           </div>
+
+          <app-paginator
+            [currentPage]="page"
+            [totalPages]="totalPages"
+            [total]="total"
+            [disabled]="cargando"
+            (pageChange)="onPageChange($event)"
+          />
         }
       </section>
     </div>
   `,
 })
-export class CircularesAdminComponent implements OnInit {
-  private circularService = inject(CircularService);
+export class CircularesAdminComponent extends ListadoPaginadoBase {
+  readonly filterKeys = [] as const;
 
+  override pageSize = 20;
   circulares: Circular[] = [];
   circularesFeedback = '';
-  error = '';
-  cargandoCirculares = true;
   accionCircularId?: number;
 
-  ngOnInit(): void {
+  constructor(private circularService: CircularService) {
+    super();
+  }
+
+  override ngOnInit(): void {
     const st = history.state as { circularesFeedback?: string } | null;
     if (st?.circularesFeedback) {
       this.circularesFeedback = st.circularesFeedback;
       history.replaceState({}, '');
     }
-    this.cargarCirculares();
+    super.ngOnInit();
   }
 
   togglePublicacion(c: Circular): void {
@@ -140,9 +153,9 @@ export class CircularesAdminComponent implements OnInit {
     this.accionCircularId = c.id;
     this.circularService.eliminar(c.id).subscribe({
       next: () => {
-        this.circulares = this.circulares.filter((x) => x.id !== c.id);
         this.circularesFeedback = 'La circular fue eliminada.';
         this.accionCircularId = undefined;
+        this.cargarPagina();
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo eliminar la circular.');
@@ -151,14 +164,16 @@ export class CircularesAdminComponent implements OnInit {
     });
   }
 
-  private cargarCirculares(): void {
-    this.circularService.listarAdmin(1, 50).subscribe({
-      next: (items) => {
-        this.circulares = items;
-        this.cargandoCirculares = false;
+  protected override cargarPagina(): void {
+    this.iniciarCarga();
+    this.circularService.listarAdminPagina(this.page, this.pageSize).subscribe({
+      next: (pagina) => {
+        this.circulares = pagina.items;
+        this.aplicarPagina(pagina);
       },
-      error: () => {
-        this.cargandoCirculares = false;
+      error: (err) => {
+        this.circulares = [];
+        this.marcarError(mensajeErrorApi(err, 'No se pudieron cargar las circulares.'));
       },
     });
   }

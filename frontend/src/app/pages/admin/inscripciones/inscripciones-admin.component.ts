@@ -1,11 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import {
   FilterBarComponent,
   FilterFieldConfig,
 } from '../../../components/filter-bar/filter-bar.component';
+import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
 import {
   CATEGORIAS_INSCRIPCION,
   InscripcionCongreso,
@@ -13,12 +14,18 @@ import {
 } from '../../../models/inscripcion.model';
 import { InscripcionService } from '../../../servicios/inscripcion.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
-import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-params.util';
+import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
 
 @Component({
   selector: 'app-inscripciones-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink, FilterBarComponent, ArchivoLinkComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    FilterBarComponent,
+    ArchivoLinkComponent,
+    AppPaginatorComponent,
+  ],
   template: `
     <section class="card">
       <h1>Inscripciones al congreso</h1>
@@ -93,13 +100,21 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
             }
           </tbody>
         </table>
+
+        <app-paginator
+          [currentPage]="page"
+          [totalPages]="totalPages"
+          [total]="total"
+          [disabled]="cargando"
+          (pageChange)="onPageChange($event)"
+        />
       }
 
       <p><a routerLink="/admin">← Menú admin</a></p>
     </section>
   `,
 })
-export class InscripcionesAdminComponent implements OnInit {
+export class InscripcionesAdminComponent extends ListadoPaginadoBase {
   readonly filterFields: FilterFieldConfig[] = [
     {
       key: 'estado',
@@ -120,41 +135,16 @@ export class InscripcionesAdminComponent implements OnInit {
   ];
   readonly filterKeys = ['estado', 'categoria'] as const;
 
+  override pageSize = 20;
   inscripciones: InscripcionCongreso[] = [];
-  filtros: Record<string, string> = {};
-  cargando = true;
-  error = '';
   mensaje = '';
 
-  constructor(
-    private inscripcionService: InscripcionService,
-    private route: ActivatedRoute,
-    private router: Router
-  ) {}
-
-  ngOnInit(): void {
-    this.route.queryParamMap.subscribe((params) => {
-      this.filtros = filtroFromParams(params, this.filterKeys);
-      this.cargar();
-    });
+  constructor(private inscripcionService: InscripcionService) {
+    super();
   }
 
   etiqueta(categoria: string): string {
     return etiquetaCategoria(categoria);
-  }
-
-  onFiltrosAplicar(values: Record<string, string>): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: queryParamsFromFiltro(values, this.filterKeys),
-    });
-  }
-
-  onFiltrosLimpiar(): void {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: queryParamsFromFiltro({}, this.filterKeys),
-    });
   }
 
   validar(inscripcion: InscripcionCongreso, aprobar: boolean): void {
@@ -171,7 +161,7 @@ export class InscripcionesAdminComponent implements OnInit {
     this.inscripcionService.validar(inscripcion.id, { aprobar, motivoRechazo }).subscribe({
       next: () => {
         this.mensaje = aprobar ? 'Inscripción aprobada.' : 'Inscripción rechazada.';
-        this.cargar();
+        this.cargarPagina();
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo validar la inscripción.');
@@ -179,17 +169,16 @@ export class InscripcionesAdminComponent implements OnInit {
     });
   }
 
-  private cargar(): void {
-    this.cargando = true;
-    this.error = '';
-    this.inscripcionService.listar(1, 100, this.filtros).subscribe({
-      next: (items) => {
-        this.inscripciones = items;
-        this.cargando = false;
+  protected override cargarPagina(): void {
+    this.iniciarCarga();
+    this.inscripcionService.listarPagina(this.page, this.pageSize, this.filtros).subscribe({
+      next: (pagina) => {
+        this.inscripciones = pagina.items;
+        this.aplicarPagina(pagina);
       },
       error: (err) => {
-        this.error = mensajeErrorApi(err, 'Error al cargar inscripciones.');
-        this.cargando = false;
+        this.inscripciones = [];
+        this.marcarError(mensajeErrorApi(err, 'Error al cargar inscripciones.'));
       },
     });
   }

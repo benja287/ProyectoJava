@@ -3,9 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../components/archivo-link/archivo-link.component';
+import { AppPaginatorComponent } from '../../components/paginator/app-paginator.component';
 import { MODALIDAD_LABELS } from '../../constants/ejes-tematicos';
 import { LoginService } from '../../auth/login.service';
-import { AsignacionEvaluacion } from '../../models/asignacion.model';
+import {
+  AsignacionEvaluacion,
+  ResumenAsignacionesEvaluador,
+} from '../../models/asignacion.model';
 import { Trabajo } from '../../models/trabajo.model';
 import { AsignacionService } from '../../servicios/asignacion.service';
 import { EvaluacionService } from '../../servicios/evaluacion.service';
@@ -15,7 +19,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
 @Component({
   selector: 'app-panel-evaluador',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, ArchivoLinkComponent],
+  imports: [CommonModule, RouterLink, FormsModule, ArchivoLinkComponent, AppPaginatorComponent],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--violeta">
@@ -39,15 +43,15 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
       <div class="stats-grid evaluador-stats">
         <div class="stat-card stat-card--amarillo">
           <span class="stat-label">Trabajos Pendientes</span>
-          <span class="stat-value stat-value--amber">{{ trabajosPendientes.length }}</span>
+          <span class="stat-value stat-value--amber">{{ resumen.pendientes }}</span>
         </div>
         <div class="stat-card stat-card--verde">
           <span class="stat-label">Evaluados</span>
-          <span class="stat-value stat-value--green">{{ trabajosEvaluados.length }}</span>
+          <span class="stat-value stat-value--green">{{ resumen.evaluadas }}</span>
         </div>
         <div class="stat-card stat-card--azul">
           <span class="stat-label">Aprobados</span>
-          <span class="stat-value stat-value--blue">{{ trabajosAprobados.length }}</span>
+          <span class="stat-value stat-value--blue">{{ resumen.aprobadas }}</span>
         </div>
       </div>
 
@@ -56,7 +60,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
           <span class="evaluador-seccion-icon" aria-hidden="true">📄</span>
           <div>
             <h2>Trabajos Propuestos</h2>
-            <p class="muted">Pendientes: {{ trabajosPendientes.length }}</p>
+            <p class="muted">Pendientes: {{ resumen.pendientes }}</p>
           </div>
         </div>
 
@@ -130,7 +134,11 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
                     class="evaluador-toggle-comentario"
                     (click)="toggleComentarioTrabajo(a.id)"
                   >
-                    {{ comentarioVisibleTrabajo[a.id] ? 'Ocultar comentario' : 'Agregar comentario (opcional)' }}
+                    {{
+                      comentarioVisibleTrabajo[a.id]
+                        ? 'Ocultar comentario'
+                        : 'Agregar comentario (opcional)'
+                    }}
                   </button>
                   @if (comentarioVisibleTrabajo[a.id]) {
                     <textarea
@@ -161,12 +169,22 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
               </article>
             }
           </div>
+
+          <app-paginator
+            [currentPage]="pagePendientes"
+            [totalPages]="totalPagesPendientes"
+            [total]="totalPendientes"
+            [disabled]="cargando"
+            (pageChange)="onPagePendientes($event)"
+          />
         }
       </section>
 
       <section class="panel-card evaluador-seccion">
         <div class="evaluador-seccion-header">
-          <span class="evaluador-seccion-icon evaluador-seccion-icon--teal" aria-hidden="true">🖥</span>
+          <span class="evaluador-seccion-icon evaluador-seccion-icon--teal" aria-hidden="true"
+            >🖥</span
+          >
           <div>
             <h2>Talleres Propuestos</h2>
             <p class="muted">Pendientes: {{ talleresPendientes.length }}</p>
@@ -213,7 +231,11 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
                   class="evaluador-toggle-comentario"
                   (click)="toggleComentarioTaller(t.id!)"
                 >
-                  {{ comentarioVisibleTaller[t.id!] ? 'Ocultar comentario' : 'Agregar comentario (opcional)' }}
+                  {{
+                    comentarioVisibleTaller[t.id!]
+                      ? 'Ocultar comentario'
+                      : 'Agregar comentario (opcional)'
+                  }}
                 </button>
                 @if (comentarioVisibleTaller[t.id!]) {
                   <textarea
@@ -246,7 +268,9 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
         }
 
         <p class="evaluador-certificado">
-          <a routerLink="/evaluador/certificado" class="btn-certificado">Generar Certificado de Asistencia</a>
+          <a routerLink="/evaluador/certificado" class="btn-certificado"
+            >Generar Certificado de Asistencia</a
+          >
         </p>
       </section>
     </div>
@@ -258,12 +282,17 @@ export class PanelEvaluadorComponent implements OnInit {
   private readonly evaluacionService = inject(EvaluacionService);
   private readonly trabajoService = inject(TrabajoService);
 
-  asignaciones: AsignacionEvaluacion[] = [];
+  trabajosPendientes: AsignacionEvaluacion[] = [];
   talleresPendientes: Trabajo[] = [];
+  resumen: ResumenAsignacionesEvaluador = { pendientes: 0, evaluadas: 0, aprobadas: 0 };
   comentariosTrabajo: Record<number, string> = {};
   comentariosTaller: Record<number, string> = {};
   comentarioVisibleTrabajo: Record<number, boolean> = {};
   comentarioVisibleTaller: Record<number, boolean> = {};
+  pagePendientes = 1;
+  pageSizePendientes = 10;
+  totalPendientes = 0;
+  totalPagesPendientes = 0;
   cargando = true;
   cargandoTalleres = true;
   procesando = false;
@@ -274,32 +303,6 @@ export class PanelEvaluadorComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarDatos();
-  }
-
-  get asignacionesCientificas(): AsignacionEvaluacion[] {
-    return this.asignaciones.filter((a) => a.trabajoTipo !== 'PROPUESTA_TALLER');
-  }
-
-  get trabajosPendientes(): AsignacionEvaluacion[] {
-    return this.asignacionesCientificas.filter(
-      (a) =>
-        !a.evaluacionRecomendacion &&
-        a.trabajoEstado !== 'RECHAZADO' &&
-        a.trabajoEstado !== 'APROBADO' &&
-        a.trabajoEstado !== 'PENDIENTE_APROBACION_COMITE'
-    );
-  }
-
-  get trabajosEvaluados(): AsignacionEvaluacion[] {
-    return this.asignacionesCientificas.filter((a) => !!a.evaluacionRecomendacion);
-  }
-
-  get trabajosAprobados(): AsignacionEvaluacion[] {
-    return this.asignacionesCientificas.filter(
-      (a) =>
-        a.evaluacionRecomendacion === 'APROBADO' ||
-        a.evaluacionRecomendacion === 'APROBADO_CON_CORRECCIONES'
-    );
   }
 
   invitacionPendiente(a: AsignacionEvaluacion): boolean {
@@ -336,6 +339,11 @@ export class PanelEvaluadorComponent implements OnInit {
     this.comentarioVisibleTaller[id] = !this.comentarioVisibleTaller[id];
   }
 
+  onPagePendientes(page: number): void {
+    this.pagePendientes = page;
+    this.recargarAsignaciones();
+  }
+
   responderAsignacion(id: number, aceptar: boolean): void {
     const msg = aceptar
       ? '¿Aceptar la asignación para evaluar este trabajo?'
@@ -348,6 +356,7 @@ export class PanelEvaluadorComponent implements OnInit {
         this.mensaje = aceptar ? 'Asignación aceptada.' : 'Asignación rechazada.';
         this.procesando = false;
         this.recargarAsignaciones();
+        this.cargarResumen();
       },
       error: (err: unknown) => {
         this.error = mensajeErrorApi(err, 'No se pudo responder la asignación.');
@@ -373,6 +382,7 @@ export class PanelEvaluadorComponent implements OnInit {
           delete this.comentariosTrabajo[asignacionId];
           delete this.comentarioVisibleTrabajo[asignacionId];
           this.recargarAsignaciones();
+          this.cargarResumen();
         },
         error: (err: unknown) => {
           this.error = mensajeErrorApi(err, 'No se pudo registrar la evaluación.');
@@ -386,21 +396,19 @@ export class PanelEvaluadorComponent implements OnInit {
     if (!confirm(msg)) return;
     this.procesando = true;
     this.error = '';
-    this.trabajoService
-      .evaluarPropuestaTaller(id, aprobar, this.comentariosTaller[id])
-      .subscribe({
-        next: () => {
-          this.mensaje = aprobar ? 'Taller aprobado.' : 'Taller rechazado.';
-          this.procesando = false;
-          delete this.comentariosTaller[id];
-          delete this.comentarioVisibleTaller[id];
-          this.recargarTalleres();
-        },
-        error: (err: unknown) => {
-          this.error = mensajeErrorApi(err, 'No se pudo evaluar la propuesta.');
-          this.procesando = false;
-        },
-      });
+    this.trabajoService.evaluarPropuestaTaller(id, aprobar, this.comentariosTaller[id]).subscribe({
+      next: () => {
+        this.mensaje = aprobar ? 'Taller aprobado.' : 'Taller rechazado.';
+        this.procesando = false;
+        delete this.comentariosTaller[id];
+        delete this.comentarioVisibleTaller[id];
+        this.recargarTalleres();
+      },
+      error: (err: unknown) => {
+        this.error = mensajeErrorApi(err, 'No se pudo evaluar la propuesta.');
+        this.procesando = false;
+      },
+    });
   }
 
   private cargarDatos(): void {
@@ -411,16 +419,8 @@ export class PanelEvaluadorComponent implements OnInit {
       this.cargandoTalleres = false;
       return;
     }
-    this.asignacionService.listarPorEvaluador(uid).subscribe({
-      next: (items: AsignacionEvaluacion[]) => {
-        this.asignaciones = items;
-        this.cargando = false;
-      },
-      error: (err: unknown) => {
-        this.error = mensajeErrorApi(err, 'No se pudieron cargar asignaciones.');
-        this.cargando = false;
-      },
-    });
+    this.recargarAsignaciones();
+    this.cargarResumen();
     this.trabajoService.listarPropuestasTallerPendientes().subscribe({
       next: (items: Trabajo[]) => {
         this.talleresPendientes = items;
@@ -433,12 +433,36 @@ export class PanelEvaluadorComponent implements OnInit {
     });
   }
 
+  private cargarResumen(): void {
+    const uid = this.loginService.getUser()?.id;
+    if (!uid) return;
+    this.asignacionService.resumenPorEvaluador(uid).subscribe({
+      next: (r) => (this.resumen = r),
+      error: () => {
+        /* no bloquear el listado */
+      },
+    });
+  }
+
   private recargarAsignaciones(): void {
     const uid = this.loginService.getUser()?.id;
     if (!uid) return;
-    this.asignacionService.listarPorEvaluador(uid).subscribe({
-      next: (items: AsignacionEvaluacion[]) => (this.asignaciones = items),
-    });
+    this.cargando = true;
+    this.asignacionService
+      .listarPorEvaluadorPagina(uid, this.pagePendientes, this.pageSizePendientes, true)
+      .subscribe({
+        next: (pagina) => {
+          this.trabajosPendientes = pagina.items;
+          this.pagePendientes = pagina.page;
+          this.totalPendientes = pagina.total;
+          this.totalPagesPendientes = pagina.totalPages;
+          this.cargando = false;
+        },
+        error: (err: unknown) => {
+          this.error = mensajeErrorApi(err, 'No se pudieron cargar asignaciones.');
+          this.cargando = false;
+        },
+      });
   }
 
   private recargarTalleres(): void {

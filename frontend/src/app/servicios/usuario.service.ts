@@ -36,12 +36,19 @@ export class UsuarioService {
 
   constructor(private http: HttpClient) {}
 
-  /** GET /api/usuarios?page=&size=&apellido=&nombre=&email= */
+  /** GET /api/usuarios?page=&size=&apellido=&nombre=&email= — items only (pickers). */
   listar(page = 1, size = 50, filtro: UsuarioListFiltro = {}): Observable<Usuario[]> {
+    return this.listarPagina(page, size, filtro).pipe(map((p) => p.items));
+  }
+
+  /** Listado paginado con metadata. */
+  listarPagina(
+    page = 1,
+    size = 20,
+    filtro: UsuarioListFiltro = {}
+  ): Observable<PaginaUsuarios> {
     const params = buildListHttpParams(page, size, filtro, USUARIO_FILTER_KEYS);
-    return this.http
-      .get<PaginaUsuarios>(this.baseUrl, { params })
-      .pipe(map((pagina) => pagina.items));
+    return this.http.get<PaginaUsuarios>(this.baseUrl, { params });
   }
 
   /** GET /api/usuarios/{id} */

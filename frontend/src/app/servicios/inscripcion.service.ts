@@ -45,10 +45,16 @@ export class InscripcionService {
   }
 
   listar(page = 1, size = 50, filtro: InscripcionListFiltro = {}): Observable<InscripcionCongreso[]> {
+    return this.listarPagina(page, size, filtro).pipe(map((p) => p.items));
+  }
+
+  listarPagina(
+    page = 1,
+    size = 20,
+    filtro: InscripcionListFiltro = {}
+  ): Observable<PaginaInscripciones> {
     const params = buildListHttpParams(page, size, filtro, INSCRIPCION_FILTER_KEYS);
-    return this.http
-      .get<PaginaInscripciones>(this.baseUrl, { params })
-      .pipe(map((p) => p.items));
+    return this.http.get<PaginaInscripciones>(this.baseUrl, { params });
   }
 
   validar(id: number, request: ValidacionInscripcionRequest): Observable<InscripcionCongreso> {

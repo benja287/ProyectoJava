@@ -21,5 +21,9 @@ public interface TrabajoDAO extends GenericDAO<Trabajo> {
 
   long contarFiltrado(TrabajoFiltro filtro);
 
+  List<Trabajo> listarFiltradoComite(TrabajoFiltro filtro, int offset, int limit);
+
+  long contarFiltradoComite(TrabajoFiltro filtro);
+
   Optional<Trabajo> recuperarPorIdConAutor(Long id);
 }

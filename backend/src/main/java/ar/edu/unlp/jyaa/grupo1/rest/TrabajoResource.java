@@ -77,12 +77,19 @@ public class TrabajoResource {
 
   @GET
   @Path("/comite")
-  @Operation(summary = "Listar trabajos visibles para el comité académico")
-  public List<TrabajoResumenDTO> listarParaComite(@Context ContainerRequestContext ctx) {
+  @Operation(summary = "Listar trabajos visibles para el comité académico (paginado)")
+  public PaginaTrabajosDTO listarParaComite(
+      @QueryParam("titulo") String titulo,
+      @QueryParam("ejeTematico") String ejeTematico,
+      @QueryParam("estado") String estado,
+      @QueryParam("page") @DefaultValue("1") int page,
+      @QueryParam("size") @DefaultValue("20") int size,
+      @Context ContainerRequestContext ctx) {
     if (!AuthenticatedUser.from(ctx).canListAllTrabajos()) {
       throw new NotAuthorizedException("Solo comité académico o administrador");
     }
-    return trabajoService.listarParaComite();
+    var filtro = TrabajoService.parseFiltro(titulo, null, ejeTematico, estado, null, null, null);
+    return trabajoService.listarParaComite(page, size, filtro);
   }
 
   @GET

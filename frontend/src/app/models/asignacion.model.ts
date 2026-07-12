@@ -18,6 +18,20 @@ export interface AsignacionEvaluacion {
   evaluacionComentario?: string | null;
 }
 
+export interface PaginaAsignaciones {
+  items: AsignacionEvaluacion[];
+  page: number;
+  size: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface ResumenAsignacionesEvaluador {
+  pendientes: number;
+  evaluadas: number;
+  aprobadas: number;
+}
+
 export interface AsignacionRequest {
   trabajoId: number;
   evaluadorId: number;

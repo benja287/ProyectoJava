@@ -71,13 +71,23 @@ public class TrabajoService {
   }
 
   public List<TrabajoResumenDTO> listarParaComite() {
-    TrabajoFiltro filtro = new TrabajoFiltro(null, null, null, null, null, null, null);
-    return trabajoDAO.listarFiltrado(filtro, 0, 500).stream()
-        .filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER)
-        .filter(t -> t.getEstado() != EstadoTrabajo.RECHAZADO)
-        .filter(t -> t.getEstado() != EstadoTrabajo.BORRADOR)
-        .map(this::toResumenConAsignaciones)
-        .toList();
+    return listarParaComite(1, 500, new TrabajoFiltro(null, null, null, null, null, null, null))
+        .items();
+  }
+
+  public PaginaTrabajosDTO listarParaComite(int page, int size, TrabajoFiltro filtro) {
+    int safePage = Math.max(PAGE_DEFAULT, page);
+    int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
+    int offset = (safePage - 1) * safeSize;
+    TrabajoFiltro effective =
+        filtro != null ? filtro : new TrabajoFiltro(null, null, null, null, null, null, null);
+    long total = trabajoDAO.contarFiltradoComite(effective);
+    List<TrabajoResumenDTO> items =
+        trabajoDAO.listarFiltradoComite(effective, offset, safeSize).stream()
+            .map(this::toResumenConAsignaciones)
+            .toList();
+    int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
+    return new PaginaTrabajosDTO(items, safePage, safeSize, total, totalPages);
   }
 
   /**

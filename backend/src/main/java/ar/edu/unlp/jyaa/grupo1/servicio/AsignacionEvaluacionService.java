@@ -9,6 +9,9 @@ import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
+import ar.edu.unlp.jyaa.grupo1.web.dto.AsignacionEvaluacionDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaAsignacionesDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ResumenAsignacionesEvaluadorDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.time.LocalDate;
@@ -173,6 +176,29 @@ public class AsignacionEvaluacionService {
 
   public List<AsignacionEvaluacion> listarPorEvaluador(Long evaluadorId) {
     return asignacionEvaluacionDAO.listarPorEvaluador(evaluadorId);
+  }
+
+  public PaginaAsignacionesDTO listarPorEvaluador(
+      Long evaluadorId, int page, int size, boolean soloPendientes) {
+    int safePage = Math.max(1, page);
+    int safeSize = Math.min(Math.max(1, size), 100);
+    int offset = (safePage - 1) * safeSize;
+    long total = asignacionEvaluacionDAO.contarPorEvaluador(evaluadorId, soloPendientes);
+    List<AsignacionEvaluacionDTO> items =
+        asignacionEvaluacionDAO
+            .listarPorEvaluadorPaginado(evaluadorId, soloPendientes, offset, safeSize)
+            .stream()
+            .map(AsignacionEvaluacionDTO::from)
+            .toList();
+    int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
+    return new PaginaAsignacionesDTO(items, safePage, safeSize, total, totalPages);
+  }
+
+  public ResumenAsignacionesEvaluadorDTO resumenPorEvaluador(Long evaluadorId) {
+    return new ResumenAsignacionesEvaluadorDTO(
+        asignacionEvaluacionDAO.contarPorEvaluador(evaluadorId, true),
+        asignacionEvaluacionDAO.contarEvaluadasPorEvaluador(evaluadorId),
+        asignacionEvaluacionDAO.contarAprobadasPorEvaluador(evaluadorId));
   }
 
   public List<AsignacionEvaluacion> listarPorTrabajo(Long trabajoId) {
