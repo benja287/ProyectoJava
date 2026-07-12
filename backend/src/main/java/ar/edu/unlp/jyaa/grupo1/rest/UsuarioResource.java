@@ -51,8 +51,12 @@ public class UsuarioResource {
       @QueryParam("apellido") String apellido,
       @QueryParam("nombre") String nombre,
       @QueryParam("email") String email,
+      @QueryParam("esEvaluador") Boolean esEvaluador,
+      @QueryParam("ejeTematico") String ejeTematico,
+      @QueryParam("activo") Boolean activo,
       @Context ContainerRequestContext ctx) {
-    UsuarioFiltro filtro = new UsuarioFiltro(apellido, nombre, email);
+    UsuarioFiltro filtro =
+        new UsuarioFiltro(apellido, nombre, email, esEvaluador, ejeTematico, activo);
     return usuarioService.listar(page, size, filtro, AuthenticatedUser.from(ctx));
   }
 

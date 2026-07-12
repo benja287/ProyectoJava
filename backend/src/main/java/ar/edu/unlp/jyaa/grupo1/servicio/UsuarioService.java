@@ -36,7 +36,8 @@ public class UsuarioService {
     int safePage = Math.max(PAGE_DEFAULT, page);
     int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
     int offset = (safePage - 1) * safeSize;
-    UsuarioFiltro effective = filtro != null ? filtro : new UsuarioFiltro(null, null, null);
+    UsuarioFiltro effective =
+        filtro != null ? filtro : new UsuarioFiltro(null, null, null, null, null, null);
 
     long total = usuarioDAO.contarFiltrado(effective);
     List<UsuarioDTO> items =

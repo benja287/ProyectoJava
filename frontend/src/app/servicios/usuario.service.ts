@@ -14,9 +14,20 @@ export interface UsuarioListFiltro {
   apellido?: string;
   nombre?: string;
   email?: string;
+  /** 'true' | 'false' — filtra por eje temático asignado */
+  esEvaluador?: string;
+  ejeTematico?: string;
+  activo?: string;
 }
 
-const USUARIO_FILTER_KEYS = ['apellido', 'nombre', 'email'] as const;
+const USUARIO_FILTER_KEYS = [
+  'apellido',
+  'nombre',
+  'email',
+  'esEvaluador',
+  'ejeTematico',
+  'activo',
+] as const;
 
 export interface UsuarioAltaPayload {
   nombre: string;

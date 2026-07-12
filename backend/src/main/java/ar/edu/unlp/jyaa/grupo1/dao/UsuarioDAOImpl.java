@@ -118,6 +118,22 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
     JpqlLikeFilters.appendLike(jpql, params, "u.apellido", "apellido", filtro.apellido());
     JpqlLikeFilters.appendLike(jpql, params, "u.nombre", "nombre", filtro.nombre());
     JpqlLikeFilters.appendLike(jpql, params, "u.email", "email", filtro.email());
+    if (filtro.activo() != null) {
+      jpql.append(" AND u.activo = :activo");
+      params.put("activo", filtro.activo());
+    }
+    if (filtro.soloEvaluadores() != null) {
+      if (Boolean.TRUE.equals(filtro.soloEvaluadores())) {
+        jpql.append(" AND u.ejeTematicoEvaluador IS NOT NULL AND TRIM(u.ejeTematicoEvaluador) <> ''");
+      } else {
+        jpql.append(
+            " AND (u.ejeTematicoEvaluador IS NULL OR TRIM(u.ejeTematicoEvaluador) = '')");
+      }
+    }
+    if (filtro.ejeTematicoEvaluador() != null && !filtro.ejeTematicoEvaluador().isBlank()) {
+      jpql.append(" AND u.ejeTematicoEvaluador = :ejeTematicoEvaluador");
+      params.put("ejeTematicoEvaluador", filtro.ejeTematicoEvaluador().trim());
+    }
     return jpql.toString();
   }
 

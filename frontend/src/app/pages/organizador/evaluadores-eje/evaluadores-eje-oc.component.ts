@@ -1,16 +1,27 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import {
+  FilterBarComponent,
+  FilterFieldConfig,
+} from '../../../components/filter-bar/filter-bar.component';
+import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
 import { EJES_TEMATICOS } from '../../../constants/ejes-tematicos';
+import { etiquetaCategoria } from '../../../models/inscripcion.model';
 import { Usuario } from '../../../models/usuario.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
-import { etiquetaCategoria } from '../../../models/inscripcion.model';
+import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
 
 @Component({
   selector: 'app-evaluadores-eje-oc',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [
+    CommonModule,
+    RouterLink,
+    FilterBarComponent,
+    AppPaginatorComponent,
+  ],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--indigo">
@@ -31,107 +42,146 @@ import { etiquetaCategoria } from '../../../models/inscripcion.model';
       <section class="panel-card">
         <div class="comite-section-header">
           <h2>Evaluadores por eje temático</h2>
-          <span class="comite-counter">Evaluadores: {{ evaluadores.length }}</span>
+          <span class="comite-counter"
+            >{{ total }} usuario(s)
+            @if (totalEvaluadores != null) {
+              · Evaluadores: {{ totalEvaluadores }}
+            }
+          </span>
         </div>
+
+        <app-filter-bar
+          [fields]="filterFields"
+          [values]="filtros"
+          (filterApply)="onFiltrosAplicar($event)"
+          (filterClear)="onFiltrosLimpiar()"
+        />
+
         <div class="evaluadores-grid">
-          @if (cargandoUsuarios) {
+          @if (cargando) {
             <p class="muted">Cargando usuarios...</p>
           } @else if (usuarios.length === 0) {
-            <p class="error">
-              No se pudieron cargar los usuarios. Verificá que estés logueado como Comité Académico.
-            </p>
+            <p class="muted">No hay usuarios con esos filtros.</p>
           } @else {
-          @for (u of usuarios; track u.id) {
-            <article class="evaluador-card">
-              <div class="evaluador-card-top">
-                <div>
-                  <strong>{{ u.nombre }} {{ u.apellido }}</strong>
-                  <p class="muted evaluador-email">{{ u.email }}</p>
-                  <div class="rol-badges">
-                    @for (r of u.roles ?? []; track r) {
-                      <span class="rol-badge">{{ r.toLowerCase() }}</span>
-                    }
+            @for (u of usuarios; track u.id) {
+              <article class="evaluador-card">
+                <div class="evaluador-card-top">
+                  <div>
+                    <strong>{{ u.nombre }} {{ u.apellido }}</strong>
+                    <p class="muted evaluador-email">{{ u.email }}</p>
+                    <div class="rol-badges">
+                      @for (r of u.roles ?? []; track r) {
+                        <span class="rol-badge">{{ r.toLowerCase() }}</span>
+                      }
+                    </div>
                   </div>
-                </div>
-                <span
-                  class="evaluador-estado"
-                  [class.evaluador-estado--ok]="esEvaluadorConEje(u)"
-                >
-                  {{ esEvaluadorConEje(u) ? 'Evaluador' : 'No evaluador' }}
-                </span>
-              </div>
-              <p class="muted categoria-inscripcion">
-                Categoría de inscripción
-                <span class="categoria-inscripcion-valor">{{ categoriaLabel(u.categoriaInscripcion) }}</span>
-              </p>
-              @if (!esEvaluadorConEje(u)) {
-                <label class="eval-select-label">
-                  Elegí eje temático para hacerlo evaluador
-                  <select
-                    [value]="ejeDraft[u.id!] || ''"
-                    (change)="setEjeDraft(u.id!, $any($event.target).value)"
+                  <span
+                    class="evaluador-estado"
+                    [class.evaluador-estado--ok]="esEvaluadorConEje(u)"
                   >
-                    <option value="">Seleccionar eje...</option>
-                    @for (eje of ejesTematicos; track eje) {
-                      <option [value]="eje">{{ eje }}</option>
-                    }
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  class="btn-primary-full"
-                  (click)="hacerEvaluador(u)"
-                  [disabled]="procesando"
-                >
-                  Hacer evaluador en este eje
-                </button>
-              } @else {
-                <label class="eval-select-label">
-                  Eje temático asignado
-                  <select disabled>
-                    <option>{{ u.ejeTematicoEvaluador || '(sin eje)' }}</option>
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  class="btn-quitar-eje"
-                  (click)="quitarDelEje(u)"
-                  [disabled]="procesando"
-                >
-                  Quitar del eje temático
-                </button>
-                <p class="form-hint">
-                  Regla: máximo 3 evaluadores por eje. Si quitás a uno del eje, liberás cupo para asignar otro.
+                    {{ esEvaluadorConEje(u) ? 'Evaluador' : 'No evaluador' }}
+                  </span>
+                </div>
+                <p class="muted categoria-inscripcion">
+                  Categoría de inscripción
+                  <span class="categoria-inscripcion-valor">{{
+                    categoriaLabel(u.categoriaInscripcion)
+                  }}</span>
                 </p>
-              }
-            </article>
-          }
+                @if (!esEvaluadorConEje(u)) {
+                  <label class="eval-select-label">
+                    Elegí eje temático para hacerlo evaluador
+                    <select
+                      [value]="ejeDraft[u.id!] || ''"
+                      (change)="setEjeDraft(u.id!, $any($event.target).value)"
+                    >
+                      <option value="">Seleccionar eje...</option>
+                      @for (eje of ejesTematicos; track eje) {
+                        <option [value]="eje">{{ eje }}</option>
+                      }
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    class="btn-primary-full"
+                    (click)="hacerEvaluador(u)"
+                    [disabled]="procesando"
+                  >
+                    Hacer evaluador en este eje
+                  </button>
+                } @else {
+                  <label class="eval-select-label">
+                    Eje temático asignado
+                    <select disabled>
+                      <option>{{ u.ejeTematicoEvaluador || '(sin eje)' }}</option>
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    class="btn-quitar-eje"
+                    (click)="quitarDelEje(u)"
+                    [disabled]="procesando"
+                  >
+                    Quitar del eje temático
+                  </button>
+                  <p class="form-hint">
+                    Regla: máximo 3 evaluadores por eje. Si quitás a uno del eje, liberás cupo para
+                    asignar otro.
+                  </p>
+                }
+              </article>
+            }
           }
         </div>
+
+        @if (!cargando && totalPages > 0) {
+          <app-paginator
+            [currentPage]="page"
+            [totalPages]="totalPages"
+            [total]="total"
+            [disabled]="cargando || procesando"
+            (pageChange)="onPageChange($event)"
+          />
+        }
       </section>
 
       <p><a routerLink="/organizador">← Volver al panel del comité</a></p>
     </div>
   `,
 })
-export class EvaluadoresEjeOcComponent implements OnInit {
+export class EvaluadoresEjeOcComponent extends ListadoPaginadoBase {
   readonly ejesTematicos = [...EJES_TEMATICOS];
 
+  readonly filterFields: FilterFieldConfig[] = [
+    { key: 'email', label: 'Email', placeholder: 'Buscar por email' },
+    {
+      key: 'esEvaluador',
+      label: 'Tipo',
+      type: 'select',
+      options: [
+        { value: 'true', label: 'Solo evaluadores' },
+        { value: 'false', label: 'Solo no evaluadores' },
+      ],
+    },
+    {
+      key: 'ejeTematico',
+      label: 'Eje temático',
+      type: 'select',
+      options: EJES_TEMATICOS.map((e) => ({ value: e, label: e })),
+    },
+  ];
+  readonly filterKeys = ['email', 'esEvaluador', 'ejeTematico'] as const;
+
+  override pageSize = 12;
   usuarios: Usuario[] = [];
-  cargandoUsuarios = true;
   ejeDraft: Record<number, string> = {};
   procesando = false;
-  error = '';
   mensaje = '';
+  /** Total global de usuarios con eje (independiente del filtro de la página). */
+  totalEvaluadores: number | null = null;
 
-  constructor(private usuarioService: UsuarioService) {}
-
-  ngOnInit(): void {
-    this.cargarUsuarios();
-  }
-
-  get evaluadores(): Usuario[] {
-    return this.usuarios.filter((u) => !!u.ejeTematicoEvaluador?.trim());
+  constructor(private usuarioService: UsuarioService) {
+    super();
   }
 
   esEvaluadorConEje(u: Usuario): boolean {
@@ -160,7 +210,8 @@ export class EvaluadoresEjeOcComponent implements OnInit {
         this.mensaje = `${u.nombre} ${u.apellido} quedó como evaluador en el eje seleccionado.`;
         this.procesando = false;
         this.ejeDraft = { ...this.ejeDraft, [u.id!]: '' };
-        this.cargarUsuarios();
+        this.cargarPagina();
+        this.cargarTotalEvaluadores();
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo asignar el evaluador.');
@@ -176,7 +227,8 @@ export class EvaluadoresEjeOcComponent implements OnInit {
       next: () => {
         this.mensaje = 'Se quitó al evaluador del eje.';
         this.procesando = false;
-        this.cargarUsuarios();
+        this.cargarPagina();
+        this.cargarTotalEvaluadores();
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo quitar del eje.');
@@ -185,18 +237,31 @@ export class EvaluadoresEjeOcComponent implements OnInit {
     });
   }
 
-  private cargarUsuarios(): void {
-    this.cargandoUsuarios = true;
-    this.usuarioService.listar(1, 500).subscribe({
-      next: (items) => {
-        this.usuarios = items.filter((u) => u.activo !== false);
-        this.cargandoUsuarios = false;
+  protected override cargarPagina(): void {
+    this.iniciarCarga();
+    const filtro = {
+      ...this.filtros,
+      activo: 'true',
+    };
+    this.usuarioService.listarPagina(this.page, this.pageSize, filtro).subscribe({
+      next: (pagina) => {
+        this.usuarios = pagina.items;
+        this.aplicarPagina(pagina);
+        this.cargarTotalEvaluadores();
       },
       error: (err) => {
         this.usuarios = [];
-        this.cargandoUsuarios = false;
-        this.error = mensajeErrorApi(err, 'No se pudieron cargar los usuarios para asignar evaluadores.');
+        this.marcarError(
+          mensajeErrorApi(err, 'No se pudieron cargar los usuarios para asignar evaluadores.')
+        );
       },
+    });
+  }
+
+  private cargarTotalEvaluadores(): void {
+    this.usuarioService.listarPagina(1, 1, { esEvaluador: 'true', activo: 'true' }).subscribe({
+      next: (p) => (this.totalEvaluadores = p.total),
+      error: () => (this.totalEvaluadores = null),
     });
   }
 }
