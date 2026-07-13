@@ -82,10 +82,41 @@ public class EvaluacionResource {
       throw new NegocioException("Debe adjuntar un archivo");
     }
     String nombre = fileDetail != null ? fileDetail.getFileName() : "correcciones.pdf";
+    nombre = sanitizarNombreArchivoMultipart(nombre);
     try {
       return EvaluacionDTO.from(evaluacionService.adjuntarArchivoCorreccion(id, file, nombre));
     } catch (NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }
+  }
+
+  /** Corrige mojibake típico (p. ej. PrÃ¡ctica) en Content-Disposition. */
+  private static String sanitizarNombreArchivoMultipart(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return "correcciones.pdf";
+    }
+    String nombre = raw.trim();
+    try {
+      String decoded =
+          new String(nombre.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1),
+              java.nio.charset.StandardCharsets.UTF_8);
+      if (decoded.contains("á")
+          || decoded.contains("é")
+          || decoded.contains("í")
+          || decoded.contains("ó")
+          || decoded.contains("ú")
+          || decoded.contains("ñ")
+          || decoded.contains("Á")
+          || !decoded.contains("Ã")) {
+        nombre = decoded;
+      }
+    } catch (Exception ignored) {
+      // conservar original
+    }
+    int slash = Math.max(nombre.lastIndexOf('/'), nombre.lastIndexOf('\\'));
+    if (slash >= 0 && slash < nombre.length() - 1) {
+      nombre = nombre.substring(slash + 1);
+    }
+    return nombre.isBlank() ? "correcciones.pdf" : nombre;
   }
 }

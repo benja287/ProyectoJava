@@ -631,13 +631,26 @@ public class TrabajoService {
         // y para no romper el adjunto posterior al POST /evaluaciones.
         limpiarAsignacionesPendientes(trabajoId);
         Map<String, String> vars = new HashMap<>();
-        vars.put("instruccion_reenvio", TrabajoNotificacionHelper.instruccionReenvio(trabajo));
+        vars.put(
+            "instruccion_reenvio",
+            construirInstruccionReenvioConDevolucion(trabajo, asignaciones));
         vars.put(
             "proximo_paso",
             esEnvioAsistente(trabajo)
-                ? "Corregí y reenviá desde el panel asistente."
-                : "Corregí y reenviá desde Mis trabajos.");
+                ? "Corregí y reenviá desde el panel asistente. Ahí vas a ver comentario, rúbrica y archivo."
+                : "Corregí y reenviá desde Mis trabajos. Ahí vas a ver comentario, rúbrica y archivo.");
         notificarAutorPlantilla(trabajo, "EVALUACION_RECHAZADO_REENVIO", vars);
+        notificacionService.enviarPorRol(
+            Rol.ORGANIZADOR_CIENTIFICO,
+            "Trabajo requiere correcciones tras evaluación",
+            TrabajoNotificacionHelper.formatear(
+                "El trabajo \""
+                    + trabajo.getTitulo()
+                    + "\" pasó a observado por evaluación. "
+                    + TrabajoNotificacionHelper.contextoParticipante(trabajo),
+                "El participante debe corregir y reenviar. Podés ver el dictamen en el panel del comité."),
+            null,
+            TrabajoNotificacionHelper.RUTA_COMITE);
       }
     }
     trabajoDAO.modificar(trabajo);
@@ -890,6 +903,30 @@ public class TrabajoService {
 
   private String sufijoRolEnvio(Trabajo trabajo) {
     return esEnvioAsistente(trabajo) ? " (enviado como asistente)" : " (enviado como autor)";
+  }
+
+  /**
+   * Instrucción de reenvío + comentario anónimo del evaluador (sin identidad) para notificación
+   * in-app y email.
+   */
+  private String construirInstruccionReenvioConDevolucion(
+      Trabajo trabajo, List<AsignacionEvaluacion> asignaciones) {
+    StringBuilder sb = new StringBuilder(TrabajoNotificacionHelper.instruccionReenvio(trabajo));
+    String comentario =
+        asignaciones.stream()
+            .filter(a -> a.getEvaluacion() != null)
+            .map(a -> a.getEvaluacion().getComentario())
+            .filter(c -> c != null && !c.isBlank())
+            .map(String::trim)
+            .findFirst()
+            .orElse(null);
+    if (comentario != null) {
+      sb.append("\n\nComentario del evaluador (anónimo):\n").append(comentario);
+    }
+    sb.append(
+        "\n\nEn Mis trabajos vas a ver el detalle de la rúbrica y el archivo de correcciones"
+            + " (si el evaluador lo adjuntó). La identidad del evaluador no se revela.");
+    return sb.toString();
   }
 
   private void notificarAutor(Trabajo trabajo, String asunto, String mensaje) {
