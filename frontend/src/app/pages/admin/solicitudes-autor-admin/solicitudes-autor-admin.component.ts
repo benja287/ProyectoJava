@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { SolicitudAutor } from '../../../models/solicitud-autor.model';
+import { etiquetaEstadoTrabajo as labelEstadoTrabajo } from '../../../models/trabajo-estado-labels';
 import { AdminStatsService } from '../../../servicios/admin-stats.service';
 import { UsuarioService } from '../../../servicios/usuario.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -102,11 +103,7 @@ export class SolicitudesAutorAdminComponent implements OnInit {
   }
 
   etiquetaEstadoTrabajo(estado: string): string {
-    const map: Record<string, string> = {
-      PENDIENTE_APROBACION_COMITE: 'Pendiente comité',
-      APROBADO: 'Aprobado',
-    };
-    return map[estado] ?? estado;
+    return labelEstadoTrabajo(estado);
   }
 
   habilitarAutor(solicitud: SolicitudAutor): void {

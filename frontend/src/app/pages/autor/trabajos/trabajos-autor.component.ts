@@ -11,6 +11,7 @@ import {
   MODALIDAD_LABELS,
 } from '../../../constants/ejes-tematicos';
 import { Trabajo, TrabajoEnvioResumen } from '../../../models/trabajo.model';
+import { etiquetaEstadoTrabajo } from '../../../models/trabajo-estado-labels';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { feedbackTextoTrabajo, etiquetaRolEnvio } from '../../../utils/trabajo-rol.util';
@@ -361,20 +362,7 @@ export class TrabajosAutorComponent implements OnInit {
   }
 
   etiquetaEstado(t: Trabajo): string {
-    const map: Record<string, string> = {
-      BORRADOR: 'Borrador',
-      ENVIADO: 'Enviado',
-      PRECHECK_OK: 'Precheck OK',
-      PRECHECK_OBSERVADO: 'Observado (precheck)',
-      EN_EVALUACION: 'En evaluación',
-      PENDIENTE_APROBACION_COMITE: 'Pendiente comité',
-      APROBADO: 'Aprobado',
-      PROGRAMADO: 'Programado',
-      NOTIFICADO: 'Notificado',
-      OBSERVADO_EVALUACION: 'Rechazado (reenvío)',
-      RECHAZADO: 'Rechazado',
-    };
-    return t.estado ? map[t.estado] ?? t.estado : '—';
+    return etiquetaEstadoTrabajo(t.estado);
   }
 
   feedbackTexto(t: Trabajo): string {

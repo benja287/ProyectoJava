@@ -8,6 +8,7 @@ import {
 } from '../../../components/filter-bar/filter-bar.component';
 import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
 import { ESTADOS_TRABAJO } from '../../../models/enums';
+import { etiquetaEstadoTrabajo, opcionesEstadoTrabajo } from '../../../models/trabajo-estado-labels';
 import { Trabajo } from '../../../models/trabajo.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -64,7 +65,7 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                 <td>{{ t.id }}</td>
                 <td>{{ t.titulo }}</td>
                 <td>{{ t.autorApellido }}, {{ t.autorNombre }}</td>
-                <td>{{ t.estado }}</td>
+                <td>{{ etiquetaEstado(t.estado) }}</td>
                 <td>
                   @if (t.documentoUrl) {
                     <app-archivo-link [url]="t.documentoUrl" label="Ver" />
@@ -103,7 +104,7 @@ export class TrabajosAdminComponent extends ListadoPaginadoBase {
       key: 'estado',
       label: 'Estado',
       type: 'select',
-      options: ESTADOS_TRABAJO.map((e) => ({ value: e, label: e })),
+      options: opcionesEstadoTrabajo(ESTADOS_TRABAJO),
     },
   ];
   readonly filterKeys = ['titulo', 'resumen', 'ejeTematico', 'estado'] as const;
@@ -114,6 +115,10 @@ export class TrabajosAdminComponent extends ListadoPaginadoBase {
 
   constructor(private trabajoService: TrabajoService) {
     super();
+  }
+
+  etiquetaEstado(estado?: string): string {
+    return etiquetaEstadoTrabajo(estado);
   }
 
   eliminar(t: Trabajo): void {

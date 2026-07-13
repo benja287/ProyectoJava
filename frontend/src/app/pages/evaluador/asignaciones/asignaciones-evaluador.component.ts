@@ -6,6 +6,7 @@ import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-l
 import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
 import { LoginService } from '../../../auth/login.service';
 import { AsignacionEvaluacion } from '../../../models/asignacion.model';
+import { etiquetaEstadoTrabajo } from '../../../models/trabajo-estado-labels';
 import { AsignacionService } from '../../../servicios/asignacion.service';
 import { EvaluacionService } from '../../../servicios/evaluacion.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -45,7 +46,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
             @for (a of asignaciones; track a.id) {
               <tr>
                 <td>#{{ a.trabajoId }} — {{ a.trabajoTitulo }}</td>
-                <td>{{ a.trabajoEstado }}</td>
+                <td>{{ etiquetaEstado(a.trabajoEstado) }}</td>
                 <td>
                   @if (a.trabajoDocumentoUrl) {
                     <app-archivo-link [url]="a.trabajoDocumentoUrl" label="PDF" />
@@ -135,6 +136,10 @@ export class AsignacionesEvaluadorComponent implements OnInit {
 
   ngOnInit(): void {
     this.recargar();
+  }
+
+  etiquetaEstado(estado?: string): string {
+    return etiquetaEstadoTrabajo(estado);
   }
 
   onPageChange(page: number): void {

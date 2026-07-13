@@ -20,6 +20,10 @@ import { EvaluacionService } from '../../servicios/evaluacion.service';
 import { TrabajoService } from '../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../utils/api-error.util';
 import { ListadoPaginadoBase } from '../../utils/listado-paginado.base';
+import {
+  etiquetaEstadoTrabajo,
+  opcionesEstadoTrabajo,
+} from '../../models/trabajo-estado-labels';
 
 /** Estados que suelen aparecer en asignaciones pendientes del evaluador. */
 const ESTADOS_EVALUADOR = [
@@ -122,7 +126,7 @@ const TIPOS_CIENTIFICOS = [
                         <span class="tag tag--eje">{{ a.trabajoEjeTematico }}</span>
                       }
                       @if (a.trabajoEstado) {
-                        <span class="tag tag--pendiente">{{ a.trabajoEstado }}</span>
+                        <span class="tag tag--pendiente">{{ etiquetaEstado(a.trabajoEstado) }}</span>
                       }
                     </div>
                     @if (a.trabajoDocumentoUrl) {
@@ -346,7 +350,7 @@ export class PanelEvaluadorComponent extends ListadoPaginadoBase implements OnIn
       key: 'estado',
       label: 'Estado',
       type: 'select',
-      options: ESTADOS_EVALUADOR.map((e) => ({ value: e, label: e })),
+      options: opcionesEstadoTrabajo(ESTADOS_EVALUADOR),
     },
   ];
   readonly filterKeys = ['tipo', 'modalidad', 'ejeTematico', 'estado'] as const;
@@ -415,6 +419,10 @@ export class PanelEvaluadorComponent extends ListadoPaginadoBase implements OnIn
   modalidadLabel(modalidad?: string): string {
     if (!modalidad) return '—';
     return this.modalidadLabels[modalidad as keyof typeof this.modalidadLabels] ?? modalidad;
+  }
+
+  etiquetaEstado(estado?: string): string {
+    return etiquetaEstadoTrabajo(estado);
   }
 
   toggleComentarioTrabajo(id: number): void {

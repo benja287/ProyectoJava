@@ -23,6 +23,11 @@ import {
   mensajeComiteEvaluacionObservado,
   mensajeComitePrecheckObservado,
 } from '../../../utils/trabajo-rol.util';
+import {
+  claseEstadoTrabajoBadge,
+  etiquetaEstadoTrabajo,
+  opcionesEstadoTrabajo,
+} from '../../../models/trabajo-estado-labels';
 
 const ESTADOS_COMITE = [
   'ENVIADO',
@@ -426,7 +431,7 @@ export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
       key: 'estado',
       label: 'Estado',
       type: 'select',
-      options: ESTADOS_COMITE.map((e) => ({ value: e, label: e })),
+      options: opcionesEstadoTrabajo(ESTADOS_COMITE),
     },
   ];
   readonly filterKeys = ['titulo', 'ejeTematico', 'estado'] as const;
@@ -551,31 +556,11 @@ export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
   }
 
   etiquetaEstado(estado?: string): string {
-    const map: Record<string, string> = {
-      ENVIADO: 'Enviado',
-      PRECHECK_OK: 'Precheck OK',
-      PRECHECK_OBSERVADO: 'Observado (precheck)',
-      EN_EVALUACION: 'En evaluación',
-      PENDIENTE_APROBACION_COMITE: 'Pendiente comité',
-      APROBADO: 'Aprobado',
-      OBSERVADO_EVALUACION: 'Rechazado (reenvío)',
-      RECHAZADO: 'Rechazado',
-    };
-    return estado ? map[estado] ?? estado : '—';
+    return etiquetaEstadoTrabajo(estado);
   }
 
   claseEstadoBadge(estado?: string): string {
-    const map: Record<string, string> = {
-      ENVIADO: 'estado-badge--enviado',
-      PRECHECK_OK: 'estado-badge--precheck-ok',
-      PRECHECK_OBSERVADO: 'estado-badge--observado',
-      EN_EVALUACION: 'estado-badge--evaluacion',
-      PENDIENTE_APROBACION_COMITE: 'estado-badge--pendiente',
-      APROBADO: 'estado-badge--aprobado',
-      OBSERVADO_EVALUACION: 'estado-badge--observado-evaluacion',
-      RECHAZADO: 'estado-badge--rechazado',
-    };
-    return estado ? map[estado] ?? 'estado-badge--enviado' : 'estado-badge--enviado';
+    return claseEstadoTrabajoBadge(estado);
   }
 
   seleccionar(t: Trabajo): void {

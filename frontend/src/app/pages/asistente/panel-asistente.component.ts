@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
 import { Trabajo, TrabajoEnvioResumen } from '../../models/trabajo.model';
 import { MODALIDAD_LABELS } from '../../constants/ejes-tematicos';
+import { etiquetaEstadoTrabajo } from '../../models/trabajo-estado-labels';
 import { TrabajoService } from '../../servicios/trabajo.service';
 import { feedbackTextoTrabajo } from '../../utils/trabajo-rol.util';
 
@@ -206,17 +207,7 @@ export class PanelAsistenteComponent implements OnInit {
   }
 
   etiquetaEstado(t: Trabajo): string {
-    const map: Record<string, string> = {
-      ENVIADO: 'Enviado',
-      PRECHECK_OK: 'Precheck OK',
-      PRECHECK_OBSERVADO: 'Observado (precheck)',
-      EN_EVALUACION: 'En evaluación',
-      PENDIENTE_APROBACION_COMITE: 'Pendiente comité',
-      APROBADO: 'Aprobado',
-      OBSERVADO_EVALUACION: 'Rechazado (reenvío)',
-      RECHAZADO: 'Rechazado',
-    };
-    return t.estado ? map[t.estado] ?? t.estado : '—';
+    return etiquetaEstadoTrabajo(t.estado);
   }
 
   feedbackTexto(t: Trabajo): string {

@@ -16,13 +16,13 @@ export function mensajeComitePrecheckObservado(t: Trabajo): string {
   const intentos = Math.min(t.precheckIntentos ?? 0, 3);
   if (esEnvioAsistente(t)) {
     return (
-      `Este trabajo fue observado en precheck (${intentos}/3) y fue enviado como asistente. ` +
+      `Este trabajo fue observado en prevalidación (${intentos}/3) y fue enviado como asistente. ` +
       `El participante aún no tiene rol Autor habilitado: debe corregirlo y reenviarlo desde el ` +
       `panel asistente antes de una nueva prevalidación.`
     );
   }
   return (
-    `Este trabajo fue observado en precheck (${intentos}/3) y fue enviado como autor. ` +
+    `Este trabajo fue observado en prevalidación (${intentos}/3) y fue enviado como autor. ` +
     `Debe corregirlo y reenviarlo desde Mis trabajos antes de una nueva prevalidación.`
   );
 }
@@ -52,9 +52,9 @@ export function feedbackTextoTrabajo(t: Trabajo, vista: 'asistente' | 'autor'): 
   }
   if (t.estado === 'PRECHECK_OBSERVADO') {
     if (vista === 'asistente' || esAsistente) {
-      return 'Observado en precheck (envío como asistente). Corregí y reenviá desde acá. Si el trabajo se aprueba, el administrador te habilitará el rol Autor.';
+      return 'Observado en prevalidación (envío como asistente). Corregí y reenviá desde acá. Si el trabajo se aprueba, el administrador te habilitará el rol Autor.';
     }
-    return 'Observado en precheck (envío como autor). Corregí y reenviá desde Mis trabajos.';
+    return 'Observado en prevalidación (envío como autor). Corregí y reenviá desde Mis trabajos.';
   }
   if (t.estado === 'OBSERVADO_EVALUACION') {
     if (vista === 'asistente' || esAsistente) {
@@ -82,7 +82,7 @@ export function feedbackTextoTrabajo(t: Trabajo, vista: 'asistente' | 'autor'): 
     return 'Recibiste la notificación de presentación. Revisá fecha, sala y modalidad en tu panel.';
   }
   if (t.estado === 'PRECHECK_OK') {
-    return 'Precheck aprobado. El comité asignará evaluadores.';
+    return 'Prevalidación aprobada. El comité asignará evaluadores.';
   }
   if (t.estado === 'RECHAZADO') {
     return 'Trabajo rechazado de forma definitiva.';

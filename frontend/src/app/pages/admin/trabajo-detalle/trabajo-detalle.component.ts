@@ -4,8 +4,10 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { Trabajo } from '../../../models/trabajo.model';
+import { etiquetaEstadoTrabajo } from '../../../models/trabajo-estado-labels';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { etiquetaRolEnvio } from '../../../utils/trabajo-rol.util';
 
 @Component({
   selector: 'app-trabajo-detalle',
@@ -33,7 +35,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <dt>Título</dt>
           <dd>{{ trabajo.titulo }}</dd>
           <dt>Estado</dt>
-          <dd>{{ trabajo.estado || '—' }}</dd>
+          <dd>{{ etiquetaEstado(trabajo.estado) }}</dd>
           <dt>Tipo</dt>
           <dd>{{ trabajo.tipo || '—' }}</dd>
           <dt>Modalidad</dt>
@@ -41,7 +43,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <dt>Eje temático</dt>
           <dd>{{ trabajo.ejeTematico || '—' }}</dd>
           <dt>Rol de envío</dt>
-          <dd>{{ trabajo.rolEnvio || '—' }}</dd>
+          <dd>{{ etiquetaRol(trabajo) }}</dd>
           <dt>Autor</dt>
           <dd>
             @if (trabajo.autorId) {
@@ -119,6 +121,14 @@ export class TrabajoDetalleComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
+  }
+
+  etiquetaEstado(estado?: string): string {
+    return etiquetaEstadoTrabajo(estado);
+  }
+
+  etiquetaRol(trabajo: Trabajo): string {
+    return etiquetaRolEnvio(trabajo);
   }
 
   eliminar(): void {

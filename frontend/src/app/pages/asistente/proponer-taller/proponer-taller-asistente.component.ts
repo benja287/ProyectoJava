@@ -10,6 +10,7 @@ import {
 } from '../../../components/filter-bar/filter-bar.component';
 import { LoginService } from '../../../auth/login.service';
 import { ESTADOS_TRABAJO } from '../../../models/enums';
+import { etiquetaEstadoTrabajo, opcionesEstadoTrabajo } from '../../../models/trabajo-estado-labels';
 import { Trabajo } from '../../../models/trabajo.model';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -113,7 +114,7 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
                     <br /><span class="muted">{{ p.resumen }}</span>
                   }
                 </td>
-                <td>{{ p.estado }}</td>
+                <td>{{ etiquetaEstado(p.estado) }}</td>
                 <td>
                   @if (p.documentoUrl) {
                     <app-archivo-link [url]="p.documentoUrl" label="Ver PDF" />
@@ -141,7 +142,7 @@ export class ProponerTallerAsistenteComponent implements OnInit {
       key: 'estado',
       label: 'Estado',
       type: 'select',
-      options: ESTADOS_TRABAJO.map((e) => ({ value: e, label: e })),
+      options: opcionesEstadoTrabajo(ESTADOS_TRABAJO),
     },
   ];
   readonly filterKeys = ['titulo', 'resumen', 'estado'] as const;
@@ -167,6 +168,10 @@ export class ProponerTallerAsistenteComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router
   ) {}
+
+  etiquetaEstado(estado?: string): string {
+    return etiquetaEstadoTrabajo(estado);
+  }
 
   ngOnInit(): void {
     this.autorId = this.loginService.getUser()?.id;
