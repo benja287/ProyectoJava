@@ -605,7 +605,10 @@ public class TrabajoService {
         notificarAutorPlantilla(trabajo, "EVALUACION_RECHAZADO_FINAL", varsFinal);
       } else {
         trabajo.setEstado(EstadoTrabajo.OBSERVADO_EVALUACION);
-        limpiarAsignaciones(trabajoId);
+        // Solo quita invitaciones pendientes. Conserva asignaciones ya dictaminadas
+        // (rúbrica, comentarios y archivo de correcciones) para que el comité las vea
+        // y para no romper el adjunto posterior al POST /evaluaciones.
+        limpiarAsignacionesPendientes(trabajoId);
         Map<String, String> vars = new HashMap<>();
         vars.put("instruccion_reenvio", TrabajoNotificacionHelper.instruccionReenvio(trabajo));
         vars.put(
@@ -764,6 +767,16 @@ public class TrabajoService {
     List<AsignacionEvaluacion> actuales = asignacionEvaluacionDAO.listarPorTrabajo(trabajoId);
     for (AsignacionEvaluacion a : actuales) {
       asignacionEvaluacionDAO.baja(a.getId());
+    }
+  }
+
+  /** Elimina invitaciones sin dictamen; deja las evaluaciones ya registradas. */
+  private void limpiarAsignacionesPendientes(Long trabajoId) {
+    List<AsignacionEvaluacion> actuales = asignacionEvaluacionDAO.listarPorTrabajo(trabajoId);
+    for (AsignacionEvaluacion a : actuales) {
+      if (a.getEvaluacion() == null) {
+        asignacionEvaluacionDAO.baja(a.getId());
+      }
     }
   }
 

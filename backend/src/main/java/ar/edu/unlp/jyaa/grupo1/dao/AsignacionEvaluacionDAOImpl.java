@@ -225,7 +225,8 @@ public class AsignacionEvaluacionDAOImpl extends AbstractJpaDAO<AsignacionEvalua
           List.of(
               EstadoTrabajo.RECHAZADO,
               EstadoTrabajo.APROBADO,
-              EstadoTrabajo.PENDIENTE_APROBACION_COMITE));
+              EstadoTrabajo.PENDIENTE_APROBACION_COMITE,
+              EstadoTrabajo.OBSERVADO_EVALUACION));
     }
     params.forEach(q::setParameter);
   }
