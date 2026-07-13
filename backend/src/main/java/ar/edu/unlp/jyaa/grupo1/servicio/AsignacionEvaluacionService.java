@@ -250,6 +250,9 @@ public class AsignacionEvaluacionService {
         asignacionEvaluacionDAO
             .recuperarPorIdConDetalle(id)
             .orElseThrow(() -> new NegocioException("Asignación no encontrada: " + id));
+    if (asignacion.getFechaRespuesta() != null) {
+      throw new NegocioException("La asignación ya fue respondida");
+    }
     if (!aceptar) {
       asignacion.setAceptada(false);
       asignacion.setFechaRespuesta(LocalDate.now());

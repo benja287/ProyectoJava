@@ -144,7 +144,7 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
   }
 
   validar(aprobar: boolean): void {
-    if (!this.inscripcion?.id) {
+    if (!this.inscripcion?.id || this.procesando) {
       return;
     }
     let motivoRechazo: string | undefined;

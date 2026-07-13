@@ -25,14 +25,29 @@ import { Pago } from '../../../models/pago.model';
       </td>
       <td class="acciones-celda">
         <a [routerLink]="['/admin/pagos', pago.id]" class="btn-link">Detalle</a>
-        <button type="button" class="btn-ok" (click)="aprobar.emit(pago)">Aprobar</button>
-        <button type="button" class="btn-warn" (click)="rechazar.emit(pago)">Rechazar</button>
+        <button
+          type="button"
+          class="btn-ok"
+          (click)="aprobar.emit(pago)"
+          [disabled]="disabled"
+        >
+          {{ disabled ? 'Procesando...' : 'Aprobar' }}
+        </button>
+        <button
+          type="button"
+          class="btn-warn"
+          (click)="rechazar.emit(pago)"
+          [disabled]="disabled"
+        >
+          Rechazar
+        </button>
       </td>
     </tr>
   `,
 })
 export class PagoFilaComponent {
   @Input({ required: true }) pago!: Pago;
+  @Input() disabled = false;
   @Output() aprobar = new EventEmitter<Pago>();
   @Output() rechazar = new EventEmitter<Pago>();
 }

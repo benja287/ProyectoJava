@@ -434,6 +434,9 @@ export class PanelEvaluadorComponent extends ListadoPaginadoBase implements OnIn
   }
 
   responderAsignacion(id: number, aceptar: boolean): void {
+    if (this.procesando) {
+      return;
+    }
     const msg = aceptar
       ? '¿Aceptar la asignación para evaluar este trabajo?'
       : '¿Rechazar la convocatoria? El comité podrá asignar otro evaluador.';
@@ -455,6 +458,9 @@ export class PanelEvaluadorComponent extends ListadoPaginadoBase implements OnIn
   }
 
   evaluarTrabajo(asignacionId: number, recomendacion: string): void {
+    if (this.procesando) {
+      return;
+    }
     const msg =
       recomendacion === 'APROBADO'
         ? '¿Confirmás APROBAR este trabajo?'
@@ -481,6 +487,9 @@ export class PanelEvaluadorComponent extends ListadoPaginadoBase implements OnIn
   }
 
   evaluarTaller(id: number, aprobar: boolean): void {
+    if (this.procesando) {
+      return;
+    }
     const msg = aprobar ? '¿Aprobar esta propuesta de taller?' : '¿Rechazar esta propuesta de taller?';
     if (!confirm(msg)) return;
     this.procesando = true;

@@ -66,7 +66,12 @@ import { PagoFilaComponent } from './pago-fila.component';
           </thead>
           <tbody>
             @for (p of pagos; track p.id) {
-              <app-pago-fila [pago]="p" (aprobar)="validar(p, true)" (rechazar)="validar(p, false)" />
+              <app-pago-fila
+                [pago]="p"
+                [disabled]="procesandoId != null"
+                (aprobar)="validar(p, true)"
+                (rechazar)="validar(p, false)"
+              />
             }
           </tbody>
         </table>
@@ -75,7 +80,7 @@ import { PagoFilaComponent } from './pago-fila.component';
           [currentPage]="page"
           [totalPages]="totalPages"
           [total]="total"
-          [disabled]="cargando"
+          [disabled]="cargando || procesandoId != null"
           (pageChange)="onPageChange($event)"
         />
       }
@@ -98,13 +103,14 @@ export class PagosPendientesComponent extends ListadoPaginadoBase {
   override pageSize = 20;
   pagos: Pago[] = [];
   mensaje = '';
+  procesandoId?: number;
 
   constructor(private pagoService: PagoService) {
     super();
   }
 
   validar(pago: Pago, aprobar: boolean): void {
-    if (!pago.id) {
+    if (!pago.id || this.procesandoId != null) {
       return;
     }
     let motivoRechazo: string | undefined;
@@ -114,13 +120,18 @@ export class PagosPendientesComponent extends ListadoPaginadoBase {
         return;
       }
     }
+    this.procesandoId = pago.id;
+    this.error = '';
+    this.mensaje = '';
     this.pagoService.validar(pago.id, { aprobar, motivoRechazo }).subscribe({
       next: (res) => {
         this.mensaje = res.mensaje;
+        this.procesandoId = undefined;
         this.cargarPagina();
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo validar el pago.');
+        this.procesandoId = undefined;
       },
     });
   }

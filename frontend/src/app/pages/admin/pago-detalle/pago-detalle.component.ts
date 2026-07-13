@@ -116,7 +116,7 @@ export class PagoDetalleComponent implements OnInit, OnDestroy {
   }
 
   validar(aprobar: boolean): void {
-    if (!this.pago?.id) {
+    if (!this.pago?.id || this.procesando) {
       return;
     }
     let motivoRechazo: string | undefined;
@@ -143,7 +143,7 @@ export class PagoDetalleComponent implements OnInit, OnDestroy {
   }
 
   eliminar(): void {
-    if (!this.pago?.id || !confirm(`¿Eliminar pago #${this.pago.id}?`)) {
+    if (!this.pago?.id || this.procesando || !confirm(`¿Eliminar pago #${this.pago.id}?`)) {
       return;
     }
     this.procesando = true;

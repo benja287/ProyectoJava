@@ -159,6 +159,9 @@ public class PagoService {
     if (pago == null) {
       return null;
     }
+    if (pago.getEstado() != EstadoPago.PENDIENTE) {
+      throw new NegocioException("El pago ya fue procesado");
+    }
     if (!aprobar) {
       if (motivoRechazo == null || motivoRechazo.isBlank()) {
         throw new NegocioException("Debe indicar el motivo de rechazo");

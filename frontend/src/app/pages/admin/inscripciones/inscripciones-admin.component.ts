@@ -91,8 +91,22 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                 <td class="acciones-celda">
                   <a [routerLink]="['/admin/inscripciones', i.id]" class="btn-link">Detalle</a>
                   @if (i.estado === 'PENDIENTE' && i.id) {
-                    <button type="button" class="btn-ok" (click)="validar(i, true)">Aprobar</button>
-                    <button type="button" class="btn-warn" (click)="validar(i, false)">Rechazar</button>
+                    <button
+                      type="button"
+                      class="btn-ok"
+                      (click)="validar(i, true)"
+                      [disabled]="procesandoId != null"
+                    >
+                      {{ procesandoId === i.id ? 'Procesando...' : 'Aprobar' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-warn"
+                      (click)="validar(i, false)"
+                      [disabled]="procesandoId != null"
+                    >
+                      Rechazar
+                    </button>
                   }
                 </td>
               </tr>
@@ -104,7 +118,7 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
           [currentPage]="page"
           [totalPages]="totalPages"
           [total]="total"
-          [disabled]="cargando"
+          [disabled]="cargando || procesandoId != null"
           (pageChange)="onPageChange($event)"
         />
       }
@@ -137,6 +151,7 @@ export class InscripcionesAdminComponent extends ListadoPaginadoBase {
   override pageSize = 20;
   inscripciones: InscripcionCongreso[] = [];
   mensaje = '';
+  procesandoId?: number;
 
   constructor(private inscripcionService: InscripcionService) {
     super();
@@ -147,7 +162,7 @@ export class InscripcionesAdminComponent extends ListadoPaginadoBase {
   }
 
   validar(inscripcion: InscripcionCongreso, aprobar: boolean): void {
-    if (!inscripcion.id) {
+    if (!inscripcion.id || this.procesandoId != null) {
       return;
     }
     let motivoRechazo: string | undefined;
@@ -157,13 +172,18 @@ export class InscripcionesAdminComponent extends ListadoPaginadoBase {
         return;
       }
     }
+    this.procesandoId = inscripcion.id;
+    this.error = '';
+    this.mensaje = '';
     this.inscripcionService.validar(inscripcion.id, { aprobar, motivoRechazo }).subscribe({
       next: () => {
         this.mensaje = aprobar ? 'Inscripción aprobada.' : 'Inscripción rechazada.';
+        this.procesandoId = undefined;
         this.cargarPagina();
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo validar la inscripción.');
+        this.procesandoId = undefined;
       },
     });
   }
