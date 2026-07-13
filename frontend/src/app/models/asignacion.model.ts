@@ -14,8 +14,15 @@ export interface AsignacionEvaluacion {
   evaluadorId?: number;
   evaluadorNombre?: string;
   evaluadorApellido?: string;
+  evaluadorEmail?: string | null;
+  evaluacionId?: number | null;
   evaluacionRecomendacion?: string | null;
   evaluacionComentario?: string | null;
+  evaluacionComentarioComite?: string | null;
+  evaluacionModalidadRecomendada?: string | null;
+  evaluacionRubricaJson?: string | null;
+  evaluacionArchivoCorreccionUrl?: string | null;
+  evaluacionArchivoCorreccionNombre?: string | null;
 }
 
 export interface PaginaAsignaciones {

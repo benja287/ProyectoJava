@@ -16,7 +16,6 @@ import {
 } from '../../models/asignacion.model';
 import { Trabajo } from '../../models/trabajo.model';
 import { AsignacionService } from '../../servicios/asignacion.service';
-import { EvaluacionService } from '../../servicios/evaluacion.service';
 import { TrabajoService } from '../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../utils/api-error.util';
 import { ListadoPaginadoBase } from '../../utils/listado-paginado.base';
@@ -171,41 +170,17 @@ const TIPOS_CIENTIFICOS = [
                 } @else if (asignacionRechazada(a)) {
                   <p class="muted">Rechazaste esta convocatoria.</p>
                 } @else if (puedeDictaminar(a)) {
-                  <button
-                    type="button"
-                    class="evaluador-toggle-comentario"
-                    (click)="toggleComentarioTrabajo(a.id)"
-                  >
-                    {{
-                      comentarioVisibleTrabajo[a.id]
-                        ? 'Ocultar comentario'
-                        : 'Agregar comentario (opcional)'
-                    }}
-                  </button>
-                  @if (comentarioVisibleTrabajo[a.id]) {
-                    <textarea
-                      [(ngModel)]="comentariosTrabajo[a.id]"
-                      rows="3"
-                      placeholder="Escribí tu devolución al autor. Tu identidad no será revelada."
-                    ></textarea>
-                  }
+                  <p class="muted">
+                    La asignación está aceptada. Completá el dictamen con la rúbrica (criterios,
+                    comentarios al autor/comisión, modalidad y decisión final).
+                  </p>
                   <div class="actions">
-                    <button
-                      type="button"
+                    <a
                       class="btn-ok"
-                      (click)="evaluarTrabajo(a.id, 'APROBADO')"
-                      [disabled]="procesando"
+                      [routerLink]="['/evaluador/dictamen', a.id]"
                     >
-                      Aprobar
-                    </button>
-                    <button
-                      type="button"
-                      class="btn-danger"
-                      (click)="evaluarTrabajo(a.id, 'RECHAZADO')"
-                      [disabled]="procesando"
-                    >
-                      Rechazar
-                    </button>
+                      Completar dictamen
+                    </a>
                   </div>
                 }
               </article>
@@ -321,7 +296,6 @@ const TIPOS_CIENTIFICOS = [
 export class PanelEvaluadorComponent extends ListadoPaginadoBase implements OnInit {
   private readonly loginService = inject(LoginService);
   private readonly asignacionService = inject(AsignacionService);
-  private readonly evaluacionService = inject(EvaluacionService);
   private readonly trabajoService = inject(TrabajoService);
 
   readonly filterFields: FilterFieldConfig[] = [
@@ -359,9 +333,7 @@ export class PanelEvaluadorComponent extends ListadoPaginadoBase implements OnIn
   trabajosPendientes: AsignacionEvaluacion[] = [];
   talleresPendientes: Trabajo[] = [];
   resumen: ResumenAsignacionesEvaluador = { pendientes: 0, evaluadas: 0, aprobadas: 0 };
-  comentariosTrabajo: Record<number, string> = {};
   comentariosTaller: Record<number, string> = {};
-  comentarioVisibleTrabajo: Record<number, boolean> = {};
   comentarioVisibleTaller: Record<number, boolean> = {};
   cargandoTalleres = true;
   procesando = false;
@@ -425,10 +397,6 @@ export class PanelEvaluadorComponent extends ListadoPaginadoBase implements OnIn
     return etiquetaEstadoTrabajo(estado);
   }
 
-  toggleComentarioTrabajo(id: number): void {
-    this.comentarioVisibleTrabajo[id] = !this.comentarioVisibleTrabajo[id];
-  }
-
   toggleComentarioTaller(id: number): void {
     this.comentarioVisibleTaller[id] = !this.comentarioVisibleTaller[id];
   }
@@ -455,35 +423,6 @@ export class PanelEvaluadorComponent extends ListadoPaginadoBase implements OnIn
         this.procesando = false;
       },
     });
-  }
-
-  evaluarTrabajo(asignacionId: number, recomendacion: string): void {
-    if (this.procesando) {
-      return;
-    }
-    const msg =
-      recomendacion === 'APROBADO'
-        ? '¿Confirmás APROBAR este trabajo?'
-        : '¿Confirmás RECHAZAR este trabajo?';
-    if (!confirm(msg)) return;
-    this.procesando = true;
-    this.error = '';
-    this.evaluacionService
-      .registrar(asignacionId, recomendacion, this.comentariosTrabajo[asignacionId])
-      .subscribe({
-        next: () => {
-          this.mensaje = 'Evaluación registrada.';
-          this.procesando = false;
-          delete this.comentariosTrabajo[asignacionId];
-          delete this.comentarioVisibleTrabajo[asignacionId];
-          this.cargarPagina();
-          this.cargarResumen();
-        },
-        error: (err: unknown) => {
-          this.error = mensajeErrorApi(err, 'No se pudo registrar la evaluación.');
-          this.procesando = false;
-        },
-      });
   }
 
   evaluarTaller(id: number, aprobar: boolean): void {

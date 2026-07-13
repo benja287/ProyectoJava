@@ -24,6 +24,9 @@ public class ArchivoDAOImpl extends AbstractJpaDAO<Archivo> implements ArchivoDA
       AND NOT EXISTS (
         SELECT 1 FROM circulares c
         WHERE c.documento_url = CONCAT('/api/archivos/', a.id))
+      AND NOT EXISTS (
+        SELECT 1 FROM evaluaciones e
+        WHERE e.archivo_correccion_url = CONCAT('/api/archivos/', a.id))
       """;
 
   public ArchivoDAOImpl() {

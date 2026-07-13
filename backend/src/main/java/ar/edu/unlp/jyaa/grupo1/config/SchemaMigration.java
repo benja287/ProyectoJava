@@ -27,6 +27,7 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarAulasYPrograma);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarNotificacionEnlace);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasTrabajoEnriquecidas);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarEvaluacionDictamen);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -422,6 +423,35 @@ public final class SchemaMigration {
         "notificaciones",
         "enlace",
         "ALTER TABLE notificaciones ADD COLUMN enlace VARCHAR(300) NULL");
+  }
+
+  /** Campos del dictamen completo del evaluador (rúbrica PDF). */
+  private static void migrarEvaluacionDictamen(EntityManager em) {
+    agregarColumnaSiFalta(
+        em,
+        "evaluaciones",
+        "comentario_comite",
+        "ALTER TABLE evaluaciones ADD COLUMN comentario_comite TEXT NULL");
+    agregarColumnaSiFalta(
+        em,
+        "evaluaciones",
+        "modalidad_recomendada",
+        "ALTER TABLE evaluaciones ADD COLUMN modalidad_recomendada VARCHAR(30) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "evaluaciones",
+        "rubrica_json",
+        "ALTER TABLE evaluaciones ADD COLUMN rubrica_json TEXT NULL");
+    agregarColumnaSiFalta(
+        em,
+        "evaluaciones",
+        "archivo_correccion_url",
+        "ALTER TABLE evaluaciones ADD COLUMN archivo_correccion_url VARCHAR(500) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "evaluaciones",
+        "archivo_correccion_nombre",
+        "ALTER TABLE evaluaciones ADD COLUMN archivo_correccion_nombre VARCHAR(255) NULL");
   }
 
   /**

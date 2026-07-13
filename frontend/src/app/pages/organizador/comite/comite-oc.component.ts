@@ -28,6 +28,11 @@ import {
   etiquetaEstadoTrabajo,
   opcionesEstadoTrabajo,
 } from '../../../models/trabajo-estado-labels';
+import {
+  etiquetaDecisionEvaluacion,
+  etiquetaModalidadRecomendada,
+  RubricaEvaluacion,
+} from '../../../models/evaluacion.model';
 
 const ESTADOS_COMITE = [
   'ENVIADO',
@@ -59,6 +64,53 @@ interface PrecheckChecks {
     ArchivoLinkComponent,
     FilterBarComponent,
     AppPaginatorComponent,
+  ],
+  styles: [
+    `
+      .comite-evals {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 0.75rem;
+      }
+      .comite-eval-card {
+        border: 1px solid #e2e2ea;
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+        background: #fafafa;
+      }
+      .comite-eval-card header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 1rem;
+        margin-bottom: 0.5rem;
+      }
+      .comite-eval-dl {
+        display: grid;
+        grid-template-columns: minmax(8rem, 11rem) 1fr;
+        gap: 0.35rem 0.75rem;
+        margin: 0;
+      }
+      .comite-eval-dl dt {
+        font-weight: 600;
+        color: #555;
+      }
+      .comite-eval-dl dd {
+        margin: 0;
+      }
+      .comite-interno {
+        background: #fff8e6;
+        padding: 0.35rem 0.5rem;
+        border-radius: 4px;
+      }
+      .comite-rubrica {
+        margin-top: 0.75rem;
+      }
+      .comite-rubrica ul {
+        margin: 0.5rem 0 0;
+        padding-left: 1.2rem;
+      }
+    `,
   ],
   template: `
     <div class="panel-page">
@@ -389,26 +441,64 @@ interface PrecheckChecks {
 
             @if (asignaciones.length > 0) {
               <h3>Evaluaciones registradas</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Evaluador</th>
-                    <th>Aceptó</th>
-                    <th>Recomendación</th>
-                    <th>Comentario</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (a of asignaciones; track a.id) {
-                    <tr>
-                      <td>{{ a.evaluadorApellido }}, {{ a.evaluadorNombre }}</td>
-                      <td>{{ a.aceptada ? 'Sí' : 'No' }}</td>
-                      <td>{{ a.evaluacionRecomendacion || '—' }}</td>
-                      <td>{{ a.evaluacionComentario || '—' }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+              <div class="comite-evals">
+                @for (a of asignaciones; track a.id) {
+                  <article class="comite-eval-card">
+                    <header>
+                      <strong>{{ a.evaluadorApellido }}, {{ a.evaluadorNombre }}</strong>
+                      <span class="muted">
+                        {{ a.aceptada ? 'Asignación aceptada' : 'Asignación no aceptada' }}
+                      </span>
+                    </header>
+                    @if (a.evaluacionRecomendacion) {
+                      <dl class="comite-eval-dl">
+                        <dt>Decisión</dt>
+                        <dd>{{ etiquetaDecision(a.evaluacionRecomendacion) }}</dd>
+                        <dt>Modalidad sugerida</dt>
+                        <dd>{{ etiquetaModalidadRec(a.evaluacionModalidadRecomendada) }}</dd>
+                        <dt>Comentario a autorxs</dt>
+                        <dd>{{ a.evaluacionComentario || '—' }}</dd>
+                        <dt>Comentario interno (comisión)</dt>
+                        <dd class="comite-interno">{{ a.evaluacionComentarioComite || '—' }}</dd>
+                        <dt>Archivo de correcciones</dt>
+                        <dd>
+                          @if (a.evaluacionArchivoCorreccionUrl) {
+                            <app-archivo-link
+                              [url]="a.evaluacionArchivoCorreccionUrl"
+                              [label]="a.evaluacionArchivoCorreccionNombre || 'Descargar'"
+                            />
+                          } @else {
+                            —
+                          }
+                        </dd>
+                      </dl>
+                      @if (resumenRubrica(a.evaluacionRubricaJson); as rub) {
+                        <details class="comite-rubrica">
+                          <summary>Ver rúbrica (criterios)</summary>
+                          <ul>
+                            <li>Pertinencia: {{ rub.general?.pertinencia || '—' }}</li>
+                            <li>Identidad autorxs: {{ rub.general?.identidadAutor || '—' }}</li>
+                            <li>Eje correcto: {{ rub.general?.ejeCorrecto || '—' }}</li>
+                            <li>Tipo según evaluador: {{ rub.tipoSegunEvaluador || '—' }}</li>
+                            <li>
+                              Forma — lenguaje: {{ rub.forma?.lenguaje?.valor || '—' }}, título:
+                              {{ rub.forma?.titulo?.valor || '—' }}, resumen:
+                              {{ rub.forma?.resumen?.valor || '—' }}, keywords:
+                              {{ rub.forma?.palabrasClave?.valor || '—' }}
+                            </li>
+                            <li>
+                              Bibliografía APA: {{ rub.bibliografia?.formatoApa?.valor || '—' }};
+                              citas↔refs: {{ rub.bibliografia?.coherenciaCitas?.valor || '—' }}
+                            </li>
+                          </ul>
+                        </details>
+                      }
+                    } @else {
+                      <p class="muted">Sin dictamen aún.</p>
+                    }
+                  </article>
+                }
+              </div>
             }
           }
         </section>
@@ -557,6 +647,25 @@ export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
 
   etiquetaEstado(estado?: string): string {
     return etiquetaEstadoTrabajo(estado);
+  }
+
+  etiquetaDecision(codigo?: string | null): string {
+    return etiquetaDecisionEvaluacion(codigo);
+  }
+
+  etiquetaModalidadRec(codigo?: string | null): string {
+    return etiquetaModalidadRecomendada(codigo);
+  }
+
+  resumenRubrica(json?: string | null): RubricaEvaluacion | null {
+    if (!json?.trim()) {
+      return null;
+    }
+    try {
+      return JSON.parse(json) as RubricaEvaluacion;
+    } catch {
+      return null;
+    }
   }
 
   claseEstadoBadge(estado?: string): string {

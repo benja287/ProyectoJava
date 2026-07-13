@@ -22,6 +22,7 @@ import { TrabajosAdminComponent } from './pages/admin/trabajos/trabajos-admin.co
 import { TrabajoDetalleComponent } from './pages/admin/trabajo-detalle/trabajo-detalle.component';
 import { InscripcionDetalleComponent } from './pages/admin/inscripcion-detalle/inscripcion-detalle.component';
 import { PanelEvaluadorComponent } from './pages/evaluador/panel-evaluador.component';
+import { DictamenEvaluadorComponent } from './pages/evaluador/dictamen/dictamen-evaluador.component';
 import { TrabajosAutorComponent } from './pages/autor/trabajos/trabajos-autor.component';
 import { PanelAutorComponent } from './pages/autor/panel-autor.component';
 import { CronogramaParticipanteComponent } from './pages/participante/cronograma/cronograma-participante.component';
@@ -181,6 +182,11 @@ export const routes: Routes = [
   {
     path: 'evaluador',
     component: PanelEvaluadorComponent,
+    canActivate: [evaluador],
+  },
+  {
+    path: 'evaluador/dictamen/:asignacionId',
+    component: DictamenEvaluadorComponent,
     canActivate: [evaluador],
   },
   {
