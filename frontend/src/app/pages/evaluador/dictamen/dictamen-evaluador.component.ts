@@ -47,7 +47,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
               [disabled]="enviando"
             >
               <span class="wizard-paso-num">{{ i + 1 }}</span>
-              {{ p.label }}
+              <span class="wizard-paso-label">{{ p.label }}</span>
             </button>
           }
         </nav>
@@ -293,25 +293,35 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       .wizard-paso {
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
-        border: 1px solid #c5c0d8;
-        background: #fff;
+        gap: 0.45rem;
+        border: 1px solid #b8b0d0;
+        background: #fff !important;
+        color: #2f2940 !important;
         border-radius: 999px;
-        padding: 0.35rem 0.75rem;
+        padding: 0.4rem 0.85rem;
         cursor: pointer;
-        font-size: 0.85rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        line-height: 1.2;
+      }
+      .wizard-paso:hover:not(:disabled) {
+        border-color: #5b4b8a;
+        background: #f7f4ff !important;
       }
       .wizard-paso--activo {
         border-color: #5b4b8a;
-        background: #efeaff;
+        background: #5b4b8a !important;
+        color: #fff !important;
         font-weight: 600;
       }
-      .wizard-paso--hecho {
-        border-color: #7a9e7a;
+      .wizard-paso--hecho:not(.wizard-paso--activo) {
+        border-color: #6a9a6a;
+        background: #eef6ee !important;
+        color: #1f4d1f !important;
       }
       .wizard-paso-num {
-        width: 1.4rem;
-        height: 1.4rem;
+        width: 1.5rem;
+        height: 1.5rem;
         border-radius: 50%;
         background: #5b4b8a;
         color: #fff;
@@ -319,6 +329,19 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         align-items: center;
         justify-content: center;
         font-size: 0.75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .wizard-paso--activo .wizard-paso-num {
+        background: #fff;
+        color: #5b4b8a;
+      }
+      .wizard-paso--hecho:not(.wizard-paso--activo) .wizard-paso-num {
+        background: #3d7a3d;
+        color: #fff;
+      }
+      .wizard-paso-label {
+        white-space: nowrap;
       }
       .wizard-fieldset {
         border: 1px solid #e2e2ea;
@@ -332,6 +355,21 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         gap: 0.75rem;
         margin-top: 1.25rem;
         align-items: center;
+      }
+      .wizard-acciones .btn-secundario {
+        background: #5c5c5c;
+        color: #fff;
+      }
+      .wizard-acciones .btn-primary {
+        background: #5b4b8a;
+        color: #fff;
+      }
+      .wizard-acciones .btn-link {
+        color: #5b4b8a;
+        text-decoration: underline;
+        background: transparent;
+        border: none;
+        padding: 0.5rem;
       }
       .form-hint {
         display: block;
