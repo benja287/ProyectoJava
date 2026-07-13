@@ -20,6 +20,7 @@ public class NotificacionService {
 
   private static final int MAX_MENSAJE = 1000;
   private static final int MAX_ASUNTO = 200;
+  private static final int MAX_ENLACE = 300;
 
   @Inject private NotificacionDAO notificacionDAO;
   @Inject private UsuarioDAO usuarioDAO;
@@ -27,12 +28,17 @@ public class NotificacionService {
   @Inject private MailConfig mailConfig;
 
   public void enviar(Long usuarioId, String asunto, String mensaje) {
+    enviar(usuarioId, asunto, mensaje, null);
+  }
+
+  public void enviar(Long usuarioId, String asunto, String mensaje, String enlace) {
     Usuario usuario = usuarioDAO.recuperarPorId(usuarioId);
     if (usuario == null) {
       return;
     }
-    notificacionDAO.alta(crearNotificacion(usuario, asunto, mensaje, CanalNotificacion.INTERNO));
-    enviarEmailSiCorresponde(usuario, asunto, mensaje);
+    notificacionDAO.alta(
+        crearNotificacion(usuario, asunto, mensaje, CanalNotificacion.INTERNO, enlace));
+    enviarEmailSiCorresponde(usuario, asunto, mensajeConEnlaceEmail(mensaje, enlace));
   }
 
   public void enviarConPlantilla(Long usuarioId, String nombrePlantilla, Map<String, String> variables) {
@@ -41,11 +47,13 @@ public class NotificacionService {
       return;
     }
     Map<String, String> vars = enriquecerVariables(usuario, variables);
+    String enlace = enlaceDesdeVars(vars);
     var contenido = emailService.renderizarPlantilla(nombrePlantilla, vars);
     if (contenido.isPresent()) {
       String asunto = contenido.get().asunto();
       String mensaje = contenido.get().cuerpo();
-      notificacionDAO.alta(crearNotificacion(usuario, asunto, mensaje, CanalNotificacion.EMAIL));
+      notificacionDAO.alta(
+          crearNotificacion(usuario, asunto, mensaje, CanalNotificacion.EMAIL, enlace));
       emailService.enviarConPlantillaEnSegundoPlano(nombrePlantilla, emailDestino(usuario), vars);
       return;
     }
@@ -54,18 +62,25 @@ public class NotificacionService {
             usuario,
             "Aviso del congreso",
             "Tenés una actualización sobre tu trabajo. Ingresá a la plataforma.",
-            CanalNotificacion.INTERNO));
+            CanalNotificacion.INTERNO,
+            enlace));
   }
 
   public int enviarPorRol(Rol rol, String asunto, String mensaje, Long excluirUsuarioId) {
+    return enviarPorRol(rol, asunto, mensaje, excluirUsuarioId, null);
+  }
+
+  public int enviarPorRol(
+      Rol rol, String asunto, String mensaje, Long excluirUsuarioId, String enlace) {
     int enviadas = 0;
     for (Usuario u : usuarioDAO.listarPaginado(0, 500)) {
       if (excluirUsuarioId != null && excluirUsuarioId.equals(u.getId())) {
         continue;
       }
       if (u.getRoles().contains(rol)) {
-        notificacionDAO.alta(crearNotificacion(u, asunto, mensaje, CanalNotificacion.INTERNO));
-        enviarEmailSiCorresponde(u, asunto, mensaje);
+        notificacionDAO.alta(
+            crearNotificacion(u, asunto, mensaje, CanalNotificacion.INTERNO, enlace));
+        enviarEmailSiCorresponde(u, asunto, mensajeConEnlaceEmail(mensaje, enlace));
         enviadas++;
       }
     }
@@ -83,11 +98,16 @@ public class NotificacionService {
         continue;
       }
       Map<String, String> vars = enriquecerVariables(u, variables);
+      String enlace = enlaceDesdeVars(vars);
       var contenido = emailService.renderizarPlantilla(nombrePlantilla, vars);
       if (contenido.isPresent()) {
         notificacionDAO.alta(
             crearNotificacion(
-                u, contenido.get().asunto(), contenido.get().cuerpo(), CanalNotificacion.EMAIL));
+                u,
+                contenido.get().asunto(),
+                contenido.get().cuerpo(),
+                CanalNotificacion.EMAIL,
+                enlace));
         emailService.enviarConPlantillaEnSegundoPlano(
             nombrePlantilla, emailDestino(u), vars);
       } else {
@@ -96,7 +116,8 @@ public class NotificacionService {
                 u,
                 "Aviso del congreso",
                 "Hay trabajos pendientes de gestión. Ingresá a la plataforma.",
-                CanalNotificacion.INTERNO));
+                CanalNotificacion.INTERNO,
+                enlace));
       }
       enviadas++;
     }
@@ -109,7 +130,7 @@ public class NotificacionService {
       if (excluirUsuarioId != null && excluirUsuarioId.equals(u.getId())) {
         continue;
       }
-      notificacionDAO.alta(crearNotificacion(u, asunto, mensaje, CanalNotificacion.INTERNO));
+      notificacionDAO.alta(crearNotificacion(u, asunto, mensaje, CanalNotificacion.INTERNO, null));
       enviarEmailSiCorresponde(u, asunto, mensaje);
       enviadas++;
     }
@@ -156,8 +177,41 @@ public class NotificacionService {
   private Map<String, String> enriquecerVariables(Usuario usuario, Map<String, String> variables) {
     Map<String, String> vars = variables != null ? new HashMap<>(variables) : new HashMap<>();
     vars.putIfAbsent("nombre", nombreCompleto(usuario));
-    vars.putIfAbsent("url_plataforma", mailConfig.getPublicUrl());
+    String base = mailConfig.getPublicUrl();
+    if (base != null && base.endsWith("/")) {
+      base = base.substring(0, base.length() - 1);
+    }
+    vars.putIfAbsent("url_plataforma", base != null ? base : "");
+    vars.putIfAbsent("contexto", "");
+    vars.putIfAbsent("proximo_paso", "Ingresá a la plataforma para continuar.");
+    String enlace = enlaceDesdeVars(vars);
+    if (enlace != null && !enlace.isBlank()) {
+      String path = enlace.startsWith("/") ? enlace : "/" + enlace;
+      vars.putIfAbsent("url_accion", vars.get("url_plataforma") + path);
+    } else {
+      vars.putIfAbsent("url_accion", vars.get("url_plataforma"));
+    }
     return vars;
+  }
+
+  private static String enlaceDesdeVars(Map<String, String> vars) {
+    if (vars == null) {
+      return null;
+    }
+    String enlace = vars.get("enlace");
+    return enlace != null && !enlace.isBlank() ? enlace.trim() : null;
+  }
+
+  private String mensajeConEnlaceEmail(String mensaje, String enlace) {
+    if (enlace == null || enlace.isBlank()) {
+      return mensaje;
+    }
+    String base = mailConfig.getPublicUrl();
+    if (base != null && base.endsWith("/")) {
+      base = base.substring(0, base.length() - 1);
+    }
+    String path = enlace.startsWith("/") ? enlace : "/" + enlace;
+    return mensaje + "\n\nAbrí la pantalla: " + (base != null ? base : "") + path;
   }
 
   private static String emailDestino(Usuario usuario) {
@@ -169,7 +223,7 @@ public class NotificacionService {
   }
 
   private Notificacion crearNotificacion(
-      Usuario usuario, String asunto, String mensaje, CanalNotificacion canal) {
+      Usuario usuario, String asunto, String mensaje, CanalNotificacion canal, String enlace) {
     if (asunto == null || asunto.isBlank()) {
       throw new NegocioException("El asunto es obligatorio");
     }
@@ -183,6 +237,9 @@ public class NotificacionService {
     n.setCanal(canal);
     n.setFechaCreacion(LocalDateTime.now());
     n.setLeida(false);
+    if (enlace != null && !enlace.isBlank()) {
+      n.setEnlace(truncar(enlace.trim(), MAX_ENLACE));
+    }
     return n;
   }
 

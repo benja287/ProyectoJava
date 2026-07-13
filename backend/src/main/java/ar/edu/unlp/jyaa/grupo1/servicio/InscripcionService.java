@@ -149,6 +149,7 @@ public class InscripcionService {
     vars.put("categoria", etiquetaCategoria(categoria));
     vars.put("monto", monto != null ? String.format("%.0f", monto) : "0");
     vars.put("metodo_pago", etiquetaMetodoPago(metodoPago));
+    vars.put("enlace", "/admin/inscripciones");
     notificacionService.enviarPorRolConPlantilla(
         Rol.ADMINISTRADOR, "INSCRIPCION_PENDIENTE_ADMIN", vars, null);
   }
@@ -162,6 +163,7 @@ public class InscripcionService {
     vars.put("categoria", etiquetaCategoria(categoria));
     vars.put("monto", monto != null ? String.format("%.0f", monto) : "0");
     vars.put("metodo_pago", etiquetaMetodoPago(metodoPago));
+    vars.put("enlace", "/inscripcion");
     notificacionService.enviarConPlantilla(
         solicitante.getId(), "INSCRIPCION_RECIBIDA_USUARIO", vars);
   }
@@ -321,7 +323,7 @@ public class InscripcionService {
       return;
     }
     notificacionService.enviarConPlantilla(
-        usuario.getId(), "INSCRIPCION_APROBADA_USUARIO", Map.of());
+        usuario.getId(), "INSCRIPCION_APROBADA_USUARIO", Map.of("enlace", "/asistente"));
   }
 
   private void notificarUsuarioInscripcionRechazada(Usuario usuario, String motivo) {
@@ -330,6 +332,7 @@ public class InscripcionService {
     }
     Map<String, String> vars = new HashMap<>();
     vars.put("motivo", motivo != null && !motivo.isBlank() ? motivo : "Sin motivo indicado");
+    vars.put("enlace", "/inscripcion");
     notificacionService.enviarConPlantilla(
         usuario.getId(), "INSCRIPCION_RECHAZADA_USUARIO", vars);
   }

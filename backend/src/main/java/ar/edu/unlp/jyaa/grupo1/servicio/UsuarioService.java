@@ -151,7 +151,10 @@ public class UsuarioService {
       notificacionService.enviar(
           actualizado.getId(),
           "Rol autor habilitado",
-          "El administrador habilitó tu rol de autor. Ya podés gestionar trabajos desde el panel Autor.");
+          TrabajoNotificacionHelper.formatear(
+              "El administrador habilitó tu rol de autor.",
+              "Ya podés gestionar trabajos desde el panel Autor."),
+          TrabajoNotificacionHelper.RUTA_AUTOR_TRABAJOS);
       return actualizado;
     }
     if (!usuario.getRoles().contains(Rol.ASISTENTE)) {
@@ -165,7 +168,10 @@ public class UsuarioService {
     notificacionService.enviar(
         actualizado.getId(),
         "Rol autor habilitado",
-        "El administrador habilitó tu rol de autor. Ya podés gestionar trabajos desde el panel Autor.");
+        TrabajoNotificacionHelper.formatear(
+            "El administrador habilitó tu rol de autor.",
+            "Ya podés gestionar trabajos desde el panel Autor."),
+        TrabajoNotificacionHelper.RUTA_AUTOR_TRABAJOS);
     return actualizado;
   }
 

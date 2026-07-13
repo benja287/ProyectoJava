@@ -361,20 +361,24 @@ public class TrabajoService {
     }
     trabajo.setEstado(EstadoTrabajo.ENVIADO);
     Trabajo guardado = trabajoDAO.modificar(trabajo);
+    boolean reenvio = reenvioPrecheck || reenvioRevision;
     notificarAutor(
         guardado,
-        reenvioPrecheck || reenvioRevision ? "Trabajo reenviado" : "Trabajo enviado",
-        reenvioPrecheck || reenvioRevision
-            ? "Tu trabajo \"" + guardado.getTitulo() + "\" fue reenviado y está pendiente de prevalidación."
-            : "Tu trabajo \"" + guardado.getTitulo() + "\" fue enviado y está pendiente de revisión del comité.");
+        reenvio ? "Trabajo reenviado" : "Trabajo enviado",
+        TrabajoNotificacionHelper.mensajeEnvio(guardado, reenvio),
+        TrabajoNotificacionHelper.rutaPanelParticipante(guardado));
     Map<String, String> varsComite = variablesBaseTrabajo(guardado);
+    varsComite.put("enlace", TrabajoNotificacionHelper.RUTA_COMITE);
+    varsComite.put("contexto", TrabajoNotificacionHelper.contextoParticipante(guardado));
+    varsComite.put(
+        "proximo_paso",
+        "Revisá la prevalidación formal y, si corresponde, asigná evaluadores del eje.");
     if (guardado.getAutor() != null) {
       varsComite.put(
           "nombre_autor",
           guardado.getAutor().getNombre() + " " + guardado.getAutor().getApellido());
     }
-    String plantillaComite =
-        reenvioPrecheck || reenvioRevision ? "REENVIO_ORGANIZADOR" : "ENVIO_TRABAJO_ORGANIZADOR";
+    String plantillaComite = reenvio ? "REENVIO_ORGANIZADOR" : "ENVIO_TRABAJO_ORGANIZADOR";
     notificacionService.enviarPorRolConPlantilla(
         Rol.ORGANIZADOR_CIENTIFICO, plantillaComite, varsComite, null);
     return guardado;
@@ -454,7 +458,11 @@ public class TrabajoService {
         trabajo.setObservacionesPrecheck(observaciones.trim());
       }
       Trabajo guardado = trabajoDAO.modificar(trabajo);
-      notificarAutorPlantilla(guardado, "PRECHECK_OK", null);
+      Map<String, String> varsOk = new HashMap<>();
+      varsOk.put(
+          "proximo_paso",
+          "Esperá a que el comité asigne evaluadores. No tenés que hacer nada por ahora.");
+      notificarAutorPlantilla(guardado, "PRECHECK_OK", varsOk);
       return guardado;
     }
     int intentos = trabajo.getPrecheckIntentos() + 1;
@@ -467,7 +475,8 @@ public class TrabajoService {
       notificarAutor(
           trabajo,
           "Trabajo no prevalidado",
-          "Tu trabajo \"" + trabajo.getTitulo() + "\" no superó el precheck tras " + intentos + " intentos.");
+          TrabajoNotificacionHelper.mensajePrecheckRechazadoFinal(trabajo, intentos),
+          TrabajoNotificacionHelper.rutaPanelParticipante(trabajo));
     } else {
       trabajo.setEstado(EstadoTrabajo.PRECHECK_OBSERVADO);
       Map<String, String> vars = new HashMap<>();
@@ -476,7 +485,12 @@ public class TrabajoService {
           observaciones != null && !observaciones.isBlank()
               ? observaciones.trim()
               : "Revisá los requisitos del congreso y corregí el trabajo.");
-      vars.put("instruccion_reenvio", instruccionReenvio(trabajo));
+      vars.put("instruccion_reenvio", TrabajoNotificacionHelper.instruccionReenvio(trabajo));
+      vars.put(
+          "proximo_paso",
+          esEnvioAsistente(trabajo)
+              ? "Corregí y reenviá desde el panel asistente."
+              : "Corregí y reenviá desde Mis trabajos.");
       notificarAutorPlantilla(trabajo, "PRECHECK_OBSERVADO", vars);
     }
     Trabajo guardado = trabajoDAO.modificar(trabajo);
@@ -492,12 +506,22 @@ public class TrabajoService {
     if (aprobar) {
       trabajo.setEstado(EstadoTrabajo.APROBADO);
       Trabajo guardado = trabajoDAO.modificar(trabajo);
-      notificarAutorPlantilla(guardado, "COMITE_APROBADO", null);
+      Map<String, String> varsAprobado = new HashMap<>();
+      varsAprobado.put(
+          "proximo_paso",
+          esEnvioAsistente(guardado)
+              ? "El administrador debe habilitarte el rol Autor. Después podrás gestionar trabajos desde el panel Autor."
+              : "El organizador programará tu trabajo en mesa temática o sesión de pósters.");
+      notificarAutorPlantilla(guardado, "COMITE_APROBADO", varsAprobado);
       if (guardado.getAutor() != null && pendienteHabilitacionAutor(guardado.getAutor())) {
         Map<String, String> vars = variablesBaseTrabajo(guardado);
         Usuario asistente = guardado.getAutor();
         vars.put("nombre_asistente", asistente.getNombre() + " " + asistente.getApellido());
         vars.put("email_asistente", asistente.getEmail() != null ? asistente.getEmail() : "");
+        vars.put("enlace", TrabajoNotificacionHelper.RUTA_ADMIN_SOLICITUDES_AUTOR);
+        vars.put(
+            "proximo_paso",
+            "Habilitá el rol Autor desde Solicitudes de autor en el panel de administración.");
         notificacionService.enviarPorRolConPlantilla(
             Rol.ADMINISTRADOR, "PROMOCION_AUTOR_ADMIN", vars, null);
       }
@@ -510,7 +534,8 @@ public class TrabajoService {
       notificarAutor(
           trabajo,
           "Trabajo rechazado",
-          "Tu trabajo \"" + trabajo.getTitulo() + "\" fue rechazado. Motivo: " + observaciones);
+          TrabajoNotificacionHelper.mensajeRechazoComite(trabajo, observaciones.trim()),
+          TrabajoNotificacionHelper.rutaPanelParticipante(trabajo));
     }
     return trabajoDAO.modificar(trabajo);
   }
@@ -549,26 +574,45 @@ public class TrabajoService {
 
     if (aprobaciones >= 2) {
       trabajo.setEstado(EstadoTrabajo.PENDIENTE_APROBACION_COMITE);
-      notificarAutorPlantilla(trabajo, "EVALUACION_FAVORABLE", null);
+      Map<String, String> varsFavorable = new HashMap<>();
+      varsFavorable.put(
+          "proximo_paso",
+          "Esperá el dictamen final del comité académico. No tenés que hacer nada por ahora.");
+      notificarAutorPlantilla(trabajo, "EVALUACION_FAVORABLE", varsFavorable);
       notificacionService.enviarPorRol(
           Rol.ORGANIZADOR_CIENTIFICO,
           "Confirmar trabajo tras evaluaciones",
-          "El trabajo \"" + trabajo.getTitulo() + "\" tiene 2 aprobaciones de evaluadores.",
-          null);
+          TrabajoNotificacionHelper.formatear(
+              "El trabajo \""
+                  + trabajo.getTitulo()
+                  + "\" tiene 2 aprobaciones de evaluadores. "
+                  + TrabajoNotificacionHelper.contextoParticipante(trabajo),
+              "Confirmá la aprobación o el rechazo definitivo en el panel del comité."),
+          null,
+          TrabajoNotificacionHelper.RUTA_COMITE);
     } else if (rechazos >= 2) {
       trabajo.setEstado(EstadoTrabajo.RECHAZADO);
-      notificarAutorPlantilla(trabajo, "EVALUACION_RECHAZADO_FINAL", null);
+      Map<String, String> varsFinal = new HashMap<>();
+      varsFinal.put("proximo_paso", "Consultá el estado en tu panel. No admite más reenvíos.");
+      notificarAutorPlantilla(trabajo, "EVALUACION_RECHAZADO_FINAL", varsFinal);
     } else if (rechazos >= 1 && aprobaciones < 2) {
       int intentos = trabajo.getRevisionIntentos() + 1;
       trabajo.setRevisionIntentos(intentos);
       if (intentos >= MAX_REVISION_INTENTOS) {
         trabajo.setEstado(EstadoTrabajo.RECHAZADO);
-        notificarAutorPlantilla(trabajo, "EVALUACION_RECHAZADO_FINAL", null);
+        Map<String, String> varsFinal = new HashMap<>();
+        varsFinal.put("proximo_paso", "Consultá el estado en tu panel. No admite más reenvíos.");
+        notificarAutorPlantilla(trabajo, "EVALUACION_RECHAZADO_FINAL", varsFinal);
       } else {
         trabajo.setEstado(EstadoTrabajo.OBSERVADO_EVALUACION);
         limpiarAsignaciones(trabajoId);
         Map<String, String> vars = new HashMap<>();
-        vars.put("instruccion_reenvio", instruccionReenvio(trabajo));
+        vars.put("instruccion_reenvio", TrabajoNotificacionHelper.instruccionReenvio(trabajo));
+        vars.put(
+            "proximo_paso",
+            esEnvioAsistente(trabajo)
+                ? "Corregí y reenviá desde el panel asistente."
+                : "Corregí y reenviá desde Mis trabajos.");
         notificarAutorPlantilla(trabajo, "EVALUACION_RECHAZADO_REENVIO", vars);
       }
     }
@@ -801,40 +845,26 @@ public class TrabajoService {
     notificarAutor(
         guardado,
         aprobar ? "Taller aprobado" : "Taller no aprobado",
-        aprobar
-            ? "Tu propuesta de taller \""
-                + guardado.getTitulo()
-                + "\" fue aprobada."
-                + (comentario != null && !comentario.isBlank()
-                    ? " Comentario: " + comentario.trim()
-                    : "")
-            : "Tu propuesta de taller \""
-                + guardado.getTitulo()
-                + "\" no fue aprobada."
-                + (comentario != null && !comentario.isBlank()
-                    ? " Comentario: " + comentario.trim()
-                    : ""));
+        TrabajoNotificacionHelper.mensajeTaller(guardado, aprobar, comentario),
+        TrabajoNotificacionHelper.RUTA_ASISTENTE_TRABAJOS);
     return guardado;
   }
 
   private boolean esEnvioAsistente(Trabajo trabajo) {
-    return trabajo.getRolEnvio() == null || trabajo.getRolEnvio() == Rol.ASISTENTE;
+    return TrabajoNotificacionHelper.esEnvioAsistente(trabajo);
   }
 
   private String sufijoRolEnvio(Trabajo trabajo) {
     return esEnvioAsistente(trabajo) ? " (enviado como asistente)" : " (enviado como autor)";
   }
 
-  private String instruccionReenvio(Trabajo trabajo) {
-    if (esEnvioAsistente(trabajo)) {
-      return " Reenviá desde el panel asistente. Si el trabajo se aprueba, el administrador te habilitará el rol Autor.";
-    }
-    return " Reenviá desde Mis trabajos.";
+  private void notificarAutor(Trabajo trabajo, String asunto, String mensaje) {
+    notificarAutor(trabajo, asunto, mensaje, TrabajoNotificacionHelper.rutaPanelParticipante(trabajo));
   }
 
-  private void notificarAutor(Trabajo trabajo, String asunto, String mensaje) {
+  private void notificarAutor(Trabajo trabajo, String asunto, String mensaje, String enlace) {
     if (trabajo.getAutor() != null && trabajo.getAutor().getId() != null) {
-      notificacionService.enviar(trabajo.getAutor().getId(), asunto, mensaje);
+      notificacionService.enviar(trabajo.getAutor().getId(), asunto, mensaje, enlace);
     }
   }
 
@@ -854,6 +884,12 @@ public class TrabajoService {
   private Map<String, String> variablesBaseTrabajo(Trabajo trabajo) {
     Map<String, String> vars = new HashMap<>();
     vars.put("titulo", trabajo.getTitulo() != null ? trabajo.getTitulo() : "");
+    vars.put("enlace", TrabajoNotificacionHelper.rutaPanelParticipante(trabajo));
+    vars.put("contexto", TrabajoNotificacionHelper.contextoParticipante(trabajo));
+    vars.put("rol_envio", TrabajoNotificacionHelper.etiquetaRol(trabajo));
+    if (trabajo.getEstado() != null) {
+      vars.put("estado", trabajo.getEstado().name());
+    }
     if (trabajo.getAutor() != null) {
       vars.put(
           "nombre",

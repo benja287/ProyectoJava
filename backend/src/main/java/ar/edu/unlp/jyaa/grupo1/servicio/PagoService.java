@@ -197,10 +197,11 @@ public class PagoService {
     }
     if (aprobado) {
       notificacionService.enviarConPlantilla(
-          usuarioId, "INSCRIPCION_APROBADA_USUARIO", Map.of());
+          usuarioId, "INSCRIPCION_APROBADA_USUARIO", Map.of("enlace", "/asistente"));
     } else {
       Map<String, String> vars = new HashMap<>();
       vars.put("motivo", motivo != null && !motivo.isBlank() ? motivo : "Sin motivo indicado");
+      vars.put("enlace", "/inscripcion");
       notificacionService.enviarConPlantilla(usuarioId, "INSCRIPCION_RECHAZADA_USUARIO", vars);
     }
   }

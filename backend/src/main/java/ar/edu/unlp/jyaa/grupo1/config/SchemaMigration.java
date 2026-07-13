@@ -3,6 +3,7 @@ package ar.edu.unlp.jyaa.grupo1.config;
 import ar.edu.unlp.jyaa.grupo1.modelo.CongresoAnterior;
 import ar.edu.unlp.jyaa.grupo1.modelo.PlantillaEmail;
 import jakarta.persistence.EntityManager;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,8 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasEmail);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresosAnteriores);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarAulasYPrograma);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarNotificacionEnlace);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasTrabajoEnriquecidas);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -410,6 +413,205 @@ public final class SchemaMigration {
             {{url_plataforma}}/inscripcion
 
             Sistema de gestión del congreso""");
+  }
+
+  /** Columna enlace para botón "Ir a…" en la campana de notificaciones. */
+  private static void migrarNotificacionEnlace(EntityManager em) {
+    agregarColumnaSiFalta(
+        em,
+        "notificaciones",
+        "enlace",
+        "ALTER TABLE notificaciones ADD COLUMN enlace VARCHAR(300) NULL");
+  }
+
+  /**
+   * Actualiza cuerpos de plantillas de trabajos con qué pasó / próximo paso / deep link.
+   * Idempotente: solo reescribe si aún no incluyen {@code {{url_accion}}}.
+   */
+  private static void migrarPlantillasTrabajoEnriquecidas(EntityManager em) {
+    actualizarPlantillaSiSinUrlAccion(
+        em,
+        "PRECHECK_OK",
+        "[PRECHECK OK] Tu trabajo \"{{titulo}}\" pasó la prevalidación",
+        """
+            Hola {{nombre}},
+
+            Qué pasó: tu trabajo "{{titulo}}" superó la prevalidación formal del comité.
+            {{contexto}}
+
+            Próximo paso: {{proximo_paso}}
+
+            Abrí tu panel de trabajos:
+            {{url_accion}}
+
+            Comité Académico""");
+    actualizarPlantillaSiSinUrlAccion(
+        em,
+        "PRECHECK_OBSERVADO",
+        "[PRECHECK OBSERVADO] Observaciones sobre \"{{titulo}}\"",
+        """
+            Hola {{nombre}},
+
+            Qué pasó: tu trabajo "{{titulo}}" fue observado en la prevalidación formal.
+            {{contexto}}
+
+            Observaciones: {{observaciones}}
+
+            {{instruccion_reenvio}}
+
+            Abrí la pantalla para corregir y reenviar:
+            {{url_accion}}
+
+            Comité Académico""");
+    actualizarPlantillaSiSinUrlAccion(
+        em,
+        "ASIGNACION_EVALUADOR",
+        "[EVALUACIÓN] Nuevo trabajo asignado: \"{{titulo}}\"",
+        """
+            Hola {{nombre}},
+
+            Qué pasó: se te asignó el trabajo "{{titulo}}" (eje: {{eje}}).
+            {{contexto}}
+
+            Próximo paso: {{proximo_paso}}
+
+            Panel de evaluador:
+            {{url_accion}}
+
+            Comité Académico""");
+    actualizarPlantillaSiSinUrlAccion(
+        em,
+        "EVALUACION_FAVORABLE",
+        "[EVALUACIÓN] Tu trabajo \"{{titulo}}\" recibió evaluaciones favorables",
+        """
+            Hola {{nombre}},
+
+            Qué pasó: tu trabajo "{{titulo}}" recibió evaluaciones favorables.
+            {{contexto}}
+
+            Próximo paso: {{proximo_paso}}
+
+            Consultá el estado:
+            {{url_accion}}
+
+            Comité Académico""");
+    actualizarPlantillaSiSinUrlAccion(
+        em,
+        "EVALUACION_RECHAZADO_REENVIO",
+        "[RECHAZADO] Tu trabajo \"{{titulo}}\" requiere correcciones",
+        """
+            Hola {{nombre}},
+
+            Qué pasó: tu trabajo "{{titulo}}" fue rechazado en evaluación y admite reenvío.
+            {{contexto}}
+
+            {{instruccion_reenvio}}
+
+            Corregí y reenviá desde:
+            {{url_accion}}
+
+            Comité Evaluador""");
+    actualizarPlantillaSiSinUrlAccion(
+        em,
+        "EVALUACION_RECHAZADO_FINAL",
+        "[RECHAZADO FINAL] Tu trabajo \"{{titulo}}\"",
+        """
+            Hola {{nombre}},
+
+            Qué pasó: tu trabajo "{{titulo}}" fue rechazado en evaluación y no admite más reenvíos.
+            {{contexto}}
+
+            Próximo paso: {{proximo_paso}}
+
+            Consultá el detalle:
+            {{url_accion}}
+
+            Comité Evaluador""");
+    actualizarPlantillaSiSinUrlAccion(
+        em,
+        "ENVIO_TRABAJO_ORGANIZADOR",
+        "[ENVÍO] Nuevo trabajo \"{{titulo}}\" pendiente de prevalidación",
+        """
+            Hola {{nombre}},
+
+            Qué pasó: {{nombre_autor}} envió el trabajo "{{titulo}}".
+            {{contexto}}
+
+            Próximo paso: {{proximo_paso}}
+
+            Panel del comité:
+            {{url_accion}}
+
+            Sistema de gestión del congreso""");
+    actualizarPlantillaSiSinUrlAccion(
+        em,
+        "REENVIO_ORGANIZADOR",
+        "[REENVÍO] Trabajo \"{{titulo}}\" pendiente de prevalidación",
+        """
+            Hola {{nombre}},
+
+            Qué pasó: {{nombre_autor}} reenvió el trabajo "{{titulo}}".
+            {{contexto}}
+
+            Próximo paso: {{proximo_paso}}
+
+            Panel del comité:
+            {{url_accion}}
+
+            Sistema de gestión del congreso""");
+    actualizarPlantillaSiSinUrlAccion(
+        em,
+        "PROMOCION_AUTOR_ADMIN",
+        "[ADMIN] Asistente listo para promoción a Autor: {{nombre_asistente}}",
+        """
+            Hola {{nombre}},
+
+            Qué pasó: el asistente {{nombre_asistente}} ({{email_asistente}}) tiene el trabajo aprobado "{{titulo}}".
+
+            Próximo paso: {{proximo_paso}}
+
+            Panel admin:
+            {{url_accion}}
+
+            Sistema de gestión del congreso""");
+    actualizarPlantillaSiSinUrlAccion(
+        em,
+        "COMITE_APROBADO",
+        "[APROBADO] Tu trabajo \"{{titulo}}\" fue aprobado por el comité",
+        """
+            Hola {{nombre}},
+
+            Qué pasó: tu trabajo "{{titulo}}" fue aprobado definitivamente por el comité académico.
+            {{contexto}}
+
+            Próximo paso: {{proximo_paso}}
+
+            Consultá tu panel:
+            {{url_accion}}
+
+            Comité Académico""");
+  }
+
+  private static void actualizarPlantillaSiSinUrlAccion(
+      EntityManager em, String nombre, String asunto, String cuerpo) {
+    List<PlantillaEmail> list =
+        em.createQuery(
+                "SELECT p FROM PlantillaEmail p WHERE p.nombre = :nombre", PlantillaEmail.class)
+            .setParameter("nombre", nombre)
+            .getResultList();
+    if (list.isEmpty()) {
+      insertarPlantillaSiFalta(em, nombre, asunto, cuerpo);
+      return;
+    }
+    PlantillaEmail p = list.get(0);
+    String actual = p.getCuerpo() != null ? p.getCuerpo() : "";
+    if (actual.contains("{{url_accion}}")) {
+      return;
+    }
+    p.setAsunto(asunto);
+    p.setCuerpo(cuerpo);
+    em.merge(p);
+    log.info("Plantilla de email actualizada (deep link): {}", nombre);
   }
 
   /** Seed de ediciones anteriores (historia pública) — idempotente por año. */

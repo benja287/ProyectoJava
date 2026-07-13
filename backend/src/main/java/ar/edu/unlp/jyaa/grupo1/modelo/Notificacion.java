@@ -28,6 +28,10 @@ public class Notificacion implements Serializable {
   @Column(nullable = false)
   private boolean leida;
 
+  /** Ruta relativa de la app (ej. /asistente/trabajos) para el botón "Ir a…". */
+  @Column(length = 300)
+  private String enlace;
+
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "usuario_id", nullable = false)
   private Usuario usuario;
@@ -80,6 +84,14 @@ public class Notificacion implements Serializable {
 
   public void setLeida(boolean leida) {
     this.leida = leida;
+  }
+
+  public String getEnlace() {
+    return enlace;
+  }
+
+  public void setEnlace(String enlace) {
+    this.enlace = enlace;
   }
 
   public Usuario getUsuario() {

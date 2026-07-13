@@ -24,19 +24,41 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
           @for (n of items; track n.id) {
             <li [class.no-leida]="!n.leida">
               <strong>{{ n.asunto }}</strong>
-              <p>{{ n.mensaje }}</p>
+              <p class="notif-mensaje">{{ n.mensaje }}</p>
               <small class="muted">{{ n.fechaCreacion | date: 'short' }}</small>
-              @if (!n.leida) {
-                <button type="button" (click)="marcarLeida(n)">Marcar leída</button>
-              }
+              <div class="notif-acciones">
+                @if (n.enlace) {
+                  <a [routerLink]="n.enlace" class="btn-secundario" (click)="marcarLeida(n)"
+                    >Ir a la pantalla</a
+                  >
+                }
+                @if (!n.leida) {
+                  <button type="button" (click)="marcarLeida(n)">Marcar leída</button>
+                }
+              </div>
             </li>
           }
         </ul>
-        <button type="button" class="btn-secundario" (click)="marcarTodas()">Marcar todas leídas</button>
+        <button type="button" class="btn-secundario" (click)="marcarTodas()">
+          Marcar todas leídas
+        </button>
       }
       <p><a routerLink="/">← Inicio</a></p>
     </section>
   `,
+  styles: [
+    `
+      .notif-mensaje {
+        white-space: pre-wrap;
+      }
+      .notif-acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+    `,
+  ],
 })
 export class NotificacionesComponent implements OnInit {
   items: Notificacion[] = [];
@@ -50,6 +72,9 @@ export class NotificacionesComponent implements OnInit {
   }
 
   marcarLeida(n: Notificacion): void {
+    if (n.leida) {
+      return;
+    }
     this.notificacionService.marcarLeida(n.id).subscribe({
       next: () => {
         n.leida = true;

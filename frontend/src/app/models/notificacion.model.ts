@@ -4,6 +4,8 @@ export interface Notificacion {
   mensaje: string;
   fechaCreacion: string;
   leida: boolean;
+  /** Ruta relativa de la app (ej. /asistente/trabajos). */
+  enlace?: string | null;
 }
 
 export interface AdminStats {

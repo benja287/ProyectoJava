@@ -374,10 +374,19 @@ public class ActividadService {
       t.setEstado(EstadoTrabajo.PROGRAMADO);
       trabajoDAO.modificar(t);
       if (t.getAutor() != null) {
+        String ruta =
+            TrabajoNotificacionHelper.esEnvioAsistente(t)
+                ? TrabajoNotificacionHelper.RUTA_ASISTENTE
+                : TrabajoNotificacionHelper.RUTA_AUTOR;
         notificacionService.enviar(
             t.getAutor().getId(),
             "Trabajo programado",
-            "Tu trabajo \"" + t.getTitulo() + "\" fue incluido en el cronograma del congreso.");
+            TrabajoNotificacionHelper.formatear(
+                "Tu trabajo \""
+                    + t.getTitulo()
+                    + "\" fue incluido en el cronograma del congreso. Estado: PROGRAMADO.",
+                "Consultá fecha, sala y modalidad en Mis presentaciones / cronograma de tu panel."),
+            ruta);
       }
     }
   }

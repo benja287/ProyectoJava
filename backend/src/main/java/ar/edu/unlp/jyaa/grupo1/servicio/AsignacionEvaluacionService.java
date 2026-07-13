@@ -134,6 +134,11 @@ public class AsignacionEvaluacionService {
     vars.put("titulo", trabajo.getTitulo());
     vars.put("nombre", evaluador.getNombre() + " " + evaluador.getApellido());
     vars.put("eje", trabajo.getEjeTematico() != null ? trabajo.getEjeTematico() : "");
+    vars.put("enlace", TrabajoNotificacionHelper.RUTA_EVALUADOR);
+    vars.put(
+        "proximo_paso",
+        "Aceptá o rechazá la asignación en tu panel de evaluador antes de emitir el dictamen.");
+    vars.put("contexto", TrabajoNotificacionHelper.contextoParticipante(trabajo));
     notificacionService.enviarConPlantilla(
         evaluador.getId(), "ASIGNACION_EVALUADOR", vars);
     return creada;
