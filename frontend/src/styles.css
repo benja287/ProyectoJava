@@ -145,6 +145,28 @@ button:disabled {
   background: #2e7d32;
 }
 
+a.btn-ok,
+a.btn-warn,
+a.btn-danger {
+  color: #fff;
+  text-decoration: none;
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.25;
+}
+
+a.btn-ok:hover,
+a.btn-warn:hover,
+a.btn-danger:hover {
+  color: #fff;
+  filter: brightness(1.05);
+  text-decoration: none;
+}
+
 .error {
   color: #c62828;
 }
