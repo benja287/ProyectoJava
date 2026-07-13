@@ -74,7 +74,8 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                     —
                   }
                 </td>
-                <td>
+                <td class="acciones-celda">
+                  <a [routerLink]="['/admin/pagos', p.id]" class="btn-link">Detalle</a>
                   <button type="button" class="btn-warn" (click)="eliminar(p)">Eliminar</button>
                 </td>
               </tr>

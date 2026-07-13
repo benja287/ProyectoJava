@@ -57,6 +57,11 @@ export class InscripcionService {
     return this.http.get<PaginaInscripciones>(this.baseUrl, { params });
   }
 
+  /** GET /api/inscripciones/{id} */
+  buscar(id: number): Observable<InscripcionCongreso> {
+    return this.http.get<InscripcionCongreso>(`${this.baseUrl}/${id}`);
+  }
+
   validar(id: number, request: ValidacionInscripcionRequest): Observable<InscripcionCongreso> {
     return this.http.put<InscripcionCongreso>(`${this.baseUrl}/${id}/validar`, request);
   }

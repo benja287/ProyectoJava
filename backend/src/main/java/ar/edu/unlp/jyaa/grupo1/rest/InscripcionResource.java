@@ -95,6 +95,20 @@ public class InscripcionResource {
     return inscripcionService.listar(page, size, filtro, AuthenticatedUser.from(ctx));
   }
 
+  @GET
+  @Path("/{id}")
+  @Operation(summary = "Consultar inscripción por id (admin)")
+  @ApiResponse(responseCode = "200", description = "Inscripción encontrada")
+  @ApiResponse(responseCode = "404", description = "Inscripción no encontrada")
+  public InscripcionCongresoDTO obtener(
+      @PathParam("id") Long id, @Context ContainerRequestContext ctx) {
+    InscripcionCongresoDTO dto = inscripcionService.obtener(id, AuthenticatedUser.from(ctx));
+    if (dto == null) {
+      throw new NotFoundException("Inscripción no encontrada");
+    }
+    return dto;
+  }
+
   @PUT
   @Path("/{id}/validar")
   @Consumes(MediaType.APPLICATION_JSON)

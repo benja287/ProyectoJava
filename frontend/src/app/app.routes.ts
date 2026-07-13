@@ -17,7 +17,10 @@ import { UsuarioDetalleComponent } from './pages/admin/usuario-detalle/usuario-d
 import { UsuarioAltaComponent } from './pages/admin/usuario-alta/usuario-alta.component';
 import { PagosPendientesComponent } from './pages/admin/pagos-pendientes/pagos-pendientes.component';
 import { PagosListaComponent } from './pages/admin/pagos-lista/pagos-lista.component';
+import { PagoDetalleComponent } from './pages/admin/pago-detalle/pago-detalle.component';
 import { TrabajosAdminComponent } from './pages/admin/trabajos/trabajos-admin.component';
+import { TrabajoDetalleComponent } from './pages/admin/trabajo-detalle/trabajo-detalle.component';
+import { InscripcionDetalleComponent } from './pages/admin/inscripcion-detalle/inscripcion-detalle.component';
 import { PanelEvaluadorComponent } from './pages/evaluador/panel-evaluador.component';
 import { TrabajosAutorComponent } from './pages/autor/trabajos/trabajos-autor.component';
 import { PanelAutorComponent } from './pages/autor/panel-autor.component';
@@ -121,7 +124,9 @@ export const routes: Routes = [
   { path: 'admin/usuarios/:id', component: UsuarioDetalleComponent, canActivate: [admin] },
   { path: 'admin/pagos', component: PagosPendientesComponent, canActivate: [admin] },
   { path: 'admin/pagos/todos', component: PagosListaComponent, canActivate: [admin] },
+  { path: 'admin/pagos/:id', component: PagoDetalleComponent, canActivate: [admin] },
   { path: 'admin/inscripciones', component: InscripcionesAdminComponent, canActivate: [admin] },
+  { path: 'admin/inscripciones/:id', component: InscripcionDetalleComponent, canActivate: [admin] },
   { path: 'admin/actividades', redirectTo: 'admin', pathMatch: 'full' },
   { path: 'admin/mesas-tematicas', component: MesasTematicasAdminComponent, canActivate: [admin] },
   { path: 'admin/mesas-redondas', component: MesaRedondaAdminComponent, canActivate: [admin] },
@@ -129,6 +134,7 @@ export const routes: Routes = [
   { path: 'admin/crear-taller', component: CrearTallerAdminComponent, canActivate: [admin] },
   { path: 'admin/crear-conferencia', component: CrearConferenciaAdminComponent, canActivate: [admin] },
   { path: 'admin/trabajos', component: TrabajosAdminComponent, canActivate: [admin] },
+  { path: 'admin/trabajos/:id', component: TrabajoDetalleComponent, canActivate: [admin] },
   { path: 'admin/estadisticas', component: AdminEstadisticasComponent, canActivate: [admin] },
   { path: 'admin/emails', component: EmailsAdminComponent, canActivate: [admin] },
   { path: 'admin/congreso', component: CongresoAdminComponent, canActivate: [admin] },

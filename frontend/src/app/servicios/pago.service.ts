@@ -47,6 +47,11 @@ export class PagoService {
     return this.http.get<Pago>(`${this.baseUrl}/usuario/${usuarioId}/estado`);
   }
 
+  /** GET /api/pagos/{id} */
+  buscar(id: number): Observable<Pago> {
+    return this.http.get<Pago>(`${this.baseUrl}/${id}`);
+  }
+
   registrar(usuarioId: number, pago: Pago): Observable<Pago> {
     return this.http.post<Pago>(this.baseUrl, { usuarioId, pago });
   }

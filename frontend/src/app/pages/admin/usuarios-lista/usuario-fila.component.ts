@@ -2,11 +2,13 @@
  * Fila de la tabla de usuarios (componente hijo).
  */
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Usuario } from '../../../models/usuario.model';
 
 @Component({
   selector: 'app-usuario-fila',
   standalone: true,
+  imports: [RouterLink],
   host: { style: 'display: contents' },
   template: `
     <tr>
@@ -20,6 +22,7 @@ import { Usuario } from '../../../models/usuario.model';
       </td>
       <td>{{ usuario.roles?.join(', ') }}</td>
       <td class="acciones-tabla">
+        <a [routerLink]="['/admin/usuarios', usuario.id]" class="btn-link">Detalle</a>
         <button type="button" class="btn-link" (click)="editar.emit(usuario)">Editar</button>
         <button type="button" class="btn-link" (click)="toggleActivo.emit(usuario)">
           {{ usuario.activo ? 'Inhabilitar' : 'Habilitar' }}

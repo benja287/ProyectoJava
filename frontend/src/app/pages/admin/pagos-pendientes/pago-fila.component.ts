@@ -1,12 +1,13 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { Pago } from '../../../models/pago.model';
 
 @Component({
   selector: 'app-pago-fila',
   standalone: true,
-  imports: [DecimalPipe, ArchivoLinkComponent],
+  imports: [DecimalPipe, RouterLink, ArchivoLinkComponent],
   host: { style: 'display: contents' },
   template: `
     <tr>
@@ -22,7 +23,8 @@ import { Pago } from '../../../models/pago.model';
           —
         }
       </td>
-      <td>
+      <td class="acciones-celda">
+        <a [routerLink]="['/admin/pagos', pago.id]" class="btn-link">Detalle</a>
         <button type="button" class="btn-ok" (click)="aprobar.emit(pago)">Aprobar</button>
         <button type="button" class="btn-warn" (click)="rechazar.emit(pago)">Rechazar</button>
       </td>

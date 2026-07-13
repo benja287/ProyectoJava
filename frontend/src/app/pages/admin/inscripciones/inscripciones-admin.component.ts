@@ -89,11 +89,10 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                   }
                 </td>
                 <td class="acciones-celda">
+                  <a [routerLink]="['/admin/inscripciones', i.id]" class="btn-link">Detalle</a>
                   @if (i.estado === 'PENDIENTE' && i.id) {
                     <button type="button" class="btn-ok" (click)="validar(i, true)">Aprobar</button>
                     <button type="button" class="btn-warn" (click)="validar(i, false)">Rechazar</button>
-                  } @else {
-                    —
                   }
                 </td>
               </tr>

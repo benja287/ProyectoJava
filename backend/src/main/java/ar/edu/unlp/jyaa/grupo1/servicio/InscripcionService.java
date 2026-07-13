@@ -252,6 +252,17 @@ public class InscripcionService {
     return listarFiltrado(page, size, filtro != null ? filtro : new InscripcionFiltro(null, null, null));
   }
 
+  public InscripcionCongresoDTO obtener(Long id, AuthenticatedUser auth) {
+    if (!auth.canValidarInscripciones()) {
+      throw new NegocioException("No tiene permiso para consultar inscripciones");
+    }
+    InscripcionCongreso inscripcion = recuperarConRelaciones(id);
+    if (inscripcion == null) {
+      return null;
+    }
+    return InscripcionCongresoDTO.from(inscripcion);
+  }
+
   public InscripcionCongresoDTO validar(
       Long id, boolean aprobar, String motivoRechazo, AuthenticatedUser auth) {
     if (!auth.canValidarInscripciones()) {
