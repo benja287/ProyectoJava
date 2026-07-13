@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
+import { DevolucionEvaluacionComponent } from '../../components/devolucion-evaluacion/devolucion-evaluacion.component';
 import { Trabajo, TrabajoEnvioResumen } from '../../models/trabajo.model';
 import { MODALIDAD_LABELS } from '../../constants/ejes-tematicos';
 import { etiquetaEstadoTrabajo } from '../../models/trabajo-estado-labels';
@@ -10,7 +11,7 @@ import { feedbackTextoTrabajo } from '../../utils/trabajo-rol.util';
 @Component({
   selector: 'app-panel-asistente',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, DevolucionEvaluacionComponent],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--naranja">
@@ -138,6 +139,9 @@ import { feedbackTextoTrabajo } from '../../utils/trabajo-rol.util';
                     {{ Math.min(t.revisionIntentos ?? 0, 2) }}/2
                   </p>
                   <p class="trabajo-feedback" [class]="feedbackClass(t)">{{ feedbackTexto(t) }}</p>
+                  @if (t.id) {
+                    <app-devolucion-evaluacion [trabajoId]="t.id" [estado]="t.estado" />
+                  }
                   @if (puedeReenviar(t)) {
                     <a routerLink="/asistente/trabajos" [queryParams]="{ resubmit: t.id }" class="link-correccion">
                       Editar y reenviar

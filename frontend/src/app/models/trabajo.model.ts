@@ -52,6 +52,18 @@ export interface PresentacionAutor {
   numeroPanel?: number | null;
 }
 
+/** Devolución anónima del evaluador (solo en OBSERVADO_EVALUACION). */
+export interface DevolucionEvaluacionAutor {
+  evaluacionId: number;
+  recomendacion?: string | null;
+  comentario?: string | null;
+  modalidadRecomendada?: string | null;
+  rubricaJson?: string | null;
+  archivoCorreccionUrl?: string | null;
+  archivoCorreccionNombre?: string | null;
+  fecha?: string | null;
+}
+
 export interface PaginaTrabajos {
   items: Trabajo[];
   page: number;

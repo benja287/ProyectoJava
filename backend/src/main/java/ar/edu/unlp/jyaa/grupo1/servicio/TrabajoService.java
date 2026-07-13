@@ -21,6 +21,7 @@ import ar.edu.unlp.jyaa.grupo1.rest.dto.TrabajoUpdateRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PresentacionAutorDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaTrabajosDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.DevolucionEvaluacionAutorDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoEnvioResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.SolicitudAutorDTO;
@@ -271,6 +272,26 @@ public class TrabajoService {
 
   public TrabajoResumenDTO buscarResumen(Long id) {
     return toResumenConAsignaciones(buscar(id));
+  }
+
+  /**
+   * Devoluciones visibles para autor/asistente cuando el trabajo está observado por evaluación.
+   * Sin identidad del evaluador ni comentarios internos de comisión (doble ciego).
+   */
+  public List<DevolucionEvaluacionAutorDTO> listarDevolucionesParaAutor(
+      Long trabajoId, AuthenticatedUser auth) {
+    Trabajo trabajo = buscar(trabajoId);
+    Long autorId = trabajo.getAutor() != null ? trabajo.getAutor().getId() : null;
+    if (!auth.canListAllTrabajos() && (autorId == null || !autorId.equals(auth.userId()))) {
+      throw new NegocioException("No autorizado a ver las devoluciones de este trabajo");
+    }
+    if (trabajo.getEstado() != EstadoTrabajo.OBSERVADO_EVALUACION) {
+      return List.of();
+    }
+    return asignacionEvaluacionDAO.listarPorTrabajo(trabajoId).stream()
+        .filter(a -> a.isAceptada() && a.getEvaluacion() != null)
+        .map(a -> DevolucionEvaluacionAutorDTO.from(a.getEvaluacion()))
+        .toList();
   }
 
   public Trabajo crear(Long autorId, Trabajo trabajo) {

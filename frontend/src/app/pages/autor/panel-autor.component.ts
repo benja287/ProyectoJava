@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
+import { DevolucionEvaluacionComponent } from '../../components/devolucion-evaluacion/devolucion-evaluacion.component';
 import { MODALIDAD_LABELS } from '../../constants/ejes-tematicos';
 import { PresentacionAutor, Trabajo, TrabajoEnvioResumen } from '../../models/trabajo.model';
 import { etiquetaEstadoTrabajo } from '../../models/trabajo-estado-labels';
@@ -11,7 +12,7 @@ import { formatFechaActividad } from '../../utils/fecha.util';
 @Component({
   selector: 'app-panel-autor',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, DevolucionEvaluacionComponent],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--naranja">
@@ -130,6 +131,9 @@ import { formatFechaActividad } from '../../utils/fecha.util';
                   {{ Math.min(t.revisionIntentos ?? 0, 2) }}/2
                 </p>
                 <p class="trabajo-feedback" [class]="feedbackClass(t)">{{ feedbackTexto(t) }}</p>
+                @if (t.id) {
+                  <app-devolucion-evaluacion [trabajoId]="t.id" [estado]="t.estado" />
+                }
                 @if (puedeReenviar(t)) {
                   <a routerLink="/autor/trabajos" [queryParams]="{ resubmit: t.id }" class="link-correccion">
                     Editar y reenviar

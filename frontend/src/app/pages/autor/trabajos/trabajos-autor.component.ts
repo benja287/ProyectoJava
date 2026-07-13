@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs/operators';
+import { DevolucionEvaluacionComponent } from '../../../components/devolucion-evaluacion/devolucion-evaluacion.component';
 import { LoginService } from '../../../auth/login.service';
 import { TIPOS_TRABAJO } from '../../../models/enums';
 import {
@@ -19,7 +20,7 @@ import { feedbackTextoTrabajo, etiquetaRolEnvio } from '../../../utils/trabajo-r
 @Component({
   selector: 'app-trabajos-autor',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, DevolucionEvaluacionComponent],
   template: `
     <section class="card panel-asistente-detalle">
       <h1>Mis trabajos</h1>
@@ -81,6 +82,12 @@ import { feedbackTextoTrabajo, etiquetaRolEnvio } from '../../../utils/trabajo-r
           Estás corrigiendo y reenviando: <strong>{{ trabajoReenvio.titulo }}</strong>. Al enviar se
           actualiza el mismo trabajo.
         </div>
+        @if (trabajoReenvio.id) {
+          <app-devolucion-evaluacion
+            [trabajoId]="trabajoReenvio.id"
+            [estado]="trabajoReenvio.estado"
+          />
+        }
       }
       @if (puedeEnviarFormulario) {
         <form [formGroup]="form" (ngSubmit)="crearYEnviar()" class="form-grid trabajo-form-asistente">
@@ -155,6 +162,9 @@ import { feedbackTextoTrabajo, etiquetaRolEnvio } from '../../../utils/trabajo-r
               {{ Math.min(t.revisionIntentos ?? 0, 2) }}/2
             </p>
             <p class="trabajo-feedback" [class]="feedbackClass(t)">{{ feedbackTexto(t) }}</p>
+            @if (t.id) {
+              <app-devolucion-evaluacion [trabajoId]="t.id" [estado]="t.estado" />
+            }
             @if (puedeReenviar(t)) {
               <a [routerLink]="menuVolver + '/trabajos'" [queryParams]="{ resubmit: t.id }" class="link-correccion">
                 Editar y reenviar

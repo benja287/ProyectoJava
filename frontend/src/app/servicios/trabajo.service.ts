@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 import {
   PaginaTrabajos,
   PresentacionAutor,
+  DevolucionEvaluacionAutor,
   Trabajo,
   TrabajoCreateRequest,
   TrabajoEnvioResumen,
@@ -102,6 +103,13 @@ export class TrabajoService {
 
   buscar(id: number): Observable<Trabajo> {
     return this.http.get<Trabajo>(`${this.baseUrl}/${id}`);
+  }
+
+  /** Devoluciones visibles al autor cuando el trabajo está OBSERVADO_EVALUACION. */
+  listarDevolucionesEvaluacion(trabajoId: number): Observable<DevolucionEvaluacionAutor[]> {
+    return this.http.get<DevolucionEvaluacionAutor[]>(
+      `${this.baseUrl}/${trabajoId}/devoluciones-evaluacion`
+    );
   }
 
   crear(request: TrabajoCreateRequest): Observable<Trabajo> {

@@ -14,6 +14,7 @@ import ar.edu.unlp.jyaa.grupo1.web.dto.PresentacionAutorDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaTrabajosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoEnvioResumenDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.TrabajoResumenDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.DevolucionEvaluacionAutorDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -136,6 +137,22 @@ public class TrabajoResource {
   public TrabajoResumenDTO buscar(@PathParam("id") Long id) {
     try {
       return trabajoService.buscarResumen(id);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @GET
+  @Path("/{id}/devoluciones-evaluacion")
+  @Operation(
+      summary = "Devoluciones de evaluación visibles al autor/asistente",
+      description =
+          "Solo en OBSERVADO_EVALUACION. Sin identidad del evaluador ni comentarios de comisión.")
+  @ApiResponse(responseCode = "200", description = "Lista de devoluciones (puede estar vacía)")
+  public List<DevolucionEvaluacionAutorDTO> devolucionesEvaluacion(
+      @PathParam("id") Long id, @Context ContainerRequestContext ctx) {
+    try {
+      return trabajoService.listarDevolucionesParaAutor(id, AuthenticatedUser.from(ctx));
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }
