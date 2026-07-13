@@ -890,11 +890,8 @@ public class TrabajoService {
     if (trabajo.getEstado() != null) {
       vars.put("estado", trabajo.getEstado().name());
     }
-    if (trabajo.getAutor() != null) {
-      vars.put(
-          "nombre",
-          (trabajo.getAutor().getNombre() + " " + trabajo.getAutor().getApellido()).trim());
-    }
+    // "nombre" lo completa NotificacionService con el destinatario.
+    // El autor del trabajo va en "nombre_autor" cuando corresponda.
     return vars;
   }
 }

@@ -176,7 +176,8 @@ public class NotificacionService {
 
   private Map<String, String> enriquecerVariables(Usuario usuario, Map<String, String> variables) {
     Map<String, String> vars = variables != null ? new HashMap<>(variables) : new HashMap<>();
-    vars.putIfAbsent("nombre", nombreCompleto(usuario));
+    // Siempre el destinatario de la notificación (no el autor del trabajo ni otro tercero).
+    vars.put("nombre", nombreCompleto(usuario));
     String base = mailConfig.getPublicUrl();
     if (base != null && base.endsWith("/")) {
       base = base.substring(0, base.length() - 1);
