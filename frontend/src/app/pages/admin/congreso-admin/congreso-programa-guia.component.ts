@@ -68,17 +68,16 @@ export const PASOS_CREAR_PROGRAMA = [
         @if (enPrograma) {
           <a routerLink="/admin/congreso/actividades" class="btn-secundario">← Actividades</a>
           <a routerLink="/admin/congreso" class="btn-ok">Hub Congreso</a>
-        } @else if (pasoAnterior; as ant) {
-          <a [routerLink]="ant.ruta" class="btn-secundario">← {{ ant.label }}</a>
+        } @else {
+          @if (pasoAnterior; as ant) {
+            <a [routerLink]="ant.ruta" class="btn-secundario">← {{ ant.label }}</a>
+          } @else {
+            <a routerLink="/admin/congreso" class="btn-link">← Hub Congreso</a>
+          }
           @if (pasoSiguiente; as sig) {
             <a [routerLink]="sig.ruta" class="btn-ok">Siguiente: {{ sig.label }} →</a>
           } @else {
             <a routerLink="/admin/congreso/programa" class="btn-ok">Ver programa →</a>
-          }
-        } @else {
-          <a routerLink="/admin/congreso" class="btn-link">← Hub Congreso</a>
-          @if (pasoSiguiente; as sig) {
-            <a [routerLink]="sig.ruta" class="btn-ok">Siguiente: {{ sig.label }} →</a>
           }
         }
       </div>
