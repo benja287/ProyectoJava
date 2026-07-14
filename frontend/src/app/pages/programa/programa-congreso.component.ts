@@ -2,8 +2,10 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { Actividad } from '../../models/actividad.model';
+import { Aula } from '../../models/aula.model';
 import { LoginService } from '../../auth/login.service';
 import { ActividadService } from '../../servicios/actividad.service';
+import { AulaService } from '../../servicios/aula.service';
 import { CongresoConfigService } from '../../servicios/congreso-config.service';
 import { CongresoConfig } from '../../models/congreso-config.model';
 import {
@@ -11,6 +13,7 @@ import {
   fechaClaveActividad,
   horaActividad,
 } from '../../utils/fecha.util';
+import { urlMapaAula } from '../../utils/aula-mapa.util';
 import { mensajeErrorApi } from '../../utils/api-error.util';
 import { filter, Subscription } from 'rxjs';
 
@@ -83,7 +86,13 @@ const ORDEN_TIPO: Record<string, number> = {
                   <div class="programa-meta">
                     <span>🕐 {{ horario(a) }}</span>
                     @if (a.sala) {
-                      <span>📍 {{ a.sala }}</span>
+                      <span>
+                        📍 {{ a.sala }}
+                        @if (linkMapaActividad(a); as url) {
+                          ·
+                          <a [href]="url" target="_blank" rel="noopener noreferrer">Ver mapa</a>
+                        }
+                      </span>
                     }
                   </div>
                   @if (a.moderador) {
@@ -127,6 +136,7 @@ const ORDEN_TIPO: Record<string, number> = {
 export class ProgramaCongresoComponent implements OnInit, OnDestroy {
   config?: CongresoConfig;
   actividades: Actividad[] = [];
+  aulasPorId = new Map<number, Aula>();
   cargando = true;
   error = '';
   private navSub?: Subscription;
@@ -135,10 +145,19 @@ export class ProgramaCongresoComponent implements OnInit, OnDestroy {
     public loginService: LoginService,
     private congresoConfigService: CongresoConfigService,
     private actividadService: ActividadService,
+    private aulaService: AulaService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    this.aulaService.listarActivas().subscribe({
+      next: (items) => {
+        this.aulasPorId = new Map(
+          items.filter((a) => a.id != null).map((a) => [a.id!, a])
+        );
+      },
+      error: () => (this.aulasPorId = new Map()),
+    });
     this.cargarPrograma();
     this.navSub = this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd))
@@ -147,6 +166,17 @@ export class ProgramaCongresoComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.navSub?.unsubscribe();
+  }
+
+  linkMapaActividad(a: Actividad): string | null {
+    const aula = a.aulaId != null ? this.aulasPorId.get(a.aulaId) : undefined;
+    if (aula) {
+      return urlMapaAula(aula);
+    }
+    if (a.sala) {
+      return urlMapaAula({ nombre: a.sala, ubicacion: a.sala });
+    }
+    return null;
   }
 
   get subtituloPrograma(): string {

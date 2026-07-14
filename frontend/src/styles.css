@@ -3118,3 +3118,18 @@ textarea {
 .historia-nota {
   margin-top: 1.75rem;
 }
+
+/* Pins de contexto en el mapa de aulas (campus FCAyF) */
+.aula-mapa-pin-otro {
+  background: transparent;
+  border: none;
+}
+.aula-mapa-pin-otro-dot {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #6b7280;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}

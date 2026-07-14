@@ -20,6 +20,11 @@ public class Aula implements Serializable {
   @Column(length = 300)
   private String ubicacion;
 
+  /** Coordenadas opcionales (mapa del campus FCAyF). */
+  private Double latitud;
+
+  private Double longitud;
+
   @Column(nullable = false)
   private boolean activa = true;
 
@@ -55,6 +60,22 @@ public class Aula implements Serializable {
 
   public void setUbicacion(String ubicacion) {
     this.ubicacion = ubicacion;
+  }
+
+  public Double getLatitud() {
+    return latitud;
+  }
+
+  public void setLatitud(Double latitud) {
+    this.latitud = latitud;
+  }
+
+  public Double getLongitud() {
+    return longitud;
+  }
+
+  public void setLongitud(Double longitud) {
+    this.longitud = longitud;
   }
 
   public boolean isActiva() {

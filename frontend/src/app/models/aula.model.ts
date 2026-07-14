@@ -4,6 +4,8 @@ export interface Aula {
   capacidad?: number | null;
   ubicacion?: string | null;
   activa: boolean;
+  latitud?: number | null;
+  longitud?: number | null;
 }
 
 export type AulaRequest = {
@@ -11,4 +13,6 @@ export type AulaRequest = {
   capacidad?: number | null;
   ubicacion?: string | null;
   activa?: boolean;
+  latitud?: number | null;
+  longitud?: number | null;
 };

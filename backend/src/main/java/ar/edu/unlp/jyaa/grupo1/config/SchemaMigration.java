@@ -28,6 +28,7 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarNotificacionEnlace);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasTrabajoEnriquecidas);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarEvaluacionDictamen);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarAulaCoordenadas);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -514,6 +515,14 @@ public final class SchemaMigration {
         "evaluaciones",
         "archivo_correccion_nombre",
         "ALTER TABLE evaluaciones ADD COLUMN archivo_correccion_nombre VARCHAR(255) NULL");
+  }
+
+  /** Coordenadas opcionales de aulas (mapa acotado del campus). APPEND — no pisar migraciones previas. */
+  private static void migrarAulaCoordenadas(EntityManager em) {
+    agregarColumnaSiFalta(
+        em, "aulas", "latitud", "ALTER TABLE aulas ADD COLUMN latitud DOUBLE NULL");
+    agregarColumnaSiFalta(
+        em, "aulas", "longitud", "ALTER TABLE aulas ADD COLUMN longitud DOUBLE NULL");
   }
 
   /**

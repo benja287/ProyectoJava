@@ -8,12 +8,23 @@ import { CongresoConfigService } from '../../../servicios/congreso-config.servic
 import { AulaService } from '../../../servicios/aula.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { finCongresoDesdeInicio } from '../../../constants/congress-event';
+import { etiquetaMapaAula, urlMapaAula } from '../../../utils/aula-mapa.util';
+import {
+  AulaMapaCampusComponent,
+  AulaMapaPunto,
+} from '../../../components/aula-mapa/aula-mapa-campus.component';
 import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronograma-congreso-admin.component';
 
 @Component({
   selector: 'app-congreso-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CronogramaCongresoAdminComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    CronogramaCongresoAdminComponent,
+    AulaMapaCampusComponent,
+  ],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--admin">
@@ -86,7 +97,8 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
         <h2>Aulas</h2>
         <p class="muted">
           Recursos físicos del evento. Al programar actividades se elige un aula; se controlan
-          choques de horario en la misma aula.
+          choques de horario en la misma aula. Opcionalmente ubicá cada aula en el mapa del campus
+          FCAyF (clic o arrastre).
         </p>
 
         <div class="form-grid form-grid-wide">
@@ -110,7 +122,7 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
             />
           </label>
           <label class="span-full">
-            Ubicación
+            Ubicación (texto)
             <input
               type="text"
               [(ngModel)]="aulaForm.ubicacion"
@@ -119,6 +131,31 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
             />
           </label>
         </div>
+
+        <h3 style="margin-top: 1rem">Ubicación en el mapa</h3>
+        <p class="muted small">
+          @if (aulaSeleccionMapa) {
+            Marcada: {{ aulaSeleccionMapa.lat | number: '1.5-5' }},
+            {{ aulaSeleccionMapa.lng | number: '1.5-5' }}
+          } @else {
+            Sin punto en el mapa. Hacé clic dentro del campus para ubicarlo.
+          }
+        </p>
+        <app-aula-mapa-campus
+          [aulas]="aulas"
+          [excluirAulaId]="aulaEditId"
+          [seleccion]="aulaSeleccionMapa"
+          [editable]="true"
+          (posicionElegida)="onPosicionAula($event)"
+        />
+        <div class="inline-form-row" style="margin-top: 0.5rem">
+          @if (aulaSeleccionMapa) {
+            <button type="button" class="btn-link" (click)="quitarPosicionMapa()">
+              Quitar del mapa
+            </button>
+          }
+        </div>
+
         <div class="inline-form-row" style="margin-top: 0.75rem">
           <button
             type="button"
@@ -147,6 +184,7 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
                 <th>Nombre</th>
                 <th>Capacidad</th>
                 <th>Ubicación</th>
+                <th>Mapa</th>
                 <th>Estado</th>
                 <th></th>
               </tr>
@@ -157,6 +195,15 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
                   <td>{{ a.nombre }}</td>
                   <td>{{ a.capacidad ?? '—' }}</td>
                   <td>{{ a.ubicacion || '—' }}</td>
+                  <td>
+                    @if (linkMapa(a); as url) {
+                      <a [href]="url" target="_blank" rel="noopener noreferrer">{{
+                        etiquetaMapa(a)
+                      }}</a>
+                    } @else {
+                      —
+                    }
+                  </td>
                   <td>{{ a.activa ? 'Activa' : 'Inactiva' }}</td>
                   <td class="inline-form-row">
                     <button type="button" class="btn-link" (click)="editarAula(a)">Editar</button>
@@ -494,7 +541,13 @@ export class CongresoAdminComponent implements OnInit {
   guardandoVentana: '' | 'DATOS' | 'CONGRESO' | 'INSCRIPCIONES' | 'ENVIO' | 'EVALUACION' = '';
   aulas: Aula[] = [];
   aulaEditId: number | null = null;
-  aulaForm = { nombre: '', capacidad: null as number | null, ubicacion: '' };
+  aulaForm = {
+    nombre: '',
+    capacidad: null as number | null,
+    ubicacion: '',
+    latitud: null as number | null,
+    longitud: null as number | null,
+  };
   guardandoAula = false;
   error = '';
   mensaje = '';
@@ -564,13 +617,46 @@ export class CongresoAdminComponent implements OnInit {
       nombre: a.nombre,
       capacidad: a.capacidad ?? null,
       ubicacion: a.ubicacion ?? '',
+      latitud: a.latitud ?? null,
+      longitud: a.longitud ?? null,
     };
     this.feedbackAula = '';
   }
 
   cancelarEdicionAula(): void {
     this.aulaEditId = null;
-    this.aulaForm = { nombre: '', capacidad: null, ubicacion: '' };
+    this.aulaForm = {
+      nombre: '',
+      capacidad: null,
+      ubicacion: '',
+      latitud: null,
+      longitud: null,
+    };
+  }
+
+  get aulaSeleccionMapa(): AulaMapaPunto | null {
+    if (this.aulaForm.latitud == null || this.aulaForm.longitud == null) {
+      return null;
+    }
+    return { lat: this.aulaForm.latitud, lng: this.aulaForm.longitud };
+  }
+
+  onPosicionAula(p: AulaMapaPunto): void {
+    this.aulaForm.latitud = p.lat;
+    this.aulaForm.longitud = p.lng;
+  }
+
+  quitarPosicionMapa(): void {
+    this.aulaForm.latitud = null;
+    this.aulaForm.longitud = null;
+  }
+
+  linkMapa(a: Aula): string | null {
+    return urlMapaAula(a);
+  }
+
+  etiquetaMapa(a: Aula): string {
+    return etiquetaMapaAula(a);
   }
 
   guardarAula(): void {
@@ -587,6 +673,8 @@ export class CongresoAdminComponent implements OnInit {
       capacidad: this.aulaForm.capacidad || null,
       ubicacion: this.aulaForm.ubicacion.trim() || null,
       activa: true,
+      latitud: this.aulaForm.latitud,
+      longitud: this.aulaForm.longitud,
     };
     const req = this.aulaEditId
       ? this.aulaService.modificar(this.aulaEditId, body)

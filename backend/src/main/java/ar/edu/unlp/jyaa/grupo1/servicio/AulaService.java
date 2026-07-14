@@ -11,6 +11,16 @@ import java.util.List;
 @RequestScoped
 public class AulaService {
 
+  /**
+   * Bounds aproximados del campus FCAyF (UNLP, La Plata) — ~1 km de lado. Deben coincidir con el
+   * frontend ({@code campus-map.ts}).
+   */
+  static final double CAMPUS_LAT_MIN = -34.9185;
+
+  static final double CAMPUS_LAT_MAX = -34.9040;
+  static final double CAMPUS_LNG_MIN = -57.9520;
+  static final double CAMPUS_LNG_MAX = -57.9320;
+
   @Inject private AulaDAO aulaDAO;
 
   public List<AulaDTO> listarTodas() {
@@ -70,10 +80,31 @@ public class AulaService {
         request.ubicacion() == null || request.ubicacion().isBlank()
             ? null
             : request.ubicacion().trim());
+    aplicarCoordenadas(aula, request.latitud(), request.longitud());
     if (request.activa() != null) {
       aula.setActiva(request.activa());
     } else if (alta) {
       aula.setActiva(true);
     }
+  }
+
+  private static void aplicarCoordenadas(Aula aula, Double latitud, Double longitud) {
+    if (latitud == null && longitud == null) {
+      aula.setLatitud(null);
+      aula.setLongitud(null);
+      return;
+    }
+    if (latitud == null || longitud == null) {
+      throw new NegocioException("Para ubicar el aula en el mapa indicá latitud y longitud.");
+    }
+    if (latitud < CAMPUS_LAT_MIN
+        || latitud > CAMPUS_LAT_MAX
+        || longitud < CAMPUS_LNG_MIN
+        || longitud > CAMPUS_LNG_MAX) {
+      throw new NegocioException(
+          "La ubicación del aula debe estar dentro del campus de la FCAyF (mapa acotado).");
+    }
+    aula.setLatitud(latitud);
+    aula.setLongitud(longitud);
   }
 }
