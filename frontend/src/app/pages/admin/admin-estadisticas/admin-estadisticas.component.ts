@@ -1,8 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Observable } from 'rxjs';
 import { AdminReport } from '../../../models/notificacion.model';
-import { AdminStatsService } from '../../../servicios/admin-stats.service';
+import {
+  AdminStatsService,
+  AlertaEnvioResultado,
+  PreCongresoReadiness,
+} from '../../../servicios/admin-stats.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
@@ -28,6 +33,91 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       @if (error) {
         <p class="error">{{ error }}</p>
       }
+      @if (mensajeAlerta) {
+        <p class="ok">{{ mensajeAlerta }}</p>
+      }
+
+      @if (preCongreso) {
+        <section class="panel-card">
+          <h2>Pre-congreso — ¿todo listo?</h2>
+          <p class="muted">
+            Checklist de organización (programa, precheck, evaluaciones) y recordatorios a quien
+            tiene tareas sin hacer.
+          </p>
+          @if (preCongreso.listo) {
+            <p class="ok">No hay pendientes críticos detectados.</p>
+          } @else {
+            <div class="notice-box notice-box--amber">
+              <ul class="report-list" style="margin: 0">
+                @for (a of preCongreso.alertas; track a) {
+                  <li>
+                    <span>{{ a }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+          <div class="stats-grid" style="margin-top: 0.75rem">
+            <div
+              class="stat-card"
+              [class.stat-card--verde]="preCongreso.programaPublicado"
+              [class.stat-card--amarillo]="!preCongreso.programaPublicado"
+            >
+              <span class="stat-label">Programa</span>
+              <span class="stat-value" style="font-size: 1rem">
+                {{ preCongreso.programaPublicado ? 'Publicado' : 'Sin publicar' }}
+              </span>
+            </div>
+            <div class="stat-card stat-card--gris">
+              <span class="stat-label">Precheck</span>
+              <span class="stat-value">{{ preCongreso.trabajosPendientesPrecheck }}</span>
+            </div>
+            <div class="stat-card stat-card--violeta">
+              <span class="stat-label">Aprob. comité</span>
+              <span class="stat-value">{{ preCongreso.trabajosPendientesAprobacionComite }}</span>
+            </div>
+            <div class="stat-card stat-card--azul">
+              <span class="stat-label">Dictámenes</span>
+              <span class="stat-value">{{ preCongreso.evaluacionesPendientes }}</span>
+            </div>
+            <div class="stat-card stat-card--amarillo">
+              <span class="stat-label">Invitaciones</span>
+              <span class="stat-value">{{ preCongreso.invitacionesEvaluacionPendientes }}</span>
+            </div>
+            <div class="stat-card stat-card--gris">
+              <span class="stat-label">Insc. pendientes</span>
+              <span class="stat-value">{{ preCongreso.inscripcionesPendientes }}</span>
+            </div>
+          </div>
+          <div class="inline-form-row" style="margin-top: 1rem; flex-wrap: wrap; gap: 0.5rem">
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="enviandoAlertas"
+              (click)="avisarOrganizacion()"
+            >
+              Avisar a admin / comité
+            </button>
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="enviandoAlertas"
+              (click)="recordarPendientes()"
+            >
+              Recordar a usuarios con pendientes
+            </button>
+            <button
+              type="button"
+              class="btn-link"
+              [disabled]="enviandoAlertas"
+              (click)="avisarTodo()"
+            >
+              {{ enviandoAlertas ? 'Enviando…' : 'Enviar ambos' }}
+            </button>
+          </div>
+        </section>
+      }
+
       @if (cargando) {
         <p>Cargando reporte...</p>
       } @else if (reporte) {
@@ -282,8 +372,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 })
 export class AdminEstadisticasComponent implements OnInit {
   reporte?: AdminReport;
+  preCongreso?: PreCongresoReadiness;
   cargando = true;
   error = '';
+  mensajeAlerta = '';
+  enviandoAlertas = false;
   esComite = false;
 
   constructor(
@@ -301,6 +394,10 @@ export class AdminEstadisticasComponent implements OnInit {
 
   ngOnInit(): void {
     this.esComite = this.route.snapshot.data['vistaComite'] === true;
+    this.statsService.obtenerPreCongreso().subscribe({
+      next: (r) => (this.preCongreso = r),
+      error: () => (this.preCongreso = undefined),
+    });
     this.statsService.obtenerReporte().subscribe({
       next: (r) => {
         this.reporte = r;
@@ -309,6 +406,38 @@ export class AdminEstadisticasComponent implements OnInit {
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo cargar el reporte.');
         this.cargando = false;
+      },
+    });
+  }
+
+  avisarOrganizacion(): void {
+    this.enviarAlertas(() => this.statsService.notificarOrganizacionPreCongreso());
+  }
+
+  recordarPendientes(): void {
+    this.enviarAlertas(() => this.statsService.notificarPendientesPreCongreso());
+  }
+
+  avisarTodo(): void {
+    this.enviarAlertas(() => this.statsService.notificarTodoPreCongreso());
+  }
+
+  private enviarAlertas(fn: () => Observable<AlertaEnvioResultado>): void {
+    if (this.enviandoAlertas) return;
+    this.enviandoAlertas = true;
+    this.mensajeAlerta = '';
+    this.error = '';
+    fn().subscribe({
+      next: (r) => {
+        this.enviandoAlertas = false;
+        this.mensajeAlerta = r.mensaje;
+        this.statsService.obtenerPreCongreso().subscribe({
+          next: (p) => (this.preCongreso = p),
+        });
+      },
+      error: (err) => {
+        this.enviandoAlertas = false;
+        this.error = mensajeErrorApi(err, 'No se pudieron enviar las alertas.');
       },
     });
   }

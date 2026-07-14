@@ -2,7 +2,10 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AdminStats } from '../../../models/notificacion.model';
-import { AdminStatsService } from '../../../servicios/admin-stats.service';
+import {
+  AdminStatsService,
+  PreCongresoReadiness,
+} from '../../../servicios/admin-stats.service';
 
 @Component({
   selector: 'app-panel-admin',
@@ -20,6 +23,19 @@ import { AdminStatsService } from '../../../servicios/admin-stats.service';
 
       @if (mensaje) {
         <p class="ok">{{ mensaje }}</p>
+      }
+
+      @if (preCongreso && !preCongreso.listo) {
+        <div class="notice-box notice-box--amber">
+          <strong>Pre-congreso:</strong> hay pendientes
+          ({{ preCongreso.alertas.length }}).
+          <a routerLink="/admin/estadisticas">Ver checklist y enviar avisos</a>
+        </div>
+      } @else if (preCongreso?.listo) {
+        <div class="notice-box">
+          <strong>Pre-congreso:</strong> checklist OK.
+          <a routerLink="/admin/estadisticas">Ver detalle</a>
+        </div>
       }
 
       <div class="acciones-rapidas">
@@ -118,7 +134,7 @@ import { AdminStatsService } from '../../../servicios/admin-stats.service';
           <span class="accion-icono accion-icono--violeta" aria-hidden="true">📊</span>
           <div>
             <h3>Estadísticas</h3>
-            <p>Vista ejecutiva de inscripciones y trabajos</p>
+            <p>Checklist pre-congreso, reportes e interés por actividad</p>
           </div>
         </a>
         <a routerLink="/admin/notificaciones-broadcast" class="accion-card">
@@ -136,6 +152,7 @@ export class PanelAdminComponent implements OnInit {
   private statsService = inject(AdminStatsService);
 
   stats?: AdminStats;
+  preCongreso?: PreCongresoReadiness;
   mensaje = '';
 
   ngOnInit(): void {
@@ -148,6 +165,10 @@ export class PanelAdminComponent implements OnInit {
     this.statsService.obtener().subscribe({
       next: (s) => (this.stats = s),
       error: () => (this.stats = undefined),
+    });
+    this.statsService.obtenerPreCongreso().subscribe({
+      next: (r) => (this.preCongreso = r),
+      error: () => (this.preCongreso = undefined),
     });
   }
 }

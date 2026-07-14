@@ -444,6 +444,38 @@ public final class SchemaMigration {
             {{url_accion}}
 
             Sistema de gestión del congreso""");
+    insertarPlantillaSiFalta(
+        em,
+        "PRECONGRESO_ORGANIZACION",
+        "[PRE-CONGRESO] Checklist de organización — {{estado}}",
+        """
+            Hola {{nombre}},
+
+            Estado del checklist pre-congreso: {{estado}}
+
+            {{resumen}}
+
+            Próximo paso: {{proximo_paso}}
+
+            Ver estadísticas:
+            {{url_accion}}
+
+            Sistema de gestión del congreso""");
+    insertarPlantillaSiFalta(
+        em,
+        "RECORDATORIO_PENDIENTE",
+        "[RECORDATORIO] Tenés tareas pendientes en el congreso",
+        """
+            Hola {{nombre}},
+
+            {{tarea}}
+
+            Próximo paso: {{proximo_paso}}
+
+            Ingresá a la plataforma:
+            {{url_accion}}
+
+            Sistema de gestión del congreso""");
   }
 
   /** Columna enlace para botón "Ir a…" en la campana de notificaciones. */
