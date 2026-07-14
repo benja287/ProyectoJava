@@ -45,4 +45,21 @@ export class CongresoConfigService {
       .put<CongresoConfig>(this.baseUrl, cambios)
       .pipe(map((c) => normalizarCongresoConfig(c)));
   }
+
+  /**
+   * Finaliza el congreso para certificados: habilita descarga, registra emisiones y notifica.
+   */
+  finalizarCertificados(): Observable<FinalizarCertificadosResultado> {
+    return this.http.post<FinalizarCertificadosResultado>(
+      `${environment.apiUrl}/congreso/certificados/finalizar`,
+      {}
+    );
+  }
+}
+
+export interface FinalizarCertificadosResultado {
+  certificadosDisponiblesDesde: string | null;
+  certificadosCreados: number;
+  certificadosYaExistentes: number;
+  notificacionesEnviadas: number;
 }

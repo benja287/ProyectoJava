@@ -431,6 +431,19 @@ public final class SchemaMigration {
             {{url_accion}}
 
             Sistema de gestión del congreso""");
+    insertarPlantillaSiFalta(
+        em,
+        "CERTIFICADOS_DISPONIBLES",
+        "[CERTIFICADOS] Ya podés descargar tu certificado",
+        """
+            Hola {{nombre}},
+
+            El congreso finalizó y ya podés generar/descargar tu certificado de participación.
+
+            Ingresá a la plataforma e imprimí o guardá el PDF desde:
+            {{url_accion}}
+
+            Sistema de gestión del congreso""");
   }
 
   /** Columna enlace para botón "Ir a…" en la campana de notificaciones. */

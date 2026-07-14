@@ -237,6 +237,35 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
               : 'ninguna — nadie puede descargar hasta que definas una fecha.'
           }}
         </p>
+
+        <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(0,0,0,0.08)">
+        <h3>Finalizar congreso y emitir certificados</h3>
+        <p class="muted">
+          Al finalizar: habilita la descarga (hoy, si no había fecha o estaba en el futuro), crea un
+          registro de certificado para cada inscripción <strong>aprobada</strong> y para
+          evaluadores, y avisa por notificación/email. El PDF lo siguen generando las personas desde
+          su pantalla imprimible (no se genera en el servidor).
+        </p>
+        <div class="inline-form-row">
+          <button
+            type="button"
+            class="btn-primary"
+            [disabled]="guardandoConfig || finalizandoCertificados"
+            (click)="finalizarCongresoCertificados()"
+          >
+            {{
+              finalizandoCertificados
+                ? 'Procesando…'
+                : 'Finalizar congreso / Habilitar certificados'
+            }}
+          </button>
+        </div>
+        @if (feedbackCertificados) {
+          <p [class]="feedbackCertificadosOk ? 'ok' : 'error'" style="margin-top: 0.5rem">
+            {{ feedbackCertificados }}
+          </p>
+        }
+        </div>
       </section>
 
       <section class="panel-card panel-card--indigo">
@@ -470,6 +499,9 @@ export class CongresoAdminComponent implements OnInit {
   error = '';
   mensaje = '';
   guardandoConfig = false;
+  finalizandoCertificados = false;
+  feedbackCertificados = '';
+  feedbackCertificadosOk = false;
 
   private congresoConfigService = inject(CongresoConfigService);
   private aulaService = inject(AulaService);
@@ -644,6 +676,49 @@ export class CongresoAdminComponent implements OnInit {
   limpiarCertificados(): void {
     this.certificadosInput = '';
     this.guardarCertificados();
+  }
+
+  finalizarCongresoCertificados(): void {
+    if (this.finalizandoCertificados || this.guardandoConfig) return;
+    const ok = window.confirm(
+      '¿Finalizar el congreso para certificados?\n\n' +
+        'Se habilitará la descarga (hoy si corresponde), se registrarán certificados para ' +
+        'inscritos aprobados y evaluadores, y se enviarán avisos por notificación/email.'
+    );
+    if (!ok) return;
+    this.finalizandoCertificados = true;
+    this.feedbackCertificados = '';
+    this.error = '';
+    this.congresoConfigService.finalizarCertificados().subscribe({
+      next: (r) => {
+        this.finalizandoCertificados = false;
+        this.feedbackCertificadosOk = true;
+        const desde = r.certificadosDisponiblesDesde
+          ? this.formatFechaEs(
+              typeof r.certificadosDisponiblesDesde === 'string'
+                ? r.certificadosDisponiblesDesde.slice(0, 10)
+                : String(r.certificadosDisponiblesDesde)
+            )
+          : 'hoy';
+        this.feedbackCertificados =
+          `Listo. Descarga desde ${desde}. ` +
+          `Nuevos: ${r.certificadosCreados}, ya existían: ${r.certificadosYaExistentes}. ` +
+          `Avisos enviados: ${r.notificacionesEnviadas}.`;
+        this.mensaje = this.feedbackCertificados;
+        this.congresoConfigService.obtener().subscribe({
+          next: (c) => {
+            this.config = c;
+            this.certificadosInput = c.certificadosDisponiblesDesde ?? '';
+          },
+        });
+      },
+      error: (err) => {
+        this.finalizandoCertificados = false;
+        this.feedbackCertificadosOk = false;
+        this.feedbackCertificados = mensajeErrorApi(err, 'No se pudo finalizar certificados.');
+        this.error = this.feedbackCertificados;
+      },
+    });
   }
 
   onCongresoDesdeChange(desde: string): void {
