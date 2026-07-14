@@ -147,7 +147,7 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
             [mostrarMiUbicacion]="true"
             [mostrarBusqueda]="true"
             ariaLabel="Editar ubicación del congreso"
-            hint="Buscá una dirección o navegá el mapa y hacé clic / arrastrá el pin. Luego guardá la ubicación."
+            hint="Escribí una dirección o cruce y elegí del listado, o hacé clic / arrastrá el pin. Luego guardá."
             (posicionElegida)="onPosicionCongreso($event)"
           />
           <div class="inline-form-row" style="margin-top: 0.5rem">

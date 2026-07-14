@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   EventEmitter,
+  HostListener,
   Input,
   OnChanges,
   OnDestroy,
@@ -14,6 +15,14 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
+import { Subject, Subscription, of } from 'rxjs';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  switchMap,
+  tap,
+} from 'rxjs/operators';
 import {
   MapaPunto,
   SEDE_MAPA,
@@ -45,37 +54,57 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
   template: `
     <div class="sede-mapa-wrap">
       @if (mostrarBusqueda) {
-        <div class="sede-mapa-search">
-          <label class="sede-mapa-search-label">
+        <div class="sede-mapa-search" #searchWrap>
+          <label class="sede-mapa-search-label" for="sede-mapa-q">
             Buscar dirección
-            <span class="muted small"> (calle, intersección, ciudad, provincia)</span>
+            <span class="muted small"> — escribí y elegí del listado</span>
           </label>
-          <div class="sede-mapa-search-row">
+          <div class="sede-mapa-search-box">
             <input
+              id="sede-mapa-q"
               type="search"
+              autocomplete="off"
               [(ngModel)]="consultaBusqueda"
               [ngModelOptions]="{ standalone: true }"
-              placeholder="Ej: 60 y 118, La Plata"
-              (keyup.enter)="buscarDireccion()"
-              [disabled]="buscando"
+              placeholder="Ej: Avenida 60, La Plata · o 60 y 118"
+              (ngModelChange)="onConsultaChange($event)"
+              (keydown)="onSearchKeydown($event)"
+              (focus)="onSearchFocus()"
+              role="combobox"
+              [attr.aria-expanded]="mostrarDesplegable"
+              aria-autocomplete="list"
+              aria-controls="sede-mapa-sugerencias"
             />
-            <button type="button" class="btn-primary" [disabled]="buscando" (click)="buscarDireccion()">
-              {{ buscando ? 'Buscando…' : 'Buscar' }}
-            </button>
+            @if (buscando) {
+              <span class="sede-mapa-search-status" aria-live="polite">Buscando…</span>
+            }
+            @if (mostrarDesplegable) {
+              <ul id="sede-mapa-sugerencias" class="sede-mapa-resultados" role="listbox">
+                @for (r of resultadosBusqueda; track r.etiqueta + r.lat + r.lng; let i = $index) {
+                  <li role="option" [attr.aria-selected]="i === indiceActivo">
+                    <button
+                      type="button"
+                      class="sede-mapa-resultado"
+                      [class.sede-mapa-resultado--activo]="i === indiceActivo"
+                      (mousedown)="$event.preventDefault()"
+                      (click)="elegirResultado(r)"
+                    >
+                      <span class="sede-mapa-resultado-titulo">{{ r.etiqueta }}</span>
+                      @if (r.detalle) {
+                        <span class="sede-mapa-resultado-detalle">{{ r.detalle }}</span>
+                      }
+                    </button>
+                  </li>
+                }
+              </ul>
+            } @else if (sinResultados && consultaBusqueda.trim().length >= 2 && !buscando) {
+              <p class="muted small sede-mapa-vacio">
+                Sin sugerencias. Probá otra localidad o un cruce (ej. 60 y 118).
+              </p>
+            }
           </div>
           @if (errorBusqueda) {
             <p class="error small" style="margin-top: 0.35rem">{{ errorBusqueda }}</p>
-          }
-          @if (resultadosBusqueda.length) {
-            <ul class="sede-mapa-resultados" role="listbox">
-              @for (r of resultadosBusqueda; track r.etiqueta + r.lat + r.lng) {
-                <li>
-                  <button type="button" class="sede-mapa-resultado" (click)="elegirResultado(r)">
-                    {{ r.etiqueta }}
-                  </button>
-                </li>
-              }
-            </ul>
           }
         </div>
       }
@@ -109,57 +138,84 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
         font-weight: 600;
         margin-bottom: 0.35rem;
       }
-      .sede-mapa-search-row {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        align-items: stretch;
+      .sede-mapa-search-box {
+        position: relative;
       }
-      .sede-mapa-search-row input {
-        flex: 1 1 220px;
-        min-width: 0;
+      .sede-mapa-search-box input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.55rem 0.75rem;
+        border: 1px solid #c5d0c0;
+        border-radius: 8px;
+        font: inherit;
+      }
+      .sede-mapa-search-box input:focus {
+        outline: 2px solid #6a9b6a;
+        outline-offset: 1px;
+        border-color: #6a9b6a;
+      }
+      .sede-mapa-search-status {
+        position: absolute;
+        right: 0.75rem;
+        top: 0.6rem;
+        font-size: 0.8rem;
+        color: #5a6b5a;
+        pointer-events: none;
       }
       .sede-mapa-resultados {
         list-style: none;
-        margin: 0.4rem 0 0;
+        margin: 0.25rem 0 0;
         padding: 0;
         border: 1px solid #c5d0c0;
         border-radius: 8px;
-        max-height: 180px;
+        max-height: 220px;
         overflow: auto;
         background: #fff;
+        box-shadow: 0 6px 18px rgba(30, 50, 30, 0.12);
+        position: absolute;
+        left: 0;
+        right: 0;
+        z-index: 20;
       }
       .sede-mapa-resultados li + li {
         border-top: 1px solid #e4ebe2;
       }
       .sede-mapa-resultado {
-        display: block;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
         width: 100%;
         text-align: left;
-        padding: 0.55rem 0.75rem;
+        padding: 0.6rem 0.75rem;
         border: 0;
         background: transparent;
         cursor: pointer;
         font: inherit;
         color: inherit;
       }
+      .sede-mapa-resultado-titulo {
+        font-weight: 600;
+      }
+      .sede-mapa-resultado-detalle {
+        font-size: 0.85rem;
+        color: #5a6b5a;
+      }
       .sede-mapa-resultado:hover,
-      .sede-mapa-resultado:focus {
+      .sede-mapa-resultado--activo {
         background: #eef4ec;
         outline: none;
+      }
+      .sede-mapa-vacio {
+        margin: 0.4rem 0 0;
       }
     `,
   ],
 })
 export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('mapEl', { static: true }) mapEl!: ElementRef<HTMLDivElement>;
+  @ViewChild('searchWrap') searchWrap?: ElementRef<HTMLDivElement>;
 
-  /**
-   * libre: navegar el país/mundo y elegir sede (sin maxBounds).
-   * acotado: rango alrededor de {@link centro} (ver sede / ubicar aulas).
-   */
   @Input() modo: 'libre' | 'acotado' = 'acotado';
-  /** Centro del congreso: obligatorio en acotado; en libre es el pin / vista inicial. */
   @Input() centro: MapaPunto | null = null;
   @Input() aulas: Aula[] = [];
   @Input() excluirAulaId: number | null = null;
@@ -167,9 +223,7 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() editable = true;
   @Input() hint = '';
   @Input() ariaLabel = 'Mapa de la sede del congreso';
-  /** Punto azul con la geolocalización del navegador (si el usuario autoriza). */
   @Input() mostrarMiUbicacion = false;
-  /** Solo editar ubicación del congreso: caja de búsqueda Nominatim. */
   @Input() mostrarBusqueda = false;
 
   @Output() posicionElegida = new EventEmitter<MapaPunto>();
@@ -178,8 +232,13 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   resultadosBusqueda: GeocodeResultado[] = [];
   buscando = false;
   errorBusqueda = '';
+  sinResultados = false;
+  indiceActivo = -1;
+  panelAbierto = false;
 
   private readonly geocoding = inject(GeocodingService);
+  private readonly consulta$ = new Subject<string>();
+  private searchSub?: Subscription;
   private map?: L.Map;
   private seleccionMarker?: L.Marker;
   private miUbicacionMarker?: L.CircleMarker;
@@ -187,6 +246,7 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   private ready = false;
   private clickHandler?: (e: L.LeafletMouseEvent) => void;
   private invalidateTimer?: ReturnType<typeof setTimeout>;
+  private ignorarProximaConsulta = false;
 
   private readonly iconSeleccionado = L.icon({
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -205,7 +265,44 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
     iconAnchor: [7, 7],
   });
 
+  get mostrarDesplegable(): boolean {
+    return this.panelAbierto && this.resultadosBusqueda.length > 0;
+  }
+
   ngAfterViewInit(): void {
+    this.searchSub = this.consulta$
+      .pipe(
+        debounceTime(380),
+        distinctUntilChanged(),
+        switchMap((q) => {
+          const texto = q.trim();
+          if (texto.length < 2) {
+            this.buscando = false;
+            this.resultadosBusqueda = [];
+            this.sinResultados = false;
+            this.indiceActivo = -1;
+            return of([] as GeocodeResultado[]);
+          }
+          this.buscando = true;
+          this.errorBusqueda = '';
+          this.sinResultados = false;
+          return this.geocoding.autocompletar(texto, { bias: this.biasActual(), limit: 6 }).pipe(
+            tap(() => (this.buscando = false)),
+            catchError(() => {
+              this.buscando = false;
+              this.errorBusqueda = 'No se pudieron cargar sugerencias. Reintentá.';
+              return of([] as GeocodeResultado[]);
+            })
+          );
+        })
+      )
+      .subscribe((items) => {
+        this.resultadosBusqueda = items;
+        this.sinResultados = items.length === 0 && this.consultaBusqueda.trim().length >= 2;
+        this.indiceActivo = items.length ? 0 : -1;
+        this.panelAbierto = items.length > 0;
+      });
+
     this.initMap();
   }
 
@@ -256,48 +353,90 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.searchSub?.unsubscribe();
+    this.consulta$.complete();
     this.destroyMap();
   }
 
-  buscarDireccion(): void {
-    if (!this.mostrarBusqueda || this.buscando) {
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(ev: MouseEvent): void {
+    const wrap = this.searchWrap?.nativeElement;
+    if (!wrap) {
       return;
     }
-    const q = this.consultaBusqueda.trim();
-    this.errorBusqueda = '';
-    this.resultadosBusqueda = [];
-    if (q.length < 3) {
-      this.errorBusqueda = 'Escribí al menos 3 caracteres (ej: calle 60 y 121, La Plata).';
+    if (!wrap.contains(ev.target as Node)) {
+      this.panelAbierto = false;
+    }
+  }
+
+  onConsultaChange(valor: string): void {
+    if (this.ignorarProximaConsulta) {
+      this.ignorarProximaConsulta = false;
       return;
     }
-    this.buscando = true;
-    const bias = this.map
-      ? { lat: this.map.getCenter().lat, lng: this.map.getCenter().lng }
-      : this.seleccion ?? this.centro;
-    this.geocoding.buscar(q, { bias }).subscribe({
-      next: (items) => {
-        this.buscando = false;
-        this.resultadosBusqueda = items;
-        if (!items.length) {
-          this.errorBusqueda =
-            'No se encontró el cruce. Probá "60 y 118, La Plata" o mové el mapa cerca y reintentá.';
-        }
-      },
-      error: () => {
-        this.buscando = false;
-        this.errorBusqueda = 'No se pudo buscar la dirección. Reintentá en unos segundos.';
-      },
-    });
+    this.consultaBusqueda = valor;
+    this.panelAbierto = true;
+    this.consulta$.next(valor);
+  }
+
+  onSearchFocus(): void {
+    if (this.resultadosBusqueda.length) {
+      this.panelAbierto = true;
+    }
+  }
+
+  onSearchKeydown(ev: KeyboardEvent): void {
+    if (ev.key === 'ArrowDown') {
+      if (!this.resultadosBusqueda.length) {
+        return;
+      }
+      ev.preventDefault();
+      this.panelAbierto = true;
+      this.indiceActivo = (this.indiceActivo + 1) % this.resultadosBusqueda.length;
+      return;
+    }
+    if (ev.key === 'ArrowUp') {
+      if (!this.resultadosBusqueda.length) {
+        return;
+      }
+      ev.preventDefault();
+      this.panelAbierto = true;
+      this.indiceActivo =
+        (this.indiceActivo - 1 + this.resultadosBusqueda.length) % this.resultadosBusqueda.length;
+      return;
+    }
+    if (ev.key === 'Enter') {
+      if (this.mostrarDesplegable && this.indiceActivo >= 0) {
+        ev.preventDefault();
+        this.elegirResultado(this.resultadosBusqueda[this.indiceActivo]);
+      }
+      return;
+    }
+    if (ev.key === 'Escape') {
+      this.panelAbierto = false;
+    }
   }
 
   elegirResultado(r: GeocodeResultado): void {
+    this.ignorarProximaConsulta = true;
+    this.consultaBusqueda = r.detalle ? `${r.etiqueta}, ${r.detalle}` : r.etiqueta;
     this.resultadosBusqueda = [];
+    this.panelAbierto = false;
+    this.sinResultados = false;
     this.errorBusqueda = '';
-    this.consultaBusqueda = r.etiqueta;
+    this.indiceActivo = -1;
     this.posicionElegida.emit({ lat: r.lat, lng: r.lng });
     if (this.map) {
       this.map.setView([r.lat, r.lng], 17, { animate: false });
     }
+  }
+
+  private biasActual(): MapaPunto | null {
+    if (this.map) {
+      const c = this.map.getCenter();
+      return { lat: c.lat, lng: c.lng };
+    }
+    return this.seleccion ?? this.centro;
   }
 
   private recrearMapa(): void {
@@ -427,7 +566,7 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
         }
       },
       () => {
-        /* sin permiso: se permanece en vista por defecto */
+        /* sin permiso */
       },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 }
     );

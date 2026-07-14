@@ -7,7 +7,10 @@ import { SEDE_MAPA } from '../constants/sede-mapa';
 export interface GeocodeResultado {
   lat: number;
   lng: number;
+  /** Título corto (calle / cruce). */
   etiqueta: string;
+  /** Ciudad / provincia (línea secundaria del desplegable). */
+  detalle?: string;
 }
 
 export interface GeocodeOpciones {
@@ -49,6 +52,26 @@ export class GeocodingService {
   private readonly http = inject(HttpClient);
   private readonly nominatimUrl = 'https://nominatim.openstreetmap.org/search';
   private readonly overpassUrl = 'https://overpass-api.de/api/interpreter';
+
+  /**
+   * Sugerencias al tipear. Cruces tipo "60 y 118" → Overpass;
+   * resto → Nominatim (Photon no indexa bien calles AR).
+   */
+  autocompletar(
+    consulta: string,
+    opciones: GeocodeOpciones = {}
+  ): Observable<GeocodeResultado[]> {
+    const q = consulta.trim();
+    if (q.length < 2) {
+      return of([]);
+    }
+    const cruce = this.parseCruce(q);
+    // Cruce completo (ambos números): precisión Overpass.
+    if (cruce && /\d{1,4}\s*(?:y|&|\/)\s*\d{1,4}/i.test(q)) {
+      return this.buscar(q, { ...opciones, limit: opciones.limit ?? 4 });
+    }
+    return this.buscarNominatim(q, opciones.limit ?? 6, opciones.bias ?? null, q);
+  }
 
   buscar(consulta: string, opciones: GeocodeOpciones = {}): Observable<GeocodeResultado[]> {
     const q = consulta.trim();
@@ -142,7 +165,6 @@ out geom;
       }
     }
 
-    const labelBase = `Calle ${a} y Calle ${b}${localidad ? `, ${localidad}` : ''}`;
     const out: GeocodeResultado[] = [];
 
     if (nodosCompartidos.length) {
@@ -156,7 +178,11 @@ out geom;
           continue;
         }
         vistos.add(k);
-        out.push({ ...p, etiqueta: `Cruce ${labelBase}` });
+        out.push({
+          ...p,
+          etiqueta: `Cruce Calle ${a} y Calle ${b}`,
+          detalle: localidad || 'La Plata, Buenos Aires',
+        });
         if (out.length >= 3) {
           break;
         }
@@ -174,7 +200,11 @@ out geom;
           continue;
         }
         vistos.add(k);
-        out.push({ ...p, etiqueta: `Cruce ${labelBase}` });
+        out.push({
+          ...p,
+          etiqueta: `Cruce Calle ${a} y Calle ${b}`,
+          detalle: localidad || 'La Plata, Buenos Aires',
+        });
         if (out.length >= 3) {
           break;
         }
@@ -187,7 +217,8 @@ out geom;
       out.push({
         lat: cerca.punto.lat,
         lng: cerca.punto.lng,
-        etiqueta: `Cruce aprox. ${labelBase}`,
+        etiqueta: `Cruce aprox. Calle ${a} y Calle ${b}`,
+        detalle: localidad || 'La Plata, Buenos Aires',
       });
       return out;
     }
@@ -355,8 +386,9 @@ out geom;
           score -= Math.hypot(lat - bias.lat, lng - bias.lng) * 40;
         }
         const partes = h.display_name.split(',').map((p) => p.trim());
-        const etiqueta = partes.length > 4 ? partes.slice(0, 4).join(', ') : h.display_name;
-        return { lat, lng, etiqueta, score, key: `${lat.toFixed(4)},${lng.toFixed(4)}` };
+        const etiqueta = partes[0] || h.display_name;
+        const detalle = partes.slice(1, 4).join(', ') || undefined;
+        return { lat, lng, etiqueta, detalle, score, key: `${lat.toFixed(4)},${lng.toFixed(4)}` };
       })
       .filter((x): x is NonNullable<typeof x> => x != null);
 
@@ -368,7 +400,12 @@ out geom;
         continue;
       }
       vistos.add(s.key);
-      out.push({ lat: s.lat, lng: s.lng, etiqueta: s.etiqueta });
+      out.push({
+        lat: s.lat,
+        lng: s.lng,
+        etiqueta: s.etiqueta,
+        detalle: s.detalle,
+      });
     }
     return out;
   }
