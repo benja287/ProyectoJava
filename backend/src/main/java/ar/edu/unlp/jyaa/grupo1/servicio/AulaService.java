@@ -66,8 +66,8 @@ public class AulaService {
       throw new NegocioException("Indicá el nombre del aula");
     }
     aula.setNombre(request.nombre().trim());
-    if (request.capacidad() != null && request.capacidad() < 1) {
-      throw new NegocioException("La capacidad debe ser al menos 1 (o vacía)");
+    if (request.capacidad() != null && request.capacidad() < 0) {
+      throw new NegocioException("La capacidad no puede ser negativa (usá 0 para cerrar el cupo, o vacío sin límite)");
     }
     aula.setCapacidad(request.capacidad());
     aula.setUbicacion(

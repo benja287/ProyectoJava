@@ -60,10 +60,10 @@ import { centroDesdeConfig } from '../../../constants/sede-mapa';
               Capacidad
               <input
                 type="number"
-                min="1"
+                min="0"
                 [(ngModel)]="aulaForm.capacidad"
                 [ngModelOptions]="{ standalone: true }"
-                placeholder="80"
+                placeholder="0 = sin cupo"
               />
             </label>
             <label class="span-full">
@@ -242,7 +242,7 @@ export class CongresoAulaFormAdminComponent implements OnInit {
     this.guardando = true;
     const body = {
       nombre: this.aulaForm.nombre.trim(),
-      capacidad: this.aulaForm.capacidad || null,
+      capacidad: this.aulaForm.capacidad ?? null,
       ubicacion: this.aulaForm.ubicacion.trim() || null,
       activa: true,
       latitud: this.aulaForm.latitud,
