@@ -9,4 +9,5 @@ public record CrearSesionPostersRequest(
     LocalDateTime inicio,
     LocalDateTime fin,
     List<Long> trabajoIds,
-    Long aulaId) {}
+    Long aulaId,
+    Long franjaId) {}

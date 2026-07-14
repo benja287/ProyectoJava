@@ -72,4 +72,8 @@ public final class DAOFactory {
   public static AulaDAO getAulaDAO() {
     return new AulaDAOImpl();
   }
+
+  public static FranjaHorariaDAO getFranjaHorariaDAO() {
+    return new FranjaHorariaDAOImpl();
+  }
 }

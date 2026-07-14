@@ -3,11 +3,13 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 import ar.edu.unlp.jyaa.grupo1.dao.ActividadDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.AulaDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.FranjaHorariaDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.ActividadFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.Aula;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
+import ar.edu.unlp.jyaa.grupo1.modelo.FranjaHoraria;
 import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoActividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
@@ -43,6 +45,7 @@ public class ActividadService {
 
   @Inject private ActividadDAO actividadDAO;
   @Inject private AulaDAO aulaDAO;
+  @Inject private FranjaHorariaDAO franjaHorariaDAO;
   @Inject private TrabajoDAO trabajoDAO;
   @Inject private CongresoDAO congresoDAO;
   @Inject private CongresoService congresoService;
@@ -110,12 +113,15 @@ public class ActividadService {
     List<Trabajo> trabajos = cargarTrabajosParaProgramacion(request.trabajoIds(), ModalidadPresentacion.ORAL);
     validarMismoEje(trabajos);
 
+    LocalDateTime[] horario =
+        resolverHorarioAbsoluto(request.franjaId(), request.inicio(), request.fin());
+
     Actividad actividad = new Actividad();
     actividad.setCodigo(request.codigo().trim());
     actividad.setTitulo(request.titulo().trim());
     asignarAulaOSala(actividad, request.aulaId(), request.sala());
-    actividad.setInicio(request.inicio());
-    actividad.setFin(request.fin());
+    actividad.setInicio(horario[0]);
+    actividad.setFin(horario[1]);
     sincronizarDiaCongreso(actividad);
     actividad.setTipoActividad(TipoActividad.MESA_TEMATICA);
     actividad.setTrabajos(new ArrayList<>(trabajos));
@@ -131,11 +137,14 @@ public class ActividadService {
         cargarTrabajosParaProgramacion(request.trabajoIds(), ModalidadPresentacion.POSTER);
     validarMismoEje(trabajos);
 
+    LocalDateTime[] horario =
+        resolverHorarioAbsoluto(request.franjaId(), request.inicio(), request.fin());
+
     Actividad actividad = new Actividad();
     actividad.setTitulo(request.titulo().trim());
     asignarAulaOSala(actividad, request.aulaId(), request.ubicacion());
-    actividad.setInicio(request.inicio());
-    actividad.setFin(request.fin());
+    actividad.setInicio(horario[0]);
+    actividad.setFin(horario[1]);
     sincronizarDiaCongreso(actividad);
     actividad.setTipoActividad(TipoActividad.POSTER);
     actividad.setTrabajos(new ArrayList<>(trabajos));
@@ -152,7 +161,9 @@ public class ActividadService {
     if (request.moderador() == null || request.moderador().isBlank()) {
       throw new NegocioException("Debe indicar el moderador");
     }
-    LocalDateTime[] horario = parseHorarioCongreso(request.fecha(), request.horaInicio(), request.horaFin());
+    LocalDateTime[] horario =
+        resolverHorarioStrings(
+            request.franjaId(), request.fecha(), request.horaInicio(), request.horaFin());
 
     Actividad actividad = new Actividad();
     actividad.setTitulo(request.titulo().trim());
@@ -177,7 +188,9 @@ public class ActividadService {
     if (request.responsables() == null || request.responsables().isBlank()) {
       throw new NegocioException("Debe indicar el/los responsable(s)");
     }
-    LocalDateTime[] horario = parseHorarioCongreso(request.fecha(), request.horaInicio(), request.horaFin());
+    LocalDateTime[] horario =
+        resolverHorarioStrings(
+            request.franjaId(), request.fecha(), request.horaInicio(), request.horaFin());
 
     Actividad actividad = new Actividad();
     actividad.setTitulo(request.titulo().trim());
@@ -218,7 +231,9 @@ public class ActividadService {
     if (request.conferencistas() == null || request.conferencistas().isBlank()) {
       throw new NegocioException("Debe indicar el/los conferencista(s)");
     }
-    LocalDateTime[] horario = parseHorarioCongreso(request.fecha(), request.horaInicio(), request.horaFin());
+    LocalDateTime[] horario =
+        resolverHorarioStrings(
+            request.franjaId(), request.fecha(), request.horaInicio(), request.horaFin());
 
     Actividad actividad = new Actividad();
     actividad.setTitulo(request.titulo().trim());
@@ -401,7 +416,9 @@ public class ActividadService {
     if (request.aulaId() == null && (request.sala() == null || request.sala().isBlank())) {
       throw new NegocioException("Debe indicar el aula o la sala");
     }
-    validarHorario(request.inicio(), request.fin());
+    if (request.franjaId() == null) {
+      validarHorario(request.inicio(), request.fin());
+    }
   }
 
   private void validarRequestPosters(CrearSesionPostersRequest request) {
@@ -412,7 +429,9 @@ public class ActividadService {
         && (request.ubicacion() == null || request.ubicacion().isBlank())) {
       throw new NegocioException("Debe indicar el aula o la ubicación");
     }
-    validarHorario(request.inicio(), request.fin());
+    if (request.franjaId() == null) {
+      validarHorario(request.inicio(), request.fin());
+    }
   }
 
   private void validarHorario(java.time.LocalDateTime inicio, java.time.LocalDateTime fin) {
@@ -502,6 +521,49 @@ public class ActividadService {
       throw new NegocioException(
           "Ya existe una actividad de este tipo en ese horario. Elegí otro horario.");
     }
+  }
+
+  private LocalDateTime[] resolverHorarioAbsoluto(
+      Long franjaId, LocalDateTime inicio, LocalDateTime fin) {
+    if (franjaId != null) {
+      return horarioDesdeFranja(franjaId);
+    }
+    validarHorario(inicio, fin);
+    return new LocalDateTime[] {inicio, fin};
+  }
+
+  private LocalDateTime[] resolverHorarioStrings(
+      Long franjaId, String fecha, String horaInicio, String horaFin) {
+    if (franjaId != null) {
+      return horarioDesdeFranja(franjaId);
+    }
+    return parseHorarioCongreso(fecha, horaInicio, horaFin);
+  }
+
+  private LocalDateTime[] horarioDesdeFranja(Long franjaId) {
+    FranjaHoraria franja = franjaHorariaDAO.recuperarPorId(franjaId);
+    if (franja == null) {
+      throw new NegocioException("Franja horaria no encontrada");
+    }
+    if (!franja.isActiva()) {
+      throw new NegocioException("La franja horaria seleccionada está desactivada");
+    }
+    var congreso = congresoDAO.obtenerPrincipal();
+    LocalDate desde = congreso != null ? congreso.getCongresoDesde() : null;
+    if (desde == null) {
+      throw new NegocioException("Configurá primero las fechas del congreso");
+    }
+    LocalDate fecha = FechasCongreso.fechaDeDia(desde, franja.getDiaCongreso());
+    if (fecha == null
+        || !FechasCongreso.esFechaValida(fecha, desde, congreso.getCongresoHasta())) {
+      throw new NegocioException("La franja no corresponde a un día válido del congreso");
+    }
+    LocalDateTime inicio = LocalDateTime.of(fecha, franja.getHoraInicio());
+    LocalDateTime fin = LocalDateTime.of(fecha, franja.getHoraFin());
+    if (!fin.isAfter(inicio)) {
+      throw new NegocioException("La franja horaria tiene un rango inválido");
+    }
+    return new LocalDateTime[] {inicio, fin};
   }
 
   private LocalDateTime[] parseHorarioCongreso(String fecha, String horaInicio, String horaFin) {

@@ -30,6 +30,7 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarEvaluacionDictamen);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarAulaCoordenadas);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresoMapaUbicacion);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarFranjasHorarias);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -828,6 +829,51 @@ public final class SchemaMigration {
     plantilla.setCuerpo(cuerpo);
     em.persist(plantilla);
     log.info("Plantilla de email insertada: {}", nombre);
+  }
+
+  /** APPEND — franjas horarias configurables por día lógico (1..3). */
+  private static void migrarFranjasHorarias(EntityManager em) {
+    if (!tablaExiste(em, "franjas_horarias")) {
+      em.createNativeQuery(
+              "CREATE TABLE franjas_horarias ("
+                  + "id BIGINT NOT NULL AUTO_INCREMENT,"
+                  + "dia_congreso INT NOT NULL,"
+                  + "etiqueta VARCHAR(120) NULL,"
+                  + "hora_inicio TIME NOT NULL,"
+                  + "hora_fin TIME NOT NULL,"
+                  + "activa TINYINT(1) NOT NULL DEFAULT 1,"
+                  + "PRIMARY KEY (id)"
+                  + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
+          .executeUpdate();
+      log.info("Tabla franjas_horarias creada");
+    } else {
+      log.info("Tabla franjas_horarias ya existe");
+    }
+    seedFranjasPorDefectoSiVacio(em);
+  }
+
+  private static void seedFranjasPorDefectoSiVacio(EntityManager em) {
+    Number count =
+        (Number) em.createNativeQuery("SELECT COUNT(*) FROM franjas_horarias").getSingleResult();
+    if (count != null && count.longValue() > 0) {
+      return;
+    }
+    String[] etiquetas = {"Mañana", "Mediodía", "Tarde"};
+    String[] inicios = {"09:00:00", "11:00:00", "14:00:00"};
+    String[] fines = {"11:00:00", "13:00:00", "16:00:00"};
+    for (int dia = 1; dia <= 3; dia++) {
+      for (int i = 0; i < etiquetas.length; i++) {
+        em.createNativeQuery(
+                "INSERT INTO franjas_horarias (dia_congreso, etiqueta, hora_inicio, hora_fin, activa)"
+                    + " VALUES (:dia, :etiqueta, :inicio, :fin, 1)")
+            .setParameter("dia", dia)
+            .setParameter("etiqueta", etiquetas[i])
+            .setParameter("inicio", inicios[i])
+            .setParameter("fin", fines[i])
+            .executeUpdate();
+      }
+    }
+    log.info("Franjas horarias por defecto insertadas (3 días × 3 franjas)");
   }
 
   private static void agregarColumnaSiFalta(

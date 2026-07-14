@@ -17,6 +17,7 @@
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Pago</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Actividad</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Aula</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.FranjaHoraria</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.CronogramaPersonal</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Circular</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Notificacion</class>

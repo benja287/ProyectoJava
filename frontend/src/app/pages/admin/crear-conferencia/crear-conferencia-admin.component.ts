@@ -5,12 +5,17 @@ import {
   CONGRESS_EVENT_DATES,
   buildCongressDates,
   congressDateLabels,
-  isValidTimeRange,
 } from '../../../constants/congress-event';
 import { Aula } from '../../../models/aula.model';
+import {
+  FranjaHoraria,
+  diaCongresoDeFecha,
+  etiquetaFranja,
+} from '../../../models/franja-horaria.model';
 import { ActividadService } from '../../../servicios/actividad.service';
 import { AulaService } from '../../../servicios/aula.service';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
+import { FranjaHorariaService } from '../../../servicios/franja-horaria.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
@@ -20,9 +25,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   template: `
     <section class="card panel-card form-page">
       <h1>Crear Conferencia (programa oficial)</h1>
-      <p class="muted">
-        Fechas permitidas: {{ fechasPermitidas }}. Horarios validados automáticamente.
-      </p>
+      <p class="muted">Fechas permitidas: {{ fechasPermitidas }}. Elegí día y franja horaria.</p>
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -35,27 +38,34 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         </label>
         <label>
           Fecha
-          <select formControlName="fecha">
+          <select formControlName="fecha" (change)="onFechaChange()">
             @for (d of fechasCongreso; track d.value) {
               <option [value]="d.value">{{ d.label }}</option>
             }
           </select>
         </label>
         <label>
-          Hora inicio
-          <input formControlName="horaInicio" type="time" />
+          Franja horaria
+          <select formControlName="franjaId">
+            <option [ngValue]="null">— Elegí una franja —</option>
+            @for (f of franjasDelDia; track f.id) {
+              <option [ngValue]="f.id">{{ labelFranja(f) }}</option>
+            }
+          </select>
         </label>
-        <label>
-          Hora fin
-          <input formControlName="horaFin" type="time" />
-        </label>
+        @if (!franjasDelDia.length) {
+          <p class="muted small span-full">
+            No hay franjas para ese día.
+            <a routerLink="/admin/congreso/franjas">Configurar franjas</a>.
+          </p>
+        }
         <label class="span-full">
           Aula
           <select formControlName="aulaId">
             <option [ngValue]="null">— Elegí un aula —</option>
             @for (a of aulas; track a.id) {
               <option [ngValue]="a.id">
-                {{ a.nombre }}{{ a.capacidad ? ' (cap. ' + a.capacidad + ')' : '' }}
+                {{ a.nombre }}{{ a.capacidad != null ? ' (cap. ' + a.capacidad + ')' : '' }}
               </option>
             }
           </select>
@@ -101,16 +111,18 @@ export class CrearConferenciaAdminComponent implements OnInit {
   private router = inject(Router);
 
   fechasCongreso = congressDateLabels();
+  fechasOrdenadas = [...CONGRESS_EVENT_DATES];
   fechasPermitidas = CONGRESS_EVENT_DATES.join(', ');
   aulas: Aula[] = [];
+  franjas: FranjaHoraria[] = [];
+  franjasDelDia: FranjaHoraria[] = [];
   guardando = false;
   error = '';
 
   form = this.fb.group({
     titulo: ['', Validators.required],
     fecha: [CONGRESS_EVENT_DATES[0], Validators.required],
-    horaInicio: ['09:00', Validators.required],
-    horaFin: ['10:00', Validators.required],
+    franjaId: [null as number | null, Validators.required],
     aulaId: [null as number | null, Validators.required],
     conferencistas: ['', Validators.required],
     moderador: [''],
@@ -121,40 +133,59 @@ export class CrearConferenciaAdminComponent implements OnInit {
   constructor(
     private actividadService: ActividadService,
     private congresoConfigService: CongresoConfigService,
-    private aulaService: AulaService
+    private aulaService: AulaService,
+    private franjaService: FranjaHorariaService
   ) {}
 
   ngOnInit(): void {
     this.congresoConfigService.obtener().subscribe({
       next: (c) => {
-        const dates = buildCongressDates(c.congresoDesde, c.congresoHasta);
-        this.fechasCongreso = congressDateLabels(dates);
-        this.fechasPermitidas = dates.join(', ');
-        this.form.patchValue({ fecha: dates[0] });
+        this.fechasOrdenadas = buildCongressDates(c.congresoDesde, c.congresoHasta);
+        this.fechasCongreso = congressDateLabels(this.fechasOrdenadas);
+        this.fechasPermitidas = this.fechasOrdenadas.join(', ');
+        this.form.patchValue({ fecha: this.fechasOrdenadas[0] });
+        this.filtrarFranjas();
       },
     });
     this.aulaService.listarActivas().subscribe({
       next: (items) => (this.aulas = items),
       error: () => (this.aulas = []),
     });
+    this.franjaService.listarActivas().subscribe({
+      next: (items) => {
+        this.franjas = items;
+        this.filtrarFranjas();
+      },
+      error: () => (this.franjas = []),
+    });
+  }
+
+  onFechaChange(): void {
+    this.form.patchValue({ franjaId: null });
+    this.filtrarFranjas();
+  }
+
+  filtrarFranjas(): void {
+    const fecha = this.form.getRawValue().fecha;
+    const dia = fecha ? diaCongresoDeFecha(fecha, this.fechasOrdenadas) : null;
+    this.franjasDelDia =
+      dia == null ? [] : this.franjas.filter((f) => f.diaCongreso === dia && f.activa !== false);
+  }
+
+  labelFranja(f: FranjaHoraria): string {
+    return etiquetaFranja(f);
   }
 
   guardar(): void {
     if (this.form.invalid) return;
     const raw = this.form.getRawValue();
-    if (!isValidTimeRange(raw.horaInicio!, raw.horaFin!)) {
-      this.error = 'La hora de fin debe ser posterior a la hora de inicio.';
-      return;
-    }
     this.guardando = true;
     this.error = '';
     this.actividadService
       .crearConferencia({
         titulo: raw.titulo!,
-        fecha: raw.fecha!,
-        horaInicio: raw.horaInicio!,
-        horaFin: raw.horaFin!,
         aulaId: Number(raw.aulaId),
+        franjaId: Number(raw.franjaId),
         conferencistas: raw.conferencistas!,
         moderador: raw.moderador || undefined,
         institucion: raw.institucion || undefined,

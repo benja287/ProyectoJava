@@ -36,6 +36,13 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
             <p>Alta, capacidad y punto en el mapa de la sede</p>
           </div>
         </a>
+        <a routerLink="/admin/congreso/franjas" class="accion-card">
+          <span class="accion-icono accion-icono--naranja" aria-hidden="true">⏱</span>
+          <div>
+            <h3>Franjas horarias</h3>
+            <p>Bloques de horario por día para programar actividades</p>
+          </div>
+        </a>
         <a routerLink="/admin/congreso/programa" class="accion-card">
           <span class="accion-icono accion-icono--violeta" aria-hidden="true">🗓</span>
           <div>

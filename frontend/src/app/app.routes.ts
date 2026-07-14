@@ -52,6 +52,7 @@ import { CongresoAdminComponent } from './pages/admin/congreso-admin/congreso-ad
 import { CongresoDatosAdminComponent } from './pages/admin/congreso-admin/congreso-datos-admin.component';
 import { CongresoAulasAdminComponent } from './pages/admin/congreso-admin/congreso-aulas-admin.component';
 import { CongresoAulaFormAdminComponent } from './pages/admin/congreso-admin/congreso-aula-form-admin.component';
+import { CongresoFranjasAdminComponent } from './pages/admin/congreso-admin/congreso-franjas-admin.component';
 import { CongresoProgramaAdminComponent } from './pages/admin/congreso-admin/congreso-programa-admin.component';
 import { CongresoCertificadosAdminComponent } from './pages/admin/congreso-admin/congreso-certificados-admin.component';
 import { CongresoFechasAdminComponent } from './pages/admin/congreso-admin/congreso-fechas-admin.component';
@@ -160,6 +161,11 @@ export const routes: Routes = [
     canActivate: [admin],
   },
   { path: 'admin/congreso/aulas', component: CongresoAulasAdminComponent, canActivate: [admin] },
+  {
+    path: 'admin/congreso/franjas',
+    component: CongresoFranjasAdminComponent,
+    canActivate: [admin],
+  },
   {
     path: 'admin/congreso/programa',
     component: CongresoProgramaAdminComponent,

@@ -32,35 +32,38 @@ export interface CrearMesaRedondaRequest {
   panelistas?: string;
   descripcion?: string;
   sala?: string;
-  fecha: string;
-  horaInicio: string;
-  horaFin: string;
+  fecha?: string;
+  horaInicio?: string;
+  horaFin?: string;
   aulaId?: number;
+  franjaId?: number;
 }
 
 export interface CrearTallerOficialRequest {
   titulo: string;
-  fecha: string;
-  horaInicio: string;
-  horaFin: string;
+  fecha?: string;
+  horaInicio?: string;
+  horaFin?: string;
   sala?: string;
   responsables: string;
   descripcion?: string;
   propuestaTallerId?: number;
   aulaId?: number;
+  franjaId?: number;
 }
 
 export interface CrearConferenciaRequest {
   titulo: string;
-  fecha: string;
-  horaInicio: string;
-  horaFin: string;
+  fecha?: string;
+  horaInicio?: string;
+  horaFin?: string;
   sala?: string;
   conferencistas: string;
   moderador?: string;
   institucion?: string;
   descripcion?: string;
   aulaId?: number;
+  franjaId?: number;
 }
 
 export interface TrabajoCronogramaItem {

@@ -10,4 +10,5 @@ public record CrearMesaTematicaRequest(
     LocalDateTime inicio,
     LocalDateTime fin,
     List<Long> trabajoIds,
-    Long aulaId) {}
+    Long aulaId,
+    Long franjaId) {}

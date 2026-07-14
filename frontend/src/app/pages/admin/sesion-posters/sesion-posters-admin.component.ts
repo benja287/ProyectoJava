@@ -6,15 +6,19 @@ import {
   CONGRESS_EVENT_DATES,
   buildCongressDates,
   congressDateLabels,
-  isValidTimeRange,
-  toLocalDateTime,
 } from '../../../constants/congress-event';
 import { EJES_TEMATICOS, MODALIDAD_LABELS } from '../../../constants/ejes-tematicos';
 import { Aula } from '../../../models/aula.model';
+import {
+  FranjaHoraria,
+  diaCongresoDeFecha,
+  etiquetaFranja,
+} from '../../../models/franja-horaria.model';
 import { Trabajo } from '../../../models/trabajo.model';
 import { ActividadService } from '../../../servicios/actividad.service';
 import { AulaService } from '../../../servicios/aula.service';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
+import { FranjaHorariaService } from '../../../servicios/franja-horaria.service';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
@@ -52,21 +56,29 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         </label>
         <label>
           Fecha
-          <select formControlName="fecha">
+          <select formControlName="fecha" (change)="onFechaChange()">
             @for (d of fechasCongreso; track d.value) {
               <option [value]="d.value">{{ d.label }}</option>
             }
           </select>
         </label>
         <label>
-          Hora inicio
-          <input formControlName="horaInicio" type="time" />
-        </label>
-        <label>
-          Hora fin
-          <input formControlName="horaFin" type="time" />
+          Franja horaria
+          <select formControlName="franjaId">
+            <option [ngValue]="null">— Elegí una franja —</option>
+            @for (f of franjasDelDia; track f.id) {
+              <option [ngValue]="f.id">{{ labelFranja(f) }}</option>
+            }
+          </select>
         </label>
       </form>
+
+      @if (!franjasDelDia.length) {
+        <p class="muted">
+          No hay franjas para ese día.
+          <a routerLink="/admin/congreso/franjas">Configurar franjas</a>.
+        </p>
+      }
 
       <div class="filtro-eje box-muted">
         <label>
@@ -120,7 +132,10 @@ export class SesionPostersAdminComponent implements OnInit {
 
   ejesTematicos = [...EJES_TEMATICOS];
   fechasCongreso = congressDateLabels();
+  fechasOrdenadas = [...CONGRESS_EVENT_DATES];
   aulas: Aula[] = [];
+  franjas: FranjaHoraria[] = [];
+  franjasDelDia: FranjaHoraria[] = [];
   trabajosAprobados: Trabajo[] = [];
   trabajosFiltrados: Trabajo[] = [];
   seleccionados = new Set<number>();
@@ -134,8 +149,7 @@ export class SesionPostersAdminComponent implements OnInit {
     titulo: ['', Validators.required],
     aulaId: [null as number | null, Validators.required],
     fecha: [CONGRESS_EVENT_DATES[0], Validators.required],
-    horaInicio: ['09:00', Validators.required],
-    horaFin: ['11:00', Validators.required],
+    franjaId: [null as number | null, Validators.required],
   });
 
   constructor(
@@ -143,22 +157,47 @@ export class SesionPostersAdminComponent implements OnInit {
     private actividadService: ActividadService,
     private congresoConfigService: CongresoConfigService,
     private aulaService: AulaService,
+    private franjaService: FranjaHorariaService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.congresoConfigService.obtener().subscribe({
       next: (c) => {
-        const dates = buildCongressDates(c.congresoDesde, c.congresoHasta);
-        this.fechasCongreso = congressDateLabels(dates);
-        this.form.patchValue({ fecha: dates[0] });
+        this.fechasOrdenadas = buildCongressDates(c.congresoDesde, c.congresoHasta);
+        this.fechasCongreso = congressDateLabels(this.fechasOrdenadas);
+        this.form.patchValue({ fecha: this.fechasOrdenadas[0] });
+        this.filtrarFranjas();
       },
     });
     this.aulaService.listarActivas().subscribe({
       next: (items) => (this.aulas = items),
       error: () => (this.aulas = []),
     });
+    this.franjaService.listarActivas().subscribe({
+      next: (items) => {
+        this.franjas = items;
+        this.filtrarFranjas();
+      },
+      error: () => (this.franjas = []),
+    });
     this.cargarTrabajos();
+  }
+
+  onFechaChange(): void {
+    this.form.patchValue({ franjaId: null });
+    this.filtrarFranjas();
+  }
+
+  filtrarFranjas(): void {
+    const fecha = this.form.getRawValue().fecha;
+    const dia = fecha ? diaCongresoDeFecha(fecha, this.fechasOrdenadas) : null;
+    this.franjasDelDia =
+      dia == null ? [] : this.franjas.filter((f) => f.diaCongreso === dia && f.activa !== false);
+  }
+
+  labelFranja(f: FranjaHoraria): string {
+    return etiquetaFranja(f);
   }
 
   onEjeChange(event: Event): void {
@@ -183,18 +222,13 @@ export class SesionPostersAdminComponent implements OnInit {
       return;
     }
     const raw = this.form.getRawValue();
-    if (!isValidTimeRange(raw.horaInicio!, raw.horaFin!)) {
-      this.error = 'La hora de fin debe ser posterior a la hora de inicio.';
-      return;
-    }
     this.guardando = true;
     this.error = '';
     this.actividadService
       .crearSesionPosters({
         titulo: raw.titulo!,
         aulaId: Number(raw.aulaId),
-        inicio: toLocalDateTime(raw.fecha!, raw.horaInicio!),
-        fin: toLocalDateTime(raw.fecha!, raw.horaFin!),
+        franjaId: Number(raw.franjaId),
         trabajoIds: ids,
       })
       .subscribe({

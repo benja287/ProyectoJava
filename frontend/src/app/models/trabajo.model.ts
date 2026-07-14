@@ -89,17 +89,19 @@ export interface CrearMesaTematicaRequest {
   codigo: string;
   titulo: string;
   sala?: string;
-  inicio: string;
-  fin: string;
+  inicio?: string;
+  fin?: string;
   trabajoIds: number[];
   aulaId?: number;
+  franjaId?: number;
 }
 
 export interface CrearSesionPostersRequest {
   titulo: string;
   ubicacion?: string;
-  inicio: string;
-  fin: string;
+  inicio?: string;
+  fin?: string;
   trabajoIds: number[];
   aulaId?: number;
+  franjaId?: number;
 }
