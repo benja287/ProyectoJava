@@ -45,6 +45,10 @@ export interface AdminReportKpi {
   pagosEfectivoConfirmados: number;
   pagosTransferenciaConfirmados: number;
   trabajosTotales: number;
+  evaluacionesPendientes: number;
+  invitacionesEvaluacionPendientes: number;
+  trabajosEnEvaluacion: number;
+  trabajosPendientesPrecheck: number;
 }
 
 export interface AdminReport {
@@ -53,6 +57,10 @@ export interface AdminReport {
   trabajosPorTipo: ConteoLabel[];
   trabajosPorModalidad: ConteoLabel[];
   trabajosPorEstado: ConteoLabel[];
+  trabajosPorEje: ConteoLabel[];
+  inscripcionesPorCategoria: ConteoLabel[];
+  inscripcionesPorProvincia: ConteoLabel[];
   inscripcionesPorInstitucionTop10: InstitucionConteo[];
+  interesPorActividad: ConteoLabel[];
   deudores: DeudorInscripcion[];
 }

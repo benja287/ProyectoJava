@@ -38,10 +38,10 @@ public class AdminStatsResource {
   }
 
   @GET
-  @Operation(summary = "Estadísticas ejecutivas para panel admin")
+  @Operation(summary = "Estadísticas ejecutivas para panel admin / comité")
   public AdminStatsDTO stats(@Context ContainerRequestContext ctx) {
-    if (!AuthenticatedUser.from(ctx).isAdmin()) {
-      throw new NotAuthorizedException("Solo administradores");
+    if (!AuthenticatedUser.from(ctx).canVerEstadisticas()) {
+      throw new NotAuthorizedException("Solo administradores o comité académico");
     }
     return adminStatsService.obtener();
   }
@@ -51,8 +51,8 @@ public class AdminStatsResource {
   @Operation(summary = "Reporte detallado exportable (JSON)")
   public ar.edu.unlp.jyaa.grupo1.web.dto.AdminReportDTO reporte(
       @Context ContainerRequestContext ctx) {
-    if (!AuthenticatedUser.from(ctx).isAdmin()) {
-      throw new NotAuthorizedException("Solo administradores");
+    if (!AuthenticatedUser.from(ctx).canVerEstadisticas()) {
+      throw new NotAuthorizedException("Solo administradores o comité académico");
     }
     return adminStatsService.obtenerReporte();
   }

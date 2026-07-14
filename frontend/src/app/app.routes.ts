@@ -168,6 +168,12 @@ export const routes: Routes = [
     canActivate: [organizador],
   },
   {
+    path: 'organizador/estadisticas',
+    component: AdminEstadisticasComponent,
+    canActivate: [organizador],
+    data: { vistaComite: true },
+  },
+  {
     path: 'organizador/asignaciones',
     redirectTo: 'organizador/comite',
     pathMatch: 'full',

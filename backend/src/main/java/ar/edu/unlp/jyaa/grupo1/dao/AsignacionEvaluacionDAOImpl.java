@@ -35,7 +35,9 @@ public class AsignacionEvaluacionDAOImpl extends AbstractJpaDAO<AsignacionEvalua
     EntityManager em = emConsulta();
     try {
       return em.createQuery(
-              "SELECT a FROM AsignacionEvaluacion a JOIN FETCH a.trabajo JOIN FETCH a.evaluador",
+              "SELECT DISTINCT a FROM AsignacionEvaluacion a"
+                  + " JOIN FETCH a.trabajo JOIN FETCH a.evaluador"
+                  + " LEFT JOIN FETCH a.evaluacion",
               AsignacionEvaluacion.class)
           .getResultList();
     } finally {

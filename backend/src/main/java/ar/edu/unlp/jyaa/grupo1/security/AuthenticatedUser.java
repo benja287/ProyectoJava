@@ -67,4 +67,9 @@ public record AuthenticatedUser(Long userId, List<String> roles) {
   public boolean canValidarInscripciones() {
     return isAdmin();
   }
+
+  /** Reportes y estadísticas ejecutivas (admin y comité académico). */
+  public boolean canVerEstadisticas() {
+    return isAdmin() || hasRole("ORGANIZADOR_CIENTIFICO");
+  }
 }

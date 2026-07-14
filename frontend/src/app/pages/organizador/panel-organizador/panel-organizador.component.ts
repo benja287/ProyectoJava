@@ -18,7 +18,8 @@ import { RouterLink } from '@angular/router';
 
       <p class="comite-pasos">
         Pasos: 1) Seleccioná un trabajo → 2) precheck → 3) asigná 2 evaluadores → 4) empate 3er
-        evaluador
+        evaluador ·
+        <a routerLink="/organizador/estadisticas">Ver estadísticas</a>
       </p>
 
       <div class="panel-asistente-grid">
@@ -41,6 +42,13 @@ import { RouterLink } from '@angular/router';
           <div>
             <h3>Límite para envíos nuevos</h3>
             <p>Fecha límite para envíos nuevos de trabajos</p>
+          </div>
+        </a>
+        <a routerLink="/organizador/estadisticas" class="accion-card">
+          <span class="accion-icono accion-icono--verde" aria-hidden="true">📊</span>
+          <div>
+            <h3>Estadísticas</h3>
+            <p>Trabajos por eje/estado, evaluaciones pendientes e interés por actividad</p>
           </div>
         </a>
       </div>

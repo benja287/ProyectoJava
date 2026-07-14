@@ -1,5 +1,7 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
+import ar.edu.unlp.jyaa.grupo1.dao.AsignacionEvaluacionDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.CronogramaPersonalDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.InscripcionCongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.PagoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
@@ -7,6 +9,10 @@ import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.InscripcionFiltro;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.PagoFiltro;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.TrabajoFiltro;
+import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
+import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
+import ar.edu.unlp.jyaa.grupo1.modelo.CategoriaInscripcion;
+import ar.edu.unlp.jyaa.grupo1.modelo.CronogramaPersonal;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
@@ -28,6 +34,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +45,8 @@ public class AdminStatsService {
   @Inject private PagoDAO pagoDAO;
   @Inject private InscripcionCongresoDAO inscripcionDAO;
   @Inject private TrabajoDAO trabajoDAO;
+  @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
+  @Inject private CronogramaPersonalDAO cronogramaPersonalDAO;
 
   public AdminStatsDTO obtener() {
     long pendientesPago =
@@ -73,18 +82,28 @@ public class AdminStatsService {
     List<InscripcionCongreso> inscripciones = inscripcionDAO.listarTodos();
     List<Trabajo> trabajos =
         trabajoDAO.listarFiltrado(new TrabajoFiltro(null, null, null, null, null, null, null), 0, 5000);
+    List<AsignacionEvaluacion> asignaciones = asignacionEvaluacionDAO.listarTodos();
 
     long pendientes =
         inscripciones.stream().filter(i -> i.getEstado() == EstadoInscripcion.PENDIENTE).count();
     long confirmadas =
         inscripciones.stream().filter(i -> i.getEstado() == EstadoInscripcion.APROBADA).count();
 
-    long efectivoPend =
-        contarPagos(EstadoPago.PENDIENTE, MetodoPago.EFECTIVO);
-    long transferenciaPend =
-        contarPagos(EstadoPago.PENDIENTE, MetodoPago.TRANSFERENCIA);
+    long efectivoPend = contarPagos(EstadoPago.PENDIENTE, MetodoPago.EFECTIVO);
+    long transferenciaPend = contarPagos(EstadoPago.PENDIENTE, MetodoPago.TRANSFERENCIA);
     long efectivoOk = contarPagos(EstadoPago.APROBADO, MetodoPago.EFECTIVO);
     long transferenciaOk = contarPagos(EstadoPago.APROBADO, MetodoPago.TRANSFERENCIA);
+
+    long invitacionesPendientes =
+        asignaciones.stream().filter(a -> a.getFechaRespuesta() == null).count();
+    long dictamenesPendientes =
+        asignaciones.stream()
+            .filter(a -> a.isAceptada() && a.getFechaRespuesta() != null && a.getEvaluacion() == null)
+            .count();
+    long trabajosEnEvaluacion =
+        trabajos.stream().filter(t -> t.getEstado() == EstadoTrabajo.EN_EVALUACION).count();
+    long trabajosPendientesPrecheck =
+        trabajos.stream().filter(t -> t.getEstado() == EstadoTrabajo.ENVIADO).count();
 
     AdminReportKpiDTO kpi =
         new AdminReportKpiDTO(
@@ -96,21 +115,49 @@ public class AdminStatsService {
             transferenciaPend,
             efectivoOk,
             transferenciaOk,
-            trabajos.size());
+            trabajos.size(),
+            dictamenesPendientes,
+            invitacionesPendientes,
+            trabajosEnEvaluacion,
+            trabajosPendientesPrecheck);
 
     Map<TipoTrabajo, Long> porTipo = new EnumMap<>(TipoTrabajo.class);
     Map<ModalidadPresentacion, Long> porModalidad = new EnumMap<>(ModalidadPresentacion.class);
     Map<EstadoTrabajo, Long> porEstado = new EnumMap<>(EstadoTrabajo.class);
+    Map<String, Long> porEje = new HashMap<>();
     for (Trabajo t : trabajos) {
-      porTipo.merge(t.getTipo(), 1L, Long::sum);
+      if (t.getTipo() != null) {
+        porTipo.merge(t.getTipo(), 1L, Long::sum);
+      }
       if (t.getModalidad() != null) {
         porModalidad.merge(t.getModalidad(), 1L, Long::sum);
       }
-      porEstado.merge(t.getEstado(), 1L, Long::sum);
+      if (t.getEstado() != null) {
+        porEstado.merge(t.getEstado(), 1L, Long::sum);
+      }
+      String eje =
+          t.getEjeTematico() == null || t.getEjeTematico().isBlank()
+              ? "Sin eje"
+              : t.getEjeTematico().trim();
+      porEje.merge(eje, 1L, Long::sum);
     }
 
+    Map<String, Long> porCategoria = new LinkedHashMap<>();
+    Map<String, Long> porProvincia = new HashMap<>();
     Map<String, Long> porInstitucion = new HashMap<>();
     for (InscripcionCongreso i : inscripciones) {
+      String cat =
+          i.getCategoria() == null || i.getCategoria().isBlank()
+              ? "Sin categoría"
+              : etiquetaCategoria(i.getCategoria());
+      porCategoria.merge(cat, 1L, Long::sum);
+
+      String prov =
+          i.getProvincia() == null || i.getProvincia().isBlank()
+              ? "Sin provincia"
+              : i.getProvincia().trim();
+      porProvincia.merge(prov, 1L, Long::sum);
+
       String inst =
           i.getInstitucion() == null || i.getInstitucion().isBlank()
               ? "Sin institución"
@@ -143,11 +190,44 @@ public class AdminStatsService {
     return new AdminReportDTO(
         Instant.now().toString(),
         kpi,
-        toConteoList(porTipo),
+        toConteoEnumTipo(porTipo),
         toConteoModalidad(porModalidad),
         toConteoEstado(porEstado),
+        toConteoString(porEje),
+        toConteoString(porCategoria),
+        toConteoString(porProvincia),
         topInstituciones(porInstitucion),
+        interesPorActividad(),
         deudores);
+  }
+
+  private List<ConteoLabelDTO> interesPorActividad() {
+    Map<Long, String> titulos = new HashMap<>();
+    Map<Long, Long> conteos = new HashMap<>();
+    for (CronogramaPersonal cronograma : cronogramaPersonalDAO.listarTodos()) {
+      if (cronograma.getActividades() == null) {
+        continue;
+      }
+      for (Actividad actividad : cronograma.getActividades()) {
+        if (actividad == null || actividad.getId() == null) {
+          continue;
+        }
+        String titulo =
+            actividad.getTitulo() != null && !actividad.getTitulo().isBlank()
+                ? actividad.getTitulo().trim()
+                : ("Actividad #" + actividad.getId());
+        if (actividad.getCodigo() != null && !actividad.getCodigo().isBlank()) {
+          titulo = actividad.getCodigo().trim() + " — " + titulo;
+        }
+        titulos.putIfAbsent(actividad.getId(), titulo);
+        conteos.merge(actividad.getId(), 1L, Long::sum);
+      }
+    }
+    return conteos.entrySet().stream()
+        .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
+        .limit(15)
+        .map(e -> new ConteoLabelDTO(titulos.get(e.getKey()), e.getValue()))
+        .toList();
   }
 
   private long contarPagos(EstadoPago estado, MetodoPago metodo) {
@@ -156,7 +236,7 @@ public class AdminStatsService {
         .count();
   }
 
-  private List<ConteoLabelDTO> toConteoList(Map<TipoTrabajo, Long> map) {
+  private List<ConteoLabelDTO> toConteoEnumTipo(Map<TipoTrabajo, Long> map) {
     return map.entrySet().stream()
         .sorted(Map.Entry.<TipoTrabajo, Long>comparingByValue().reversed())
         .map(e -> new ConteoLabelDTO(etiquetaTipo(e.getKey()), e.getValue()))
@@ -176,7 +256,14 @@ public class AdminStatsService {
   private List<ConteoLabelDTO> toConteoEstado(Map<EstadoTrabajo, Long> map) {
     return map.entrySet().stream()
         .sorted(Map.Entry.<EstadoTrabajo, Long>comparingByValue().reversed())
-        .map(e -> new ConteoLabelDTO(e.getKey().name(), e.getValue()))
+        .map(e -> new ConteoLabelDTO(etiquetaEstado(e.getKey()), e.getValue()))
+        .toList();
+  }
+
+  private List<ConteoLabelDTO> toConteoString(Map<String, Long> map) {
+    return map.entrySet().stream()
+        .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+        .map(e -> new ConteoLabelDTO(e.getKey(), e.getValue()))
         .toList();
   }
 
@@ -194,5 +281,38 @@ public class AdminStatsService {
       case RELATO_DE_EXPERIENCIA -> "Relato de experiencia";
       case PROPUESTA_TALLER -> "Propuesta de taller";
     };
+  }
+
+  private static String etiquetaEstado(EstadoTrabajo estado) {
+    return switch (estado) {
+      case BORRADOR -> "Borrador";
+      case ENVIADO -> "Enviado — pendiente de prevalidación";
+      case PRECHECK_OK -> "Prevalidación aprobada";
+      case PRECHECK_OBSERVADO -> "Observado en prevalidación";
+      case EN_EVALUACION -> "En evaluación";
+      case PENDIENTE_APROBACION_COMITE -> "Pendiente de dictamen del comité";
+      case APROBADO -> "Aprobado";
+      case OBSERVADO_EVALUACION -> "Requiere correcciones (evaluación)";
+      case RECHAZADO -> "Rechazado";
+      case NOTIFICADO -> "Presentación notificada";
+      case PROGRAMADO -> "Programado en el cronograma";
+    };
+  }
+
+  private static String etiquetaCategoria(String raw) {
+    try {
+      return switch (CategoriaInscripcion.valueOf(raw.trim().toUpperCase())) {
+        case SOCIO_SAAE -> "Socio/a SAAE";
+        case NO_SOCIO -> "No socio/a";
+        case ESTUDIANTE -> "Estudiante de grado";
+        case PRODUCTOR -> "Productor/a";
+        case INVESTIGADOR -> "Investigador/a";
+        case EXTENSIONISTA -> "Extensionista";
+        case DOCENTE -> "Docente";
+        case EXTRANJERO -> "Extranjero/a";
+      };
+    } catch (IllegalArgumentException e) {
+      return raw;
+    }
   }
 }

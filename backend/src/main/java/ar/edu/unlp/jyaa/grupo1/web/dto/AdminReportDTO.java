@@ -8,5 +8,9 @@ public record AdminReportDTO(
     List<ConteoLabelDTO> trabajosPorTipo,
     List<ConteoLabelDTO> trabajosPorModalidad,
     List<ConteoLabelDTO> trabajosPorEstado,
+    List<ConteoLabelDTO> trabajosPorEje,
+    List<ConteoLabelDTO> inscripcionesPorCategoria,
+    List<ConteoLabelDTO> inscripcionesPorProvincia,
     List<InstitucionConteoDTO> inscripcionesPorInstitucionTop10,
+    List<ConteoLabelDTO> interesPorActividad,
     List<DeudorInscripcionDTO> deudores) {}

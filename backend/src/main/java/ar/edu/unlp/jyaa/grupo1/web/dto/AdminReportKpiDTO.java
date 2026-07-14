@@ -9,4 +9,8 @@ public record AdminReportKpiDTO(
     long pagosTransferenciaPendientes,
     long pagosEfectivoConfirmados,
     long pagosTransferenciaConfirmados,
-    long trabajosTotales) {}
+    long trabajosTotales,
+    long evaluacionesPendientes,
+    long invitacionesEvaluacionPendientes,
+    long trabajosEnEvaluacion,
+    long trabajosPendientesPrecheck) {}

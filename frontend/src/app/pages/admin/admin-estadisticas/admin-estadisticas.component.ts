@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AdminReport } from '../../../models/notificacion.model';
 import { AdminStatsService } from '../../../servicios/admin-stats.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -11,11 +11,17 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="panel-page">
-      <div class="panel-hero panel-hero--admin">
+      <div class="panel-hero" [class.panel-hero--admin]="!esComite" [class.panel-hero--indigo]="esComite">
         <span class="panel-hero-icon" aria-hidden="true">📊</span>
         <div>
           <h1>Estadísticas y reportes</h1>
-          <p>Vista ejecutiva de inscripciones y trabajos</p>
+          <p>
+            {{
+              esComite
+                ? 'Vista del comité: trabajos, ejes y evaluaciones pendientes'
+                : 'Vista ejecutiva de inscripciones, trabajos e interés por actividad'
+            }}
+          </p>
         </div>
       </div>
 
@@ -48,9 +54,57 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
             <span class="stat-label">Trabajos totales</span>
             <span class="stat-value">{{ reporte.kpi.trabajosTotales }}</span>
           </div>
+          <div class="stat-card stat-card--azul">
+            <span class="stat-label">Dictámenes pendientes</span>
+            <span class="stat-value">{{ reporte.kpi.evaluacionesPendientes }}</span>
+          </div>
+          <div class="stat-card stat-card--amarillo">
+            <span class="stat-label">Invitaciones sin respuesta</span>
+            <span class="stat-value">{{ reporte.kpi.invitacionesEvaluacionPendientes }}</span>
+          </div>
+          <div class="stat-card stat-card--violeta">
+            <span class="stat-label">Trabajos en evaluación</span>
+            <span class="stat-value">{{ reporte.kpi.trabajosEnEvaluacion }}</span>
+          </div>
+          <div class="stat-card stat-card--gris">
+            <span class="stat-label">Pendientes de precheck</span>
+            <span class="stat-value">{{ reporte.kpi.trabajosPendientesPrecheck }}</span>
+          </div>
         </div>
 
         <div class="report-grid">
+          <section class="panel-card">
+            <h2>Trabajos por eje temático</h2>
+            @if (!reporte.trabajosPorEje?.length) {
+              <p class="muted">Sin trabajos cargados.</p>
+            } @else {
+              <ul class="report-list">
+                @for (row of reporte.trabajosPorEje; track row.label) {
+                  <li>
+                    <span>{{ row.label }}</span>
+                    <strong>{{ row.count }} ({{ pct(row.count, reporte.kpi.trabajosTotales) }}%)</strong>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+
+          <section class="panel-card">
+            <h2>Trabajos por estado</h2>
+            @if (!reporte.trabajosPorEstado.length) {
+              <p class="muted">Sin trabajos cargados.</p>
+            } @else {
+              <ul class="report-list">
+                @for (row of reporte.trabajosPorEstado; track row.label) {
+                  <li>
+                    <span>{{ row.label }}</span>
+                    <strong>{{ row.count }}</strong>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+
           <section class="panel-card">
             <h2>Trabajos por tipo</h2>
             @if (!reporte.trabajosPorTipo.length) {
@@ -84,6 +138,42 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           </section>
 
           <section class="panel-card">
+            <h2>Inscripciones por categoría</h2>
+            @if (!reporte.inscripcionesPorCategoria?.length) {
+              <p class="muted">Sin datos de categoría.</p>
+            } @else {
+              <ul class="report-list">
+                @for (row of reporte.inscripcionesPorCategoria; track row.label) {
+                  <li>
+                    <span>{{ row.label }}</span>
+                    <strong
+                      >{{ row.count }} ({{
+                        pct(row.count, reporte.kpi.inscripcionesTotales)
+                      }}%)</strong
+                    >
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+
+          <section class="panel-card">
+            <h2>Inscripciones por provincia</h2>
+            @if (!reporte.inscripcionesPorProvincia?.length) {
+              <p class="muted">Sin datos de provincia.</p>
+            } @else {
+              <ul class="report-list">
+                @for (row of reporte.inscripcionesPorProvincia; track row.label) {
+                  <li>
+                    <span>{{ row.label }}</span>
+                    <strong>{{ row.count }}</strong>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+
+          <section class="panel-card">
             <h2>Inscripciones por institución (top 10)</h2>
             @if (!reporte.inscripcionesPorInstitucionTop10.length) {
               <p class="muted">Sin datos de institución.</p>
@@ -106,7 +196,9 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                 <span>Pendientes (transferencia)</span>
                 <strong>
                   {{ reporte.kpi.pagosTransferenciaPendientes }}
-                  ({{ pct(reporte.kpi.pagosTransferenciaPendientes, reporte.kpi.inscripcionesTotales) }}%)
+                  ({{
+                    pct(reporte.kpi.pagosTransferenciaPendientes, reporte.kpi.inscripcionesTotales)
+                  }}%)
                 </strong>
               </li>
               <li>
@@ -129,12 +221,15 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         </div>
 
         <section class="panel-card">
-          <h2>Trabajos por estado</h2>
-          @if (!reporte.trabajosPorEstado.length) {
-            <p class="muted">Sin trabajos cargados.</p>
+          <h2>Interés por actividad (en agendas personales)</h2>
+          <p class="muted">
+            Cuántas personas agregaron cada actividad a su cronograma personal.
+          </p>
+          @if (!reporte.interesPorActividad?.length) {
+            <p class="muted">Todavía no hay actividades en agendas personales.</p>
           } @else {
             <ul class="report-list">
-              @for (row of reporte.trabajosPorEstado; track row.label) {
+              @for (row of reporte.interesPorActividad; track row.label) {
                 <li>
                   <span>{{ row.label }}</span>
                   <strong>{{ row.count }}</strong>
@@ -144,40 +239,44 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           }
         </section>
 
-        <section class="panel-card">
-          <h2>Inscriptos adeudando pago ({{ reporte.deudores.length }})</h2>
-          @if (!reporte.deudores.length) {
-            <p class="muted">No hay inscriptos con pago pendiente.</p>
-          } @else {
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Email</th>
-                    <th>Método</th>
-                    <th>Categoría</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (d of reporte.deudores; track d.id) {
+        @if (!esComite) {
+          <section class="panel-card">
+            <h2>Inscriptos adeudando pago ({{ reporte.deudores.length }})</h2>
+            @if (!reporte.deudores.length) {
+              <p class="muted">No hay inscriptos con pago pendiente.</p>
+            } @else {
+              <div class="table-wrap">
+                <table>
+                  <thead>
                     <tr>
-                      <td>{{ d.id }}</td>
-                      <td>{{ d.nombre }}</td>
-                      <td>{{ d.email }}</td>
-                      <td>{{ d.metodoPago }}</td>
-                      <td>{{ d.categoria }}</td>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Email</th>
+                      <th>Método</th>
+                      <th>Categoría</th>
                     </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </section>
+                  </thead>
+                  <tbody>
+                    @for (d of reporte.deudores; track d.id) {
+                      <tr>
+                        <td>{{ d.id }}</td>
+                        <td>{{ d.nombre }}</td>
+                        <td>{{ d.email }}</td>
+                        <td>{{ d.metodoPago }}</td>
+                        <td>{{ d.categoria }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+        }
       }
 
-      <p><a routerLink="/admin">← Volver al panel admin</a></p>
+      <p>
+        <a [routerLink]="volverLink">← {{ volverTexto }}</a>
+      </p>
     </div>
   `,
 })
@@ -185,10 +284,23 @@ export class AdminEstadisticasComponent implements OnInit {
   reporte?: AdminReport;
   cargando = true;
   error = '';
+  esComite = false;
 
-  constructor(private statsService: AdminStatsService) {}
+  constructor(
+    private statsService: AdminStatsService,
+    private route: ActivatedRoute
+  ) {}
+
+  get volverLink(): string {
+    return this.esComite ? '/organizador' : '/admin';
+  }
+
+  get volverTexto(): string {
+    return this.esComite ? 'Volver al panel del comité' : 'Volver al panel admin';
+  }
 
   ngOnInit(): void {
+    this.esComite = this.route.snapshot.data['vistaComite'] === true;
     this.statsService.obtenerReporte().subscribe({
       next: (r) => {
         this.reporte = r;
@@ -214,7 +326,7 @@ export class AdminEstadisticasComponent implements OnInit {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reporte-admin-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `reporte-${this.esComite ? 'comite' : 'admin'}-${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
