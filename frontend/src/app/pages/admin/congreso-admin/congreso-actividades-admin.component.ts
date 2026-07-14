@@ -1,23 +1,28 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { CongresoProgramaGuiaComponent } from './congreso-programa-guia.component';
 
 /** Hub: crear actividades del programa (mesas, pósters, taller, conferencia). */
 @Component({
   selector: 'app-congreso-actividades-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, CongresoProgramaGuiaComponent],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--admin">
         <span class="panel-hero-icon" aria-hidden="true">🎯</span>
         <div>
-          <h1>Crear actividades</h1>
-          <p>Elegí el tipo de actividad del programa del congreso</p>
+          <h1>Paso 4 · Crear actividades</h1>
+          <p>
+            Elegí el tipo; en cada formulario elegís aula y franja. Después mirá el resultado en
+            Programa.
+          </p>
         </div>
       </div>
 
       <p class="panel-volver"><a routerLink="/admin/congreso">← Volver a Congreso</a></p>
+      <app-congreso-programa-guia [pasoActual]="4" />
 
       <div class="panel-asistente-grid">
         <a routerLink="/admin/mesas-tematicas" class="accion-card">

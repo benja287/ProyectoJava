@@ -10,6 +10,7 @@ import { FranjaHoraria } from '../../../models/franja-horaria.model';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { FranjaHorariaService } from '../../../servicios/franja-horaria.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { CongresoProgramaGuiaComponent } from './congreso-programa-guia.component';
 
 const SNAP_MIN = 15;
 const PX_POR_MIN = 1.35;
@@ -24,18 +25,19 @@ interface HuecoLibre {
 @Component({
   selector: 'app-congreso-franjas-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, CongresoProgramaGuiaComponent],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--admin">
         <span class="panel-hero-icon" aria-hidden="true">⏱</span>
         <div>
-          <h1>Franjas horarias</h1>
+          <h1>Paso 2 · Franjas horarias</h1>
           <p>Definí la jornada y creá bloques arrastrando sobre el tiempo libre</p>
         </div>
       </div>
 
       <p class="panel-volver"><a routerLink="/admin/congreso">← Volver a Congreso</a></p>
+      <app-congreso-programa-guia [pasoActual]="2" />
 
       @if (feedback) {
         <p [class]="feedbackOk ? 'ok' : 'error'">{{ feedback }}</p>

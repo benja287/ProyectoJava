@@ -5,22 +5,25 @@ import { CongresoConfig } from '../../../models/congreso-config.model';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronograma-congreso-admin.component';
+import { CongresoProgramaGuiaComponent } from './congreso-programa-guia.component';
 
 @Component({
   selector: 'app-congreso-programa-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink, CronogramaCongresoAdminComponent],
+  imports: [CommonModule, RouterLink, CronogramaCongresoAdminComponent, CongresoProgramaGuiaComponent],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--admin">
         <span class="panel-hero-icon" aria-hidden="true">🗓</span>
         <div>
           <h1>Programa</h1>
-          <p>Publicación y cronograma de actividades</p>
+          <p>Se refleja lo que vas creando: publicación y cronograma</p>
         </div>
       </div>
 
       <p class="panel-volver"><a routerLink="/admin/congreso">← Volver a Congreso</a></p>
+      <!-- pasoActual 5 = todos los pasos hechos; links siguen yendo a 1–4 -->
+      <app-congreso-programa-guia [pasoActual]="5" />
 
       @if (error) {
         <p class="error">{{ error }}</p>

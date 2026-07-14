@@ -5,22 +5,24 @@ import { Aula } from '../../../models/aula.model';
 import { AulaService } from '../../../servicios/aula.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { urlMapaAulaCoords } from '../../../utils/aula-mapa.util';
+import { CongresoProgramaGuiaComponent } from './congreso-programa-guia.component';
 
 @Component({
   selector: 'app-congreso-aulas-admin',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, CongresoProgramaGuiaComponent],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--admin">
         <span class="panel-hero-icon" aria-hidden="true">📍</span>
         <div>
-          <h1>Aulas</h1>
+          <h1>Paso 3 · Aulas</h1>
           <p>Recursos físicos del evento</p>
         </div>
       </div>
 
       <p class="panel-volver"><a routerLink="/admin/congreso">← Volver a Congreso</a></p>
+      <app-congreso-programa-guia [pasoActual]="3" />
 
       @if (feedback) {
         <p [class]="feedbackOk ? 'ok' : 'error'">{{ feedback }}</p>

@@ -10,22 +10,24 @@ import {
   AulaMapaPunto,
 } from '../../../components/aula-mapa/sede-mapa.component';
 import { centroDesdeConfig } from '../../../constants/sede-mapa';
+import { CongresoProgramaGuiaComponent } from './congreso-programa-guia.component';
 
 @Component({
   selector: 'app-congreso-datos-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, SedeMapaComponent],
+  imports: [CommonModule, FormsModule, RouterLink, SedeMapaComponent, CongresoProgramaGuiaComponent],
   template: `
     <div class="panel-page">
       <div class="panel-hero panel-hero--admin">
         <span class="panel-hero-icon" aria-hidden="true">🏛</span>
         <div>
-          <h1>Datos del congreso</h1>
+          <h1>Paso 1 · Datos del congreso</h1>
           <p>Nombre, edición, sede y ubicación en el mapa</p>
         </div>
       </div>
 
       <p class="panel-volver"><a routerLink="/admin/congreso">← Volver a Congreso</a></p>
+      <app-congreso-programa-guia [pasoActual]="1" />
 
       <section class="panel-card panel-card--indigo">
         <h2>Datos del congreso</h2>
