@@ -13,6 +13,9 @@ import {
   fechaClaveActividad,
   horaActividad,
 } from '../../../utils/fecha.util';
+import { Aula } from '../../../models/aula.model';
+import { AulaService } from '../../../servicios/aula.service';
+import { AulaUbicacionLinkComponent } from '../../../components/aula-mapa/aula-ubicacion-link.component';
 
 const ETIQUETAS_TIPO: Record<string, string> = {
   MESA_TEMATICA: 'Mesa temática',
@@ -33,7 +36,7 @@ const ORDEN_TIPO: Record<string, number> = {
 @Component({
   selector: 'app-cronograma-participante',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AulaUbicacionLinkComponent],
   template: `
     <div class="agenda-page">
       <header class="agenda-hero">
@@ -87,8 +90,12 @@ const ORDEN_TIPO: Record<string, number> = {
                           <h4>{{ tituloActividad(a) }}</h4>
                           <div class="agenda-card-meta">
                             <span>🕐 {{ horario(a) }}</span>
-                            @if (a.sala) {
-                              <span>📍 {{ a.sala }}</span>
+                            @if (a.sala || a.aulaId) {
+                              <app-aula-ubicacion-link
+                                [aula]="aulaDe(a)"
+                                [aulaId]="a.aulaId ?? null"
+                                [sala]="a.sala || ''"
+                              />
                             }
                           </div>
                         </div>
@@ -127,8 +134,12 @@ const ORDEN_TIPO: Record<string, number> = {
                           <h4>{{ tituloActividad(a) }}</h4>
                           <div class="agenda-card-meta">
                             <span>🕐 {{ horario(a) }}</span>
-                            @if (a.sala) {
-                              <span>📍 {{ a.sala }}</span>
+                            @if (a.sala || a.aulaId) {
+                              <app-aula-ubicacion-link
+                                [aula]="aulaDe(a)"
+                                [aulaId]="a.aulaId ?? null"
+                                [sala]="a.sala || ''"
+                              />
                             }
                           </div>
                         </div>
@@ -155,6 +166,7 @@ const ORDEN_TIPO: Record<string, number> = {
 export class CronogramaParticipanteComponent implements OnInit {
   cronograma?: Cronograma;
   todasActividades: Actividad[] = [];
+  aulasPorId = new Map<number, Aula>();
   programaPublicado = false;
   cargando = true;
   error = '';
@@ -193,6 +205,7 @@ export class CronogramaParticipanteComponent implements OnInit {
     private loginService: LoginService,
     private cronogramaService: CronogramaService,
     private actividadService: ActividadService,
+    private aulaService: AulaService,
     private congresoConfigService: CongresoConfigService,
     private route: ActivatedRoute
   ) {}
@@ -211,6 +224,13 @@ export class CronogramaParticipanteComponent implements OnInit {
       this.cargando = false;
       return;
     }
+
+    this.aulaService.listarActivas().subscribe({
+      next: (items) => {
+        this.aulasPorId = new Map(items.filter((a) => a.id != null).map((a) => [a.id!, a]));
+      },
+      error: () => (this.aulasPorId = new Map()),
+    });
 
     this.congresoConfigService.obtener().subscribe({
       next: (config) => {
@@ -274,6 +294,13 @@ export class CronogramaParticipanteComponent implements OnInit {
     const hi = horaActividad(a.inicio);
     const hf = horaActividad(a.fin);
     return hf && hf !== '—' && hf !== hi ? `${hi} – ${hf}` : hi;
+  }
+
+  aulaDe(a: Actividad): Aula | null {
+    if (a.aulaId == null) {
+      return null;
+    }
+    return this.aulasPorId.get(a.aulaId) ?? null;
   }
 
   agregar(actividad: Actividad): void {

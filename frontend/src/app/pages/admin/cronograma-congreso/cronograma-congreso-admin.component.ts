@@ -2,10 +2,13 @@ import { Component, EventEmitter, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActividadCronograma } from '../../../models/actividad.model';
+import { Aula } from '../../../models/aula.model';
 import { MODALIDAD_LABELS } from '../../../constants/ejes-tematicos';
 import { ActividadService } from '../../../servicios/actividad.service';
+import { AulaService } from '../../../servicios/aula.service';
 import { formatFechaActividad } from '../../../utils/fecha.util';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { AulaUbicacionLinkComponent } from '../../../components/aula-mapa/aula-ubicacion-link.component';
 
 const ETIQUETAS_TIPO: Record<string, string> = {
   MESA_TEMATICA: 'Mesa temática',
@@ -28,7 +31,7 @@ type ConfirmDelete = { id: number; titulo: string; tipo: string; conTrabajos: bo
 @Component({
   selector: 'app-cronograma-congreso-admin',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AulaUbicacionLinkComponent],
   template: `
     @if (error) {
       <p class="error">{{ error }}</p>
@@ -58,7 +61,18 @@ type ConfirmDelete = { id: number; titulo: string; tipo: string; conTrabajos: bo
                       {{ a.titulo }}
                     </h4>
                     <p class="muted small cronograma-item-horario">
-                      🕒 {{ hora(a.inicio) }} – {{ hora(a.fin) }} | 📍 {{ a.sala || '—' }}
+                      🕒 {{ hora(a.inicio) }} – {{ hora(a.fin) }}
+                      @if (a.sala || a.aulaId) {
+                        |
+                        <app-aula-ubicacion-link
+                          [aula]="aulaDe(a)"
+                          [aulaId]="a.aulaId ?? null"
+                          [sala]="a.sala || ''"
+                          [modoAdmin]="true"
+                        />
+                      } @else {
+                        | 📍 —
+                      }
                     </p>
                     @if (a.tipoActividad === 'MESA_REDONDA') {
                       <p class="small"><strong>Moderador:</strong> {{ a.moderador || '—' }}</p>
@@ -246,6 +260,7 @@ export class CronogramaCongresoAdminComponent implements OnInit {
   @Output() cambio = new EventEmitter<void>();
 
   actividades: ActividadCronograma[] = [];
+  aulasPorId = new Map<number, Aula>();
   cargando = true;
   error = '';
   feedback = '';
@@ -269,10 +284,26 @@ export class CronogramaCongresoAdminComponent implements OnInit {
     institucion: [''],
   });
 
-  constructor(private actividadService: ActividadService) {}
+  constructor(
+    private actividadService: ActividadService,
+    private aulaService: AulaService
+  ) {}
 
   ngOnInit(): void {
+    this.aulaService.listarAdmin().subscribe({
+      next: (items) => {
+        this.aulasPorId = new Map(items.filter((a) => a.id != null).map((a) => [a.id!, a]));
+      },
+      error: () => (this.aulasPorId = new Map()),
+    });
     this.cargar();
+  }
+
+  aulaDe(a: ActividadCronograma): Aula | null {
+    if (a.aulaId == null) {
+      return null;
+    }
+    return this.aulasPorId.get(a.aulaId) ?? null;
   }
 
   recargar(): void {

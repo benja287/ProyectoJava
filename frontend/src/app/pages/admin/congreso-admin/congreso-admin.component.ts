@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CongresoConfig } from '../../../models/congreso-config.model';
 import { Aula } from '../../../models/aula.model';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
@@ -168,7 +168,7 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
         }
       </section>
 
-      <section class="panel-card">
+      <section class="panel-card" id="seccion-aulas">
         <h2>Aulas</h2>
         <p class="muted">
           Recursos físicos del evento. Al programar actividades se elige un aula; se controlan
@@ -652,6 +652,8 @@ export class CongresoAdminComponent implements OnInit {
 
   private congresoConfigService = inject(CongresoConfigService);
   private aulaService = inject(AulaService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   ngOnInit(): void {
     this.congresoConfigService.obtener().subscribe({
@@ -750,9 +752,45 @@ export class CongresoAdminComponent implements OnInit {
 
   cargarAulas(): void {
     this.aulaService.listarAdmin().subscribe({
-      next: (items) => (this.aulas = items),
+      next: (items) => {
+        this.aulas = items;
+        this.aplicarEditarAulaDesdeQuery();
+      },
       error: () => (this.aulas = []),
     });
+  }
+
+  /** Deep-link desde cronograma: /admin/congreso?editarAula={id} */
+  private aplicarEditarAulaDesdeQuery(): void {
+    const raw = this.route.snapshot.queryParamMap.get('editarAula');
+    if (!raw) {
+      return;
+    }
+    const id = Number(raw);
+    if (!Number.isFinite(id)) {
+      return;
+    }
+    const aula = this.aulas.find((a) => a.id === id);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { editarAula: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    if (!aula) {
+      this.feedbackAulaOk = false;
+      this.feedbackAula = `No se encontró el aula #${id} para editar ubicación.`;
+      return;
+    }
+    this.editarAula(aula);
+    this.feedbackAulaOk = true;
+    this.feedbackAula =
+      aula.latitud != null && aula.longitud != null
+        ? `Editando ubicación de «${aula.nombre}».`
+        : `«${aula.nombre}» sin punto en el mapa — ubicála abajo y guardá.`;
+    setTimeout(() => {
+      document.getElementById('seccion-aulas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
   }
 
   editarAula(a: Aula): void {

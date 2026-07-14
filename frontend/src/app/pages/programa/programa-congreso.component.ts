@@ -13,8 +13,8 @@ import {
   fechaClaveActividad,
   horaActividad,
 } from '../../utils/fecha.util';
-import { urlMapaAula } from '../../utils/aula-mapa.util';
 import { mensajeErrorApi } from '../../utils/api-error.util';
+import { AulaUbicacionLinkComponent } from '../../components/aula-mapa/aula-ubicacion-link.component';
 import { filter, Subscription } from 'rxjs';
 
 const ETIQUETAS_TIPO: Record<string, string> = {
@@ -36,7 +36,7 @@ const ORDEN_TIPO: Record<string, number> = {
 @Component({
   selector: 'app-programa-congreso',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AulaUbicacionLinkComponent],
   template: `
     <section class="programa-page">
       <header class="programa-hero">
@@ -85,14 +85,12 @@ const ORDEN_TIPO: Record<string, number> = {
                   <h3>{{ a.titulo }}</h3>
                   <div class="programa-meta">
                     <span>🕐 {{ horario(a) }}</span>
-                    @if (a.sala) {
-                      <span>
-                        📍 {{ a.sala }}
-                        @if (linkMapaActividad(a); as url) {
-                          ·
-                          <a [href]="url" target="_blank" rel="noopener noreferrer">Ver mapa</a>
-                        }
-                      </span>
+                    @if (a.sala || a.aulaId) {
+                      <app-aula-ubicacion-link
+                        [aula]="aulaDe(a)"
+                        [aulaId]="a.aulaId ?? null"
+                        [sala]="a.sala || ''"
+                      />
                     }
                   </div>
                   @if (a.moderador) {
@@ -168,15 +166,11 @@ export class ProgramaCongresoComponent implements OnInit, OnDestroy {
     this.navSub?.unsubscribe();
   }
 
-  linkMapaActividad(a: Actividad): string | null {
-    const aula = a.aulaId != null ? this.aulasPorId.get(a.aulaId) : undefined;
-    if (aula) {
-      return urlMapaAula(aula);
+  aulaDe(a: Actividad): Aula | null {
+    if (a.aulaId == null) {
+      return null;
     }
-    if (a.sala) {
-      return urlMapaAula({ nombre: a.sala, ubicacion: a.sala });
-    }
-    return null;
+    return this.aulasPorId.get(a.aulaId) ?? null;
   }
 
   get subtituloPrograma(): string {
