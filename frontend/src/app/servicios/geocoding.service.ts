@@ -52,10 +52,11 @@ export class GeocodingService {
   private readonly http = inject(HttpClient);
   private readonly nominatimUrl = 'https://nominatim.openstreetmap.org/search';
   private readonly overpassUrl = 'https://overpass-api.de/api/interpreter';
+  private readonly overpassUrlFallback = 'https://lz4.overpass-api.de/api/interpreter';
 
   /**
-   * Sugerencias al tipear. Cruces tipo "60 y 118" → Overpass;
-   * resto → Nominatim (Photon no indexa bien calles AR).
+   * Sugerencias al tipear. Cruces "calle 120 y 60" → Overpass (sin cascada Nominatim engañosa).
+   * Resto → Nominatim.
    */
   autocompletar(
     consulta: string,
@@ -66,9 +67,10 @@ export class GeocodingService {
       return of([]);
     }
     const cruce = this.parseCruce(q);
-    // Cruce completo (ambos números): precisión Overpass.
-    if (cruce && /\d{1,4}\s*(?:y|&|\/)\s*\d{1,4}/i.test(q)) {
-      return this.buscar(q, { ...opciones, limit: opciones.limit ?? 4 });
+    if (cruce) {
+      return this.buscarCruce(cruce.a, cruce.b, cruce.localidad, opciones.bias ?? null).pipe(
+        map((res) => res.slice(0, opciones.limit ?? 4))
+      );
     }
     return this.buscarNominatim(q, opciones.limit ?? 6, opciones.bias ?? null, q);
   }
@@ -84,18 +86,16 @@ export class GeocodingService {
 
     if (cruce) {
       return this.buscarCruce(cruce.a, cruce.b, cruce.localidad, bias).pipe(
-        switchMap((res) =>
-          res.length
-            ? of(res.slice(0, limit))
-            : this.buscarNominatim(this.consultaCruceNominatim(cruce), limit, bias, q)
-        ),
-        catchError(() =>
-          this.buscarNominatim(this.consultaCruceNominatim(cruce), limit, bias, q)
-        )
+        map((res) => res.slice(0, limit))
       );
     }
 
     return this.buscarNominatim(q, limit, bias, q);
+  }
+
+  /** True si la consulta ya tiene forma de cruce (ambos números). */
+  esCruce(consulta: string): boolean {
+    return this.parseCruce(consulta.trim()) != null;
   }
 
   private buscarCruce(
@@ -104,10 +104,70 @@ export class GeocodingService {
     localidad: string,
     bias: LatLng | null
   ): Observable<GeocodeResultado[]> {
-    const center = bias ?? SEDE_MAPA.defaultCenter;
-    const radio = 14000;
+    const centros = this.centrosParaCruce(localidad, bias);
+    // Primero nodos compartidos (rápido); si falla, geometría.
+    return this.consultarCruceNodos(a, b, centros[0]).pipe(
+      switchMap((res) => {
+        const parsed = this.resolverCruceDesdeOverpass(res, a, b, localidad, bias);
+        if (parsed.length) {
+          return of(parsed);
+        }
+        return this.consultarCruceGeom(a, b, centros[0]).pipe(
+          map((r2) => this.resolverCruceDesdeOverpass(r2, a, b, localidad, bias)),
+          switchMap((parsed2) => {
+            if (parsed2.length || centros.length < 2) {
+              return of(parsed2);
+            }
+            // Reintento con otro centro (p. ej. sede guardada vs La Plata).
+            return this.consultarCruceNodos(a, b, centros[1]).pipe(
+              switchMap((r3) => {
+                const p3 = this.resolverCruceDesdeOverpass(r3, a, b, localidad, bias);
+                if (p3.length) {
+                  return of(p3);
+                }
+                return this.consultarCruceGeom(a, b, centros[1]).pipe(
+                  map((r4) => this.resolverCruceDesdeOverpass(r4, a, b, localidad, bias))
+                );
+              })
+            );
+          })
+        );
+      }),
+      catchError(() => of([]))
+    );
+  }
+
+  private centrosParaCruce(localidad: string, bias: LatLng | null): LatLng[] {
+    const plata = SEDE_MAPA.defaultCenter;
+    const out: LatLng[] = [plata];
+    if (bias && Math.hypot(bias.lat - plata.lat, bias.lng - plata.lng) > 0.02) {
+      out.push(bias);
+    }
+    // Si pide otra ciudad en el texto, el bias del mapa aún ayuda como 2º intento.
+    void localidad;
+    return out;
+  }
+
+  private consultarCruceNodos(a: string, b: string, center: LatLng): Observable<OverpassResponse> {
+    const radio = 28000;
     const ql = `
-[out:json][timeout:45];
+[out:json][timeout:25];
+(
+  way["name"~"^(Calle|Avenida|Diagonal|Boulevard) ${a}$"]["highway"](around:${radio},${center.lat},${center.lng});
+)->.wa;
+(
+  way["name"~"^(Calle|Avenida|Diagonal|Boulevard) ${b}$"]["highway"](around:${radio},${center.lat},${center.lng});
+)->.wb;
+node(w.wa)(w.wb);
+out;
+`;
+    return this.postOverpass(ql);
+  }
+
+  private consultarCruceGeom(a: string, b: string, center: LatLng): Observable<OverpassResponse> {
+    const radio = 28000;
+    const ql = `
+[out:json][timeout:40];
 (
   way["name"~"^(Calle|Avenida|Diagonal|Boulevard) ${a}$"]["highway"](around:${radio},${center.lat},${center.lng});
 )->.wa;
@@ -121,18 +181,20 @@ out geom;
 way.wb;
 out geom;
 `;
+    return this.postOverpass(ql);
+  }
 
-    return this.http
-      .post<OverpassResponse>(this.overpassUrl, `data=${encodeURIComponent(ql)}`, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Accept: 'application/json',
-        },
-      })
-      .pipe(
-        map((res) => this.resolverCruceDesdeOverpass(res, a, b, localidad, bias)),
-        catchError(() => of([]))
-      );
+  private postOverpass(ql: string): Observable<OverpassResponse> {
+    const body = `data=${encodeURIComponent(ql)}`;
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+    };
+    return this.http.post<OverpassResponse>(this.overpassUrl, body, { headers }).pipe(
+      catchError(() =>
+        this.http.post<OverpassResponse>(this.overpassUrlFallback, body, { headers })
+      )
+    );
   }
 
   private resolverCruceDesdeOverpass(
@@ -303,7 +365,7 @@ out geom;
   private parseCruce(q: string): { a: string; b: string; localidad: string } | null {
     const limpio = q.replace(/\s+/g, ' ').trim();
     const m =
-      /(?:(?:calle|av(?:\.|enida)?|diag(?:\.|onal)?|b(?:lv|oulevard)?\.?)\s*)?(\d{1,4})\s*(?:y|&|\/|,)\s*(?:(?:calle|av(?:\.|enida)?|diag(?:\.|onal)?|b(?:lv|oulevard)?\.?)\s*)?(\d{1,4})\b/i.exec(
+      /(?:(?:calle|av(?:\.|enida)?|diag(?:\.|onal)?|b(?:lv|oulevard)?\.?)\s*)?(\d{1,4})\s*(?:y|&|\/)\s*(?:(?:calle|av(?:\.|enida)?|diag(?:\.|onal)?|b(?:lv|oulevard)?\.?)\s*)?(\d{1,4})\b/i.exec(
         limpio
       );
     if (!m) {
@@ -315,16 +377,6 @@ out geom;
       .replace(/\s+/g, ' ')
       .trim();
     return { a: m[1], b: m[2], localidad: resto };
-  }
-
-  private consultaCruceNominatim(cruce: {
-    a: string;
-    b: string;
-    localidad: string;
-  }): string {
-    const loc = cruce.localidad || 'La Plata, Buenos Aires, Argentina';
-    const conPais = /argentina/i.test(loc) ? loc : `${loc}, Argentina`;
-    return `Calle ${cruce.a} & Calle ${cruce.b}, ${conPais}`;
   }
 
   private buscarNominatim(

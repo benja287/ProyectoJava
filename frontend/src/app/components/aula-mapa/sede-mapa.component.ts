@@ -76,7 +76,9 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
               aria-controls="sede-mapa-sugerencias"
             />
             @if (buscando) {
-              <span class="sede-mapa-search-status" aria-live="polite">Buscando…</span>
+              <span class="sede-mapa-search-status" aria-live="polite">{{
+                buscandoCruce ? 'Buscando cruce…' : 'Buscando…'
+              }}</span>
             }
             @if (mostrarDesplegable) {
               <ul id="sede-mapa-sugerencias" class="sede-mapa-resultados" role="listbox">
@@ -99,7 +101,11 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
               </ul>
             } @else if (sinResultados && consultaBusqueda.trim().length >= 2 && !buscando) {
               <p class="muted small sede-mapa-vacio">
-                Sin sugerencias. Probá otra localidad o un cruce (ej. 60 y 118).
+                @if (esConsultaCruce) {
+                  No encontré ese cruce. Probá «60 y 118» o «calle 120 y calle 60».
+                } @else {
+                  Sin sugerencias. Probá con ciudad (ej. Avenida 60, La Plata) o un cruce.
+                }
               </p>
             }
           </div>
@@ -231,6 +237,8 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   consultaBusqueda = '';
   resultadosBusqueda: GeocodeResultado[] = [];
   buscando = false;
+  buscandoCruce = false;
+  esConsultaCruce = false;
   errorBusqueda = '';
   sinResultados = false;
   indiceActivo = -1;
@@ -272,25 +280,40 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   ngAfterViewInit(): void {
     this.searchSub = this.consulta$
       .pipe(
-        debounceTime(380),
+        debounceTime(450),
         distinctUntilChanged(),
         switchMap((q) => {
           const texto = q.trim();
           if (texto.length < 2) {
             this.buscando = false;
+            this.buscandoCruce = false;
+            this.esConsultaCruce = false;
             this.resultadosBusqueda = [];
             this.sinResultados = false;
             this.indiceActivo = -1;
             return of([] as GeocodeResultado[]);
           }
+          this.esConsultaCruce = this.geocoding.esCruce(texto);
+          this.buscandoCruce = this.esConsultaCruce;
           this.buscando = true;
           this.errorBusqueda = '';
           this.sinResultados = false;
+          // Cruce: limpia resultados viejos (Calle 120 suelta) mientras busca el cruce real.
+          if (this.esConsultaCruce) {
+            this.resultadosBusqueda = [];
+            this.panelAbierto = false;
+          }
           return this.geocoding.autocompletar(texto, { bias: this.biasActual(), limit: 6 }).pipe(
-            tap(() => (this.buscando = false)),
+            tap(() => {
+              this.buscando = false;
+              this.buscandoCruce = false;
+            }),
             catchError(() => {
               this.buscando = false;
-              this.errorBusqueda = 'No se pudieron cargar sugerencias. Reintentá.';
+              this.buscandoCruce = false;
+              this.errorBusqueda = this.esConsultaCruce
+                ? 'No se pudo calcular el cruce. Reintentá en unos segundos.'
+                : 'No se pudieron cargar sugerencias. Reintentá.';
               return of([] as GeocodeResultado[]);
             })
           );
@@ -426,8 +449,29 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.errorBusqueda = '';
     this.indiceActivo = -1;
     this.posicionElegida.emit({ lat: r.lat, lng: r.lng });
-    if (this.map) {
-      this.map.setView([r.lat, r.lng], 17, { animate: false });
+    // Actualización inmediata del pin (no esperar al input del padre).
+    this.aplicarSeleccionLocal({ lat: r.lat, lng: r.lng });
+  }
+
+  private aplicarSeleccionLocal(p: MapaPunto): void {
+    if (!this.map) {
+      return;
+    }
+    this.map.setView([p.lat, p.lng], 17, { animate: false });
+    if (this.seleccionMarker) {
+      this.seleccionMarker.setLatLng([p.lat, p.lng]);
+    } else {
+      this.seleccionMarker = L.marker([p.lat, p.lng], {
+        icon: this.iconSeleccionado,
+        draggable: this.editable,
+        title: 'Ubicación seleccionada',
+      }).addTo(this.map);
+      if (this.editable) {
+        this.seleccionMarker.on('dragend', () => {
+          const ll = this.seleccionMarker!.getLatLng();
+          this.posicionElegida.emit({ lat: ll.lat, lng: ll.lng });
+        });
+      }
     }
   }
 
