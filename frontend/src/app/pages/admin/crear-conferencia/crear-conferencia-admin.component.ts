@@ -100,7 +100,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <button type="submit" class="btn-primary" [disabled]="form.invalid || guardando">
             {{ guardando ? 'Guardando...' : 'Guardar conferencia' }}
           </button>
-          <a routerLink="/admin" class="btn-secundario">Cancelar</a>
+          <a routerLink="/admin/congreso/actividades" class="btn-secundario">Cancelar</a>
         </div>
       </form>
     </section>

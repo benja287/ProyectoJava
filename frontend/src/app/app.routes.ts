@@ -56,6 +56,7 @@ import { CongresoFranjasAdminComponent } from './pages/admin/congreso-admin/cong
 import { CongresoProgramaAdminComponent } from './pages/admin/congreso-admin/congreso-programa-admin.component';
 import { CongresoCertificadosAdminComponent } from './pages/admin/congreso-admin/congreso-certificados-admin.component';
 import { CongresoFechasAdminComponent } from './pages/admin/congreso-admin/congreso-fechas-admin.component';
+import { CongresoActividadesAdminComponent } from './pages/admin/congreso-admin/congreso-actividades-admin.component';
 import { CircularesAdminComponent } from './pages/admin/circulares-admin/circulares-admin.component';
 import { LimpiezaAdminComponent } from './pages/admin/limpieza-admin/limpieza-admin.component';
 import { SolicitudesAutorAdminComponent } from './pages/admin/solicitudes-autor-admin/solicitudes-autor-admin.component';
@@ -169,6 +170,11 @@ export const routes: Routes = [
   {
     path: 'admin/congreso/programa',
     component: CongresoProgramaAdminComponent,
+    canActivate: [admin],
+  },
+  {
+    path: 'admin/congreso/actividades',
+    component: CongresoActividadesAdminComponent,
     canActivate: [admin],
   },
   {

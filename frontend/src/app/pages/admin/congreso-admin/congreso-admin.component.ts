@@ -43,6 +43,13 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
             <p>Jornada del evento y bloques libres por día (arrastrá para crear)</p>
           </div>
         </a>
+        <a routerLink="/admin/congreso/actividades" class="accion-card">
+          <span class="accion-icono accion-icono--azul" aria-hidden="true">🎯</span>
+          <div>
+            <h3>Crear actividades</h3>
+            <p>Mesas, pósters, taller y conferencia</p>
+          </div>
+        </a>
         <a routerLink="/admin/congreso/programa" class="accion-card">
           <span class="accion-icono accion-icono--violeta" aria-hidden="true">🗓</span>
           <div>

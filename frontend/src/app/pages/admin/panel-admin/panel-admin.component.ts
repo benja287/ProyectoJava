@@ -38,15 +38,6 @@ import {
         </div>
       }
 
-      <div class="acciones-rapidas">
-        <a routerLink="/admin/mesas-tematicas" class="accion-rapida accion-rapida--azul">Crear Mesa Temática</a>
-        <a routerLink="/admin/mesas-redondas" class="accion-rapida accion-rapida--violeta">Crear Mesa Redonda</a>
-        <a routerLink="/admin/sesion-posters" class="accion-rapida accion-rapida--naranja">Crear Sesión de Pósters</a>
-        <a routerLink="/admin/crear-taller" class="accion-rapida accion-rapida--teal">Crear Taller</a>
-        <a routerLink="/admin/crear-conferencia" class="accion-rapida accion-rapida--indigo">Crear Conferencia</a>
-        <a routerLink="/asistente/certificado" class="accion-rapida accion-rapida--azul">Generar Certificado</a>
-      </div>
-
       <div class="stats-grid">
         <div class="stat-card stat-card--gris">
           <span class="stat-label">Usuarios</span>
@@ -71,7 +62,7 @@ import {
           <span class="accion-icono accion-icono--indigo" aria-hidden="true">📅</span>
           <div>
             <h3>Congreso</h3>
-            <p>Datos, aulas, programa, certificados y fechas</p>
+            <p>Datos, aulas, actividades, programa, certificados y fechas</p>
           </div>
         </a>
         <a routerLink="/admin/usuarios" class="accion-card">

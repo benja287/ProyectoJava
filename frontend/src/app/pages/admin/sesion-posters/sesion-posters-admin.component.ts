@@ -122,7 +122,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         <button type="button" class="btn-primary" (click)="crear()" [disabled]="guardando || form.invalid">
           {{ guardando ? 'Creando...' : 'Crear Sesión' }}
         </button>
-        <a routerLink="/admin" class="btn-link">Cancelar</a>
+        <a routerLink="/admin/congreso/actividades" class="btn-link">Cancelar</a>
       </div>
     </section>
   `,
