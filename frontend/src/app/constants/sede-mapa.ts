@@ -1,11 +1,12 @@
 /**
- * Rango del mapa de la sede del congreso (~1,5 km de lado).
+ * Rango del mapa de la sede (~500 m de lado, ~1/3 del tamaño anterior).
  * Debe coincidir con MapaSedeUtil del backend.
  */
 export const SEDE_MAPA = {
-  mitadLadoLat: 0.0068,
-  defaultZoom: 16,
-  minZoomAcotado: 14,
+  /** Mitad del lado en grados de latitud (~250 m). */
+  mitadLadoLat: 0.0023,
+  defaultZoom: 17,
+  minZoomAcotado: 15,
   maxZoom: 19,
   defaultZoomLibre: 6,
   minZoomLibre: 3,

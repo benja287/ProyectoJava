@@ -64,6 +64,8 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
               id="sede-mapa-q"
               type="search"
               autocomplete="off"
+              class="sede-mapa-q"
+              [class.sede-mapa-q--busy]="buscando"
               [(ngModel)]="consultaBusqueda"
               [ngModelOptions]="{ standalone: true }"
               placeholder="Ej: Avenida 60, La Plata · o 60 y 118"
@@ -76,9 +78,9 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
               aria-controls="sede-mapa-sugerencias"
             />
             @if (buscando) {
-              <span class="sede-mapa-search-status" aria-live="polite">{{
-                buscandoCruce ? 'Buscando cruce…' : 'Buscando…'
-              }}</span>
+              <span class="sede-mapa-search-pill" aria-live="polite">
+                {{ buscandoCruce ? 'Cruce…' : 'Buscando…' }}
+              </span>
             }
             @if (mostrarDesplegable) {
               <ul id="sede-mapa-sugerencias" class="sede-mapa-resultados" role="listbox">
@@ -102,9 +104,9 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
             } @else if (sinResultados && consultaBusqueda.trim().length >= 2 && !buscando) {
               <p class="muted small sede-mapa-vacio">
                 @if (esConsultaCruce) {
-                  No encontré ese cruce. Probá «60 y 118» o «calle 120 y calle 60».
+                  No encontré ese cruce. Probá «60 y 118».
                 } @else {
-                  Sin sugerencias. Probá con ciudad (ej. Avenida 60, La Plata) o un cruce.
+                  Sin sugerencias. Probá ciudad o un cruce (ej. 60 y 118).
                 }
               </p>
             }
@@ -147,7 +149,7 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
       .sede-mapa-search-box {
         position: relative;
       }
-      .sede-mapa-search-box input {
+      .sede-mapa-q {
         width: 100%;
         box-sizing: border-box;
         padding: 0.55rem 0.75rem;
@@ -155,18 +157,35 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
         border-radius: 8px;
         font: inherit;
       }
-      .sede-mapa-search-box input:focus {
+      .sede-mapa-q--busy {
+        padding-right: 4.75rem;
+      }
+      .sede-mapa-q:focus {
         outline: 2px solid #6a9b6a;
         outline-offset: 1px;
         border-color: #6a9b6a;
       }
-      .sede-mapa-search-status {
+      .sede-mapa-search-pill {
         position: absolute;
-        right: 0.75rem;
-        top: 0.6rem;
-        font-size: 0.8rem;
-        color: #5a6b5a;
+        right: 0.55rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.72rem;
+        line-height: 1;
+        color: #4d6350;
+        background: #e7efe6;
+        border: 1px solid #c5d5c4;
+        border-radius: 999px;
+        padding: 0.28rem 0.55rem;
         pointer-events: none;
+        white-space: nowrap;
+      }
+      .sede-mapa-search-box input {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .sede-mapa-search-status {
+        display: none;
       }
       .sede-mapa-resultados {
         list-style: none;

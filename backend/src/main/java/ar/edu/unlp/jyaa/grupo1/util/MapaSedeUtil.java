@@ -1,13 +1,13 @@
 package ar.edu.unlp.jyaa.grupo1.util;
 
 /**
- * Rango del mapa del congreso: caja ~1,5 km de lado alrededor del centro de la sede.
- * Debe coincidir con el frontend ({@code sede-mapa.ts}).
+ * Rango del mapa del congreso: caja ~500 m de lado alrededor del centro de la sede
+ * (~1/3 del tamaño previo). Debe coincidir con el frontend ({@code sede-mapa.ts}).
  */
 public final class MapaSedeUtil {
 
-  /** Mitad del lado en grados de latitud (~750 m). */
-  public static final double MITAD_LADO_LAT = 0.0068;
+  /** Mitad del lado en grados de latitud (~250 m). */
+  public static final double MITAD_LADO_LAT = 0.0023;
 
   /** Fallback semilla (FCAyF — UNLP, La Plata) si aún no hay ubicación guardada. */
   public static final double DEFAULT_LAT = -34.9112;
