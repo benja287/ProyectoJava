@@ -4,6 +4,7 @@ import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
 import ar.edu.unlp.jyaa.grupo1.modelo.FranjaHoraria;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.persistence.EntityManager;
+import java.time.LocalTime;
 import java.util.List;
 
 @RequestScoped
@@ -50,6 +51,33 @@ public class FranjaHorariaDAOImpl extends AbstractJpaDAO<FranjaHoraria> implemen
               FranjaHoraria.class)
           .setParameter("dia", diaCongreso)
           .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public boolean existeSolapeActivo(
+      int diaCongreso, LocalTime inicio, LocalTime fin, Long excludeId) {
+    EntityManager em = emConsulta();
+    try {
+      String jpql =
+          "SELECT COUNT(f) FROM FranjaHoraria f WHERE f.activa = true"
+              + " AND f.diaCongreso = :dia"
+              + " AND f.horaInicio < :fin AND f.horaFin > :inicio";
+      if (excludeId != null) {
+        jpql += " AND f.id <> :excludeId";
+      }
+      var q =
+          em.createQuery(jpql, Long.class)
+              .setParameter("dia", diaCongreso)
+              .setParameter("inicio", inicio)
+              .setParameter("fin", fin);
+      if (excludeId != null) {
+        q.setParameter("excludeId", excludeId);
+      }
+      Long count = q.getSingleResult();
+      return count != null && count > 0;
     } finally {
       closeLegacy(em);
     }

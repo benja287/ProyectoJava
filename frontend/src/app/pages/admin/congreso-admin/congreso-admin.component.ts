@@ -40,7 +40,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
           <span class="accion-icono accion-icono--naranja" aria-hidden="true">⏱</span>
           <div>
             <h3>Franjas horarias</h3>
-            <p>Bloques de horario por día para programar actividades</p>
+            <p>Jornada del evento y bloques libres por día (arrastrá para crear)</p>
           </div>
         </a>
         <a routerLink="/admin/congreso/programa" class="accion-card">

@@ -3,6 +3,7 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
+import ar.edu.unlp.jyaa.grupo1.modelo.FranjaHoraria;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CongresoConfigUpdateRequest;
 import ar.edu.unlp.jyaa.grupo1.util.FechasCongreso;
@@ -13,6 +14,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
@@ -32,6 +34,7 @@ public class CongresoService {
   public static final String GRUPO_ENVIO = "ENVIO";
   public static final String GRUPO_EVALUACION = "EVALUACION";
   public static final String GRUPO_DATOS = "DATOS";
+  public static final String GRUPO_JORNADA = "JORNADA";
 
   @Inject private NotificacionService notificacionService;
 
@@ -57,11 +60,15 @@ public class CongresoService {
               if (grupo == null) {
                 aplicarUpdateLegacy(congreso, request);
               } else {
-                if (!GRUPO_DATOS.equals(grupo)) {
+                if (!GRUPO_DATOS.equals(grupo) && !GRUPO_JORNADA.equals(grupo)) {
                   exigirMotivo(request.motivo());
                 }
                 switch (grupo) {
                   case GRUPO_DATOS -> aplicarDatos(congreso, request);
+                  case GRUPO_JORNADA -> {
+                    aplicarJornada(congreso, request);
+                    validarFranjasContraJornada(em, congreso);
+                  }
                   case GRUPO_CONGRESO -> {
                     aplicarCongreso(congreso, request);
                     if (!Objects.equals(antes.congresoDesde, congreso.getCongresoDesde())) {
@@ -74,7 +81,7 @@ public class CongresoService {
                   case GRUPO_ENVIO -> aplicarEnvio(congreso, request);
                   case GRUPO_EVALUACION -> aplicarEvaluacion(congreso, request);
                   default -> throw new NegocioException(
-                      "grupo inválido (use CONGRESO, INSCRIPCIONES, ENVIO, EVALUACION o DATOS)");
+                      "grupo inválido (use CONGRESO, INSCRIPCIONES, ENVIO, EVALUACION, DATOS o JORNADA)");
                 }
               }
 
@@ -83,7 +90,7 @@ public class CongresoService {
               return CongresoConfigDTO.from(congreso);
             });
 
-    if (grupo != null && !GRUPO_DATOS.equals(grupo)) {
+    if (grupo != null && !GRUPO_DATOS.equals(grupo) && !GRUPO_JORNADA.equals(grupo)) {
       notificarSoloGrupo(grupo, antes, dto, request.motivo().trim(), actividadesRemapeadas[0]);
     } else if (grupo == null
         && request.envioTrabajosHasta() != null
@@ -131,6 +138,95 @@ public class CongresoService {
       congreso.setSede(sede.isEmpty() ? null : sede);
     }
     aplicarMapaSede(congreso, request.mapaLatitud(), request.mapaLongitud());
+  }
+
+  private void aplicarJornada(Congreso congreso, CongresoConfigUpdateRequest request) {
+    if (request.jornadaInicio() != null) {
+      congreso.setJornadaInicio(parseHoraRequerida(request.jornadaInicio(), "inicio de jornada"));
+    }
+    if (request.jornadaFin() != null) {
+      congreso.setJornadaFin(parseHoraRequerida(request.jornadaFin(), "fin de jornada"));
+    }
+    if (request.jornadaInicioDia1() != null) {
+      congreso.setJornadaInicioDia1(parseHoraOpcionalOverride(request.jornadaInicioDia1()));
+    }
+    if (request.jornadaFinDia1() != null) {
+      congreso.setJornadaFinDia1(parseHoraOpcionalOverride(request.jornadaFinDia1()));
+    }
+    if (request.jornadaInicioDia2() != null) {
+      congreso.setJornadaInicioDia2(parseHoraOpcionalOverride(request.jornadaInicioDia2()));
+    }
+    if (request.jornadaFinDia2() != null) {
+      congreso.setJornadaFinDia2(parseHoraOpcionalOverride(request.jornadaFinDia2()));
+    }
+    if (request.jornadaInicioDia3() != null) {
+      congreso.setJornadaInicioDia3(parseHoraOpcionalOverride(request.jornadaInicioDia3()));
+    }
+    if (request.jornadaFinDia3() != null) {
+      congreso.setJornadaFinDia3(parseHoraOpcionalOverride(request.jornadaFinDia3()));
+    }
+    validarJornadaConfig(congreso);
+  }
+
+  private static void validarJornadaConfig(Congreso c) {
+    LocalTime gi = c.getJornadaInicio() != null ? c.getJornadaInicio() : LocalTime.of(9, 0);
+    LocalTime gf = c.getJornadaFin() != null ? c.getJornadaFin() : LocalTime.of(20, 0);
+    if (!gf.isAfter(gi)) {
+      throw new NegocioException("La jornada global: el fin debe ser posterior al inicio.");
+    }
+    for (int dia = 1; dia <= DIAS_CONGRESO; dia++) {
+      LocalTime ini = c.jornadaInicioEfectiva(dia);
+      LocalTime fin = c.jornadaFinEfectiva(dia);
+      if (!fin.isAfter(ini)) {
+        throw new NegocioException(
+            "Día " + dia + ": el fin de la jornada debe ser posterior al inicio.");
+      }
+    }
+  }
+
+  private static void validarFranjasContraJornada(EntityManager em, Congreso c) {
+    List<FranjaHoraria> franjas =
+        em.createQuery(
+                "SELECT f FROM FranjaHoraria f WHERE f.activa = true", FranjaHoraria.class)
+            .getResultList();
+    for (FranjaHoraria f : franjas) {
+      LocalTime iniJ = c.jornadaInicioEfectiva(f.getDiaCongreso());
+      LocalTime finJ = c.jornadaFinEfectiva(f.getDiaCongreso());
+      if (f.getHoraInicio().isBefore(iniJ) || f.getHoraFin().isAfter(finJ)) {
+        throw new NegocioException(
+            "Hay franjas activas fuera de la jornada del día "
+                + f.getDiaCongreso()
+                + " ("
+                + formatearHora(iniJ)
+                + "–"
+                + formatearHora(finJ)
+                + "). Ajustá o desactivá esas franjas antes de achicar la jornada.");
+      }
+    }
+  }
+
+  private static LocalTime parseHoraRequerida(String raw, String etiqueta) {
+    if (raw == null || raw.isBlank()) {
+      throw new NegocioException("Indicá la " + etiqueta + " (HH:mm).");
+    }
+    try {
+      String v = raw.trim();
+      return v.length() >= 5 ? LocalTime.parse(v.substring(0, 5)) : LocalTime.parse(v);
+    } catch (DateTimeParseException e) {
+      throw new NegocioException("Formato de " + etiqueta + " inválido (usá HH:mm).");
+    }
+  }
+
+  /** Vacío → limpia override; valor → parsea. */
+  private static LocalTime parseHoraOpcionalOverride(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return null;
+    }
+    return parseHoraRequerida(raw, "hora de jornada");
+  }
+
+  private static String formatearHora(LocalTime t) {
+    return String.format("%02d:%02d", t.getHour(), t.getMinute());
   }
 
   private static void aplicarMapaSede(Congreso congreso, Double latitud, Double longitud) {
@@ -413,6 +509,8 @@ public class CongresoService {
     congreso.setSede("La Plata");
     congreso.setMapaLatitud(MapaSedeUtil.DEFAULT_LAT);
     congreso.setMapaLongitud(MapaSedeUtil.DEFAULT_LNG);
+    congreso.setJornadaInicio(LocalTime.of(9, 0));
+    congreso.setJornadaFin(LocalTime.of(20, 0));
     em.persist(congreso);
     em.flush();
     return congreso;

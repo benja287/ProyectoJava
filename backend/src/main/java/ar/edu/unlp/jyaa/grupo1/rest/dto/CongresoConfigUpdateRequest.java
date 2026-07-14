@@ -12,8 +12,8 @@ public record CongresoConfigUpdateRequest(
     /** Motivo obligatorio al cambiar ventanas (se incluye en la notificación). */
     String motivo,
     /**
-     * Independiza cada guardado: CONGRESO | INSCRIPCIONES | ENVIO | EVALUACION | DATOS. Null =
-     * updates legacy (programa, certificados o deadline de envío del comité).
+     * Independiza cada guardado: CONGRESO | INSCRIPCIONES | ENVIO | EVALUACION | DATOS | JORNADA.
+     * Null = updates legacy (programa, certificados o deadline de envío del comité).
      */
     String grupo,
     String nombre,
@@ -21,4 +21,14 @@ public record CongresoConfigUpdateRequest(
     String sede,
     /** Centro del mapa de la sede (solo con grupo DATOS). */
     Double mapaLatitud,
-    Double mapaLongitud) {}
+    Double mapaLongitud,
+    /** Jornada global HH:mm (grupo JORNADA). */
+    String jornadaInicio,
+    String jornadaFin,
+    /** Override por día; string vacío limpia el override. */
+    String jornadaInicioDia1,
+    String jornadaFinDia1,
+    String jornadaInicioDia2,
+    String jornadaFinDia2,
+    String jornadaInicioDia3,
+    String jornadaFinDia3) {}

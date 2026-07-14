@@ -31,6 +31,7 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarAulaCoordenadas);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresoMapaUbicacion);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarFranjasHorarias);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresoJornadaYLimpiarSeedFranjas);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -849,31 +850,68 @@ public final class SchemaMigration {
     } else {
       log.info("Tabla franjas_horarias ya existe");
     }
-    seedFranjasPorDefectoSiVacio(em);
+    // Sin seed: el admin/comité crea franjas sobre la jornada configurada.
   }
 
-  private static void seedFranjasPorDefectoSiVacio(EntityManager em) {
-    Number count =
-        (Number) em.createNativeQuery("SELECT COUNT(*) FROM franjas_horarias").getSingleResult();
-    if (count != null && count.longValue() > 0) {
-      return;
-    }
-    String[] etiquetas = {"Mañana", "Mediodía", "Tarde"};
-    String[] inicios = {"09:00:00", "11:00:00", "14:00:00"};
-    String[] fines = {"11:00:00", "13:00:00", "16:00:00"};
-    for (int dia = 1; dia <= 3; dia++) {
-      for (int i = 0; i < etiquetas.length; i++) {
+  /**
+   * APPEND — jornada de actividades (global + override por día) y limpieza del seed de franjas.
+   * Solo borra franjas la primera vez que se agregan las columnas de jornada.
+   */
+  private static void migrarCongresoJornadaYLimpiarSeedFranjas(EntityManager em) {
+    boolean primeraVez = leerTipoColumna(em, "congresos", "jornada_inicio") == null;
+    agregarColumnaSiFalta(
+        em, "congresos", "jornada_inicio", "ALTER TABLE congresos ADD COLUMN jornada_inicio TIME NULL");
+    agregarColumnaSiFalta(
+        em, "congresos", "jornada_fin", "ALTER TABLE congresos ADD COLUMN jornada_fin TIME NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "jornada_inicio_dia1",
+        "ALTER TABLE congresos ADD COLUMN jornada_inicio_dia1 TIME NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "jornada_fin_dia1",
+        "ALTER TABLE congresos ADD COLUMN jornada_fin_dia1 TIME NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "jornada_inicio_dia2",
+        "ALTER TABLE congresos ADD COLUMN jornada_inicio_dia2 TIME NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "jornada_fin_dia2",
+        "ALTER TABLE congresos ADD COLUMN jornada_fin_dia2 TIME NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "jornada_inicio_dia3",
+        "ALTER TABLE congresos ADD COLUMN jornada_inicio_dia3 TIME NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "jornada_fin_dia3",
+        "ALTER TABLE congresos ADD COLUMN jornada_fin_dia3 TIME NULL");
+
+    int defaults =
         em.createNativeQuery(
-                "INSERT INTO franjas_horarias (dia_congreso, etiqueta, hora_inicio, hora_fin, activa)"
-                    + " VALUES (:dia, :etiqueta, :inicio, :fin, 1)")
-            .setParameter("dia", dia)
-            .setParameter("etiqueta", etiquetas[i])
-            .setParameter("inicio", inicios[i])
-            .setParameter("fin", fines[i])
+                "UPDATE congresos SET jornada_inicio = '09:00:00'"
+                    + " WHERE jornada_inicio IS NULL")
             .executeUpdate();
-      }
+    em.createNativeQuery(
+            "UPDATE congresos SET jornada_fin = '20:00:00' WHERE jornada_fin IS NULL")
+        .executeUpdate();
+    if (defaults > 0) {
+      log.info("Jornada global por defecto 09:00–20:00 aplicada a {} congreso(s)", defaults);
     }
-    log.info("Franjas horarias por defecto insertadas (3 días × 3 franjas)");
+
+    if (primeraVez && tablaExiste(em, "franjas_horarias")) {
+      int borradas = em.createNativeQuery("DELETE FROM franjas_horarias").executeUpdate();
+      log.info(
+          "Eliminadas {} franjas (seed/demo) al introducir jornada configurable sin valores por defecto",
+          borradas);
+    }
   }
 
   private static void agregarColumnaSiFalta(

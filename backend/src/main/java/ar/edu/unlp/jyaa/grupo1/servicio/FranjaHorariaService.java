@@ -1,6 +1,8 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
+import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.FranjaHorariaDAO;
+import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.FranjaHoraria;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.FranjaHorariaRequest;
 import ar.edu.unlp.jyaa.grupo1.util.FechasCongreso;
@@ -15,6 +17,7 @@ import java.util.List;
 public class FranjaHorariaService {
 
   @Inject private FranjaHorariaDAO franjaHorariaDAO;
+  @Inject private CongresoDAO congresoDAO;
 
   public List<FranjaHorariaDTO> listarTodas() {
     return franjaHorariaDAO.listarTodas().stream().map(FranjaHorariaDTO::from).toList();
@@ -77,6 +80,27 @@ public class FranjaHorariaService {
     if (!fin.isAfter(inicio)) {
       throw new NegocioException("La hora de fin debe ser posterior a la de inicio");
     }
+
+    Congreso congreso = congresoDAO.obtenerPrincipal();
+    LocalTime jIni = congreso.jornadaInicioEfectiva(request.diaCongreso());
+    LocalTime jFin = congreso.jornadaFinEfectiva(request.diaCongreso());
+    if (inicio.isBefore(jIni) || fin.isAfter(jFin)) {
+      throw new NegocioException(
+          "La franja debe estar dentro de la jornada del día "
+              + request.diaCongreso()
+              + " ("
+              + formatear(jIni)
+              + "–"
+              + formatear(jFin)
+              + ")");
+    }
+
+    Long excludeId = alta ? null : f.getId();
+    if (franjaHorariaDAO.existeSolapeActivo(request.diaCongreso(), inicio, fin, excludeId)) {
+      throw new NegocioException(
+          "Ya hay una franja activa que se solapa en el día " + request.diaCongreso());
+    }
+
     f.setDiaCongreso(request.diaCongreso());
     f.setEtiqueta(
         request.etiqueta() == null || request.etiqueta().isBlank()
@@ -91,14 +115,18 @@ public class FranjaHorariaService {
     }
   }
 
+  private static String formatear(LocalTime t) {
+    return String.format("%02d:%02d", t.getHour(), t.getMinute());
+  }
+
   private static LocalTime parseHora(String valor, String etiquetaCampo) {
     if (valor == null || valor.isBlank()) {
       throw new NegocioException("Indicá la " + etiquetaCampo);
     }
     try {
       String v = valor.trim();
-      if (v.length() == 5) {
-        return LocalTime.parse(v);
+      if (v.length() >= 5) {
+        return LocalTime.parse(v.substring(0, 5));
       }
       return LocalTime.parse(v);
     } catch (DateTimeParseException e) {

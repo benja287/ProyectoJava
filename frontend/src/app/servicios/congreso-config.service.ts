@@ -10,7 +10,8 @@ export type CongresoConfigGrupo =
   | 'INSCRIPCIONES'
   | 'ENVIO'
   | 'EVALUACION'
-  | 'DATOS';
+  | 'DATOS'
+  | 'JORNADA';
 
 export type CongresoConfigUpdate = Partial<{
   programaPublicado: boolean;
@@ -28,6 +29,14 @@ export type CongresoConfigUpdate = Partial<{
   sede: string | null;
   mapaLatitud: number | null;
   mapaLongitud: number | null;
+  jornadaInicio: string | null;
+  jornadaFin: string | null;
+  jornadaInicioDia1: string | null;
+  jornadaFinDia1: string | null;
+  jornadaInicioDia2: string | null;
+  jornadaFinDia2: string | null;
+  jornadaInicioDia3: string | null;
+  jornadaFinDia3: string | null;
 }>;
 
 @Injectable({ providedIn: 'root' })
