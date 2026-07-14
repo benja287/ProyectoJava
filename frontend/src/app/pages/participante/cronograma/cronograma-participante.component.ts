@@ -272,6 +272,24 @@ export class CronogramaParticipanteComponent implements OnInit {
     return tipo ? ETIQUETAS_TIPO[tipo] ?? tipo : 'Actividad';
   }
 
+  /** "este taller", "esta mesa temática", etc. — para mensajes de error. */
+  etiquetaTipoArticulo(tipo?: string): string {
+    switch (tipo) {
+      case 'MESA_TEMATICA':
+        return 'esta mesa temática';
+      case 'MESA_REDONDA':
+        return 'esta mesa redonda';
+      case 'POSTER':
+        return 'esta sesión de pósters';
+      case 'TALLER':
+        return 'este taller';
+      case 'CONFERENCIA':
+        return 'esta conferencia';
+      default:
+        return 'esta actividad';
+    }
+  }
+
   claseTipo(tipo?: string): string {
     const map: Record<string, string> = {
       MESA_TEMATICA: 'agenda-card--mesa',
@@ -318,7 +336,10 @@ export class CronogramaParticipanteComponent implements OnInit {
       },
       error: (err) => {
         this.procesandoAgregarId = undefined;
-        this.error = mensajeErrorApi(err, 'No se pudo agregar la actividad.');
+        this.error = mensajeErrorApi(
+          err,
+          `No se pudo agendar ${this.etiquetaTipoArticulo(actividad.tipoActividad)}.`
+        );
       },
     });
   }

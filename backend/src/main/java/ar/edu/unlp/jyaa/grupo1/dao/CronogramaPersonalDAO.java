@@ -6,4 +6,7 @@ import java.util.Optional;
 public interface CronogramaPersonalDAO extends GenericDAO<CronogramaPersonal> {
 
   Optional<CronogramaPersonal> buscarPorUsuarioId(Long usuarioId);
+
+  /** Cuántas agendas personales incluyen esta actividad (asistentes agendados). */
+  long contarAgendasConActividad(Long actividadId);
 }

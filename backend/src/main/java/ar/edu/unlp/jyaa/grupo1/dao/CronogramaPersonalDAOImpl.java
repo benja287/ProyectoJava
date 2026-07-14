@@ -45,6 +45,23 @@ public class CronogramaPersonalDAOImpl extends AbstractJpaDAO<CronogramaPersonal
     }
   }
 
+  @Override
+  public long contarAgendasConActividad(Long actividadId) {
+    EntityManager em = emConsulta();
+    try {
+      Long count =
+          em.createQuery(
+                  "SELECT COUNT(c) FROM CronogramaPersonal c JOIN c.actividades a"
+                      + " WHERE a.id = :actividadId",
+                  Long.class)
+              .setParameter("actividadId", actividadId)
+              .getSingleResult();
+      return count != null ? count : 0L;
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
   private EntityManager emConsulta() {
     EntityManager cdi = getEntityManager();
     return cdi != null ? cdi : JpaUtil.createEntityManager();
