@@ -37,10 +37,7 @@ export function aulaTieneCoords(aula: Pick<Aula, 'latitud' | 'longitud'> | null 
   return aula?.latitud != null && aula?.longitud != null;
 }
 
-/** Deep-link admin para editar ubicación de un aula. */
-export function rutaEditarAulaAdmin(aulaId: number): {
-  path: string;
-  queryParams: { editarAula: number };
-} {
-  return { path: '/admin/congreso/aulas', queryParams: { editarAula: aulaId } };
+/** Deep-link admin para editar un aula (formulario). */
+export function rutaEditarAulaAdmin(aulaId: number): string {
+  return `/admin/congreso/aulas/${aulaId}`;
 }

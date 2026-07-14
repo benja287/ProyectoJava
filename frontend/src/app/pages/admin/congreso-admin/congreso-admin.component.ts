@@ -66,13 +66,14 @@ export class CongresoAdminComponent implements OnInit {
   private router = inject(Router);
 
   ngOnInit(): void {
-    // Compat: ?editarAula=id en el hub → pantalla de aulas
+    // Compat: ?editarAula=id → formulario de esa aula
     const editarAula = this.route.snapshot.queryParamMap.get('editarAula');
     if (editarAula) {
-      void this.router.navigate(['/admin/congreso/aulas'], {
-        queryParams: { editarAula },
-        replaceUrl: true,
-      });
+      const id = Number(editarAula);
+      void this.router.navigate(
+        Number.isFinite(id) ? ['/admin/congreso/aulas', id] : ['/admin/congreso/aulas'],
+        { replaceUrl: true }
+      );
     }
   }
 }

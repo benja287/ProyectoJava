@@ -7,7 +7,7 @@ import { aulaTieneCoords, rutaEditarAulaAdmin, urlMapaAulaCoords } from '../../u
 /**
  * Pin de ubicación ligado a un aula/actividad.
  * - Con coords: abre OSM.
- * - Sin coords + admin: avisa e invita a editar esa aula en /admin/congreso/aulas.
+ * - Sin coords + admin: avisa e invita a editar esa aula en /admin/congreso/aulas/:id.
  * - Sin coords + público: solo texto (sin link engañoso).
  */
 @Component({
@@ -30,8 +30,7 @@ import { aulaTieneCoords, rutaEditarAulaAdmin, urlMapaAulaCoords } from '../../u
         } @else if (modoAdmin && aulaId != null) {
           <a
             class="aula-ubicacion-pin aula-ubicacion-pin--faltante"
-            [routerLink]="rutaAdmin.path"
-            [queryParams]="rutaAdmin.queryParams"
+            [routerLink]="rutaAdmin"
             (click)="avisarSinMapa($event)"
             title="Sin punto en el mapa — cargar ubicación del aula"
             [attr.aria-label]="'Cargar ubicación del aula ' + etiqueta"
@@ -101,7 +100,7 @@ export class AulaUbicacionLinkComponent {
     return urlMapaAulaCoords(this.aula);
   }
 
-  get rutaAdmin(): { path: string; queryParams: { editarAula: number } } {
+  get rutaAdmin(): string {
     return rutaEditarAulaAdmin(this.aulaId!);
   }
 
@@ -112,7 +111,7 @@ export class AulaUbicacionLinkComponent {
   avisarSinMapa(ev: MouseEvent): void {
     const ok = window.confirm(
       `El aula «${this.etiqueta}» no tiene ubicación en el mapa.\n\n` +
-        'Vas a ir a Congreso → Aulas para cargarla. ¿Continuar?'
+        'Vas a ir a Congreso → Aulas → Editar para cargarla. ¿Continuar?'
     );
     if (!ok) {
       ev.preventDefault();

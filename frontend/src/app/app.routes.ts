@@ -51,6 +51,7 @@ import { EmailsAdminComponent } from './pages/admin/emails/emails-admin.componen
 import { CongresoAdminComponent } from './pages/admin/congreso-admin/congreso-admin.component';
 import { CongresoDatosAdminComponent } from './pages/admin/congreso-admin/congreso-datos-admin.component';
 import { CongresoAulasAdminComponent } from './pages/admin/congreso-admin/congreso-aulas-admin.component';
+import { CongresoAulaFormAdminComponent } from './pages/admin/congreso-admin/congreso-aula-form-admin.component';
 import { CongresoProgramaAdminComponent } from './pages/admin/congreso-admin/congreso-programa-admin.component';
 import { CongresoCertificadosAdminComponent } from './pages/admin/congreso-admin/congreso-certificados-admin.component';
 import { CongresoFechasAdminComponent } from './pages/admin/congreso-admin/congreso-fechas-admin.component';
@@ -146,6 +147,16 @@ export const routes: Routes = [
   {
     path: 'admin/congreso/datos',
     component: CongresoDatosAdminComponent,
+    canActivate: [admin],
+  },
+  {
+    path: 'admin/congreso/aulas/nueva',
+    component: CongresoAulaFormAdminComponent,
+    canActivate: [admin],
+  },
+  {
+    path: 'admin/congreso/aulas/:id',
+    component: CongresoAulaFormAdminComponent,
     canActivate: [admin],
   },
   { path: 'admin/congreso/aulas', component: CongresoAulasAdminComponent, canActivate: [admin] },
