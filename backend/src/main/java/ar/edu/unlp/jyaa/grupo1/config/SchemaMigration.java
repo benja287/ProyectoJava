@@ -32,6 +32,7 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresoMapaUbicacion);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarFranjasHorarias);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresoJornadaYLimpiarSeedFranjas);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarVaciarFranjasArranqueLibre);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -912,6 +913,27 @@ public final class SchemaMigration {
           "Eliminadas {} franjas (seed/demo) al introducir jornada configurable sin valores por defecto",
           borradas);
     }
+  }
+
+  /**
+   * APPEND — asegurar timeline en verde (sin franjas precargadas).
+   * Marker propio: Hibernate a veces crea columnas de jornada antes y el delete anterior no corre.
+   */
+  private static void migrarVaciarFranjasArranqueLibre(EntityManager em) {
+    boolean pendiente = leerTipoColumna(em, "congresos", "franjas_arranque_libre") == null;
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "franjas_arranque_libre",
+        "ALTER TABLE congresos ADD COLUMN franjas_arranque_libre TINYINT(1) NOT NULL DEFAULT 0");
+    if (!pendiente || !tablaExiste(em, "franjas_horarias")) {
+      return;
+    }
+    int borradas = em.createNativeQuery("DELETE FROM franjas_horarias").executeUpdate();
+    em.createNativeQuery("UPDATE congresos SET franjas_arranque_libre = 1").executeUpdate();
+    log.info(
+        "Arranque libre: eliminadas {} franjas precargadas; el timeline queda todo disponible",
+        borradas);
   }
 
   private static void agregarColumnaSiFalta(
