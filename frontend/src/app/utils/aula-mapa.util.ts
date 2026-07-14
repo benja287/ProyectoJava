@@ -25,7 +25,7 @@ export function urlMapaAula(aula: Pick<Aula, 'nombre' | 'ubicacion' | 'latitud' 
 
 export function etiquetaMapaAula(aula: Pick<Aula, 'latitud' | 'longitud' | 'ubicacion'>): string {
   if (aula.latitud != null && aula.longitud != null) {
-    return 'Ver en mapa';
+    return 'Ver ubicación en el mapa';
   }
   if (aula.ubicacion?.trim()) {
     return 'Buscar en mapa';
@@ -38,6 +38,9 @@ export function aulaTieneCoords(aula: Pick<Aula, 'latitud' | 'longitud'> | null 
 }
 
 /** Deep-link admin para editar ubicación de un aula. */
-export function rutaEditarAulaAdmin(aulaId: number): { path: string; queryParams: { editarAula: number } } {
-  return { path: '/admin/congreso', queryParams: { editarAula: aulaId } };
+export function rutaEditarAulaAdmin(aulaId: number): {
+  path: string;
+  queryParams: { editarAula: number };
+} {
+  return { path: '/admin/congreso/aulas', queryParams: { editarAula: aulaId } };
 }

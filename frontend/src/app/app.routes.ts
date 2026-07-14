@@ -49,6 +49,11 @@ import { CrearTallerAdminComponent } from './pages/admin/crear-taller/crear-tall
 import { CrearConferenciaAdminComponent } from './pages/admin/crear-conferencia/crear-conferencia-admin.component';
 import { EmailsAdminComponent } from './pages/admin/emails/emails-admin.component';
 import { CongresoAdminComponent } from './pages/admin/congreso-admin/congreso-admin.component';
+import { CongresoDatosAdminComponent } from './pages/admin/congreso-admin/congreso-datos-admin.component';
+import { CongresoAulasAdminComponent } from './pages/admin/congreso-admin/congreso-aulas-admin.component';
+import { CongresoProgramaAdminComponent } from './pages/admin/congreso-admin/congreso-programa-admin.component';
+import { CongresoCertificadosAdminComponent } from './pages/admin/congreso-admin/congreso-certificados-admin.component';
+import { CongresoFechasAdminComponent } from './pages/admin/congreso-admin/congreso-fechas-admin.component';
 import { CircularesAdminComponent } from './pages/admin/circulares-admin/circulares-admin.component';
 import { LimpiezaAdminComponent } from './pages/admin/limpieza-admin/limpieza-admin.component';
 import { SolicitudesAutorAdminComponent } from './pages/admin/solicitudes-autor-admin/solicitudes-autor-admin.component';
@@ -138,6 +143,23 @@ export const routes: Routes = [
   { path: 'admin/trabajos/:id', component: TrabajoDetalleComponent, canActivate: [admin] },
   { path: 'admin/estadisticas', component: AdminEstadisticasComponent, canActivate: [admin] },
   { path: 'admin/emails', component: EmailsAdminComponent, canActivate: [admin] },
+  {
+    path: 'admin/congreso/datos',
+    component: CongresoDatosAdminComponent,
+    canActivate: [admin],
+  },
+  { path: 'admin/congreso/aulas', component: CongresoAulasAdminComponent, canActivate: [admin] },
+  {
+    path: 'admin/congreso/programa',
+    component: CongresoProgramaAdminComponent,
+    canActivate: [admin],
+  },
+  {
+    path: 'admin/congreso/certificados',
+    component: CongresoCertificadosAdminComponent,
+    canActivate: [admin],
+  },
+  { path: 'admin/congreso/fechas', component: CongresoFechasAdminComponent, canActivate: [admin] },
   { path: 'admin/congreso', component: CongresoAdminComponent, canActivate: [admin] },
   { path: 'admin/limpieza', component: LimpiezaAdminComponent, canActivate: [admin] },
   { path: 'admin/solicitudes-autor', component: SolicitudesAutorAdminComponent, canActivate: [admin] },

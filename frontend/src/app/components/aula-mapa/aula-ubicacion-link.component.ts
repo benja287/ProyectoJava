@@ -7,7 +7,7 @@ import { aulaTieneCoords, rutaEditarAulaAdmin, urlMapaAulaCoords } from '../../u
 /**
  * Pin de ubicación ligado a un aula/actividad.
  * - Con coords: abre OSM.
- * - Sin coords + admin: avisa e invita a editar esa aula en /admin/congreso.
+ * - Sin coords + admin: avisa e invita a editar esa aula en /admin/congreso/aulas.
  * - Sin coords + público: solo texto (sin link engañoso).
  */
 @Component({

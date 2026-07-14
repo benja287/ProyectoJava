@@ -60,7 +60,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         @if (!aulas.length) {
           <p class="muted small span-full">
             No hay aulas activas. Crealas en
-            <a routerLink="/admin/congreso">Admin → Congreso → Aulas</a>.
+            <a routerLink="/admin/congreso/aulas">Admin → Congreso → Aulas</a>.
           </p>
         }
         <label>

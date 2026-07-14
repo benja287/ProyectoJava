@@ -71,7 +71,7 @@ import {
           <span class="accion-icono accion-icono--indigo" aria-hidden="true">📅</span>
           <div>
             <h3>Congreso</h3>
-            <p>Programa, fechas, certificados y cronograma</p>
+            <p>Datos, aulas, programa, certificados y fechas</p>
           </div>
         </a>
         <a routerLink="/admin/usuarios" class="accion-card">
