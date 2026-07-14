@@ -12,7 +12,7 @@ import {
   diaCongresoDeFecha,
   etiquetaFranja,
 } from '../../../models/franja-horaria.model';
-import { ActividadService } from '../../../servicios/actividad.service';(si no juega Argentina) 
+import { ActividadService } from '../../../servicios/actividad.service';
 import { AulaService } from '../../../servicios/aula.service';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { FranjaHorariaService } from '../../../servicios/franja-horaria.service';
