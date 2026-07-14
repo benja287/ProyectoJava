@@ -9,7 +9,10 @@ import {
   Output,
   SimpleChanges,
   ViewChild,
+  inject,
 } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import {
   MapaPunto,
@@ -18,6 +21,10 @@ import {
   puntoEnRango,
 } from '../../constants/sede-mapa';
 import { Aula } from '../../models/aula.model';
+import {
+  GeocodeResultado,
+  GeocodingService,
+} from '../../servicios/geocoding.service';
 
 export type AulaMapaPunto = MapaPunto;
 
@@ -34,8 +41,44 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
 @Component({
   selector: 'app-sede-mapa',
   standalone: true,
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="sede-mapa-wrap">
+      @if (mostrarBusqueda) {
+        <div class="sede-mapa-search">
+          <label class="sede-mapa-search-label">
+            Buscar dirección
+            <span class="muted small"> (calle, intersección, ciudad, provincia)</span>
+          </label>
+          <div class="sede-mapa-search-row">
+            <input
+              type="search"
+              [(ngModel)]="consultaBusqueda"
+              [ngModelOptions]="{ standalone: true }"
+              placeholder="Ej: calle 60 y 121, La Plata"
+              (keyup.enter)="buscarDireccion()"
+              [disabled]="buscando"
+            />
+            <button type="button" class="btn-primary" [disabled]="buscando" (click)="buscarDireccion()">
+              {{ buscando ? 'Buscando…' : 'Buscar' }}
+            </button>
+          </div>
+          @if (errorBusqueda) {
+            <p class="error small" style="margin-top: 0.35rem">{{ errorBusqueda }}</p>
+          }
+          @if (resultadosBusqueda.length) {
+            <ul class="sede-mapa-resultados" role="listbox">
+              @for (r of resultadosBusqueda; track r.etiqueta + r.lat + r.lng) {
+                <li>
+                  <button type="button" class="sede-mapa-resultado" (click)="elegirResultado(r)">
+                    {{ r.etiqueta }}
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
       <div #mapEl class="sede-mapa" role="application" [attr.aria-label]="ariaLabel"></div>
       @if (hint) {
         <p class="muted small sede-mapa-hint">{{ hint }}</p>
@@ -58,6 +101,53 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
       .sede-mapa-hint {
         margin-top: 0.4rem;
       }
+      .sede-mapa-search {
+        margin-bottom: 0.65rem;
+      }
+      .sede-mapa-search-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+      .sede-mapa-search-row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: stretch;
+      }
+      .sede-mapa-search-row input {
+        flex: 1 1 220px;
+        min-width: 0;
+      }
+      .sede-mapa-resultados {
+        list-style: none;
+        margin: 0.4rem 0 0;
+        padding: 0;
+        border: 1px solid #c5d0c0;
+        border-radius: 8px;
+        max-height: 180px;
+        overflow: auto;
+        background: #fff;
+      }
+      .sede-mapa-resultados li + li {
+        border-top: 1px solid #e4ebe2;
+      }
+      .sede-mapa-resultado {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 0.55rem 0.75rem;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+        font: inherit;
+        color: inherit;
+      }
+      .sede-mapa-resultado:hover,
+      .sede-mapa-resultado:focus {
+        background: #eef4ec;
+        outline: none;
+      }
     `,
   ],
 })
@@ -79,9 +169,17 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() ariaLabel = 'Mapa de la sede del congreso';
   /** Punto azul con la geolocalización del navegador (si el usuario autoriza). */
   @Input() mostrarMiUbicacion = false;
+  /** Solo editar ubicación del congreso: caja de búsqueda Nominatim. */
+  @Input() mostrarBusqueda = false;
 
   @Output() posicionElegida = new EventEmitter<MapaPunto>();
 
+  consultaBusqueda = '';
+  resultadosBusqueda: GeocodeResultado[] = [];
+  buscando = false;
+  errorBusqueda = '';
+
+  private readonly geocoding = inject(GeocodingService);
   private map?: L.Map;
   private seleccionMarker?: L.Marker;
   private miUbicacionMarker?: L.CircleMarker;
@@ -126,7 +224,6 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
         changes['centro'].currentValue as MapaPunto | null
       );
 
-    // Solo recrear si cambió el modo o las coords reales (no una nueva referencia del mismo punto).
     if (modoCambio || centroCambio) {
       this.recrearMapa();
       return;
@@ -139,6 +236,19 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
       changes['editable']
     ) {
       this.redibujar();
+      if (
+        changes['seleccion'] &&
+        this.modo === 'libre' &&
+        this.seleccion &&
+        !mismoPunto(
+          changes['seleccion'].previousValue as MapaPunto | null,
+          changes['seleccion'].currentValue as MapaPunto | null
+        )
+      ) {
+        this.map.setView([this.seleccion.lat, this.seleccion.lng], Math.max(this.map.getZoom(), 16), {
+          animate: false,
+        });
+      }
     }
     if (changes['mostrarMiUbicacion'] && this.mostrarMiUbicacion) {
       this.intentarMiUbicacion();
@@ -147,6 +257,43 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyMap();
+  }
+
+  buscarDireccion(): void {
+    if (!this.mostrarBusqueda || this.buscando) {
+      return;
+    }
+    const q = this.consultaBusqueda.trim();
+    this.errorBusqueda = '';
+    this.resultadosBusqueda = [];
+    if (q.length < 3) {
+      this.errorBusqueda = 'Escribí al menos 3 caracteres (ej: calle 60 y 121, La Plata).';
+      return;
+    }
+    this.buscando = true;
+    this.geocoding.buscar(q).subscribe({
+      next: (items) => {
+        this.buscando = false;
+        this.resultadosBusqueda = items;
+        if (!items.length) {
+          this.errorBusqueda = 'No se encontró esa dirección. Probá con más detalle o otra provincia.';
+        }
+      },
+      error: () => {
+        this.buscando = false;
+        this.errorBusqueda = 'No se pudo buscar la dirección. Reintentá en unos segundos.';
+      },
+    });
+  }
+
+  elegirResultado(r: GeocodeResultado): void {
+    this.resultadosBusqueda = [];
+    this.errorBusqueda = '';
+    this.consultaBusqueda = r.etiqueta;
+    this.posicionElegida.emit({ lat: r.lat, lng: r.lng });
+    if (this.map) {
+      this.map.setView([r.lat, r.lng], 17, { animate: false });
+    }
   }
 
   private recrearMapa(): void {
@@ -187,7 +334,6 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   private initMap(): void {
     const el = this.mapEl.nativeElement;
     if (!el || el.clientWidth === 0) {
-      // Contenedor aún sin tamaño: reintentar en el próximo frame.
       this.invalidateTimer = setTimeout(() => this.initMap(), 50);
       return;
     }
