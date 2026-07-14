@@ -18,4 +18,7 @@ public record CongresoConfigUpdateRequest(
     String grupo,
     String nombre,
     String edicion,
-    String sede) {}
+    String sede,
+    /** Centro del mapa de la sede (solo con grupo DATOS). */
+    Double mapaLatitud,
+    Double mapaLongitud) {}

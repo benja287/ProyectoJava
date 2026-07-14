@@ -29,6 +29,7 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasTrabajoEnriquecidas);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarEvaluacionDictamen);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarAulaCoordenadas);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresoMapaUbicacion);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -523,6 +524,27 @@ public final class SchemaMigration {
         em, "aulas", "latitud", "ALTER TABLE aulas ADD COLUMN latitud DOUBLE NULL");
     agregarColumnaSiFalta(
         em, "aulas", "longitud", "ALTER TABLE aulas ADD COLUMN longitud DOUBLE NULL");
+  }
+
+  /**
+   * Centro geográfico de la sede del congreso (rango de aulas derivado en runtime). APPEND —
+   * no pisar migraciones previas. Semilla FCAyF si hay sede sin coords.
+   */
+  private static void migrarCongresoMapaUbicacion(EntityManager em) {
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "mapa_latitud",
+        "ALTER TABLE congresos ADD COLUMN mapa_latitud DOUBLE NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "mapa_longitud",
+        "ALTER TABLE congresos ADD COLUMN mapa_longitud DOUBLE NULL");
+    em.createNativeQuery(
+            "UPDATE congresos SET mapa_latitud = -34.9112, mapa_longitud = -57.9420 "
+                + "WHERE mapa_latitud IS NULL OR mapa_longitud IS NULL")
+        .executeUpdate();
   }
 
   /**

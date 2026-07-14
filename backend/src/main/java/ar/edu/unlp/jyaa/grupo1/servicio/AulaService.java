@@ -1,8 +1,11 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.AulaDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.modelo.Aula;
+import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.AulaRequest;
+import ar.edu.unlp.jyaa.grupo1.util.MapaSedeUtil;
 import ar.edu.unlp.jyaa.grupo1.web.dto.AulaDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -11,17 +14,8 @@ import java.util.List;
 @RequestScoped
 public class AulaService {
 
-  /**
-   * Bounds aproximados del campus FCAyF (UNLP, La Plata) — ~1 km de lado. Deben coincidir con el
-   * frontend ({@code campus-map.ts}).
-   */
-  static final double CAMPUS_LAT_MIN = -34.9185;
-
-  static final double CAMPUS_LAT_MAX = -34.9040;
-  static final double CAMPUS_LNG_MIN = -57.9520;
-  static final double CAMPUS_LNG_MAX = -57.9320;
-
   @Inject private AulaDAO aulaDAO;
+  @Inject private CongresoDAO congresoDAO;
 
   public List<AulaDTO> listarTodas() {
     return aulaDAO.listarTodas().stream().map(AulaDTO::from).toList();
@@ -88,7 +82,7 @@ public class AulaService {
     }
   }
 
-  private static void aplicarCoordenadas(Aula aula, Double latitud, Double longitud) {
+  private void aplicarCoordenadas(Aula aula, Double latitud, Double longitud) {
     if (latitud == null && longitud == null) {
       aula.setLatitud(null);
       aula.setLongitud(null);
@@ -97,12 +91,16 @@ public class AulaService {
     if (latitud == null || longitud == null) {
       throw new NegocioException("Para ubicar el aula en el mapa indicá latitud y longitud.");
     }
-    if (latitud < CAMPUS_LAT_MIN
-        || latitud > CAMPUS_LAT_MAX
-        || longitud < CAMPUS_LNG_MIN
-        || longitud > CAMPUS_LNG_MAX) {
+    Congreso congreso = congresoDAO.obtenerPrincipal();
+    Double centroLat = congreso.getMapaLatitud();
+    Double centroLng = congreso.getMapaLongitud();
+    if (centroLat == null || centroLng == null) {
       throw new NegocioException(
-          "La ubicación del aula debe estar dentro del campus de la FCAyF (mapa acotado).");
+          "Definí primero la ubicación del congreso en el mapa (Datos del congreso).");
+    }
+    if (!MapaSedeUtil.puntoEnRango(latitud, longitud, centroLat, centroLng)) {
+      throw new NegocioException(
+          "La ubicación del aula debe estar dentro del rango del mapa del congreso.");
     }
     aula.setLatitud(latitud);
     aula.setLongitud(longitud);

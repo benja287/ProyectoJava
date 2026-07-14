@@ -2,6 +2,8 @@ export interface CongresoConfig {
   nombre?: string | null;
   edicion?: string | null;
   sede?: string | null;
+  mapaLatitud?: number | null;
+  mapaLongitud?: number | null;
   programaPublicado: boolean;
   certificadosDisponiblesDesde: string | null;
   envioTrabajosHasta?: string | null;

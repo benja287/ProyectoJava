@@ -10,9 +10,10 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { finCongresoDesdeInicio } from '../../../constants/congress-event';
 import { etiquetaMapaAula, urlMapaAula } from '../../../utils/aula-mapa.util';
 import {
-  AulaMapaCampusComponent,
+  SedeMapaComponent,
   AulaMapaPunto,
-} from '../../../components/aula-mapa/aula-mapa-campus.component';
+} from '../../../components/aula-mapa/sede-mapa.component';
+import { centroDesdeConfig } from '../../../constants/sede-mapa';
 import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronograma-congreso-admin.component';
 
 @Component({
@@ -23,7 +24,7 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
     FormsModule,
     RouterLink,
     CronogramaCongresoAdminComponent,
-    AulaMapaCampusComponent,
+    SedeMapaComponent,
   ],
   template: `
     <div class="panel-page">
@@ -91,14 +92,87 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
             {{ feedbackDatos }}
           </p>
         }
+
+        <h3 style="margin-top: 1.25rem">Ubicación en el mapa</h3>
+        <p class="muted small">
+          Definí el punto de la sede. Al verla se aplica un rango alrededor; las aulas solo pueden
+          ubicarse dentro de ese rango.
+        </p>
+        <div class="inline-form-row" style="margin-top: 0.5rem">
+          <button
+            type="button"
+            class="btn-link"
+            [disabled]="!centroSede"
+            (click)="abrirMapaCongreso('ver')"
+          >
+            Ver ubicación del congreso en el mapa
+          </button>
+          <button type="button" class="btn-link" (click)="abrirMapaCongreso('editar')">
+            Editar ubicación
+          </button>
+          @if (mapaCongresoModo) {
+            <button type="button" class="btn-link" (click)="cerrarMapaCongreso()">
+              Cerrar mapa
+            </button>
+          }
+        </div>
+        @if (centroSede) {
+          <p class="muted small" style="margin-top: 0.35rem">
+            Centro guardado: {{ centroSede.lat | number: '1.5-5' }},
+            {{ centroSede.lng | number: '1.5-5' }}
+          </p>
+        } @else {
+          <p class="muted small" style="margin-top: 0.35rem">
+            Todavía no hay coordenadas. Usá «Editar ubicación» y hacé clic en el mapa.
+          </p>
+        }
+
+        @if (mapaCongresoModo === 'ver' && centroSede) {
+          <app-sede-mapa
+            modo="acotado"
+            [centro]="centroSede"
+            [seleccion]="centroSede"
+            [editable]="false"
+            [mostrarMiUbicacion]="true"
+            ariaLabel="Ubicación del congreso (rango acotado)"
+            hint="Vista acotada al rango de la sede. El punto azul es tu ubicación si el navegador la permite."
+          />
+        }
+        @if (mapaCongresoModo === 'editar') {
+          <app-sede-mapa
+            modo="libre"
+            [centro]="centroSede"
+            [seleccion]="borradorUbicacion"
+            [editable]="true"
+            [mostrarMiUbicacion]="true"
+            ariaLabel="Editar ubicación del congreso"
+            hint="Navegá libremente (otra provincia, otra ciudad) y hacé clic o arrastrá el pin. Luego guardá la ubicación."
+            (posicionElegida)="onPosicionCongreso($event)"
+          />
+          <div class="inline-form-row" style="margin-top: 0.5rem">
+            <button
+              type="button"
+              class="btn-primary"
+              [disabled]="!borradorUbicacion || guardandoVentana === 'DATOS'"
+              (click)="guardarUbicacionMapa()"
+            >
+              {{ guardandoVentana === 'DATOS' ? 'Guardando...' : 'Guardar ubicación' }}
+            </button>
+          </div>
+        }
+        @if (feedbackMapa) {
+          <p [class]="feedbackMapaOk ? 'ok' : 'error'" style="margin-top: 0.5rem">
+            {{ feedbackMapa }}
+          </p>
+        }
       </section>
 
       <section class="panel-card">
         <h2>Aulas</h2>
         <p class="muted">
           Recursos físicos del evento. Al programar actividades se elige un aula; se controlan
-          choques de horario en la misma aula. Opcionalmente ubicá cada aula en el mapa del campus
-          FCAyF (clic o arrastre).
+          choques de horario en la misma aula. Opcionalmente ubicá cada aula dentro del rango del
+          mapa de la sede.
         </p>
 
         <div class="form-grid form-grid-wide">
@@ -127,34 +201,45 @@ import { CronogramaCongresoAdminComponent } from '../cronograma-congreso/cronogr
               type="text"
               [(ngModel)]="aulaForm.ubicacion"
               [ngModelOptions]="{ standalone: true }"
-              placeholder="FCAyF — edificio central"
+              placeholder="Edificio central"
             />
           </label>
         </div>
 
         <h3 style="margin-top: 1rem">Ubicación en el mapa</h3>
-        <p class="muted small">
-          @if (aulaSeleccionMapa) {
-            Marcada: {{ aulaSeleccionMapa.lat | number: '1.5-5' }},
-            {{ aulaSeleccionMapa.lng | number: '1.5-5' }}
-          } @else {
-            Sin punto en el mapa. Hacé clic dentro del campus para ubicarlo.
-          }
-        </p>
-        <app-aula-mapa-campus
-          [aulas]="aulas"
-          [excluirAulaId]="aulaEditId"
-          [seleccion]="aulaSeleccionMapa"
-          [editable]="true"
-          (posicionElegida)="onPosicionAula($event)"
-        />
-        <div class="inline-form-row" style="margin-top: 0.5rem">
-          @if (aulaSeleccionMapa) {
-            <button type="button" class="btn-link" (click)="quitarPosicionMapa()">
-              Quitar del mapa
-            </button>
-          }
-        </div>
+        @if (!centroSede) {
+          <p class="muted small">
+            Primero definí la ubicación del congreso en Datos (Editar ubicación).
+          </p>
+        } @else {
+          <p class="muted small">
+            @if (aulaSeleccionMapa) {
+              Marcada: {{ aulaSeleccionMapa.lat | number: '1.5-5' }},
+              {{ aulaSeleccionMapa.lng | number: '1.5-5' }}
+            } @else {
+              Sin punto en el mapa. Hacé clic dentro del rango de la sede.
+            }
+          </p>
+          <app-sede-mapa
+            modo="acotado"
+            [centro]="centroSede"
+            [aulas]="aulas"
+            [excluirAulaId]="aulaEditId"
+            [seleccion]="aulaSeleccionMapa"
+            [editable]="true"
+            [mostrarMiUbicacion]="true"
+            ariaLabel="Mapa de aulas en el rango de la sede"
+            hint="Mapa acotado al rango de la sede del congreso. Clic o arrastre para ubicar el aula."
+            (posicionElegida)="onPosicionAula($event)"
+          />
+          <div class="inline-form-row" style="margin-top: 0.5rem">
+            @if (aulaSeleccionMapa) {
+              <button type="button" class="btn-link" (click)="quitarPosicionMapa()">
+                Quitar del mapa
+              </button>
+            }
+          </div>
+        }
 
         <div class="inline-form-row" style="margin-top: 0.75rem">
           <button
@@ -555,9 +640,18 @@ export class CongresoAdminComponent implements OnInit {
   finalizandoCertificados = false;
   feedbackCertificados = '';
   feedbackCertificadosOk = false;
+  /** null | ver (rango) | editar (libre) */
+  mapaCongresoModo: null | 'ver' | 'editar' = null;
+  borradorUbicacion: AulaMapaPunto | null = null;
+  feedbackMapa = '';
+  feedbackMapaOk = false;
 
   private congresoConfigService = inject(CongresoConfigService);
   private aulaService = inject(AulaService);
+
+  get centroSede(): AulaMapaPunto | null {
+    return centroDesdeConfig(this.config?.mapaLatitud, this.config?.mapaLongitud);
+  }
 
   ngOnInit(): void {
     this.congresoConfigService.obtener().subscribe({
@@ -600,6 +694,56 @@ export class CongresoAdminComponent implements OnInit {
           this.guardandoVentana = '';
           this.feedbackDatosOk = false;
           this.feedbackDatos = mensajeErrorApi(err, 'No se pudieron guardar los datos.');
+        },
+      });
+  }
+
+  abrirMapaCongreso(modo: 'ver' | 'editar'): void {
+    this.feedbackMapa = '';
+    if (modo === 'ver' && !this.centroSede) {
+      this.feedbackMapaOk = false;
+      this.feedbackMapa = 'Todavía no hay ubicación guardada. Usá «Editar ubicación».';
+      return;
+    }
+    this.mapaCongresoModo = modo;
+    this.borradorUbicacion = this.centroSede;
+  }
+
+  cerrarMapaCongreso(): void {
+    this.mapaCongresoModo = null;
+    this.borradorUbicacion = null;
+  }
+
+  onPosicionCongreso(p: AulaMapaPunto): void {
+    this.borradorUbicacion = p;
+  }
+
+  guardarUbicacionMapa(): void {
+    if (this.guardandoVentana || !this.borradorUbicacion) {
+      return;
+    }
+    this.feedbackMapa = '';
+    this.guardandoVentana = 'DATOS';
+    this.congresoConfigService
+      .actualizar({
+        grupo: 'DATOS',
+        mapaLatitud: this.borradorUbicacion.lat,
+        mapaLongitud: this.borradorUbicacion.lng,
+      })
+      .subscribe({
+        next: (c) => {
+          this.config = c;
+          this.aplicarDatosDesdeConfig(c);
+          this.guardandoVentana = '';
+          this.feedbackMapaOk = true;
+          this.feedbackMapa = 'Ubicación del congreso guardada. El rango del mapa se actualizó.';
+          this.mapaCongresoModo = 'ver';
+          this.borradorUbicacion = this.centroSede;
+        },
+        error: (err) => {
+          this.guardandoVentana = '';
+          this.feedbackMapaOk = false;
+          this.feedbackMapa = mensajeErrorApi(err, 'No se pudo guardar la ubicación.');
         },
       });
   }

@@ -23,6 +23,13 @@ public class Congreso implements Serializable {
   @Column(length = 200)
   private String sede;
 
+  /** Centro geográfico de la sede (mapa). El rango de aulas se deriva de este punto. */
+  @Column(name = "mapa_latitud")
+  private Double mapaLatitud;
+
+  @Column(name = "mapa_longitud")
+  private Double mapaLongitud;
+
   @ElementCollection
   @CollectionTable(name = "congreso_etapas", joinColumns = @JoinColumn(name = "congreso_id"))
   private List<EtapaCongreso> etapas = new ArrayList<>();
@@ -83,6 +90,22 @@ public class Congreso implements Serializable {
 
   public void setSede(String sede) {
     this.sede = sede;
+  }
+
+  public Double getMapaLatitud() {
+    return mapaLatitud;
+  }
+
+  public void setMapaLatitud(Double mapaLatitud) {
+    this.mapaLatitud = mapaLatitud;
+  }
+
+  public Double getMapaLongitud() {
+    return mapaLongitud;
+  }
+
+  public void setMapaLongitud(Double mapaLongitud) {
+    this.mapaLongitud = mapaLongitud;
   }
 
   public List<EtapaCongreso> getEtapas() {

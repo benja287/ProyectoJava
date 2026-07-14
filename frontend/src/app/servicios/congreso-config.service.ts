@@ -26,6 +26,8 @@ export type CongresoConfigUpdate = Partial<{
   nombre: string | null;
   edicion: string | null;
   sede: string | null;
+  mapaLatitud: number | null;
+  mapaLongitud: number | null;
 }>;
 
 @Injectable({ providedIn: 'root' })

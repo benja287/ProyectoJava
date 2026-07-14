@@ -6,6 +6,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CongresoConfigUpdateRequest;
 import ar.edu.unlp.jyaa.grupo1.util.FechasCongreso;
+import ar.edu.unlp.jyaa.grupo1.util.MapaSedeUtil;
 import ar.edu.unlp.jyaa.grupo1.web.dto.CongresoConfigDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -129,6 +130,22 @@ public class CongresoService {
       String sede = request.sede().trim();
       congreso.setSede(sede.isEmpty() ? null : sede);
     }
+    aplicarMapaSede(congreso, request.mapaLatitud(), request.mapaLongitud());
+  }
+
+  private static void aplicarMapaSede(Congreso congreso, Double latitud, Double longitud) {
+    if (latitud == null && longitud == null) {
+      return;
+    }
+    if (latitud == null || longitud == null) {
+      throw new NegocioException(
+          "Para ubicar el congreso en el mapa indicá latitud y longitud.");
+    }
+    if (latitud < -90 || latitud > 90 || longitud < -180 || longitud > 180) {
+      throw new NegocioException("Las coordenadas del congreso son inválidas.");
+    }
+    congreso.setMapaLatitud(latitud);
+    congreso.setMapaLongitud(longitud);
   }
 
   private void aplicarCongreso(Congreso congreso, CongresoConfigUpdateRequest request) {
@@ -394,6 +411,8 @@ public class CongresoService {
     congreso.setNombre("Congreso Argentino de Agroecología");
     congreso.setEdicion("V");
     congreso.setSede("La Plata");
+    congreso.setMapaLatitud(MapaSedeUtil.DEFAULT_LAT);
+    congreso.setMapaLongitud(MapaSedeUtil.DEFAULT_LNG);
     em.persist(congreso);
     em.flush();
     return congreso;
