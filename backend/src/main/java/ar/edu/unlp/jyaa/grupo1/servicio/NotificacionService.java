@@ -137,6 +137,41 @@ public class NotificacionService {
     return enviadas;
   }
 
+  /** Notificación in-app + email con plantilla a todos los usuarios (p. ej. circulares). */
+  public int enviarATodosConPlantilla(
+      String nombrePlantilla, Map<String, String> variables, Long excluirUsuarioId) {
+    int enviadas = 0;
+    for (Usuario u : usuarioDAO.listarPaginado(0, 500)) {
+      if (excluirUsuarioId != null && excluirUsuarioId.equals(u.getId())) {
+        continue;
+      }
+      Map<String, String> vars = enriquecerVariables(u, variables);
+      String enlace = enlaceDesdeVars(vars);
+      var contenido = emailService.renderizarPlantilla(nombrePlantilla, vars);
+      if (contenido.isPresent()) {
+        notificacionDAO.alta(
+            crearNotificacion(
+                u,
+                contenido.get().asunto(),
+                contenido.get().cuerpo(),
+                CanalNotificacion.EMAIL,
+                enlace));
+        emailService.enviarConPlantillaEnSegundoPlano(
+            nombrePlantilla, emailDestino(u), vars);
+      } else {
+        notificacionDAO.alta(
+            crearNotificacion(
+                u,
+                "Nueva circular publicada",
+                "Se publicó una circular. Consultala en la sección Circulares.",
+                CanalNotificacion.INTERNO,
+                enlace));
+      }
+      enviadas++;
+    }
+    return enviadas;
+  }
+
   public List<NotificacionDTO> listarPorUsuario(Long usuarioId, int page, int size) {
     int offset = Math.max(0, (page - 1) * size);
     return notificacionDAO.listarPorUsuario(usuarioId, offset, size).stream()
