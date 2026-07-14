@@ -21,6 +21,16 @@ import { Aula } from '../../models/aula.model';
 
 export type AulaMapaPunto = MapaPunto;
 
+function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undefined): boolean {
+  if (a == null && b == null) {
+    return true;
+  }
+  if (a == null || b == null) {
+    return false;
+  }
+  return a.lat === b.lat && a.lng === b.lng;
+}
+
 @Component({
   selector: 'app-sede-mapa',
   standalone: true,
@@ -43,6 +53,7 @@ export type AulaMapaPunto = MapaPunto;
         border-radius: 8px;
         border: 1px solid #c5d0c0;
         z-index: 0;
+        background: #e8eee6;
       }
       .sede-mapa-hint {
         margin-top: 0.4rem;
@@ -77,6 +88,7 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   private otrosLayer = L.layerGroup();
   private ready = false;
   private clickHandler?: (e: L.LeafletMouseEvent) => void;
+  private invalidateTimer?: ReturnType<typeof setTimeout>;
 
   private readonly iconSeleccionado = L.icon({
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -100,13 +112,26 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (!this.ready) {
+    if (!this.ready || !this.map) {
       return;
     }
-    if (changes['modo'] || changes['centro']) {
+
+    const modoCambio =
+      !!changes['modo'] &&
+      changes['modo'].previousValue !== changes['modo'].currentValue;
+    const centroCambio =
+      !!changes['centro'] &&
+      !mismoPunto(
+        changes['centro'].previousValue as MapaPunto | null,
+        changes['centro'].currentValue as MapaPunto | null
+      );
+
+    // Solo recrear si cambió el modo o las coords reales (no una nueva referencia del mismo punto).
+    if (modoCambio || centroCambio) {
       this.recrearMapa();
       return;
     }
+
     if (
       changes['aulas'] ||
       changes['excluirAulaId'] ||
@@ -130,40 +155,65 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private destroyMap(): void {
-    if (this.map && this.clickHandler) {
-      this.map.off('click', this.clickHandler);
+    if (this.invalidateTimer != null) {
+      clearTimeout(this.invalidateTimer);
+      this.invalidateTimer = undefined;
+    }
+    if (this.map) {
+      try {
+        this.map.stop();
+        if (this.clickHandler) {
+          this.map.off('click', this.clickHandler);
+        }
+        this.map.off();
+        this.map.remove();
+      } catch {
+        /* mapa ya inconsistente */
+      }
     }
     this.clickHandler = undefined;
     this.seleccionMarker = undefined;
     this.miUbicacionMarker = undefined;
-    this.map?.remove();
     this.map = undefined;
     this.ready = false;
+
+    const el = this.mapEl?.nativeElement;
+    if (el) {
+      el.innerHTML = '';
+      el.className = 'sede-mapa';
+    }
   }
 
   private initMap(): void {
-    const centroVista =
-      this.seleccion ?? this.centro ?? SEDE_MAPA.defaultCenter;
+    const el = this.mapEl.nativeElement;
+    if (!el || el.clientWidth === 0) {
+      // Contenedor aún sin tamaño: reintentar en el próximo frame.
+      this.invalidateTimer = setTimeout(() => this.initMap(), 50);
+      return;
+    }
+
+    const centroVista = this.seleccion ?? this.centro ?? SEDE_MAPA.defaultCenter;
     const opts: L.MapOptions = {
       maxZoom: SEDE_MAPA.maxZoom,
+      zoomControl: true,
     };
 
     if (this.modo === 'acotado') {
       const centro = this.centro ?? SEDE_MAPA.defaultCenter;
       const b = boundsDesdeCentro(centro);
-      const bounds = L.latLngBounds(
-        [b.sw.lat, b.sw.lng],
-        [b.ne.lat, b.ne.lng]
-      );
+      const bounds = L.latLngBounds([b.sw.lat, b.sw.lng], [b.ne.lat, b.ne.lng]);
       opts.maxBounds = bounds.pad(0.02);
       opts.maxBoundsViscosity = 1;
       opts.minZoom = SEDE_MAPA.minZoomAcotado;
-      this.map = L.map(this.mapEl.nativeElement, opts).fitBounds(bounds, { padding: [12, 12] });
+      this.map = L.map(el, opts);
+      this.map.fitBounds(bounds, { padding: [12, 12], animate: false });
     } else {
       opts.minZoom = SEDE_MAPA.minZoomLibre;
-      this.map = L.map(this.mapEl.nativeElement, opts).setView(
+      this.map = L.map(el, opts);
+      this.map.setView(
         [centroVista.lat, centroVista.lng],
-        this.seleccion || this.centro ? SEDE_MAPA.defaultZoom : SEDE_MAPA.defaultZoomLibre
+        this.seleccion || this.centro ? SEDE_MAPA.defaultZoom : SEDE_MAPA.defaultZoomLibre,
+        { animate: false }
       );
     }
 
@@ -193,7 +243,9 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
     if (this.mostrarMiUbicacion) {
       this.intentarMiUbicacion();
     }
-    setTimeout(() => this.map?.invalidateSize(), 0);
+    this.invalidateTimer = setTimeout(() => {
+      this.map?.invalidateSize({ animate: false });
+    }, 100);
   }
 
   private intentarMiUbicacion(): void {
@@ -221,7 +273,7 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
             .addTo(this.map);
         }
         if (this.modo === 'libre' && !this.seleccion && !this.centro) {
-          this.map.setView([lat, lng], 14);
+          this.map.setView([lat, lng], 14, { animate: false });
         }
       },
       () => {

@@ -645,13 +645,12 @@ export class CongresoAdminComponent implements OnInit {
   borradorUbicacion: AulaMapaPunto | null = null;
   feedbackMapa = '';
   feedbackMapaOk = false;
+  /** Referencia estable (no getter): si no, Leaflet se recrea en cada CD y se rompe. */
+  centroSede: AulaMapaPunto | null = null;
+  aulaSeleccionMapa: AulaMapaPunto | null = null;
 
   private congresoConfigService = inject(CongresoConfigService);
   private aulaService = inject(AulaService);
-
-  get centroSede(): AulaMapaPunto | null {
-    return centroDesdeConfig(this.config?.mapaLatitud, this.config?.mapaLongitud);
-  }
 
   ngOnInit(): void {
     this.congresoConfigService.obtener().subscribe({
@@ -764,6 +763,7 @@ export class CongresoAdminComponent implements OnInit {
       latitud: a.latitud ?? null,
       longitud: a.longitud ?? null,
     };
+    this.syncAulaSeleccionMapa();
     this.feedbackAula = '';
   }
 
@@ -776,23 +776,30 @@ export class CongresoAdminComponent implements OnInit {
       latitud: null,
       longitud: null,
     };
-  }
-
-  get aulaSeleccionMapa(): AulaMapaPunto | null {
-    if (this.aulaForm.latitud == null || this.aulaForm.longitud == null) {
-      return null;
-    }
-    return { lat: this.aulaForm.latitud, lng: this.aulaForm.longitud };
+    this.syncAulaSeleccionMapa();
   }
 
   onPosicionAula(p: AulaMapaPunto): void {
     this.aulaForm.latitud = p.lat;
     this.aulaForm.longitud = p.lng;
+    this.syncAulaSeleccionMapa();
   }
 
   quitarPosicionMapa(): void {
     this.aulaForm.latitud = null;
     this.aulaForm.longitud = null;
+    this.syncAulaSeleccionMapa();
+  }
+
+  private syncAulaSeleccionMapa(): void {
+    if (this.aulaForm.latitud == null || this.aulaForm.longitud == null) {
+      this.aulaSeleccionMapa = null;
+      return;
+    }
+    this.aulaSeleccionMapa = {
+      lat: this.aulaForm.latitud,
+      lng: this.aulaForm.longitud,
+    };
   }
 
   linkMapa(a: Aula): string | null {
@@ -1122,6 +1129,7 @@ export class CongresoAdminComponent implements OnInit {
       edicion: c.edicion ?? '',
       sede: c.sede ?? '',
     };
+    this.centroSede = centroDesdeConfig(c.mapaLatitud, c.mapaLongitud);
   }
 
   formatFechaEs(fecha: string): string {
