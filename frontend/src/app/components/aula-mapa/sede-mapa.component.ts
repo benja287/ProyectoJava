@@ -55,7 +55,7 @@ function mismoPunto(a: MapaPunto | null | undefined, b: MapaPunto | null | undef
               type="search"
               [(ngModel)]="consultaBusqueda"
               [ngModelOptions]="{ standalone: true }"
-              placeholder="Ej: calle 60 y 121, La Plata"
+              placeholder="Ej: 60 y 118, La Plata"
               (keyup.enter)="buscarDireccion()"
               [disabled]="buscando"
             />
@@ -271,12 +271,16 @@ export class SedeMapaComponent implements AfterViewInit, OnChanges, OnDestroy {
       return;
     }
     this.buscando = true;
-    this.geocoding.buscar(q).subscribe({
+    const bias = this.map
+      ? { lat: this.map.getCenter().lat, lng: this.map.getCenter().lng }
+      : this.seleccion ?? this.centro;
+    this.geocoding.buscar(q, { bias }).subscribe({
       next: (items) => {
         this.buscando = false;
         this.resultadosBusqueda = items;
         if (!items.length) {
-          this.errorBusqueda = 'No se encontró esa dirección. Probá con más detalle o otra provincia.';
+          this.errorBusqueda =
+            'No se encontró el cruce. Probá "60 y 118, La Plata" o mové el mapa cerca y reintentá.';
         }
       },
       error: () => {
