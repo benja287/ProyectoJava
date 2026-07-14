@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RequestScoped
 public class CircularService {
@@ -164,9 +166,15 @@ public class CircularService {
   }
 
   private void notificarPublicacion(Circular c) {
-    notificacionService.enviarATodos(
-        "Nueva circular publicada",
-        "Se publicó la circular \"" + c.getTitulo() + "\". Consultala en la sección Circulares.",
-        null);
+    Map<String, String> vars = new HashMap<>();
+    vars.put("titulo", c.getTitulo() != null ? c.getTitulo() : "Circular");
+    vars.put(
+        "resumen",
+        c.getResumen() != null && !c.getResumen().isBlank()
+            ? c.getResumen().trim()
+            : "Hay una nueva circular disponible en la plataforma.");
+    vars.put("enlace", "/circulares");
+    vars.put("proximo_paso", "Abrí Circulares para leerla o descargar el PDF.");
+    notificacionService.enviarATodosConPlantilla("CIRCULAR_PUBLICADA", vars, null);
   }
 }

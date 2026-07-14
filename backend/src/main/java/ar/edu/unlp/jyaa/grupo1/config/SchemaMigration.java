@@ -414,6 +414,23 @@ public final class SchemaMigration {
             {{url_plataforma}}/inscripcion
 
             Sistema de gestión del congreso""");
+    insertarPlantillaSiFalta(
+        em,
+        "CIRCULAR_PUBLICADA",
+        "[CIRCULAR] Nueva publicación: \"{{titulo}}\"",
+        """
+            Hola {{nombre}},
+
+            Se publicó una nueva circular del congreso: "{{titulo}}".
+
+            {{resumen}}
+
+            Próximo paso: {{proximo_paso}}
+
+            Ver circulares:
+            {{url_accion}}
+
+            Sistema de gestión del congreso""");
   }
 
   /** Columna enlace para botón "Ir a…" en la campana de notificaciones. */
