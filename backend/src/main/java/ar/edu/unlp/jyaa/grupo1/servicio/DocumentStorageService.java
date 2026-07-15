@@ -23,7 +23,8 @@ public class DocumentStorageService {
     COMPROBANTE(TipoArchivoAlmacenado.COMPROBANTE),
     CERTIFICADO_INSCRIPCION(TipoArchivoAlmacenado.CERTIFICADO_INSCRIPCION),
     CIRCULAR(TipoArchivoAlmacenado.CIRCULAR),
-    EVALUACION_CORRECCION(TipoArchivoAlmacenado.EVALUACION_CORRECCION);
+    EVALUACION_CORRECCION(TipoArchivoAlmacenado.EVALUACION_CORRECCION),
+    QR_PAGO(TipoArchivoAlmacenado.QR_PAGO);
 
     private final TipoArchivoAlmacenado entidad;
 

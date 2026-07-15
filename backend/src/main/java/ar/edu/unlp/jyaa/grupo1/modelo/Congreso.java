@@ -84,6 +84,21 @@ public class Congreso implements Serializable {
   @Column(name = "jornada_fin_dia3")
   private LocalTime jornadaFinDia3;
 
+  /** Alias / CBU / CVU para transferencias de inscripción. */
+  @Column(name = "alias_pago", length = 200)
+  private String aliasPago;
+
+  /** URL del QR de pago ({@code /api/archivos/{id}}). */
+  @Column(name = "qr_pago_url", length = 500)
+  private String qrPagoUrl;
+
+  @Column(name = "instrucciones_pago", length = 1000)
+  private String instruccionesPago;
+
+  /** Si es true, los participantes ven precios/alias/QR y pueden enviar inscripción. */
+  @Column(name = "aranceles_publicados", nullable = false)
+  private boolean arancelesPublicados = false;
+
   public Congreso() {}
 
   public Long getId() {
@@ -268,6 +283,38 @@ public class Congreso implements Serializable {
 
   public void setJornadaFinDia3(LocalTime jornadaFinDia3) {
     this.jornadaFinDia3 = jornadaFinDia3;
+  }
+
+  public String getAliasPago() {
+    return aliasPago;
+  }
+
+  public void setAliasPago(String aliasPago) {
+    this.aliasPago = aliasPago;
+  }
+
+  public String getQrPagoUrl() {
+    return qrPagoUrl;
+  }
+
+  public void setQrPagoUrl(String qrPagoUrl) {
+    this.qrPagoUrl = qrPagoUrl;
+  }
+
+  public String getInstruccionesPago() {
+    return instruccionesPago;
+  }
+
+  public void setInstruccionesPago(String instruccionesPago) {
+    this.instruccionesPago = instruccionesPago;
+  }
+
+  public boolean isArancelesPublicados() {
+    return arancelesPublicados;
+  }
+
+  public void setArancelesPublicados(boolean arancelesPublicados) {
+    this.arancelesPublicados = arancelesPublicados;
   }
 
   /** Inicio efectivo de la jornada para el día lógico 1..3. */

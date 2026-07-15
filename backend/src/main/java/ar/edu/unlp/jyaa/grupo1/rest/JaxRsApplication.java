@@ -40,6 +40,7 @@ public class JaxRsApplication extends Application {
         FranjasResource.class,
         CongresoAnteriorResource.class,
         CongresoResource.class,
+        ArancelesResource.class,
         InscripcionResource.class,
         NotificacionResource.class,
         AdminStatsResource.class,

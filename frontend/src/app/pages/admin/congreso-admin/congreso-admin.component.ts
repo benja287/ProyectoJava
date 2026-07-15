@@ -66,6 +66,13 @@ import { PASOS_CREAR_PROGRAMA } from './congreso-programa-guia.component';
               <p>Fechas del evento, inscripción, envío y evaluación</p>
             </div>
           </a>
+          <a routerLink="/admin/congreso/aranceles" class="accion-card">
+            <span class="accion-icono accion-icono--verde" aria-hidden="true">💰</span>
+            <div>
+              <h3>Aranceles y pago</h3>
+              <p>Precios por categoría, alias/QR y publicar para inscripción</p>
+            </div>
+          </a>
         </div>
       </section>
     </div>

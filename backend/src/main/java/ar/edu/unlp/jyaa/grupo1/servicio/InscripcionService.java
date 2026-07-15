@@ -1,12 +1,10 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
-import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.InscripcionCongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.PagoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.InscripcionFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.CategoriaInscripcion;
-import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
@@ -37,10 +35,10 @@ public class InscripcionService {
   @Inject private InscripcionCongresoDAO inscripcionDAO;
   @Inject private PagoDAO pagoDAO;
   @Inject private UsuarioDAO usuarioDAO;
-  @Inject private CongresoDAO congresoDAO;
   @Inject private DocumentStorageService documentStorageService;
   @Inject private UsuarioService usuarioService;
   @Inject private NotificacionService notificacionService;
+  @Inject private ArancelesService arancelesService;
 
   public InscripcionCongresoDTO crear(
       AuthenticatedUser auth,
@@ -69,8 +67,10 @@ public class InscripcionService {
 
     CategoriaInscripcion categoria = parseCategoria(categoriaEfectiva);
     MetodoPago metodoPago = parseMetodoPago(metodoPagoRaw);
-    validarDatos(categoria, institucion, provincia, requiereFactura, certificado, metodoPago, monto, comprobante);
-    validarVentanaInscripcion();
+    arancelesService.assertArancelesPublicadosYVentana();
+    double montoOficial = arancelesService.montoOficial(categoria);
+    validarDatos(
+        categoria, institucion, provincia, requiereFactura, certificado, metodoPago, comprobante);
 
     inscripcionDAO
         .buscarUltimaPorUsuario(auth.userId())
@@ -107,7 +107,7 @@ public class InscripcionService {
     }
 
     Pago pago = new Pago();
-    pago.setMonto(monto);
+    pago.setMonto(montoOficial);
     pago.setMetodo(metodoPago);
     pago.setRequiereFactura(requiereFactura);
     pago.setEstado(EstadoPago.PENDIENTE);
@@ -133,8 +133,8 @@ public class InscripcionService {
       usuarioDAO.modificar(usuario);
     }
 
-    notificarAdminInscripcionPendiente(usuario, categoria, monto, metodoPago);
-    notificarUsuarioInscripcionRecibida(usuario, categoria, monto, metodoPago);
+    notificarAdminInscripcionPendiente(usuario, categoria, montoOficial, metodoPago);
+    notificarUsuarioInscripcionRecibida(usuario, categoria, montoOficial, metodoPago);
 
     return InscripcionCongresoDTO.from(recuperarConRelaciones(creada.getId()));
   }
@@ -166,21 +166,6 @@ public class InscripcionService {
     vars.put("enlace", "/inscripcion");
     notificacionService.enviarConPlantilla(
         solicitante.getId(), "INSCRIPCION_RECIBIDA_USUARIO", vars);
-  }
-
-  private void validarVentanaInscripcion() {
-    Congreso congreso = congresoDAO.obtenerPrincipal();
-    LocalDate hoy = LocalDate.now();
-    LocalDate desde = congreso.getInscripcionesDesde();
-    LocalDate hasta = congreso.getInscripcionesHasta();
-    if (desde != null && hoy.isBefore(desde)) {
-      throw new NegocioException(
-          "Las inscripciones abren el " + desde + ". Todavía no está habilitada la inscripción.");
-    }
-    if (hasta != null && hoy.isAfter(hasta)) {
-      throw new NegocioException(
-          "El período de inscripción cerró el " + hasta + ". Ya no se aceptan nuevas solicitudes.");
-    }
   }
 
   private static String etiquetaCategoria(CategoriaInscripcion categoria) {
@@ -423,7 +408,6 @@ public class InscripcionService {
       boolean requiereFactura,
       InputStream certificado,
       MetodoPago metodoPago,
-      Double monto,
       InputStream comprobante) {
     if (institucion == null || institucion.isBlank()) {
       throw new NegocioException("Debe indicar la institución");
@@ -436,9 +420,6 @@ public class InscripcionService {
     }
     if (categoria.requiereCertificado() && certificado == null) {
       throw new NegocioException("La categoría " + categoria.name() + " requiere adjuntar certificado");
-    }
-    if (monto == null || monto <= 0) {
-      throw new NegocioException("Debe indicar un monto válido");
     }
     if (metodoPago == MetodoPago.TRANSFERENCIA && comprobante == null) {
       throw new NegocioException("Debe adjuntar comprobante de transferencia");

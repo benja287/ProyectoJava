@@ -33,6 +33,8 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarFranjasHorarias);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCongresoJornadaYLimpiarSeedFranjas);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarVaciarFranjasArranqueLibre);
+    // APPEND — aranceles por categoría + alias/QR/publicación (Alexis)
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarArancelesInscripcion);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -934,6 +936,67 @@ public final class SchemaMigration {
     log.info(
         "Arranque libre: eliminadas {} franjas precargadas; el timeline queda todo disponible",
         borradas);
+  }
+
+  /**
+   * APPEND — precios por categoría + datos de pago del congreso (alias/QR) y flag de publicación.
+   */
+  private static void migrarArancelesInscripcion(EntityManager em) {
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "alias_pago",
+        "ALTER TABLE congresos ADD COLUMN alias_pago VARCHAR(200) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "qr_pago_url",
+        "ALTER TABLE congresos ADD COLUMN qr_pago_url VARCHAR(500) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "instrucciones_pago",
+        "ALTER TABLE congresos ADD COLUMN instrucciones_pago VARCHAR(1000) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "aranceles_publicados",
+        "ALTER TABLE congresos ADD COLUMN aranceles_publicados TINYINT(1) NOT NULL DEFAULT 0");
+
+    if (!tablaExiste(em, "aranceles_categoria")) {
+      em.createNativeQuery(
+              """
+              CREATE TABLE aranceles_categoria (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                categoria VARCHAR(40) NOT NULL,
+                monto DOUBLE NOT NULL,
+                moneda VARCHAR(8) NOT NULL DEFAULT 'ARS',
+                UNIQUE KEY uk_arancel_cat (categoria)
+              )
+              """)
+          .executeUpdate();
+      log.info("Tabla aranceles_categoria creada");
+    }
+
+    Number count =
+        (Number)
+            em.createNativeQuery("SELECT COUNT(*) FROM aranceles_categoria").getSingleResult();
+    if (count != null && count.longValue() == 0) {
+      em.createNativeQuery(
+              """
+              INSERT INTO aranceles_categoria (categoria, monto, moneda) VALUES
+              ('SOCIO_SAAE', 75000, 'ARS'),
+              ('NO_SOCIO', 150000, 'ARS'),
+              ('ESTUDIANTE', 37000, 'ARS'),
+              ('PRODUCTOR', 50000, 'ARS'),
+              ('INVESTIGADOR', 150000, 'ARS'),
+              ('EXTENSIONISTA', 150000, 'ARS'),
+              ('DOCENTE', 150000, 'ARS'),
+              ('EXTRANJERO', 170, 'USD')
+              """)
+          .executeUpdate();
+      log.info("Aranceles por defecto sembrados (borrador, no publicados)");
+    }
   }
 
   private static void agregarColumnaSiFalta(
