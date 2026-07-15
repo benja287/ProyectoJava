@@ -10,8 +10,6 @@ import jakarta.inject.Inject;
 @RequestScoped
 public class EvaluadorEjeService {
 
-  private static final int MAX_EVALUADORES_POR_EJE = 3;
-
   @Inject private UsuarioDAO usuarioDAO;
 
   public Usuario asignarEvaluadorAEje(Long usuarioId, String ejeTematico) {
@@ -21,14 +19,6 @@ public class EvaluadorEjeService {
     Usuario usuario = usuarioDAO.recuperarPorId(usuarioId);
     if (usuario == null) {
       throw new NegocioException("Usuario no encontrado: " + usuarioId);
-    }
-    String ejeActual = usuario.getEjeTematicoEvaluador();
-    if (ejeActual == null || !ejeActual.equals(ejeTematico)) {
-      long enEje = usuarioDAO.contarEvaluadoresPorEje(ejeTematico, usuarioId);
-      if (enEje >= MAX_EVALUADORES_POR_EJE) {
-        throw new NegocioException(
-            "El eje ya tiene " + MAX_EVALUADORES_POR_EJE + " evaluadores asignados");
-      }
     }
     if (!usuario.getRoles().contains(Rol.EVALUADOR)) {
       usuario.getRoles().add(Rol.EVALUADOR);

@@ -67,6 +67,11 @@ public class EvaluacionService {
     if (asignacion.getTrabajo().getEstado() != EstadoTrabajo.EN_EVALUACION) {
       throw new NegocioException("El trabajo no está en evaluación");
     }
+    if (asignacion.getTrabajo().getAutor() != null
+        && asignacion.getEvaluador() != null
+        && asignacion.getTrabajo().getAutor().getId().equals(asignacion.getEvaluador().getId())) {
+      throw new NegocioException("No podés evaluar tu propio trabajo");
+    }
     validarVentanaEvaluacion();
 
     Evaluacion evaluacion = new Evaluacion();

@@ -124,7 +124,8 @@ interface PrecheckChecks {
 
       <p class="comite-pasos">
         Pasos: 1) Seleccioná un trabajo → 2) completá el precheck (OK u observado) → 3) asigná 2
-        evaluadores del eje → 4) si hay empate 1/1, asigná un 3er evaluador.
+        evaluadores del eje → 4) si hay empate 1/1, asigná un 3er evaluador. Tus propios envíos no
+        aparecen acá (conflicto de interés).
       </p>
 
       @if (error) {
@@ -318,9 +319,9 @@ interface PrecheckChecks {
                 <div class="aviso-amarillo">El trabajo no tiene eje temático.</div>
               } @else if (evaluadoresDelEje.length < 2) {
                 <div class="aviso-amarillo">
-                  No hay suficientes evaluadores configurados para este eje (mínimo 2 disponibles).
-                  Primero asigná evaluadores a este eje en "Evaluadores por eje temático" (máximo 3
-                  por eje).
+                  No hay suficientes evaluadores configurados para este eje (mínimo 2 disponibles,
+                  sin contar al autor del trabajo). Asigná más evaluadores en "Evaluadores por eje
+                  temático".
                 </div>
               } @else if (!puedeAsignarEvaluadores) {
                 <div class="comite-evaluadores-lista comite-evaluadores-lista--lectura">

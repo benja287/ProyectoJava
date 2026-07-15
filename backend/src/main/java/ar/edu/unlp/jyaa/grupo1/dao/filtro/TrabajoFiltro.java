@@ -12,4 +12,18 @@ public record TrabajoFiltro(
     EstadoTrabajo estado,
     ModalidadPresentacion modalidad,
     TipoTrabajo tipo,
-    Long autorId) {}
+    Long autorId,
+    Long excluirAutorId) {
+
+  /** Compatibilidad: sin recusación por autor. */
+  public TrabajoFiltro(
+      String titulo,
+      String resumen,
+      String ejeTematico,
+      EstadoTrabajo estado,
+      ModalidadPresentacion modalidad,
+      TipoTrabajo tipo,
+      Long autorId) {
+    this(titulo, resumen, ejeTematico, estado, modalidad, tipo, autorId, null);
+  }
+}

@@ -72,16 +72,37 @@ public class TrabajoService {
   }
 
   public List<TrabajoResumenDTO> listarParaComite() {
-    return listarParaComite(1, 500, new TrabajoFiltro(null, null, null, null, null, null, null))
+    return listarParaComite(1, 500, new TrabajoFiltro(null, null, null, null, null, null, null), null)
         .items();
   }
 
   public PaginaTrabajosDTO listarParaComite(int page, int size, TrabajoFiltro filtro) {
+    return listarParaComite(page, size, filtro, null);
+  }
+
+  /**
+   * Listado del comité. Si {@code excluirAutorId} no es null, oculta los trabajos de ese autor
+   * (conflicto de interés: no gestionar el propio envío como comité).
+   */
+  public PaginaTrabajosDTO listarParaComite(
+      int page, int size, TrabajoFiltro filtro, Long excluirAutorId) {
     int safePage = Math.max(PAGE_DEFAULT, page);
     int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
     int offset = (safePage - 1) * safeSize;
-    TrabajoFiltro effective =
+    TrabajoFiltro base =
         filtro != null ? filtro : new TrabajoFiltro(null, null, null, null, null, null, null);
+    TrabajoFiltro effective =
+        excluirAutorId == null
+            ? base
+            : new TrabajoFiltro(
+                base.titulo(),
+                base.resumen(),
+                base.ejeTematico(),
+                base.estado(),
+                base.modalidad(),
+                base.tipo(),
+                base.autorId(),
+                excluirAutorId);
     long total = trabajoDAO.contarFiltradoComite(effective);
     List<TrabajoResumenDTO> items =
         trabajoDAO.listarFiltradoComite(effective, offset, safeSize).stream()
@@ -89,6 +110,17 @@ public class TrabajoService {
             .toList();
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
     return new PaginaTrabajosDTO(items, safePage, safeSize, total, totalPages);
+  }
+
+  /** Recusación: un miembro del comité no opera su propio trabajo. */
+  public void assertNoEsAutorDelTrabajo(Trabajo trabajo, Long actorUserId) {
+    if (trabajo == null || actorUserId == null || trabajo.getAutor() == null) {
+      return;
+    }
+    if (actorUserId.equals(trabajo.getAutor().getId())) {
+      throw new NegocioException(
+          "No podés gestionar tu propio trabajo como comité académico (conflicto de interés)");
+    }
   }
 
   /**
@@ -239,7 +271,8 @@ public class TrabajoService {
         base.estado(),
         base.modalidad(),
         base.tipo(),
-        auth.userId());
+        auth.userId(),
+        base.excluirAutorId());
   }
 
   private PaginaTrabajosDTO listarFiltrado(int page, int size, TrabajoFiltro filtro) {
@@ -468,8 +501,9 @@ public class TrabajoService {
         fechaLimitePasada);
   }
 
-  public Trabajo registrarPrecheck(Long id, boolean apto, String observaciones) {
+  public Trabajo registrarPrecheck(Long id, boolean apto, String observaciones, Long actorUserId) {
     Trabajo trabajo = buscar(id);
+    assertNoEsAutorDelTrabajo(trabajo, actorUserId);
     if (trabajo.getEstado() != EstadoTrabajo.ENVIADO) {
       throw new NegocioException("Solo se puede hacer precheck de trabajos en estado ENVIADO");
     }
@@ -518,8 +552,10 @@ public class TrabajoService {
     return guardado;
   }
 
-  public Trabajo confirmarAprobacionComite(Long id, boolean aprobar, String observaciones) {
+  public Trabajo confirmarAprobacionComite(
+      Long id, boolean aprobar, String observaciones, Long actorUserId) {
     Trabajo trabajo = buscar(id);
+    assertNoEsAutorDelTrabajo(trabajo, actorUserId);
     if (trabajo.getEstado() != EstadoTrabajo.PENDIENTE_APROBACION_COMITE) {
       throw new NegocioException(
           "Solo se puede confirmar trabajos pendientes de aprobación del comité");

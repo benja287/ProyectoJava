@@ -125,8 +125,8 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                     Quitar del eje temático
                   </button>
                   <p class="form-hint">
-                    Regla: máximo 3 evaluadores por eje. Si quitás a uno del eje, liberás cupo para
-                    asignar otro.
+                    Podés sumar todos los evaluadores que necesites por eje. El autor de un trabajo no
+                    puede evaluarlo ni gestionarlo como comité (conflicto de interés).
                   </p>
                 }
               </article>

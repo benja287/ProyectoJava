@@ -169,7 +169,7 @@ public class UsuarioResource {
 
   @PUT
   @Path("/{id}/evaluador-eje")
-  @Operation(summary = "Asignar evaluador a un eje temático (máx. 3 por eje)")
+  @Operation(summary = "Asignar evaluador a un eje temático (sin tope por eje)")
   public UsuarioDTO asignarEvaluadorEje(
       @PathParam("id") Long id,
       ar.edu.unlp.jyaa.grupo1.rest.dto.EvaluadorEjeRequest request,

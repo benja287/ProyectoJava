@@ -3,6 +3,7 @@ package ar.edu.unlp.jyaa.grupo1.rest;
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.AsignacionRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.RespuestaAsignacionRequest;
+import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.servicio.AsignacionEvaluacionService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.AsignacionEvaluacionDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaAsignacionesDTO;
@@ -25,6 +26,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import java.util.List;
+import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -86,12 +88,16 @@ public class AsignacionEvaluacionResource {
   @Path("/batch")
   @Operation(summary = "Asignar varios evaluadores a un trabajo")
   public Response asignarVarios(
-      ar.edu.unlp.jyaa.grupo1.rest.dto.AsignarEvaluadoresRequest request, @Context UriInfo uriInfo) {
+      ar.edu.unlp.jyaa.grupo1.rest.dto.AsignarEvaluadoresRequest request,
+      @Context UriInfo uriInfo,
+      @Context ContainerRequestContext ctx) {
+    Long actorId = AuthenticatedUser.from(ctx).userId();
     var creadas =
         asignacionService.asignarVarios(
             request.trabajoId(),
             request.evaluadorIds(),
-            request.tercerEvaluadorEmpate());
+            request.tercerEvaluadorEmpate(),
+            actorId);
     return Response.ok(creadas.stream().map(AsignacionEvaluacionDTO::from).toList()).build();
   }
 
@@ -99,9 +105,11 @@ public class AsignacionEvaluacionResource {
   @Operation(summary = "Asignar evaluador a trabajo")
   @ApiResponse(responseCode = "201", description = "Asignación creada")
   @ApiResponse(responseCode = "400", description = "Error de validación")
-  public Response asignar(AsignacionRequest request, @Context UriInfo uriInfo) {
+  public Response asignar(
+      AsignacionRequest request, @Context UriInfo uriInfo, @Context ContainerRequestContext ctx) {
+    Long actorId = AuthenticatedUser.from(ctx).userId();
     AsignacionEvaluacion asignacion =
-        asignacionService.asignar(request.trabajoId(), request.evaluadorId());
+        asignacionService.asignar(request.trabajoId(), request.evaluadorId(), actorId);
     URI location = uriInfo.getAbsolutePathBuilder().path(asignacion.getId().toString()).build();
     return Response.created(location).entity(AsignacionEvaluacionDTO.from(asignacion)).build();
   }

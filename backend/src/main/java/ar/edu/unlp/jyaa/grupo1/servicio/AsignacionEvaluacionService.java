@@ -37,11 +37,20 @@ public class AsignacionEvaluacionService {
   @Inject private UsuarioDAO usuarioDAO;
 
   public AsignacionEvaluacion asignar(Long trabajoId, Long evaluadorId) {
-    return asignarInterno(trabajoId, evaluadorId, false);
+    return asignar(trabajoId, evaluadorId, null);
+  }
+
+  public AsignacionEvaluacion asignar(Long trabajoId, Long evaluadorId, Long actorUserId) {
+    return asignarInterno(trabajoId, evaluadorId, false, actorUserId);
   }
 
   public List<AsignacionEvaluacion> asignarVarios(
       Long trabajoId, List<Long> evaluadorIds, boolean tercerEvaluadorEmpate) {
+    return asignarVarios(trabajoId, evaluadorIds, tercerEvaluadorEmpate, null);
+  }
+
+  public List<AsignacionEvaluacion> asignarVarios(
+      Long trabajoId, List<Long> evaluadorIds, boolean tercerEvaluadorEmpate, Long actorUserId) {
     if (evaluadorIds == null || evaluadorIds.isEmpty()) {
       throw new NegocioException("Debe indicar al menos un evaluador");
     }
@@ -50,6 +59,7 @@ public class AsignacionEvaluacionService {
     if (trabajo == null) {
       throw new NegocioException("Trabajo no encontrado: " + trabajoId);
     }
+    assertActorNoEsAutor(trabajo, actorUserId);
     validarEstadoParaAsignar(trabajo);
 
     List<AsignacionEvaluacion> actuales = asignacionEvaluacionDAO.listarPorTrabajo(trabajoId);
@@ -71,7 +81,8 @@ public class AsignacionEvaluacionService {
       if (asignacionEvaluacionDAO.buscarActiva(trabajoId, evaluadorId).isPresent()) {
         continue;
       }
-      creadas.add(asignarInterno(trabajoId, evaluadorId, empate || tercerEvaluadorEmpate));
+      creadas.add(
+          asignarInterno(trabajoId, evaluadorId, empate || tercerEvaluadorEmpate, actorUserId));
     }
     if (creadas.isEmpty()) {
       boolean todosYaAsignados =
@@ -87,11 +98,13 @@ public class AsignacionEvaluacionService {
     return creadas;
   }
 
-  private AsignacionEvaluacion asignarInterno(Long trabajoId, Long evaluadorId, boolean permiteTercero) {
+  private AsignacionEvaluacion asignarInterno(
+      Long trabajoId, Long evaluadorId, boolean permiteTercero, Long actorUserId) {
     Trabajo trabajo = trabajoDAO.recuperarPorId(trabajoId);
     if (trabajo == null) {
       throw new NegocioException("Trabajo no encontrado: " + trabajoId);
     }
+    assertActorNoEsAutor(trabajo, actorUserId);
     validarEstadoParaAsignar(trabajo);
 
     Usuario evaluador = usuarioDAO.recuperarPorId(evaluadorId);
@@ -170,6 +183,16 @@ public class AsignacionEvaluacionService {
         && trabajo.getEstado() != EstadoTrabajo.EN_EVALUACION) {
       throw new NegocioException(
           "Solo se pueden asignar evaluadores a trabajos con precheck OK o ya en evaluación");
+    }
+  }
+
+  private void assertActorNoEsAutor(Trabajo trabajo, Long actorUserId) {
+    if (trabajo == null || actorUserId == null || trabajo.getAutor() == null) {
+      return;
+    }
+    if (actorUserId.equals(trabajo.getAutor().getId())) {
+      throw new NegocioException(
+          "No podés asignar evaluadores a tu propio trabajo (conflicto de interés)");
     }
   }
 
@@ -252,6 +275,13 @@ public class AsignacionEvaluacionService {
             .orElseThrow(() -> new NegocioException("Asignación no encontrada: " + id));
     if (asignacion.getFechaRespuesta() != null) {
       throw new NegocioException("La asignación ya fue respondida");
+    }
+    Trabajo trabajo = asignacion.getTrabajo();
+    if (trabajo != null
+        && trabajo.getAutor() != null
+        && asignacion.getEvaluador() != null
+        && trabajo.getAutor().getId().equals(asignacion.getEvaluador().getId())) {
+      throw new NegocioException("No podés aceptar evaluación de tu propio trabajo");
     }
     if (!aceptar) {
       asignacion.setAceptada(false);

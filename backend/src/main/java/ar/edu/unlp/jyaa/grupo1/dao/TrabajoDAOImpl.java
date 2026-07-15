@@ -182,6 +182,10 @@ public class TrabajoDAOImpl extends AbstractJpaDAO<Trabajo> implements TrabajoDA
       jpql.append(" AND t.autor.id = :autorId");
       params.put("autorId", filtro.autorId());
     }
+    if (filtro.excluirAutorId() != null) {
+      jpql.append(" AND (t.autor IS NULL OR t.autor.id <> :excluirAutorId)");
+      params.put("excluirAutorId", filtro.excluirAutorId());
+    }
     JpqlLikeFilters.appendLike(jpql, params, "t.titulo", "titulo", filtro.titulo());
     JpqlLikeFilters.appendLike(jpql, params, "t.resumen", "resumen", filtro.resumen());
     JpqlLikeFilters.appendLike(jpql, params, "t.ejeTematico", "ejeTematico", filtro.ejeTematico());

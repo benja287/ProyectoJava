@@ -43,7 +43,7 @@ public class Usuario implements Serializable {
   @Column(name = "categoria_inscripcion", length = 80)
   private String categoriaInscripcion;
 
-  /** Eje temático asignado cuando el usuario actúa como evaluador (máx. 3 por eje). */
+  /** Eje temático asignado cuando el usuario actúa como evaluador. */
   @Column(name = "eje_tematico_evaluador", length = 300)
   private String ejeTematicoEvaluador;
 

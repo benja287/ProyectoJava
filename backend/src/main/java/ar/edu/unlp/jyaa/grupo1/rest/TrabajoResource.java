@@ -86,11 +86,13 @@ public class TrabajoResource {
       @QueryParam("page") @DefaultValue("1") int page,
       @QueryParam("size") @DefaultValue("20") int size,
       @Context ContainerRequestContext ctx) {
-    if (!AuthenticatedUser.from(ctx).canListAllTrabajos()) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    if (!auth.canListAllTrabajos()) {
       throw new NotAuthorizedException("Solo comité académico o administrador");
     }
     var filtro = TrabajoService.parseFiltro(titulo, null, ejeTematico, estado, null, null, null);
-    return trabajoService.listarParaComite(page, size, filtro);
+    // Oculta al miembro del comité sus propios trabajos (conflicto de interés).
+    return trabajoService.listarParaComite(page, size, filtro, auth.userId());
   }
 
   @GET
@@ -262,7 +264,8 @@ public class TrabajoResource {
       @PathParam("id") Long id,
       PrecheckRequest request,
       @Context ContainerRequestContext ctx) {
-    if (!AuthenticatedUser.from(ctx).canListAllTrabajos()) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    if (!auth.canListAllTrabajos()) {
       throw new NotAuthorizedException("Solo comité académico o administrador");
     }
     if (request == null) {
@@ -272,7 +275,7 @@ public class TrabajoResource {
     try {
       return TrabajoResumenDTO.from(
           trabajoService.registrarPrecheck(
-              id, request.apto(), request.observaciones()));
+              id, request.apto(), request.observaciones(), auth.userId()));
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }
@@ -286,7 +289,8 @@ public class TrabajoResource {
       @PathParam("id") Long id,
       ConfirmarComiteRequest request,
       @Context ContainerRequestContext ctx) {
-    if (!AuthenticatedUser.from(ctx).canListAllTrabajos()) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    if (!auth.canListAllTrabajos()) {
       throw new NotAuthorizedException("Solo comité académico o administrador");
     }
     if (request == null) {
@@ -295,7 +299,8 @@ public class TrabajoResource {
     }
     try {
       return TrabajoResumenDTO.from(
-          trabajoService.confirmarAprobacionComite(id, request.aprobar(), request.observaciones()));
+          trabajoService.confirmarAprobacionComite(
+              id, request.aprobar(), request.observaciones(), auth.userId()));
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }
