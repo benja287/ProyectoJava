@@ -16,8 +16,8 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       <div class="panel-hero panel-hero--admin">
         <span class="panel-hero-icon" aria-hidden="true">✍</span>
         <div>
-          <h1>Solicitudes para ser Autor</h1>
-          <p>Habilitá el rol autor a asistentes con trabajos aprobados</p>
+          <h1>Habilitación Autor (respaldo)</h1>
+          <p>Casos pendientes previos: el rol Autor ya se habilita solo al dictamen final del comité</p>
         </div>
       </div>
 
@@ -28,11 +28,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       }
 
       <section class="panel-card panel-card--verde">
-        <h2>Solicitudes para ser Autor</h2>
+        <h2>Pendientes de habilitación manual</h2>
         <p class="muted">
-          Acá aparecen solo asistentes con al menos un trabajo
-          <strong>aprobado</strong> por evaluadores (2 aprobaciones) y pendientes de habilitación
-          del rol autor.
+          Desde ahora, al aprobar el dictamen final del comité sobre un trabajo de un asistente, el
+          rol <strong>Autor</strong> se asigna automáticamente. Esta pantalla solo sirve para
+          backlog antiguo (o casos excepcionales).
         </p>
         @if (solicitudesAutorFeedback) {
           <p class="ok">{{ solicitudesAutorFeedback }}</p>

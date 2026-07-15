@@ -33,7 +33,7 @@ export function mensajeComiteEvaluacionObservado(t: Trabajo): string {
     return (
       `Un evaluador rechazó este trabajo (${revision}/2 reenvíos). Fue enviado como asistente: ` +
       `el participante debe corregirlo y reenviarlo desde el panel asistente. Tras dos evaluaciones ` +
-      `favorables y el dictamen final del comité, el administrador podrá habilitar el rol Autor.`
+      `favorables y el dictamen final del comité, el rol Autor se habilita automáticamente.`
     );
   }
   return (
@@ -52,19 +52,19 @@ export function feedbackTextoTrabajo(t: Trabajo, vista: 'asistente' | 'autor'): 
   }
   if (t.estado === 'PRECHECK_OBSERVADO') {
     if (vista === 'asistente' || esAsistente) {
-      return 'Observado en prevalidación (envío como asistente). Corregí y reenviá desde acá. Si el trabajo se aprueba, el administrador te habilitará el rol Autor.';
+      return 'Observado en prevalidación (envío como asistente). Corregí y reenviá desde acá. Si el comité aprueba el trabajo, el rol Autor se habilita automáticamente.';
     }
     return 'Observado en prevalidación (envío como autor). Corregí y reenviá desde Mis trabajos.';
   }
   if (t.estado === 'OBSERVADO_EVALUACION') {
     if (vista === 'asistente' || esAsistente) {
-      return 'Rechazado por un evaluador (envío como asistente). Corregí y reenviá. Tras la aprobación final, el admin te habilitará el rol Autor si corresponde.';
+      return 'Rechazado por un evaluador (envío como asistente). Corregí y reenviá. Si el comité aprueba el trabajo, el rol Autor se habilita automáticamente.';
     }
     return 'Rechazado por un evaluador (envío como autor). Corregí y reenviá para nueva evaluación.';
   }
   if (t.estado === 'PENDIENTE_APROBACION_COMITE') {
     return esAsistente
-      ? 'Evaluaciones favorables. Pendiente del dictamen final del comité. Si se aprueba, el administrador te habilitará el rol Autor.'
+      ? 'Evaluaciones favorables. Pendiente del dictamen final del comité. Si se aprueba, el rol Autor se habilita automáticamente.'
       : 'Evaluaciones favorables. Pendiente de confirmación final del comité.';
   }
   if (t.estado === 'EN_EVALUACION') {
@@ -72,7 +72,7 @@ export function feedbackTextoTrabajo(t: Trabajo, vista: 'asistente' | 'autor'): 
   }
   if (t.estado === 'APROBADO') {
     return esAsistente
-      ? 'Trabajo aprobado por el comité. El administrador debe habilitarte el rol Autor para gestionar trabajos como autor.'
+      ? 'Trabajo aprobado por el comité. El rol Autor quedó habilitado automáticamente: usá el panel Autor.'
       : 'Trabajo aprobado por el comité académico. El organizador lo programará en mesa temática o sesión de pósters.';
   }
   if (t.estado === 'PROGRAMADO') {

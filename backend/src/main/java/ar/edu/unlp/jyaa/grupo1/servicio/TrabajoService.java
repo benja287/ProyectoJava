@@ -50,6 +50,7 @@ public class TrabajoService {
   @Inject private CongresoDAO congresoDAO;
   @Inject private DocumentStorageService documentStorageService;
   @Inject private NotificacionService notificacionService;
+  @Inject private UsuarioService usuarioService;
 
   private static final int PAGE_DEFAULT = 1;
   private static final int SIZE_DEFAULT = 20;
@@ -563,25 +564,19 @@ public class TrabajoService {
     if (aprobar) {
       trabajo.setEstado(EstadoTrabajo.APROBADO);
       Trabajo guardado = trabajoDAO.modificar(trabajo);
+      boolean promovidoAAutor = false;
+      if (guardado.getAutor() != null && pendienteHabilitacionAutor(guardado.getAutor())) {
+        usuarioService.promoverAutor(guardado.getAutor().getId(), true);
+        promovidoAAutor = true;
+      }
       Map<String, String> varsAprobado = new HashMap<>();
       varsAprobado.put(
           "proximo_paso",
-          esEnvioAsistente(guardado)
-              ? "El administrador debe habilitarte el rol Autor. Después podrás gestionar trabajos desde el panel Autor."
+          promovidoAAutor
+              ? "Tu rol Autor quedó habilitado automáticamente. Ya podés usar el panel Autor. El"
+                  + " organizador programará tu trabajo en mesa temática o sesión de pósters."
               : "El organizador programará tu trabajo en mesa temática o sesión de pósters.");
       notificarAutorPlantilla(guardado, "COMITE_APROBADO", varsAprobado);
-      if (guardado.getAutor() != null && pendienteHabilitacionAutor(guardado.getAutor())) {
-        Map<String, String> vars = variablesBaseTrabajo(guardado);
-        Usuario asistente = guardado.getAutor();
-        vars.put("nombre_asistente", asistente.getNombre() + " " + asistente.getApellido());
-        vars.put("email_asistente", asistente.getEmail() != null ? asistente.getEmail() : "");
-        vars.put("enlace", TrabajoNotificacionHelper.RUTA_ADMIN_SOLICITUDES_AUTOR);
-        vars.put(
-            "proximo_paso",
-            "Habilitá el rol Autor desde Solicitudes de autor en el panel de administración.");
-        notificacionService.enviarPorRolConPlantilla(
-            Rol.ADMINISTRADOR, "PROMOCION_AUTOR_ADMIN", vars, null);
-      }
       return guardado;
     } else {
       if (observaciones == null || observaciones.isBlank()) {

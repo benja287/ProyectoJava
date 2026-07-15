@@ -100,13 +100,6 @@ import {
             <p>Publicar y editar circulares</p>
           </div>
         </a>
-        <a routerLink="/admin/solicitudes-autor" class="accion-card">
-          <span class="accion-icono accion-icono--verde" aria-hidden="true">✍</span>
-          <div>
-            <h3>Solicitudes Autor</h3>
-            <p>Habilitar rol autor a asistentes</p>
-          </div>
-        </a>
         <a routerLink="/admin/limpieza" class="accion-card">
           <span class="accion-icono accion-icono--naranja" aria-hidden="true">🧹</span>
           <div>

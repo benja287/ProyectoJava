@@ -218,8 +218,8 @@ interface PrecheckChecks {
             </p>
             @if (esEnvioAsistente(seleccionado)) {
               <p class="muted small">
-                Este trabajo se presentó con cupo de asistente. Tras la aprobación final, el administrador
-                debe habilitar el rol Autor para que gestione trabajos como autor.
+                Este trabajo se presentó con cupo de asistente. Al aprobar el dictamen final, el rol
+                Autor se habilita automáticamente.
               </p>
             }
 

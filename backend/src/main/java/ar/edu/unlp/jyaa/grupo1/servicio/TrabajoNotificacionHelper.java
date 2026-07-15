@@ -101,7 +101,7 @@ final class TrabajoNotificacionHelper {
     if (esEnvioAsistente(trabajo)) {
       return "Próximo paso: corregí y reenviá desde el panel asistente ("
           + RUTA_ASISTENTE_TRABAJOS
-          + "). Si el trabajo se aprueba, el administrador te habilitará el rol Autor.";
+          + "). Si el comité aprueba el trabajo, el rol Autor se habilita automáticamente.";
     }
     return "Próximo paso: corregí y reenviá desde Mis trabajos (" + RUTA_AUTOR_TRABAJOS + ").";
   }

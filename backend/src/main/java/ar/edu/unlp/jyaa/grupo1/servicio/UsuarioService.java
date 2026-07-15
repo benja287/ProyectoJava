@@ -138,23 +138,30 @@ public class UsuarioService {
   }
 
   public Usuario promoverAutor(Long id) {
+    return promoverAutor(id, false);
+  }
+
+  /**
+   * Habilita rol AUTOR a un asistente.
+   *
+   * @param porDictamenComite si es true, el mensaje indica habilitación automática al aprobar el
+   *     trabajo (sin intervención del admin).
+   */
+  public Usuario promoverAutor(Long id, boolean porDictamenComite) {
     Usuario usuario = usuarioDAO.recuperarPorId(id);
     if (usuario == null) {
       return null;
     }
     if (usuario.getRoles().contains(Rol.AUTOR)) {
       if (usuario.getRolActual() == Rol.AUTOR) {
+        if (porDictamenComite) {
+          return usuario;
+        }
         throw new NegocioException("El usuario ya tiene rol autor habilitado");
       }
       usuario.setRolActual(Rol.AUTOR);
       Usuario actualizado = usuarioDAO.modificar(usuario);
-      notificacionService.enviar(
-          actualizado.getId(),
-          "Rol autor habilitado",
-          TrabajoNotificacionHelper.formatear(
-              "El administrador habilitó tu rol de autor.",
-              "Ya podés gestionar trabajos desde el panel Autor."),
-          TrabajoNotificacionHelper.RUTA_AUTOR_TRABAJOS);
+      notificarRolAutorHabilitado(actualizado, porDictamenComite);
       return actualizado;
     }
     if (!usuario.getRoles().contains(Rol.ASISTENTE)) {
@@ -165,14 +172,21 @@ public class UsuarioService {
       usuario.setRolActual(Rol.AUTOR);
     }
     Usuario actualizado = usuarioDAO.modificar(usuario);
+    notificarRolAutorHabilitado(actualizado, porDictamenComite);
+    return actualizado;
+  }
+
+  private void notificarRolAutorHabilitado(Usuario usuario, boolean porDictamenComite) {
+    String causa =
+        porDictamenComite
+            ? "Al aprobar tu trabajo, el comité académico te habilitó el rol de autor."
+            : "El administrador habilitó tu rol de autor.";
     notificacionService.enviar(
-        actualizado.getId(),
+        usuario.getId(),
         "Rol autor habilitado",
         TrabajoNotificacionHelper.formatear(
-            "El administrador habilitó tu rol de autor.",
-            "Ya podés gestionar trabajos desde el panel Autor."),
+            causa, "Ya podés gestionar trabajos desde el panel Autor."),
         TrabajoNotificacionHelper.RUTA_AUTOR_TRABAJOS);
-    return actualizado;
   }
 
   public Usuario registrarParticipante(Usuario usuario) {
