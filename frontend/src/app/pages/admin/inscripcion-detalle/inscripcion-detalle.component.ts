@@ -5,7 +5,9 @@ import { Subscription } from 'rxjs';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import {
   InscripcionCongreso,
+  esPagoEfectivo,
   etiquetaCategoria,
+  etiquetaMetodoPago,
 } from '../../../models/inscripcion.model';
 import { InscripcionService } from '../../../servicios/inscripcion.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -48,6 +50,10 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
             }
             <br />
             <span class="muted">{{ inscripcion.usuarioEmail }}</span>
+            @if (inscripcion.requiereFactura) {
+              <br />
+              <span class="muted small"><strong>Solicitó factura</strong></span>
+            }
           </dd>
           <dt>Institución</dt>
           <dd>{{ inscripcion.institucion || '—' }}</dd>
@@ -70,7 +76,19 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         </dl>
 
         <h2>Pago vinculado</h2>
+        @if (esEfectivo) {
+          <p class="aviso-amarillo">
+            <strong>Efectivo / presencial:</strong> no hay archivo: el asistente declaró pagar en caja
+            o durante el congreso. Aprobá solo si ya verificaste el cobro en efectivo (recepción, caja
+            o acreditación).
+            @if (inscripcion.requiereFactura) {
+              Si el usuario pidió factura, figura el aviso debajo del nombre.
+            }
+          </p>
+        }
         <dl class="detalle">
+          <dt>Forma de pago</dt>
+          <dd>{{ etiquetaMetodo(inscripcion.pagoMetodo) }}</dd>
           <dt>Pago</dt>
           <dd>
             @if (inscripcion.pagoId) {
@@ -87,6 +105,8 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <dd>
             @if (inscripcion.pagoComprobanteUrl) {
               <app-archivo-link [url]="inscripcion.pagoComprobanteUrl" label="Ver comprobante" />
+            } @else if (esEfectivo) {
+              Sin archivo (correcto para efectivo)
             } @else {
               —
             }
@@ -97,7 +117,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <h2>Acciones</h2>
           <div class="actions">
             <button type="button" class="btn-ok" (click)="validar(true)" [disabled]="procesando">
-              Aprobar
+              {{ esEfectivo ? 'Aprobar (cobro efectivo OK)' : 'Aprobar' }}
             </button>
             <button type="button" class="btn-warn" (click)="validar(false)" [disabled]="procesando">
               Rechazar
@@ -139,8 +159,16 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
     this.sub?.unsubscribe();
   }
 
+  get esEfectivo(): boolean {
+    return this.inscripcion ? esPagoEfectivo(this.inscripcion) : false;
+  }
+
   etiqueta(categoria: string): string {
     return etiquetaCategoria(categoria);
+  }
+
+  etiquetaMetodo(metodo?: string | null): string {
+    return etiquetaMetodoPago(metodo);
   }
 
   validar(aprobar: boolean): void {
@@ -153,6 +181,13 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
       if (!motivoRechazo) {
         return;
       }
+    } else if (this.esEfectivo) {
+      const ok = confirm(
+        '¿Confirmás que ya verificaste el cobro en efectivo (caja / recepción / acreditación)?\n\nAl aprobar, el usuario pasa a Asistente.'
+      );
+      if (!ok) {
+        return;
+      }
     }
     this.procesando = true;
     this.error = '';
@@ -160,7 +195,7 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
     this.inscripcionService.validar(this.inscripcion.id, { aprobar, motivoRechazo }).subscribe({
       next: (actualizada) => {
         this.inscripcion = actualizada;
-        this.mensaje = aprobar ? 'Inscripción aprobada.' : 'Inscripción rechazada.';
+        this.mensaje = aprobar ? 'Inscripción aprobada. El usuario ahora es Asistente.' : 'Inscripción rechazada.';
         this.procesando = false;
       },
       error: (err) => {

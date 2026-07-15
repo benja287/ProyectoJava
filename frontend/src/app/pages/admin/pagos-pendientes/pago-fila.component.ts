@@ -19,6 +19,8 @@ import { Pago } from '../../../models/pago.model';
       <td>
         @if (pago.comprobanteUrl) {
           <app-archivo-link [url]="pago.comprobanteUrl" label="Ver" />
+        } @else if (pago.metodo === 'EFECTIVO') {
+          Sin archivo (efectivo)
         } @else {
           —
         }
@@ -31,7 +33,7 @@ import { Pago } from '../../../models/pago.model';
           (click)="aprobar.emit(pago)"
           [disabled]="disabled"
         >
-          {{ disabled ? 'Procesando...' : 'Aprobar' }}
+          {{ disabled ? 'Procesando...' : pago.metodo === 'EFECTIVO' ? 'Aprobar (cobro efectivo OK)' : 'Aprobar' }}
         </button>
         <button
           type="button"

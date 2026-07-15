@@ -22,6 +22,7 @@ public record InscripcionCongresoDTO(
     Long pagoId,
     Double pagoMonto,
     String pagoEstado,
+    String pagoMetodo,
     String pagoComprobanteUrl) {
 
   public static InscripcionCongresoDTO from(InscripcionCongreso inscripcion) {
@@ -43,6 +44,7 @@ public record InscripcionCongresoDTO(
         pago != null ? pago.getId() : null,
         pago != null ? pago.getMonto() : null,
         pago != null && pago.getEstado() != null ? pago.getEstado().name() : null,
+        pago != null && pago.getMetodo() != null ? pago.getMetodo().name() : null,
         pago != null ? pago.getComprobanteUrl() : null);
   }
 }

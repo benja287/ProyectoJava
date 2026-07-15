@@ -69,6 +69,8 @@ export interface InscripcionCongreso {
   pagoId?: number | null;
   pagoMonto?: number | null;
   pagoEstado?: string | null;
+  /** TRANSFERENCIA | EFECTIVO | TARJETA */
+  pagoMetodo?: string | null;
   pagoComprobanteUrl?: string | null;
 }
 
@@ -127,4 +129,29 @@ export function asCategoriaInscripcion(value: string | null | undefined): Catego
   return CATEGORIAS_INSCRIPCION.some((c) => c.value === value)
     ? (value as CategoriaInscripcion)
     : null;
+}
+
+export function esPagoEfectivo(inscripcion: {
+  pagoMetodo?: string | null;
+  pagoEstado?: string | null;
+  pagoComprobanteUrl?: string | null;
+}): boolean {
+  if (inscripcion.pagoMetodo) {
+    return inscripcion.pagoMetodo === 'EFECTIVO';
+  }
+  // Compatibilidad con respuestas viejas sin pagoMetodo.
+  return !!inscripcion.pagoEstado && !inscripcion.pagoComprobanteUrl;
+}
+
+export function etiquetaMetodoPago(metodo?: string | null): string {
+  switch (metodo) {
+    case 'EFECTIVO':
+      return 'Efectivo / presencial';
+    case 'TRANSFERENCIA':
+      return 'Transferencia';
+    case 'TARJETA':
+      return 'Tarjeta';
+    default:
+      return metodo || '—';
+  }
 }

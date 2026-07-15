@@ -13,7 +13,9 @@ import {
   PROVINCIAS,
   asCategoriaInscripcion,
   categoriaRequiereCertificado,
+  esPagoEfectivo,
   etiquetaCategoria,
+  etiquetaMetodoPago,
 } from '../../../models/inscripcion.model';
 import { ArancelesService } from '../../../servicios/aranceles.service';
 import { InscripcionService } from '../../../servicios/inscripcion.service';
@@ -28,24 +30,38 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       <div class="inscripcion-card">
         @if (enviado) {
           <div class="inscripcion-success">
-            <h2>Tu inscripción fue enviada</h2>
-            <p>Será validada por el equipo organizador.</p>
+            @if (enviadoEfectivo) {
+              <h2>Pago en efectivo — sin comprobante digital</h2>
+              <p>
+                La inscripción queda pendiente hasta que un administrador valide en el panel que
+                registraste el pago en efectivo (por ejemplo en caja o acreditación durante el
+                congreso).
+              </p>
+            } @else {
+              <h2>Tu inscripción fue enviada</h2>
+              <p>
+                Enviaste el comprobante de transferencia. Será validado por el equipo organizador.
+              </p>
+            }
             <a routerLink="/" class="btn-primary-full">Volver al inicio</a>
           </div>
         } @else if (inscripcion && !mostrarFormulario) {
           <div class="inscripcion-success">
             @if (inscripcion.estado === 'APROBADA') {
               <h2>¡Tu inscripción fue aprobada!</h2>
-              <p>Ya estás inscripto/a al congreso.</p>
+              <p>Ya estás inscripto/a al congreso como asistente.</p>
             } @else if (inscripcion.estado === 'PENDIENTE') {
-              <h2>Tu inscripción está pendiente</h2>
-              <p>
-                @if (metodoEfectivo) {
-                  Declaraste pago en efectivo. La organización validará el cobro presencial.
-                } @else {
-                  Enviaste comprobante de transferencia. Será validado por administración.
-                }
-              </p>
+              @if (metodoEfectivo) {
+                <h2>Pago en efectivo — sin comprobante digital</h2>
+                <p>
+                  La inscripción queda pendiente hasta que un administrador valide en el panel que
+                  registraste el pago en efectivo (por ejemplo en caja o acreditación durante el
+                  congreso).
+                </p>
+              } @else {
+                <h2>Tu inscripción está pendiente</h2>
+                <p>Enviaste comprobante de transferencia. Será validado por administración.</p>
+              }
             } @else {
               <h2>Inscripción rechazada</h2>
               @if (inscripcion.motivoRechazo) {
@@ -56,6 +72,8 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
             <dl class="detalle">
               <dt>Categoría</dt>
               <dd>{{ etiqueta(inscripcion.categoria) }}</dd>
+              <dt>Forma de pago</dt>
+              <dd>{{ etiquetaMetodo(inscripcion.pagoMetodo) }}</dd>
               <dt>Estado pago</dt>
               <dd>{{ inscripcion.pagoEstado || '—' }}</dd>
               @if (inscripcion.pagoMonto != null) {
@@ -67,6 +85,9 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                 <dd>
                   <app-archivo-link [url]="inscripcion.pagoComprobanteUrl" label="Ver comprobante" />
                 </dd>
+              } @else if (metodoEfectivo) {
+                <dt>Comprobante</dt>
+                <dd>Sin archivo (pago en efectivo / presencial)</dd>
               }
             </dl>
 
@@ -174,8 +195,10 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                 </label>
               } @else {
                 <p class="notice-box">
-                  Pago en efectivo: la inscripción queda pendiente hasta que un administrador
-                  confirme el cobro.
+                  <strong>Pago en efectivo — sin comprobante digital</strong><br />
+                  La inscripción queda pendiente hasta que un administrador valide en el panel que
+                  registraste el pago en efectivo (por ejemplo en caja o acreditación durante el
+                  congreso).
                 </p>
               }
 
@@ -239,6 +262,7 @@ export class InscripcionParticipanteComponent implements OnInit {
   categoriaBloqueada = false;
   mostrarFormulario = true;
   enviado = false;
+  enviadoEfectivo = false;
   certificado?: File;
   comprobante?: File;
   cargando = true;
@@ -287,11 +311,15 @@ export class InscripcionParticipanteComponent implements OnInit {
   }
 
   get metodoEfectivo(): boolean {
-    return this.inscripcion?.pagoEstado != null && !this.inscripcion?.pagoComprobanteUrl;
+    return this.inscripcion ? esPagoEfectivo(this.inscripcion) : this.enviadoEfectivo;
   }
 
   etiqueta(categoria: string): string {
     return etiquetaCategoria(categoria);
+  }
+
+  etiquetaMetodo(metodo?: string | null): string {
+    return etiquetaMetodoPago(metodo);
   }
 
   ngOnInit(): void {
@@ -322,6 +350,7 @@ export class InscripcionParticipanteComponent implements OnInit {
     this.mostrarFormulario = true;
     this.inscripcion = undefined;
     this.enviado = false;
+    this.enviadoEfectivo = false;
     this.certificado = undefined;
     this.comprobante = undefined;
     this.form.reset({
@@ -359,6 +388,7 @@ export class InscripcionParticipanteComponent implements OnInit {
           this.inscripcion = creada;
           this.mostrarFormulario = false;
           this.enviado = true;
+          this.enviadoEfectivo = raw.metodoPago === 'EFECTIVO';
           this.guardando = false;
         },
         error: (err) => {
