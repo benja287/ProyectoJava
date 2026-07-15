@@ -43,6 +43,7 @@ public class JaxRsApplication extends Application {
         ArancelesResource.class,
         InscripcionResource.class,
         NotificacionResource.class,
+        NotificacionAdminResource.class,
         AdminStatsResource.class,
         EnvioEmailResource.class,
         ArchivoAdminResource.class,
