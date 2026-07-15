@@ -2,6 +2,7 @@ package ar.edu.unlp.jyaa.grupo1.rest;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ActivoRequest;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.ActualizarPerfilRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.RolesRequest;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.UsuarioFiltro;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
@@ -58,6 +59,31 @@ public class UsuarioResource {
     UsuarioFiltro filtro =
         new UsuarioFiltro(apellido, nombre, email, esEvaluador, ejeTematico, activo);
     return usuarioService.listar(page, size, filtro, AuthenticatedUser.from(ctx));
+  }
+
+  @GET
+  @Path("/me")
+  @Operation(summary = "Perfil del usuario autenticado")
+  public UsuarioDTO miPerfil(@Context ContainerRequestContext ctx) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    Usuario usuario = usuarioService.buscarPorId(auth.userId());
+    if (usuario == null) {
+      throw new NotFoundException("Usuario no encontrado");
+    }
+    return UsuarioDTO.from(usuario);
+  }
+
+  @PUT
+  @Path("/me")
+  @Operation(
+      summary = "Actualizar perfil propio",
+      description =
+          "Permite cambiar nombre, apellido, email y contraseña. No modifica roles, activo,"
+              + " categoría de inscripción ni eje de evaluador.")
+  public UsuarioDTO actualizarMiPerfil(
+      ActualizarPerfilRequest request, @Context ContainerRequestContext ctx) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    return UsuarioDTO.from(usuarioService.actualizarPerfilPropio(auth.userId(), request));
   }
 
   @GET

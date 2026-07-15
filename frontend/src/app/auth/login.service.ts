@@ -261,14 +261,13 @@ export class LoginService {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.usuario));
   }
 
-  /** Recarga datos del usuario desde GET /api/usuarios/{id} */
+  /** Recarga datos del usuario desde GET /api/usuarios/me */
   refreshUser(): Observable<Usuario> {
-    const id = this.usuario?.id;
-    if (!id) {
+    if (!this.usuario?.id) {
       return throwError(() => new Error('Sin sesión'));
     }
     const rolActualPrevio = this.usuario?.rolActual;
-    return this.usuarioService.buscarPorId(id).pipe(
+    return this.usuarioService.miPerfil().pipe(
       switchMap((u) => {
         if (!u) {
           return throwError(() => new Error('Usuario no encontrado'));

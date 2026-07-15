@@ -9,6 +9,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.ActualizarPerfilRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaUsuariosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.UsuarioDTO;
@@ -53,6 +54,59 @@ public class UsuarioService {
 
   public Usuario buscarPorId(Long id) {
     return usuarioDAO.recuperarPorId(id);
+  }
+
+  /**
+   * Actualiza solo datos personales del propio usuario. No permite cambiar roles, activo,
+   * categoría de inscripción ni eje de evaluador.
+   */
+  public Usuario actualizarPerfilPropio(Long usuarioId, ActualizarPerfilRequest req) {
+    if (req == null) {
+      throw new NegocioException("Datos de perfil requeridos");
+    }
+    Usuario existente = usuarioDAO.recuperarPorId(usuarioId);
+    if (existente == null) {
+      throw new NegocioException("Usuario no encontrado");
+    }
+
+    String nombre = req.nombre() != null ? req.nombre().trim() : "";
+    String apellido = req.apellido() != null ? req.apellido().trim() : "";
+    String email = req.email() != null ? req.email().trim().toLowerCase() : "";
+    if (nombre.isBlank() || apellido.isBlank() || email.isBlank()) {
+      throw new NegocioException("Nombre, apellido y email son obligatorios");
+    }
+    if (!email.contains("@") || email.length() > 180) {
+      throw new NegocioException("Email inválido");
+    }
+    if (nombre.length() > 80 || apellido.length() > 80) {
+      throw new NegocioException("Nombre o apellido demasiado largos");
+    }
+
+    if (!email.equalsIgnoreCase(existente.getEmail())) {
+      var otro = usuarioDAO.buscarPorEmail(email);
+      if (otro.isPresent() && !otro.get().getId().equals(usuarioId)) {
+        throw new NegocioException("El email ya está registrado");
+      }
+      existente.setEmail(email);
+    }
+
+    existente.setNombre(nombre);
+    existente.setApellido(apellido);
+
+    String passwordNueva =
+        req.passwordNueva() != null && !req.passwordNueva().isBlank() ? req.passwordNueva() : null;
+    if (passwordNueva != null) {
+      if (passwordNueva.length() < 8) {
+        throw new NegocioException("La nueva contraseña debe tener al menos 8 caracteres");
+      }
+      String passwordActual = req.passwordActual() != null ? req.passwordActual() : "";
+      if (passwordActual.isBlank() || !passwordActual.equals(existente.getPassword())) {
+        throw new NegocioException("La contraseña actual es incorrecta");
+      }
+      existente.setPassword(passwordNueva);
+    }
+
+    return usuarioDAO.modificar(existente);
   }
 
   public Usuario alta(Usuario usuario) {

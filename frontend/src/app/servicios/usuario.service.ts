@@ -7,7 +7,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { PaginaUsuarios, RolesRequest, Usuario } from '../models/usuario.model';
+import { PaginaUsuarios, RolesRequest, Usuario, ActualizarPerfilRequest } from '../models/usuario.model';
 import { buildListHttpParams } from '../utils/filtro-params.util';
 
 export interface UsuarioListFiltro {
@@ -67,6 +67,27 @@ export class UsuarioService {
     return this.http.get<Usuario>(`${this.baseUrl}/${id}`).pipe(
       catchError(() => throwError(() => new Error('Usuario no encontrado')))
     );
+  }
+
+  /** GET /api/usuarios/me */
+  miPerfil(): Observable<Usuario> {
+    return this.http.get<Usuario>(`${this.baseUrl}/me`);
+  }
+
+  /** PUT /api/usuarios/me — solo datos personales del usuario autenticado */
+  actualizarMiPerfil(payload: ActualizarPerfilRequest): Observable<Usuario> {
+    const body: ActualizarPerfilRequest = {
+      nombre: payload.nombre.trim(),
+      apellido: payload.apellido.trim(),
+      email: payload.email.trim(),
+    };
+    const actual = payload.passwordActual?.trim();
+    const nueva = payload.passwordNueva?.trim();
+    if (nueva) {
+      body.passwordNueva = nueva;
+      body.passwordActual = actual ?? '';
+    }
+    return this.http.put<Usuario>(`${this.baseUrl}/me`, body);
   }
 
   /** POST /api/usuarios */

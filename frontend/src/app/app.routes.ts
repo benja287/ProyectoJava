@@ -64,6 +64,7 @@ import { LimpiezaAdminComponent } from './pages/admin/limpieza-admin/limpieza-ad
 import { SolicitudesAutorAdminComponent } from './pages/admin/solicitudes-autor-admin/solicitudes-autor-admin.component';
 import { NotificacionBroadcastAdminComponent } from './pages/admin/notificacion-broadcast-admin/notificacion-broadcast-admin.component';
 import { HistoriaCongresoComponent } from './pages/historia/historia-congreso.component';
+import { MiPerfilComponent } from './pages/mi-perfil/mi-perfil.component';
 
 const admin = roleGuard(['ADMINISTRADOR']);
 const organizador = roleGuard(['ORGANIZADOR_CIENTIFICO']);
@@ -78,6 +79,7 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'seleccion-rol', component: SeleccionRolComponent, canActivate: [authGuard, seleccionRolGuard] },
   { path: 'registro', component: RegistroComponent },
+  { path: 'mi-perfil', component: MiPerfilComponent, canActivate: [authGuard] },
 
   // Inscripción al congreso (usuario registrado sin rol asistente aún)
   {

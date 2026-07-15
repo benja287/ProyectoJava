@@ -25,6 +25,14 @@ export interface RolesRequest {
   rolActual: string;
 }
 
+export interface ActualizarPerfilRequest {
+  nombre: string;
+  apellido: string;
+  email: string;
+  passwordActual?: string;
+  passwordNueva?: string;
+}
+
 /** Respuesta de POST /api/login (LoginResponseDTO en Java). */
 export interface LoginResponse {
   token: string;
