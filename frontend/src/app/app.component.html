@@ -62,6 +62,9 @@
             <a class="user-menu-item" routerLink="/mi-perfil" (click)="cerrarMenu()">
               Mi perfil
             </a>
+            <a class="user-menu-item" routerLink="/solicitud-evaluador" (click)="cerrarMenu()">
+              Solicitar ser evaluador/a
+            </a>
             @if (loginService.necesitaInscripcionCongreso()) {
               <a class="user-menu-item" routerLink="/inscripcion" (click)="cerrarMenu()">
                 Inscripción al congreso

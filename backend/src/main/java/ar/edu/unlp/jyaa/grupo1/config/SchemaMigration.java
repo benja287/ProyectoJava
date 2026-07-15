@@ -35,6 +35,8 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarVaciarFranjasArranqueLibre);
     // APPEND — aranceles por categoría + alias/QR/publicación (Alexis)
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarArancelesInscripcion);
+    // APPEND — plantillas solicitud evaluador / taller (Alexis)
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasSolicitudEvaluador);
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
@@ -997,6 +999,30 @@ public final class SchemaMigration {
           .executeUpdate();
       log.info("Aranceles por defecto sembrados (borrador, no publicados)");
     }
+  }
+
+  private static void migrarPlantillasSolicitudEvaluador(EntityManager em) {
+    insertarPlantillaSiFalta(
+        em,
+        "SOLICITUD_EVALUADOR_PENDIENTE_COMITE",
+        "Nueva solicitud de evaluador/a: {{postulante}}",
+        "Hola {{nombre}},\n\n{{contexto}}\n\nPostulante: {{postulante}} ({{email_postulante}})\n\nRevisá la solicitud en: {{url_plataforma}}{{enlace}}\n\nSaludos,\nComisión científica");
+    insertarPlantillaSiFalta(
+        em,
+        "SOLICITUD_EVALUADOR_APROBADA",
+        "Solicitud de evaluador/a aprobada",
+        "Hola {{nombre}},\n\n{{contexto}}\n\nEje asignado: {{eje}}\n\n{{proximo_paso}}\n\nIngresá a: {{url_plataforma}}{{enlace}}\n\nSaludos,\nComisión científica");
+    insertarPlantillaSiFalta(
+        em,
+        "SOLICITUD_EVALUADOR_RECHAZADA",
+        "Solicitud de evaluador/a no aprobada",
+        "Hola {{nombre}},\n\n{{contexto}}\n\nMotivo: {{motivo}}\n\nPodés consultar el estado en: {{url_plataforma}}{{enlace}}\n\nSaludos,\nComisión científica");
+    insertarPlantillaSiFalta(
+        em,
+        "TALLER_EVALUADORES_INVITACION",
+        "Invitación al taller de evaluadorxs",
+        "Hola {{nombre}},\n\n{{contexto}}\n\n{{proximo_paso}}\n\nMás info en: {{url_plataforma}}{{enlace}}\n\nContacto comisión científica: vía plataforma.\n\nSaludos,\nComisión científica");
+    log.info("Plantillas solicitud evaluador verificadas/insertadas");
   }
 
   private static void agregarColumnaSiFalta(

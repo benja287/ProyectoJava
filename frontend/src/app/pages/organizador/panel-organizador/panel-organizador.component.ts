@@ -54,6 +54,13 @@ import {
             <p>Asignar y quitar evaluadores en cada eje</p>
           </div>
         </a>
+        <a routerLink="/organizador/solicitudes-evaluador" class="accion-card">
+          <span class="accion-icono accion-icono--naranja" aria-hidden="true">📋</span>
+          <div>
+            <h3>Solicitudes de evaluadores</h3>
+            <p>Postulaciones pendientes: perfil, capacidad por eje, aprobar o rechazar</p>
+          </div>
+        </a>
         <a routerLink="/organizador/plazo-envio" class="accion-card">
           <span class="accion-icono accion-icono--indigo" aria-hidden="true">📅</span>
           <div>

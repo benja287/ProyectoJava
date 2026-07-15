@@ -50,6 +50,13 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
           </span>
         </div>
 
+        <p class="notice-box">
+          Subsección de postulaciones:
+          <a routerLink="/organizador/solicitudes-evaluador">Solicitudes de evaluadores</a>
+          (pendientes / aprobadas / rechazadas, con perfil y capacidad por eje). Al aprobar, el
+          usuario recibe rol EVALUADOR y se asigna el eje elegido.
+        </p>
+
         <app-filter-bar
           [fields]="filterFields"
           [values]="filtros"

@@ -28,6 +28,8 @@
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Certificado</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.Archivo</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.CongresoAnterior</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.SolicitudEvaluador</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.SolicitudEvaluadorCapacidad</class>
     <!-- RangoFechas y EtapaCongreso son @Embeddable, no se listan -->
 
     <properties>

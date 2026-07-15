@@ -62,6 +62,14 @@ import { formatFechaActividad } from '../../utils/fecha.util';
               <p>Consultá el cronograma publicado y elegí qué sumar a tu agenda</p>
             </div>
           </a>
+
+          <a routerLink="/solicitud-evaluador" class="accion-card">
+            <span class="accion-icono accion-icono--indigo" aria-hidden="true">🧑‍🔬</span>
+            <div>
+              <h3>Solicitar ser evaluador/a</h3>
+              <p>Postulate al comité de evaluadores con tu perfil y capacidad por eje</p>
+            </div>
+          </a>
         </div>
 
         <div class="mis-trabajos-card" id="mis-trabajos">

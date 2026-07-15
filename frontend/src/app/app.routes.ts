@@ -65,6 +65,8 @@ import { SolicitudesAutorAdminComponent } from './pages/admin/solicitudes-autor-
 import { NotificacionBroadcastAdminComponent } from './pages/admin/notificacion-broadcast-admin/notificacion-broadcast-admin.component';
 import { HistoriaCongresoComponent } from './pages/historia/historia-congreso.component';
 import { MiPerfilComponent } from './pages/mi-perfil/mi-perfil.component';
+import { SolicitudEvaluadorComponent } from './pages/solicitud-evaluador/solicitud-evaluador.component';
+import { SolicitudesEvaluadorOcComponent } from './pages/organizador/solicitudes-evaluador/solicitudes-evaluador-oc.component';
 
 const admin = roleGuard(['ADMINISTRADOR']);
 const organizador = roleGuard(['ORGANIZADOR_CIENTIFICO']);
@@ -80,6 +82,7 @@ export const routes: Routes = [
   { path: 'seleccion-rol', component: SeleccionRolComponent, canActivate: [authGuard, seleccionRolGuard] },
   { path: 'registro', component: RegistroComponent },
   { path: 'mi-perfil', component: MiPerfilComponent, canActivate: [authGuard] },
+  { path: 'solicitud-evaluador', component: SolicitudEvaluadorComponent, canActivate: [authGuard] },
 
   // Inscripción al congreso (usuario registrado sin rol asistente aún)
   {
@@ -215,6 +218,11 @@ export const routes: Routes = [
   {
     path: 'organizador/evaluadores',
     component: EvaluadoresEjeOcComponent,
+    canActivate: [organizador],
+  },
+  {
+    path: 'organizador/solicitudes-evaluador',
+    component: SolicitudesEvaluadorOcComponent,
     canActivate: [organizador],
   },
   {
