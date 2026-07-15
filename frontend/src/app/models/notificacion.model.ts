@@ -8,6 +8,17 @@ export interface Notificacion {
   enlace?: string | null;
 }
 
+export interface NotificacionResumen {
+  total: number;
+  leidas: number;
+  noLeidas: number;
+}
+
+export interface LimpiezaNotificacionResult {
+  eliminados: number;
+  mensaje: string;
+}
+
 export interface AdminStats {
   totalUsuarios: number;
   inscripcionesPendientesPago: number;
