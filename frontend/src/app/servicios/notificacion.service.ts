@@ -5,8 +5,15 @@ import { environment } from '../../environments/environment';
 import {
   LimpiezaNotificacionResult,
   Notificacion,
+  NotificacionAdmin,
   NotificacionResumen,
+  PaginaNotificaciones,
 } from '../models/notificacion.model';
+
+export interface NotificacionAdminFiltro {
+  leida?: boolean;
+  destinatario?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class NotificacionService {
@@ -41,8 +48,31 @@ export class NotificacionService {
     });
   }
 
+  listarAdmin(
+    page = 1,
+    size = 20,
+    filtro: NotificacionAdminFiltro = {},
+  ): Observable<PaginaNotificaciones> {
+    let params = new HttpParams().set('page', String(page)).set('size', String(size));
+    if (filtro.leida !== undefined && filtro.leida !== null) {
+      params = params.set('leida', String(filtro.leida));
+    }
+    if (filtro.destinatario?.trim()) {
+      params = params.set('destinatario', filtro.destinatario.trim());
+    }
+    return this.http.get<PaginaNotificaciones>(this.adminUrl, { params });
+  }
+
   resumenAdmin(): Observable<NotificacionResumen> {
     return this.http.get<NotificacionResumen>(`${this.adminUrl}/resumen`);
+  }
+
+  obtenerAdmin(id: number): Observable<NotificacionAdmin> {
+    return this.http.get<NotificacionAdmin>(`${this.adminUrl}/${id}`);
+  }
+
+  eliminarAdmin(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.adminUrl}/${id}`);
   }
 
   limpiarAdmin(

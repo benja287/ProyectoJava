@@ -8,6 +8,26 @@ export interface Notificacion {
   enlace?: string | null;
 }
 
+export interface NotificacionAdmin {
+  id: number;
+  asunto: string;
+  mensaje: string;
+  fechaCreacion: string;
+  leida: boolean;
+  enlace?: string | null;
+  usuarioId?: number;
+  usuarioNombre?: string;
+  usuarioEmail?: string;
+}
+
+export interface PaginaNotificaciones {
+  items: NotificacionAdmin[];
+  page: number;
+  size: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface NotificacionResumen {
   total: number;
   leidas: number;

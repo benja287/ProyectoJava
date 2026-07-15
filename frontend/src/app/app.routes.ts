@@ -48,6 +48,7 @@ import { MesaRedondaAdminComponent } from './pages/admin/mesa-redonda/mesa-redon
 import { CrearTallerAdminComponent } from './pages/admin/crear-taller/crear-taller-admin.component';
 import { CrearConferenciaAdminComponent } from './pages/admin/crear-conferencia/crear-conferencia-admin.component';
 import { EmailsAdminComponent } from './pages/admin/emails/emails-admin.component';
+import { NotificacionesAdminComponent } from './pages/admin/notificaciones-admin/notificaciones-admin.component';
 import { CongresoAdminComponent } from './pages/admin/congreso-admin/congreso-admin.component';
 import { CongresoDatosAdminComponent } from './pages/admin/congreso-admin/congreso-datos-admin.component';
 import { CongresoAulasAdminComponent } from './pages/admin/congreso-admin/congreso-aulas-admin.component';
@@ -147,6 +148,7 @@ export const routes: Routes = [
   { path: 'admin/trabajos/:id', component: TrabajoDetalleComponent, canActivate: [admin] },
   { path: 'admin/estadisticas', component: AdminEstadisticasComponent, canActivate: [admin] },
   { path: 'admin/emails', component: EmailsAdminComponent, canActivate: [admin] },
+  { path: 'admin/notificaciones', component: NotificacionesAdminComponent, canActivate: [admin] },
   {
     path: 'admin/congreso/datos',
     component: CongresoDatosAdminComponent,

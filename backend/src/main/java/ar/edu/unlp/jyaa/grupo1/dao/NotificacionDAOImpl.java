@@ -1,11 +1,16 @@
 package ar.edu.unlp.jyaa.grupo1.dao;
 
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.JpqlLikeFilters;
+import ar.edu.unlp.jyaa.grupo1.dao.filtro.NotificacionFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Notificacion;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RequestScoped
 public class NotificacionDAOImpl extends AbstractJpaDAO<Notificacion> implements NotificacionDAO {
@@ -22,6 +27,21 @@ public class NotificacionDAOImpl extends AbstractJpaDAO<Notificacion> implements
               "SELECT n FROM Notificacion n JOIN FETCH n.usuario ORDER BY n.fechaCreacion DESC",
               Notificacion.class)
           .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  public Notificacion recuperarPorIdConUsuario(Long id) {
+    EntityManager em = emConsulta();
+    try {
+      List<Notificacion> list =
+          em.createQuery(
+                  "SELECT n FROM Notificacion n JOIN FETCH n.usuario WHERE n.id = :id",
+                  Notificacion.class)
+              .setParameter("id", id)
+              .getResultList();
+      return list.isEmpty() ? null : list.get(0);
     } finally {
       closeLegacy(em);
     }
@@ -90,6 +110,50 @@ public class NotificacionDAOImpl extends AbstractJpaDAO<Notificacion> implements
     } finally {
       closeLegacy(em);
     }
+  }
+
+  @Override
+  public List<Notificacion> listarFiltrado(NotificacionFiltro filtro, int offset, int limit) {
+    EntityManager em = emConsulta();
+    try {
+      Map<String, Object> params = new HashMap<>();
+      String jpql =
+          buildWhere(
+                  "SELECT n FROM Notificacion n JOIN FETCH n.usuario", filtro, params)
+              + " ORDER BY n.fechaCreacion DESC";
+      TypedQuery<Notificacion> q = em.createQuery(jpql, Notificacion.class);
+      params.forEach(q::setParameter);
+      return q.setFirstResult(offset).setMaxResults(limit).getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public long contarFiltrado(NotificacionFiltro filtro) {
+    EntityManager em = emConsulta();
+    try {
+      Map<String, Object> params = new HashMap<>();
+      String jpql = buildWhere("SELECT COUNT(n) FROM Notificacion n JOIN n.usuario", filtro, params);
+      TypedQuery<Long> q = em.createQuery(jpql, Long.class);
+      params.forEach(q::setParameter);
+      return q.getSingleResult();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  private static String buildWhere(
+      String select, NotificacionFiltro filtro, Map<String, Object> params) {
+    StringBuilder jpql = new StringBuilder(select).append(" WHERE 1=1");
+    if (filtro != null) {
+      if (filtro.leida() != null) {
+        jpql.append(" AND n.leida = :leida");
+        params.put("leida", filtro.leida());
+      }
+      JpqlLikeFilters.appendLike(jpql, params, "n.usuario.email", "destinatario", filtro.destinatario());
+    }
+    return jpql.toString();
   }
 
   @Override

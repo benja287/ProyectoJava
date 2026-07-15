@@ -114,6 +114,13 @@ import {
             <p>Registro de correos del sistema</p>
           </div>
         </a>
+        <a routerLink="/admin/notificaciones" class="accion-card">
+          <span class="accion-icono accion-icono--indigo" aria-hidden="true">🔔</span>
+          <div>
+            <h3>Notificaciones in-app</h3>
+            <p>Listado y limpieza de avisos de la campanita</p>
+          </div>
+        </a>
         <a routerLink="/admin/estadisticas" class="accion-card">
           <span class="accion-icono accion-icono--violeta" aria-hidden="true">📊</span>
           <div>
@@ -122,7 +129,7 @@ import {
           </div>
         </a>
         <a routerLink="/admin/notificaciones-broadcast" class="accion-card">
-          <span class="accion-icono accion-icono--indigo" aria-hidden="true">🔔</span>
+          <span class="accion-icono accion-icono--indigo" aria-hidden="true">📢</span>
           <div>
             <h3>Enviar notificación</h3>
             <p>Avisar a usuarios o por rol</p>
