@@ -53,11 +53,22 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
           }
           @if (solicitud.estado === 'APROBADA') {
             <p class="ok">
-              Aprobada. Ejes asignados: <strong>{{ solicitud.ejeAsignado || '—' }}</strong>
+              Aprobada.
+              @if (solicitud.ejeAsignado) {
+                {{ solicitud.ejeAsignado }}.
+              }
               @if (solicitud.revisadoPorNombre) {
                 · Revisó: {{ solicitud.revisadoPorNombre }}
               }
             </p>
+            @if ((solicitud.cuposAsignados?.length ?? 0) > 0) {
+              <p class="muted">Cupos actuales (restantes / máximo):</p>
+              <ul>
+                @for (c of solicitud.cuposAsignados!; track c.ejeTematico) {
+                  <li>{{ c.ejeTematico }}: {{ c.restantes }}/{{ c.capacidadMax }}</li>
+                }
+              </ul>
+            }
             @if (!tieneRolEvaluador) {
               <p class="notice-box">
                 El rol EVALUADOR ya no está en tu cuenta (fue retirado). Podés volver a postularte.

@@ -28,11 +28,18 @@ public record SolicitudEvaluadorDTO(
     Set<String> areasConocimiento,
     Set<String> subareas,
     List<CapacidadEjeDTO> capacidades,
+    /** Cupos vivos del evaluador (restantes / max) tras aprobar. */
+    List<EvaluadorEjeCupoDTO> cuposAsignados,
     String observaciones,
     String ejeAsignado,
     boolean invitacionTallerEnviada) {
 
   public static SolicitudEvaluadorDTO from(SolicitudEvaluador s) {
+    return from(s, List.of());
+  }
+
+  public static SolicitudEvaluadorDTO from(
+      SolicitudEvaluador s, List<EvaluadorEjeCupoDTO> cuposAsignados) {
     var u = s.getUsuario();
     var rev = s.getRevisadoPor();
     List<CapacidadEjeDTO> caps =
@@ -62,6 +69,7 @@ public record SolicitudEvaluadorDTO(
         s.getAreasConocimiento(),
         s.getSubareas(),
         caps,
+        cuposAsignados != null ? cuposAsignados : List.of(),
         s.getObservaciones(),
         s.getEjeAsignado(),
         s.isInvitacionTallerEnviada());

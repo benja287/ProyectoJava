@@ -75,7 +75,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                 <dd>{{ (s.areasConocimiento || []).join(', ') || '—' }}</dd>
                 <dt>Sub-áreas</dt>
                 <dd>{{ (s.subareas || []).join(', ') || '—' }}</dd>
-                <dt>Capacidad por eje</dt>
+                <dt>Capacidad declarada (solicitud)</dt>
                 <dd>
                   <ul>
                     @for (c of s.capacidades; track c.ejeTematico) {
@@ -87,6 +87,19 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                     }
                   </ul>
                 </dd>
+                @if (s.estado === 'APROBADA' && (s.cuposAsignados?.length ?? 0) > 0) {
+                  <dt>Cupos asignados (restantes)</dt>
+                  <dd>
+                    <ul>
+                      @for (c of s.cuposAsignados!; track c.ejeTematico) {
+                        <li>
+                          <strong>{{ c.restantes }}</strong> / {{ c.capacidadMax }} —
+                          {{ c.ejeTematico }}
+                        </li>
+                      }
+                    </ul>
+                  </dd>
+                }
                 @if (s.observaciones) {
                   <dt>Observaciones</dt>
                   <dd>{{ s.observaciones }}</dd>
@@ -100,7 +113,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                   <dd>{{ s.motivoRechazo }}</dd>
                 }
                 @if (s.ejeAsignado) {
-                  <dt>Ejes asignados</dt>
+                  <dt>Resumen asignación</dt>
                   <dd>{{ s.ejeAsignado }}</dd>
                 }
               </dl>

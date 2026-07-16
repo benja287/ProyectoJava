@@ -80,7 +80,7 @@ public class SolicitudEvaluador implements Serializable {
   @Column(length = 2000)
   private String observaciones;
 
-  @Column(name = "eje_asignado", length = 300)
+  @Column(name = "eje_asignado", length = 2000)
   private String ejeAsignado;
 
   @Column(name = "invitacion_taller_enviada", nullable = false)

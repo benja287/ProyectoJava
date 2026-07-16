@@ -1,4 +1,6 @@
 /** Constantes del formulario “Inscripción a comité de evaluadorxs”. */
+import { EvaluadorEjeCupo } from './usuario.model';
+
 export const TIPOS_IDENTIFICACION = [
   { value: 'DNI', label: 'DNI' },
   { value: 'PASAPORTE', label: 'Pasaporte' },
@@ -75,6 +77,8 @@ export interface SolicitudEvaluador {
   areasConocimiento: string[];
   subareas: string[];
   capacidades: CapacidadEje[];
+  /** Cupos vivos tras aprobar (restantes / capacidadMax). */
+  cuposAsignados?: EvaluadorEjeCupo[];
   observaciones?: string | null;
   ejeAsignado?: string | null;
   invitacionTallerEnviada?: boolean;

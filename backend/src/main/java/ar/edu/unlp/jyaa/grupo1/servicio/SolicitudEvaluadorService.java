@@ -56,7 +56,10 @@ public class SolicitudEvaluadorService {
   @Inject private NotificacionService notificacionService;
 
   public SolicitudEvaluadorDTO miSolicitud(Long usuarioId) {
-    return solicitudDAO.buscarUltimaPorUsuario(usuarioId).map(SolicitudEvaluadorDTO::from).orElse(null);
+    return solicitudDAO
+        .buscarUltimaPorUsuario(usuarioId)
+        .map(this::toDtoConCupos)
+        .orElse(null);
   }
 
   public SolicitudEvaluadorDTO crear(Long usuarioId, SolicitudEvaluadorCreateRequest req) {
@@ -122,7 +125,7 @@ public class SolicitudEvaluadorService {
     notificarComiteNuevaSolicitud(guardada);
     // Paso 4: invitación al taller al postularse (no garantiza trabajos).
     enviarInvitacionTaller(guardada);
-    return SolicitudEvaluadorDTO.from(requireSolicitud(guardada.getId()));
+    return toDtoConCupos(requireSolicitud(guardada.getId()));
   }
 
   public PaginaSolicitudesEvaluadorDTO listar(
@@ -141,7 +144,9 @@ public class SolicitudEvaluadorService {
         (est == null
                 ? solicitudDAO.listarTodas(offset, safeSize)
                 : solicitudDAO.listarPorEstado(est, offset, safeSize))
-            .stream().map(SolicitudEvaluadorDTO::from).toList();
+            .stream()
+            .map(this::toDtoConCupos)
+            .toList();
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
     return new PaginaSolicitudesEvaluadorDTO(items, safePage, safeSize, total, totalPages);
   }
@@ -151,7 +156,7 @@ public class SolicitudEvaluadorService {
     if (!auth.canGestionarEvaluadoresEje() && !auth.userId().equals(s.getUsuario().getId())) {
       throw new NegocioException("No tenés permiso para ver esta solicitud");
     }
-    return SolicitudEvaluadorDTO.from(s);
+    return toDtoConCupos(s);
   }
 
   public SolicitudEvaluadorDTO validar(
@@ -183,11 +188,14 @@ public class SolicitudEvaluadorService {
         throw new NegocioException(
             "La solicitud no tiene ejes con capacidad > 0 para asignar");
       }
+      // Primero cupos + rol (si falla, no marcar aprobada).
+      Long usuarioId = s.getUsuario().getId();
+      evaluadorEjeService.asignarCuposDesdeSolicitud(usuarioId, caps);
       s.setEstado(EstadoSolicitudEvaluador.APROBADA);
       s.setMotivoRechazo(null);
-      s.setEjeAsignado(String.join(" · ", caps.keySet()));
+      // Resumen corto: los nombres completos van en cuposAsignados / capacidades (evitar truncar BD).
+      s.setEjeAsignado(caps.size() + " ejes con cupo (capacidad de la solicitud)");
       solicitudDAO.modificar(s);
-      evaluadorEjeService.asignarCuposDesdeSolicitud(s.getUsuario().getId(), caps);
       notificarAprobacion(s);
       if (req.enviarInvitacionTaller()) {
         enviarInvitacionTaller(s);
@@ -202,7 +210,7 @@ public class SolicitudEvaluadorService {
       solicitudDAO.modificar(s);
       notificarRechazo(s);
     }
-    return SolicitudEvaluadorDTO.from(requireSolicitud(id));
+    return toDtoConCupos(requireSolicitud(id));
   }
 
   public SolicitudEvaluadorDTO invitarTaller(Long id, AuthenticatedUser auth) {
@@ -211,7 +219,7 @@ public class SolicitudEvaluadorService {
     }
     SolicitudEvaluador s = requireSolicitud(id);
     enviarInvitacionTaller(s);
-    return SolicitudEvaluadorDTO.from(requireSolicitud(id));
+    return toDtoConCupos(requireSolicitud(id));
   }
 
   /**
@@ -326,6 +334,19 @@ public class SolicitudEvaluadorService {
     if (req.capacidades() == null || req.capacidades().isEmpty()) {
       throw new NegocioException("Completá la capacidad por eje temático");
     }
+  }
+
+  private SolicitudEvaluadorDTO toDtoConCupos(SolicitudEvaluador s) {
+    if (s == null) {
+      return null;
+    }
+    Long uid = s.getUsuario() != null ? s.getUsuario().getId() : null;
+    if (uid == null
+        || (s.getEstado() != EstadoSolicitudEvaluador.APROBADA
+            && s.getEstado() != EstadoSolicitudEvaluador.REVOCADA)) {
+      return SolicitudEvaluadorDTO.from(s, List.of());
+    }
+    return SolicitudEvaluadorDTO.from(s, evaluadorEjeService.listarCuposDto(uid));
   }
 
   private SolicitudEvaluador requireSolicitud(Long id) {

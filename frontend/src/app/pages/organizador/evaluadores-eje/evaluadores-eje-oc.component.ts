@@ -99,7 +99,10 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
 
                 @if (cuposActivos(u).length) {
                   <div class="cupos-lista">
-                    <p class="eval-select-label">Ejes y cupos</p>
+                    <p class="eval-select-label">
+                      Ejes y cupos
+                      <span class="muted"> — {{ etiquetaOrigenCupo(u) }}</span>
+                    </p>
                     <ul>
                       @for (c of cuposActivos(u); track c.ejeTematico) {
                         <li class="cupo-item" [class.cupo-item--agotado]="c.restantes <= 0">
@@ -267,6 +270,17 @@ export class EvaluadoresEjeOcComponent extends ListadoPaginadoBase {
 
   cuposActivos(u: Usuario): EvaluadorEjeCupo[] {
     return (u.cuposEje || []).filter((c) => c.activo !== false);
+  }
+
+  /** Manual = cupo 5; solicitud = capacidades declaradas (pueden ser otras). */
+  etiquetaOrigenCupo(u: Usuario): string {
+    const cupos = this.cuposActivos(u);
+    if (!cupos.length) return '';
+    const todosManuales = cupos.every((c) => c.capacidadMax === 5);
+    if (todosManuales && cupos.length <= 2) {
+      return 'asignación manual (cupo 5 por eje)';
+    }
+    return 'desde solicitud aprobada';
   }
 
   categoriaLabel(categoria?: string | null): string {
