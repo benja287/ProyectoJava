@@ -452,6 +452,9 @@ interface PrecheckChecks {
                   <article class="comite-eval-card">
                     <header>
                       <strong>{{ a.evaluadorApellido }}, {{ a.evaluadorNombre }}</strong>
+                      @if (a.evaluadorEmail) {
+                        <span class="muted">{{ a.evaluadorEmail }}</span>
+                      }
                       <span class="muted">
                         {{ a.aceptada ? 'Asignación aceptada' : 'Asignación no aceptada' }}
                       </span>
