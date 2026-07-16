@@ -103,6 +103,10 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                       Ejes y cupos
                       <span class="muted"> — {{ etiquetaOrigenCupo(u) }}</span>
                     </p>
+                    <p class="form-hint cupos-hint">
+                      Los restantes bajan al asignar un <strong>trabajo</strong> a este evaluador en
+                      el comité (no al aprobar la solicitud). Si llegan a 0, usá Reiniciar cupo.
+                    </p>
                     <ul>
                       @for (c of cuposActivos(u); track c.ejeTematico) {
                         <li class="cupo-item" [class.cupo-item--agotado]="c.restantes <= 0">
@@ -110,6 +114,12 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                             <strong>{{ c.ejeTematico }}</strong>
                             <span class="muted">
                               restantes {{ c.restantes }} / {{ c.capacidadMax }}
+                              @if (c.restantes < c.capacidadMax && c.restantes > 0) {
+                                · en uso
+                              }
+                              @if (c.restantes <= 0) {
+                                · agotado
+                              }
                             </span>
                           </div>
                           <div class="cupo-acciones">
@@ -138,26 +148,36 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                   </div>
                 }
 
-                <label class="eval-select-label">
-                  {{ esEvaluadorConEje(u) ? 'Sumar otro eje' : 'Elegí eje temático para hacerlo evaluador' }}
-                  <select
-                    [value]="ejeDraft[u.id!] || ''"
-                    (change)="setEjeDraft(u.id!, $any($event.target).value)"
+                @if (!vieneDeSolicitud(u)) {
+                  <label class="eval-select-label">
+                    {{
+                      esEvaluadorConEje(u)
+                        ? 'Sumar otro eje (solo asignación manual)'
+                        : 'Elegí eje temático para hacerlo evaluador'
+                    }}
+                    <select
+                      [value]="ejeDraft[u.id!] || ''"
+                      (change)="setEjeDraft(u.id!, $any($event.target).value)"
+                    >
+                      <option value="">Seleccionar eje...</option>
+                      @for (eje of ejesDisponiblesPara(u); track eje) {
+                        <option [value]="eje">{{ eje }}</option>
+                      }
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    class="btn-primary-full"
+                    (click)="hacerEvaluador(u)"
+                    [disabled]="procesando"
                   >
-                    <option value="">Seleccionar eje...</option>
-                    @for (eje of ejesTematicos; track eje) {
-                      <option [value]="eje">{{ eje }}</option>
-                    }
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  class="btn-primary-full"
-                  (click)="hacerEvaluador(u)"
-                  [disabled]="procesando"
-                >
-                  {{ esEvaluadorConEje(u) ? 'Asignar eje (cupo 5)' : 'Hacer evaluador en este eje' }}
-                </button>
+                    {{
+                      esEvaluadorConEje(u)
+                        ? 'Asignar eje (cupo 5)'
+                        : 'Hacer evaluador en este eje (cupo 5)'
+                    }}
+                  </button>
+                }
 
                 @if (esEvaluadorConEje(u)) {
                   <button
@@ -170,8 +190,7 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                   </button>
                   <p class="form-hint">
                     El autor de un trabajo no puede evaluarlo ni gestionarlo como comité (conflicto de
-                    interés). Si restantes = 0, no se puede asignar más trabajos de ese eje hasta
-                    reiniciar el cupo.
+                    interés).
                   </p>
                 }
               </article>
@@ -226,6 +245,10 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
         gap: 0.35rem;
         align-items: center;
       }
+      .cupos-hint {
+        margin: 0 0 0.5rem;
+        font-size: 0.85rem;
+      }
     `,
   ],
 })
@@ -274,13 +297,26 @@ export class EvaluadoresEjeOcComponent extends ListadoPaginadoBase {
 
   /** Manual = cupo 5; solicitud = capacidades declaradas (pueden ser otras). */
   etiquetaOrigenCupo(u: Usuario): string {
-    const cupos = this.cuposActivos(u);
-    if (!cupos.length) return '';
-    const todosManuales = cupos.every((c) => c.capacidadMax === 5);
-    if (todosManuales && cupos.length <= 2) {
-      return 'asignación manual (cupo 5 por eje)';
+    if (this.vieneDeSolicitud(u)) {
+      return 'desde solicitud aprobada';
     }
-    return 'desde solicitud aprobada';
+    return 'asignación manual (cupo 5 por eje)';
+  }
+
+  /**
+   * Evaluador venido de solicitud: varios ejes y/o capacidades distintas de 5.
+   * A esos no se les ofrece “Asignar eje (cupo 5)”.
+   */
+  vieneDeSolicitud(u: Usuario): boolean {
+    const cupos = this.cuposActivos(u);
+    if (!cupos.length) return false;
+    if (cupos.some((c) => c.capacidadMax !== 5)) return true;
+    return cupos.length > 2;
+  }
+
+  ejesDisponiblesPara(u: Usuario): string[] {
+    const ya = new Set(this.cuposActivos(u).map((c) => c.ejeTematico));
+    return this.ejesTematicos.filter((e) => !ya.has(e));
   }
 
   categoriaLabel(categoria?: string | null): string {
