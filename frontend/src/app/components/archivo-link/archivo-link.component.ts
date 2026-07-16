@@ -20,11 +20,17 @@ import { ArchivoService } from '../../servicios/archivo.service';
 export class ArchivoLinkComponent {
   @Input() url?: string | null;
   @Input() label = 'Ver';
+  /** Si true, fuerza descarga (útil para Word). */
+  @Input() download = false;
+  @Input() downloadName?: string;
 
   constructor(private archivoService: ArchivoService) {}
 
   onClick(event: Event): void {
     event.preventDefault();
-    this.archivoService.abrir(this.url);
+    this.archivoService.abrir(this.url, {
+      forceDownload: this.download,
+      filename: this.downloadName,
+    });
   }
 }

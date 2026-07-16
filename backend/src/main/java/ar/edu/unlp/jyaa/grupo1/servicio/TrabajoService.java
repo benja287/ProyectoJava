@@ -689,11 +689,15 @@ public class TrabajoService {
 
   public Trabajo adjuntarDocumento(Long id, InputStream contenido, String filename) {
     Trabajo trabajo = buscar(id);
+    String nombre = filename != null ? filename : "documento.pdf";
+    if (!nombre.toLowerCase().endsWith(".pdf")) {
+      throw new NegocioException("El documento principal debe ser un archivo PDF (.pdf)");
+    }
     String urlAnterior = trabajo.getDocumentoUrl();
     try {
       String url =
           documentStorageService.guardar(
-              DocumentStorageService.TipoArchivo.TRABAJO, filename, contenido);
+              DocumentStorageService.TipoArchivo.TRABAJO, nombre, contenido);
       trabajo.setDocumentoUrl(url);
       Trabajo guardado = trabajoDAO.modificar(trabajo);
       documentStorageService.eliminarPorUrl(urlAnterior);
@@ -703,13 +707,37 @@ public class TrabajoService {
     }
   }
 
+  /** Adjunta Word (.docx) opcional; no reemplaza el PDF principal. */
+  public Trabajo adjuntarDocumentoDocx(Long id, InputStream contenido, String filename) {
+    Trabajo trabajo = buscar(id);
+    String nombre = filename != null ? filename : "documento.docx";
+    String lower = nombre.toLowerCase();
+    if (!lower.endsWith(".docx") && !lower.endsWith(".doc")) {
+      throw new NegocioException("El archivo Word debe ser .docx (o .doc)");
+    }
+    String urlAnterior = trabajo.getDocumentoDocxUrl();
+    try {
+      String url =
+          documentStorageService.guardar(
+              DocumentStorageService.TipoArchivo.TRABAJO, nombre, contenido);
+      trabajo.setDocumentoDocxUrl(url);
+      Trabajo guardado = trabajoDAO.modificar(trabajo);
+      documentStorageService.eliminarPorUrl(urlAnterior);
+      return guardado;
+    } catch (IOException e) {
+      throw new NegocioException("No se pudo guardar el Word: " + e.getMessage());
+    }
+  }
+
   public void baja(Long id) {
     Trabajo trabajo = buscar(id);
     String documentoUrl = trabajo.getDocumentoUrl();
+    String documentoDocxUrl = trabajo.getDocumentoDocxUrl();
     actividadDAO.desvincularTrabajo(id);
     limpiarAsignaciones(id);
     trabajoDAO.baja(id);
     documentStorageService.eliminarPorUrl(documentoUrl);
+    documentStorageService.eliminarPorUrl(documentoDocxUrl);
   }
 
   private void validarLimiteNuevoEnvio(Usuario autor, Rol rolEnvio) {

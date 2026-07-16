@@ -7,6 +7,7 @@ export interface AsignacionEvaluacion {
   trabajoEstado?: string;
   trabajoEjeTematico?: string;
   trabajoDocumentoUrl?: string | null;
+  trabajoDocumentoDocxUrl?: string | null;
   trabajoTipo?: string;
   trabajoModalidad?: string;
   trabajoResumen?: string;

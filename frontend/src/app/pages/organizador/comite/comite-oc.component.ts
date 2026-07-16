@@ -253,6 +253,16 @@ interface PrecheckChecks {
                   />
                 </p>
               }
+              @if (seleccionado.documentoDocxUrl) {
+                <p>
+                  <app-archivo-link
+                    [url]="seleccionado.documentoDocxUrl"
+                    label="Descargar Word (.docx)"
+                    [download]="true"
+                    downloadName="trabajo.docx"
+                  />
+                </p>
+              }
               <div class="lista-checks comite-checks-grid">
                 @for (item of checklistItems; track item.key) {
                   <label class="check-row">

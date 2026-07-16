@@ -107,6 +107,12 @@ public class DocumentStorageService {
     if (lower.endsWith(".webp")) {
       return "image/webp";
     }
+    if (lower.endsWith(".docx")) {
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    }
+    if (lower.endsWith(".doc")) {
+      return "application/msword";
+    }
     return "application/pdf";
   }
 }

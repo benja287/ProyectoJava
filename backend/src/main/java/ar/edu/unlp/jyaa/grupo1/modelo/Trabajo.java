@@ -55,6 +55,10 @@ public class Trabajo implements Serializable {
   @Column(name = "documento_url", length = 500)
   private String documentoUrl;
 
+  /** Word opcional (p. ej. para control de cambios); el PDF sigue siendo el documento principal. */
+  @Column(name = "documento_docx_url", length = 500)
+  private String documentoDocxUrl;
+
   @Column(name = "fecha_creacion")
   private LocalDate fechaCreacion;
 
@@ -174,6 +178,14 @@ public class Trabajo implements Serializable {
 
   public void setDocumentoUrl(String documentoUrl) {
     this.documentoUrl = documentoUrl;
+  }
+
+  public String getDocumentoDocxUrl() {
+    return documentoDocxUrl;
+  }
+
+  public void setDocumentoDocxUrl(String documentoDocxUrl) {
+    this.documentoDocxUrl = documentoDocxUrl;
   }
 
   public LocalDate getFechaCreacion() {

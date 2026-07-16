@@ -77,6 +77,15 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                   } @else {
                     Sin archivo
                   }
+                  @if (asignacion.trabajoDocumentoDocxUrl) {
+                    ·
+                    <app-archivo-link
+                      [url]="asignacion.trabajoDocumentoDocxUrl"
+                      label="Word (.docx)"
+                      [download]="true"
+                      downloadName="trabajo.docx"
+                    />
+                  }
                 </dd>
               </dl>
 

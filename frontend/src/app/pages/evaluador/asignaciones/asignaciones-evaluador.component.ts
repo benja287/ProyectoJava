@@ -52,6 +52,15 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                   } @else {
                     —
                   }
+                  @if (a.trabajoDocumentoDocxUrl) {
+                    ·
+                    <app-archivo-link
+                      [url]="a.trabajoDocumentoDocxUrl"
+                      label="Word"
+                      [download]="true"
+                      downloadName="trabajo.docx"
+                    />
+                  }
                 </td>
                 <td>
                   @if (!a.fechaRespuesta) {

@@ -310,7 +310,7 @@ public class TrabajoResource {
   @Path("/{id}/documento")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
   @Operation(
-      summary = "Adjuntar documento al trabajo",
+      summary = "Adjuntar PDF principal al trabajo",
       requestBody =
           @RequestBody(
               required = true,
@@ -332,6 +332,38 @@ public class TrabajoResource {
     String nombre = fileDetail != null ? fileDetail.getFileName() : "documento.pdf";
     try {
       Trabajo trabajo = trabajoService.adjuntarDocumento(id, file, nombre);
+      return TrabajoResumenDTO.from(trabajo);
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @POST
+  @Path("/{id}/documento-docx")
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  @Operation(
+      summary = "Adjuntar Word (.docx) opcional al trabajo",
+      requestBody =
+          @RequestBody(
+              required = true,
+              content =
+                  @Content(
+                      mediaType = MediaType.MULTIPART_FORM_DATA,
+                      schema = @Schema(implementation = DocumentoUploadForm.class))))
+  @ApiResponse(responseCode = "200", description = "Word adjuntado")
+  @ApiResponse(responseCode = "404", description = "Trabajo no encontrado")
+  public TrabajoResumenDTO adjuntarDocumentoDocx(
+      @PathParam("id") Long id,
+      @FormDataParam("file") java.io.InputStream file,
+      @FormDataParam("file")
+          org.glassfish.jersey.media.multipart.FormDataContentDisposition fileDetail)
+      throws IOException {
+    if (file == null) {
+      throw new ar.edu.unlp.jyaa.grupo1.servicio.NegocioException("Debe adjuntar un archivo Word");
+    }
+    String nombre = fileDetail != null ? fileDetail.getFileName() : "documento.docx";
+    try {
+      Trabajo trabajo = trabajoService.adjuntarDocumentoDocx(id, file, nombre);
       return TrabajoResumenDTO.from(trabajo);
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());

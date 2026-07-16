@@ -134,6 +134,15 @@ const TIPOS_CIENTIFICOS = [
                           [url]="a.trabajoDocumentoUrl"
                           label="Ver / descargar PDF"
                         />
+                        @if (a.trabajoDocumentoDocxUrl) {
+                          ·
+                          <app-archivo-link
+                            [url]="a.trabajoDocumentoDocxUrl"
+                            label="Word (.docx)"
+                            [download]="true"
+                            downloadName="trabajo.docx"
+                          />
+                        }
                       </p>
                     } @else {
                       <p class="muted evaluador-sin-pdf">Sin archivo adjunto</p>
@@ -236,6 +245,15 @@ const TIPOS_CIENTIFICOS = [
                     @if (t.documentoUrl) {
                       <p class="evaluador-pdf">
                         <app-archivo-link [url]="t.documentoUrl" label="Ver / descargar PDF" />
+                        @if (t.documentoDocxUrl) {
+                          ·
+                          <app-archivo-link
+                            [url]="t.documentoDocxUrl"
+                            label="Word (.docx)"
+                            [download]="true"
+                            downloadName="trabajo.docx"
+                          />
+                        }
                       </p>
                     } @else {
                       <p class="muted evaluador-sin-pdf">Sin archivo adjunto</p>

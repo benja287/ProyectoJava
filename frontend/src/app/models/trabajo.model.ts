@@ -8,6 +8,7 @@ export interface Trabajo {
   tipo: string;
   estado?: string;
   documentoUrl?: string | null;
+  documentoDocxUrl?: string | null;
   fechaCreacion?: string;
   coautores?: string[];
   autorId?: number;

@@ -26,8 +26,11 @@ export class ArchivoService {
     return this.http.delete<LimpiezaArchivoResult>(`${this.adminUrl}/huerfanos`);
   }
 
-  /** Abre PDF/comprobante en pestaña nueva (evita que Angular dev server sirva index.html). */
-  abrir(storedUrl: string | null | undefined): void {
+  /** Abre PDF/comprobante en pestaña nueva; Word se descarga. */
+  abrir(
+    storedUrl: string | null | undefined,
+    options?: { forceDownload?: boolean; filename?: string }
+  ): void {
     if (!storedUrl) {
       return;
     }
@@ -40,11 +43,27 @@ export class ArchivoService {
       .get(`${environment.apiUrl}/archivos/${id}`, { responseType: 'blob' })
       .subscribe({
         next: (blob) => {
-          const type = blob.type && blob.type !== 'application/octet-stream'
-            ? blob.type
-            : 'application/pdf';
+          const isOffice =
+            !!blob.type &&
+            (blob.type.includes('wordprocessingml') ||
+              blob.type.includes('msword') ||
+              blob.type.includes('officedocument'));
+          const type =
+            blob.type && blob.type !== 'application/octet-stream'
+              ? blob.type
+              : isOffice || options?.forceDownload
+                ? 'application/octet-stream'
+                : 'application/pdf';
           const obj = URL.createObjectURL(new Blob([blob], { type }));
-          window.open(obj, '_blank', 'noopener');
+          if (options?.forceDownload || isOffice) {
+            const a = document.createElement('a');
+            a.href = obj;
+            a.download = options?.filename || 'documento.docx';
+            a.rel = 'noopener';
+            a.click();
+          } else {
+            window.open(obj, '_blank', 'noopener');
+          }
           setTimeout(() => URL.revokeObjectURL(obj), 120_000);
         },
         error: () => window.open(this.resolveUrl(storedUrl), '_blank', 'noopener'),

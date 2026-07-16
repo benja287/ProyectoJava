@@ -154,6 +154,12 @@ export class TrabajoService {
     return this.http.post<Trabajo>(`${this.baseUrl}/${id}/documento`, form);
   }
 
+  adjuntarDocumentoDocx(id: number, file: File): Observable<Trabajo> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<Trabajo>(`${this.baseUrl}/${id}/documento-docx`, form);
+  }
+
   baja(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }

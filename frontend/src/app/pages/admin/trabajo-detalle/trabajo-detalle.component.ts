@@ -72,9 +72,18 @@ import { etiquetaRolEnvio } from '../../../utils/trabajo-rol.util';
           <dt>Documento</dt>
           <dd>
             @if (trabajo.documentoUrl) {
-              <app-archivo-link [url]="trabajo.documentoUrl" label="Ver documento" />
+              <app-archivo-link [url]="trabajo.documentoUrl" label="Ver PDF" />
             } @else {
               —
+            }
+            @if (trabajo.documentoDocxUrl) {
+              ·
+              <app-archivo-link
+                [url]="trabajo.documentoDocxUrl"
+                label="Word (.docx)"
+                [download]="true"
+                downloadName="trabajo.docx"
+              />
             }
           </dd>
           <dt>Fecha creación</dt>

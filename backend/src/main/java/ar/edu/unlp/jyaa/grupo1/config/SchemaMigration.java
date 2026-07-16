@@ -37,6 +37,16 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarArancelesInscripcion);
     // APPEND — plantillas solicitud evaluador / taller (Alexis)
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasSolicitudEvaluador);
+    // APPEND — Word opcional en trabajos (Alexis)
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarTrabajoDocumentoDocx);
+  }
+
+  private static void migrarTrabajoDocumentoDocx(EntityManager em) {
+    agregarColumnaSiFalta(
+        em,
+        "trabajos",
+        "documento_docx_url",
+        "ALTER TABLE trabajos ADD COLUMN documento_docx_url VARCHAR(500) NULL");
   }
 
   private static void migrarColumnaEstadoTrabajo(EntityManager em) {
