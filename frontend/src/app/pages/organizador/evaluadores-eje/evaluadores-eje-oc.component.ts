@@ -54,8 +54,8 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
           Subsección de postulaciones:
           <a routerLink="/organizador/solicitudes-evaluador">Solicitudes de evaluadores</a>
           (pendientes / aprobadas / rechazadas). Al aprobar se asignan
-          <strong>todos</strong> los ejes con capacidad &gt; 0 y sus cupos. Al asignar trabajos se
-          descuentan restantes; cuando llegan a 0 podés reiniciar el cupo de ese eje.
+          <strong>todos</strong> los ejes con capacidad &gt; 0. Los restantes bajan al asignar
+          trabajos y se liberan al completar el dictamen; Reiniciar cupo es solo si quedó trabado.
         </p>
 
         <app-filter-bar
@@ -104,8 +104,10 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                       <span class="muted"> — {{ etiquetaOrigenCupo(u) }}</span>
                     </p>
                     <p class="form-hint cupos-hint">
-                      Los restantes bajan al asignar un <strong>trabajo</strong> a este evaluador en
-                      el comité (no al aprobar la solicitud). Si llegan a 0, usá Reiniciar cupo.
+                      Restantes = cupos libres para asignar trabajos. Bajan al
+                      <strong>asignar</strong> un trabajo y se liberan solos cuando el evaluador
+                      <strong>emite el dictamen</strong> (o si rechaza/desasignan). Si un cupo quedó
+                      trabado en 0, usá Reiniciar cupo.
                     </p>
                     <ul>
                       @for (c of cuposActivos(u); track c.ejeTematico) {

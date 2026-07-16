@@ -211,9 +211,10 @@ public class AsignacionEvaluacionService {
         asignacion.getEvaluador() != null ? asignacion.getEvaluador().getId() : null;
     String eje =
         asignacion.getTrabajo() != null ? asignacion.getTrabajo().getEjeTematico() : null;
-    // Si ya rechazó, el cupo se devolvió al responder; no devolver dos veces.
+    // Cupo ya liberado si rechazó la asignación o si ya emitió dictamen.
     boolean cupoYaDevuelto =
-        asignacion.getFechaRespuesta() != null && !asignacion.isAceptada();
+        (asignacion.getFechaRespuesta() != null && !asignacion.isAceptada())
+            || asignacion.getEvaluacion() != null;
     asignacionEvaluacionDAO.baja(id);
     if (!cupoYaDevuelto) {
       evaluadorEjeService.devolverCupo(evaluadorId, eje);

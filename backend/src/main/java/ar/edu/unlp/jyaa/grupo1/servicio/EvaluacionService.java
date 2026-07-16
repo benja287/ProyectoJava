@@ -24,6 +24,7 @@ public class EvaluacionService {
   @Inject private CongresoDAO congresoDAO;
   @Inject private TrabajoService trabajoService;
   @Inject private DocumentStorageService documentStorageService;
+  @Inject private EvaluadorEjeService evaluadorEjeService;
 
   public Evaluacion registrar(EvaluacionRequest request) {
     if (request == null || request.asignacionId() == null) {
@@ -84,6 +85,12 @@ public class EvaluacionService {
     evaluacion.setFecha(LocalDate.now());
     asignacion.setEvaluacion(evaluacion);
     Evaluacion guardada = evaluacionDAO.alta(evaluacion);
+
+    // Libera 1 cupo del eje: el evaluador ya dictaminó → el comité puede asignarle otro trabajo.
+    if (asignacion.getEvaluador() != null && asignacion.getTrabajo() != null) {
+      evaluadorEjeService.devolverCupo(
+          asignacion.getEvaluador().getId(), asignacion.getTrabajo().getEjeTematico());
+    }
 
     Long trabajoId = asignacion.getTrabajo().getId();
     trabajoService.actualizarEstadoTrasEvaluaciones(trabajoId);
