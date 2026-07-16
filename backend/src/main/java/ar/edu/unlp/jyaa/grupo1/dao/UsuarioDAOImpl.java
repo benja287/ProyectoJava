@@ -124,14 +124,20 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
     }
     if (filtro.soloEvaluadores() != null) {
       if (Boolean.TRUE.equals(filtro.soloEvaluadores())) {
-        jpql.append(" AND u.ejeTematicoEvaluador IS NOT NULL AND TRIM(u.ejeTematicoEvaluador) <> ''");
+        jpql.append(
+            " AND (EXISTS (SELECT 1 FROM EvaluadorEjeCapacidad c WHERE c.usuario = u AND c.activo = true)"
+                + " OR (u.ejeTematicoEvaluador IS NOT NULL AND TRIM(u.ejeTematicoEvaluador) <> ''))");
       } else {
         jpql.append(
-            " AND (u.ejeTematicoEvaluador IS NULL OR TRIM(u.ejeTematicoEvaluador) = '')");
+            " AND NOT EXISTS (SELECT 1 FROM EvaluadorEjeCapacidad c WHERE c.usuario = u AND c.activo = true)"
+                + " AND (u.ejeTematicoEvaluador IS NULL OR TRIM(u.ejeTematicoEvaluador) = '')");
       }
     }
     if (filtro.ejeTematicoEvaluador() != null && !filtro.ejeTematicoEvaluador().isBlank()) {
-      jpql.append(" AND u.ejeTematicoEvaluador = :ejeTematicoEvaluador");
+      jpql.append(
+          " AND (u.ejeTematicoEvaluador = :ejeTematicoEvaluador"
+              + " OR EXISTS (SELECT 1 FROM EvaluadorEjeCapacidad c2 WHERE c2.usuario = u"
+              + " AND c2.activo = true AND c2.ejeTematico = :ejeTematicoEvaluador))");
       params.put("ejeTematicoEvaluador", filtro.ejeTematicoEvaluador().trim());
     }
     return jpql.toString();
@@ -154,8 +160,10 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
     try {
       StringBuilder jpql =
           new StringBuilder(
-              "SELECT COUNT(u) FROM Usuario u JOIN u.roles r WHERE r = ar.edu.unlp.jyaa.grupo1.modelo.Rol.EVALUADOR"
-                  + " AND u.ejeTematicoEvaluador = :eje");
+              "SELECT COUNT(DISTINCT u) FROM Usuario u JOIN u.roles r WHERE r = ar.edu.unlp.jyaa.grupo1.modelo.Rol.EVALUADOR"
+                  + " AND (u.ejeTematicoEvaluador = :eje"
+                  + " OR EXISTS (SELECT 1 FROM EvaluadorEjeCapacidad c WHERE c.usuario = u"
+                  + " AND c.activo = true AND c.ejeTematico = :eje))");
       if (excluirUsuarioId != null) {
         jpql.append(" AND u.id <> :excluirId");
       }

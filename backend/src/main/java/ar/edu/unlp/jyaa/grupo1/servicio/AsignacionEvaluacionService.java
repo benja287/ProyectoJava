@@ -35,6 +35,7 @@ public class AsignacionEvaluacionService {
   @Inject private TrabajoDAO trabajoDAO;
   @Inject private NotificacionService notificacionService;
   @Inject private UsuarioDAO usuarioDAO;
+  @Inject private EvaluadorEjeService evaluadorEjeService;
 
   public AsignacionEvaluacion asignar(Long trabajoId, Long evaluadorId) {
     return asignar(trabajoId, evaluadorId, null);
@@ -118,9 +119,9 @@ public class AsignacionEvaluacionService {
     if (ejeTrabajo == null || ejeTrabajo.isBlank()) {
       throw new NegocioException("El trabajo no tiene eje temático");
     }
-    if (evaluador.getEjeTematicoEvaluador() == null
-        || !ejeTrabajo.equals(evaluador.getEjeTematicoEvaluador())) {
-      throw new NegocioException("El evaluador no está asignado al eje temático del trabajo");
+    if (!evaluadorEjeService.puedeRecibirAsignacion(evaluadorId, ejeTrabajo)) {
+      throw new NegocioException(
+          "El evaluador no está asignado a este eje o agotó su cupo (reiniciá el cupo si corresponde)");
     }
     if (trabajo.getAutor() != null && trabajo.getAutor().getId().equals(evaluadorId)) {
       throw new NegocioException("El autor del trabajo no puede ser evaluador del mismo");
@@ -143,6 +144,7 @@ public class AsignacionEvaluacionService {
     trabajo.setEstado(EstadoTrabajo.EN_EVALUACION);
     trabajoDAO.modificar(trabajo);
     AsignacionEvaluacion creada = asignacionEvaluacionDAO.alta(asignacion);
+    evaluadorEjeService.consumirCupo(evaluadorId, ejeTrabajo);
     Map<String, String> vars = new HashMap<>();
     vars.put("titulo", trabajo.getTitulo());
     vars.put("eje", trabajo.getEjeTematico() != null ? trabajo.getEjeTematico() : "");
@@ -197,11 +199,25 @@ public class AsignacionEvaluacionService {
   }
 
   public void desasignar(Long id) {
-    AsignacionEvaluacion asignacion = asignacionEvaluacionDAO.recuperarPorId(id);
+    AsignacionEvaluacion asignacion =
+        asignacionEvaluacionDAO.recuperarPorIdConDetalle(id).orElse(null);
+    if (asignacion == null) {
+      asignacion = asignacionEvaluacionDAO.recuperarPorId(id);
+    }
     if (asignacion == null) {
       throw new NegocioException("Asignación no encontrada: " + id);
     }
+    Long evaluadorId =
+        asignacion.getEvaluador() != null ? asignacion.getEvaluador().getId() : null;
+    String eje =
+        asignacion.getTrabajo() != null ? asignacion.getTrabajo().getEjeTematico() : null;
+    // Si ya rechazó, el cupo se devolvió al responder; no devolver dos veces.
+    boolean cupoYaDevuelto =
+        asignacion.getFechaRespuesta() != null && !asignacion.isAceptada();
     asignacionEvaluacionDAO.baja(id);
+    if (!cupoYaDevuelto) {
+      evaluadorEjeService.devolverCupo(evaluadorId, eje);
+    }
   }
 
   public List<AsignacionEvaluacion> listarPorEvaluador(Long evaluadorId) {
@@ -286,7 +302,13 @@ public class AsignacionEvaluacionService {
     if (!aceptar) {
       asignacion.setAceptada(false);
       asignacion.setFechaRespuesta(LocalDate.now());
-      return asignacionEvaluacionDAO.modificar(asignacion);
+      AsignacionEvaluacion actualizada = asignacionEvaluacionDAO.modificar(asignacion);
+      Long evaluadorId =
+          asignacion.getEvaluador() != null ? asignacion.getEvaluador().getId() : null;
+      String eje =
+          asignacion.getTrabajo() != null ? asignacion.getTrabajo().getEjeTematico() : null;
+      evaluadorEjeService.devolverCupo(evaluadorId, eje);
+      return actualizada;
     }
     asignacion.setAceptada(true);
     asignacion.setFechaRespuesta(LocalDate.now());

@@ -30,6 +30,7 @@
     <class>ar.edu.unlp.jyaa.grupo1.modelo.CongresoAnterior</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.SolicitudEvaluador</class>
     <class>ar.edu.unlp.jyaa.grupo1.modelo.SolicitudEvaluadorCapacidad</class>
+    <class>ar.edu.unlp.jyaa.grupo1.modelo.EvaluadorEjeCapacidad</class>
     <!-- RangoFechas y EtapaCongreso son @Embeddable, no se listan -->
 
     <properties>

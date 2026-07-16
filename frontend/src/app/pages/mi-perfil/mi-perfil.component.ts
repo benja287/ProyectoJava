@@ -122,8 +122,20 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
               </div>
               @if (usuario.roles?.includes('EVALUADOR')) {
                 <div>
-                  <dt>Eje temático (evaluador)</dt>
-                  <dd>{{ usuario.ejeTematicoEvaluador || 'Sin asignar' }}</dd>
+                  <dt>Ejes / cupos (evaluador)</dt>
+                  <dd>
+                    @if ((usuario.cuposEje?.length ?? 0) > 0) {
+                      <ul class="cupos-perfil">
+                        @for (c of usuario.cuposEje!; track c.ejeTematico) {
+                          <li>
+                            {{ c.ejeTematico }} — restantes {{ c.restantes }}/{{ c.capacidadMax }}
+                          </li>
+                        }
+                      </ul>
+                    } @else {
+                      {{ usuario.ejeTematicoEvaluador || 'Sin asignar' }}
+                    }
+                  </dd>
                 </div>
               }
             </dl>
@@ -165,6 +177,10 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
         margin: 1rem 0;
         display: grid;
         gap: 0.85rem;
+      }
+      .cupos-perfil {
+        margin: 0.25rem 0 0;
+        padding-left: 1.1rem;
       }
       .perfil-readonly div {
         display: grid;

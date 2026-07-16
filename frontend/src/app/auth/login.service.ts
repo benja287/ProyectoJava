@@ -3,12 +3,13 @@
  * - Login/logout contra POST /api/login
  * - JWT en sessionStorage + usuario en memoria y sessionStorage
  * - El backend valida el Bearer en cada petición protegida
+ * - refreshSession reemite token/roles desde BD (sin cerrar sesión)
  */
 import { Injectable, Injector } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { jwtDecode } from 'jwt-decode';
-import { Observable, of, tap, throwError } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { catchError, finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoginResponse, Usuario } from '../models/usuario.model';
 import { UsuarioService } from '../servicios/usuario.service';
@@ -19,6 +20,9 @@ import { isCuentaDeshabilitada } from '../utils/api-error.util';
 const STORAGE_KEY = 'jyaa_usuario';
 const TOKEN_KEY = 'jyaa_token';
 
+/** Evita martillar /login/refresh en navegación rápida. */
+const REFRESH_MIN_INTERVAL_MS = 4_000;
+
 interface JwtPayload {
   exp?: number;
 }
@@ -27,6 +31,12 @@ interface JwtPayload {
 export class LoginService {
   /** Copia en RAM del usuario; se restaura desde sessionStorage al arrancar */
   private usuario: Usuario | null = null;
+  private readonly usuarioSubject = new BehaviorSubject<Usuario | null>(null);
+  /** Observable para que el header/menú reaccionen al cambiar roles. */
+  readonly usuario$ = this.usuarioSubject.asObservable();
+
+  private lastRefreshAt = 0;
+  private refreshInFlight: Observable<Usuario> | null = null;
 
   constructor(
     private http: HttpClient,
@@ -39,36 +49,27 @@ export class LoginService {
    * Si el token expiró o los datos están incompletos, limpia antes de renderizar.
    */
   initSessionFromStorage(): void {
-    /**
-     * Este método corre cuando Angular inicia la app (ver APP_INITIALIZER en app.config.ts).
-     *
-     * Objetivo: evitar “sesión fantasma”.
-     * - Si el token expiró: limpiar antes de que el usuario vea pantallas protegidas.
-     * - Si hay datos corruptos en sessionStorage: limpiar y forzar login.
-     */
     const usuario = this.readUsuarioFromStorage();
     const token = sessionStorage.getItem(TOKEN_KEY);
 
     if (!usuario && !token) {
       this.usuario = null;
+      this.usuarioSubject.next(null);
       return;
     }
 
-    // Sesión legacy (Entrega 5 sin JWT en backend): solo usuario en storage
     if (usuario && !token) {
-      // Caso transición: backend sin JWT aún. Se mantiene compatibilidad.
-      this.usuario = usuario;
+      this.setUser(usuario);
       this.onSessionEstablished();
       return;
     }
 
     if (!usuario || !token || this.isJwtExpired(token, 0)) {
-      // Si falta usuario/token o el JWT ya venció → cerrar sesión.
       this.logout();
       return;
     }
 
-    this.usuario = usuario;
+    this.setUser(usuario);
     this.onSessionEstablished();
   }
 
@@ -77,21 +78,12 @@ export class LoginService {
    * Devuelve Observable: el HTTP solo se ejecuta al hacer .subscribe()
    */
   login(email: string, password: string): Observable<Usuario> {
-    /**
-     * El backend responde LoginResponseDTO:
-     * {
-     *   token, tokenType, expiresIn, usuario
-     * }
-     *
-     * El token se guardará en sessionStorage y luego el interceptor lo enviará en cada request.
-     */
     return this.http
       .post<LoginResponse | Usuario>(`${environment.apiUrl}/login`, { email, password })
       .pipe(
         map((res) => this.applyLoginResponse(res)),
         catchError((err) => {
           if (isCuentaDeshabilitada(err)) {
-            // Si el backend detectó cuenta inactiva, borramos sesión local por si quedaba algo viejo.
             this.logout();
           }
           return throwError(() => err);
@@ -110,6 +102,9 @@ export class LoginService {
 
   private clearStoredSession(): void {
     this.usuario = null;
+    this.usuarioSubject.next(null);
+    this.lastRefreshAt = 0;
+    this.refreshInFlight = null;
     sessionStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
   }
@@ -127,10 +122,6 @@ export class LoginService {
    * bufferSeconds evita enviar un token a punto de vencer.
    */
   isTokenExpired(bufferSeconds = 30): boolean {
-    /**
-     * Nota: esta validación es “del lado cliente” leyendo la claim exp del JWT.
-     * El backend igual valida expiración y firma en JwtAuthFilter/JwtService.parse.
-     */
     const token = this.getToken();
     if (!token) {
       return true;
@@ -139,13 +130,6 @@ export class LoginService {
   }
 
   isLogged(): boolean {
-    /**
-     * Usado por guards y por el header (AppComponent) para decidir qué mostrar.
-     *
-     * Regla:
-     * - si hay usuario y no hay token → modo legacy (Entrega 5) = logueado
-     * - si hay token → debe no estar expirado
-     */
     if (!this.usuario) {
       return false;
     }
@@ -257,35 +241,55 @@ export class LoginService {
     if (!this.usuario) {
       return;
     }
-    this.usuario = { ...this.usuario, rolActual: null };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.usuario));
+    this.setUser({ ...this.usuario, rolActual: null });
   }
 
-  /** Recarga datos del usuario desde GET /api/usuarios/me */
-  refreshUser(): Observable<Usuario> {
-    if (!this.usuario?.id) {
+  /**
+   * Renueva JWT + roles desde el servidor (POST /api/login/refresh).
+   * Usar al volver a la pestaña, navegar o abrir el menú de usuario.
+   */
+  refreshSession(force = false): Observable<Usuario> {
+    if (!this.isLogged() || !this.usuario?.id) {
       return throwError(() => new Error('Sin sesión'));
     }
-    const rolActualPrevio = this.usuario?.rolActual;
-    return this.usuarioService.miPerfil().pipe(
-      switchMap((u) => {
-        if (!u) {
-          return throwError(() => new Error('Usuario no encontrado'));
-        }
-        const roles = u.roles ?? [];
-        let rolActual = u.rolActual ?? null;
-        if (!rolActual && roles.includes('ASISTENTE')) {
-          rolActual = 'ASISTENTE';
-        } else if (rolActualPrevio && roles.includes(rolActualPrevio)) {
-          rolActual = rolActualPrevio;
-        } else if (!rolActual && roles.length > 0) {
-          rolActual = roles[0];
-        }
-        const actualizado: Usuario = { ...u, rolActual };
-        this.setUser(actualizado);
-        return of(actualizado);
-      })
-    );
+    const now = Date.now();
+    if (!force && this.lastRefreshAt > 0 && now - this.lastRefreshAt < REFRESH_MIN_INTERVAL_MS) {
+      return of(this.usuario);
+    }
+    if (this.refreshInFlight) {
+      return this.refreshInFlight;
+    }
+
+    const rolActualPrevio = this.usuario.rolActual;
+    this.refreshInFlight = this.http
+      .post<LoginResponse | Usuario>(`${environment.apiUrl}/login/refresh`, {})
+      .pipe(
+        map((res) => {
+          const base = this.applyLoginResponse(res);
+          return this.conRolesSesionLocal(base, rolActualPrevio);
+        }),
+        tap((u) => {
+          this.setUser(u);
+          this.lastRefreshAt = Date.now();
+        }),
+        catchError((err) => {
+          if (isCuentaDeshabilitada(err)) {
+            this.logout();
+          }
+          return throwError(() => err);
+        }),
+        finalize(() => {
+          this.refreshInFlight = null;
+        }),
+        shareReplay({ bufferSize: 1, refCount: true })
+      );
+
+    return this.refreshInFlight;
+  }
+
+  /** Alias: recarga sesión (token + perfil). Preferir refreshSession. */
+  refreshUser(): Observable<Usuario> {
+    return this.refreshSession(true);
   }
 
   /**
@@ -302,28 +306,64 @@ export class LoginService {
     if (!debeActualizar) {
       return of(null);
     }
-    return this.refreshUser().pipe(catchError(() => of(null)));
+    return this.refreshSession(true).pipe(catchError(() => of(null)));
   }
 
   /** PUT /api/usuarios/{id}/roles — actualiza rolActual en backend y sesión local */
   cambiarRolActual(rol: string): Observable<Usuario> {
-    const u = this.usuario;
-    if (!u?.id || !u.roles?.includes(rol)) {
-      return throwError(() => new Error('Rol no permitido para este usuario'));
-    }
-    return this.usuarioService
-      .asignarRoles(u.id, { roles: [...u.roles], rolActual: rol })
-      .pipe(tap((actualizado) => this.setUser(actualizado)));
+    return this.refreshSession(true).pipe(
+      switchMap((u) => {
+        if (!u?.id || !u.roles?.includes(rol)) {
+          return throwError(() => new Error('Rol no permitido para este usuario'));
+        }
+        return this.usuarioService
+          .asignarRoles(u.id, { roles: [...u.roles], rolActual: rol })
+          .pipe(
+            tap((actualizado) => {
+              this.setUser(actualizado);
+              this.lastRefreshAt = 0;
+            })
+          );
+      })
+    );
   }
 
-  /** Guarda en memoria RAM y en sessionStorage del navegador */
-  private setUser(u: Usuario): void {
+  /** Guarda en memoria RAM, subject y sessionStorage del navegador */
+  private setUser(u: Usuario | null): void {
     this.usuario = u;
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+    this.usuarioSubject.next(u);
+    if (u) {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+    } else {
+      sessionStorage.removeItem(STORAGE_KEY);
+    }
   }
 
   private setToken(token: string): void {
     sessionStorage.setItem(TOKEN_KEY, token);
+  }
+
+  /**
+   * Mantiene el perfil elegido en esta pestaña si sigue siendo válido;
+   * si el rol actual de BD ya no existe, elige uno coherente.
+   */
+  private conRolesSesionLocal(u: Usuario, rolActualPrevio: string | null | undefined): Usuario {
+    const roles = u.roles ?? [];
+    let rolActual = u.rolActual ?? null;
+    if (rolActual && !roles.includes(rolActual)) {
+      rolActual = null;
+    }
+    if (rolActualPrevio && roles.includes(rolActualPrevio)) {
+      rolActual = rolActualPrevio;
+    } else if (!rolActual && roles.includes('ASISTENTE')) {
+      rolActual = 'ASISTENTE';
+    } else if (!rolActual && roles.length === 1) {
+      rolActual = roles[0];
+    } else if (!rolActual && roles.length > 1) {
+      // Multi-rol sin perfil válido: dejar null para forzar elección.
+      rolActual = null;
+    }
+    return { ...u, rolActual };
   }
 
   /**
@@ -343,12 +383,6 @@ export class LoginService {
   }
 
   private isJwtExpired(token: string, bufferSeconds: number): boolean {
-    /**
-     * jwtDecode NO verifica firma; solo lee el payload.
-     * La verificación real (firma/issuer/exp) la hace el backend en JwtService.parse().
-     *
-     * Aun así, esto sirve para UX: evitar requests que sabemos que van a fallar por expiración.
-     */
     try {
       const { exp } = jwtDecode<JwtPayload>(token);
       if (exp == null) {

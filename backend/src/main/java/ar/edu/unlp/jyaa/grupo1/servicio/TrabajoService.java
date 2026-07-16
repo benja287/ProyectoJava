@@ -796,15 +796,10 @@ public class TrabajoService {
         || puedeReenviar(t);
   }
 
-  /** Asistente sin AUTOR, o con AUTOR otorgado por error al crear el borrador (sin habilitación admin). */
+  /** Asistente sin rol AUTOR (pendiente de habilitación o re-habilitación tras un retiro). */
   private boolean pendienteHabilitacionAutor(Usuario usuario) {
-    if (!usuario.getRoles().contains(Rol.ASISTENTE)) {
-      return false;
-    }
-    if (!usuario.getRoles().contains(Rol.AUTOR)) {
-      return true;
-    }
-    return usuario.getRolActual() == null || usuario.getRolActual() == Rol.ASISTENTE;
+    return usuario.getRoles().contains(Rol.ASISTENTE)
+        && !usuario.getRoles().contains(Rol.AUTOR);
   }
 
   private Rol resolverRolEnvio(String rolEnvioRaw, Usuario autor) {

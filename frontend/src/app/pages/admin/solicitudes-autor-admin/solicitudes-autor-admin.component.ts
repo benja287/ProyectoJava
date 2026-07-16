@@ -29,10 +29,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 
       <section class="panel-card panel-card--verde">
         <h2>Pendientes de habilitación manual</h2>
-        <p class="muted">
+          <p class="muted">
           Desde ahora, al aprobar el dictamen final del comité sobre un trabajo de un asistente, el
-          rol <strong>Autor</strong> se asigna automáticamente. Esta pantalla solo sirve para
-          backlog antiguo (o casos excepcionales).
+          rol <strong>Autor</strong> se asigna automáticamente. Esta pantalla también sirve si el
+          admin retiró el rol Autor: el usuario vuelve a listarse acá (con su trabajo ya aprobado) y
+          se lo puede re-habilitar sin que envíe otro trabajo.
         </p>
         @if (solicitudesAutorFeedback) {
           <p class="ok">{{ solicitudesAutorFeedback }}</p>

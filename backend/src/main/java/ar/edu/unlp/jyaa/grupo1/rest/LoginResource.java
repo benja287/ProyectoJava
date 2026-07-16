@@ -4,6 +4,7 @@ import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.LoginRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.LoginResponseDTO;
+import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.security.JwtService;
 import ar.edu.unlp.jyaa.grupo1.servicio.UsuarioService;
 import ar.edu.unlp.jyaa.grupo1.web.dto.UsuarioDTO;
@@ -16,6 +17,8 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.Map;
@@ -69,6 +72,43 @@ public class LoginResource {
           .build();
     }
     // Ajusta roles/rolActual antes de generar el token, para que el JWT salga consistente.
+    usuario = usuarioService.normalizarRolesCongreso(usuario);
+    return Response.ok(
+            new LoginResponseDTO(
+                jwtService.generate(usuario),
+                "Bearer",
+                jwtService.ttlSeconds(),
+                UsuarioDTO.from(usuario)))
+        .build();
+  }
+
+  /**
+   * Reemite JWT + usuario con roles actuales de BD. El cliente lo usa al volver a la pestaña o
+   * navegar, para reflejar altas/bajas de roles sin cerrar sesión.
+   */
+  @POST
+  @Path("/refresh")
+  @Operation(summary = "Refrescar sesión (token y roles actuales)")
+  @ApiResponse(responseCode = "200", description = "Token renovado")
+  @ApiResponse(responseCode = "401", description = "Sin sesión válida")
+  public Response refresh(@Context ContainerRequestContext ctx) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    if (auth.userId() == null) {
+      return Response.status(Response.Status.UNAUTHORIZED)
+          .entity(Map.of("error", "Token requerido"))
+          .build();
+    }
+    Usuario usuario = usuarioDAO.recuperarPorId(auth.userId());
+    if (usuario == null) {
+      return Response.status(Response.Status.UNAUTHORIZED)
+          .entity(Map.of("error", "Usuario no encontrado"))
+          .build();
+    }
+    if (!usuario.isActivo()) {
+      return Response.status(Response.Status.FORBIDDEN)
+          .entity(Map.of("error", "Cuenta deshabilitada", "accountDisabled", true))
+          .build();
+    }
     usuario = usuarioService.normalizarRolesCongreso(usuario);
     return Response.ok(
             new LoginResponseDTO(

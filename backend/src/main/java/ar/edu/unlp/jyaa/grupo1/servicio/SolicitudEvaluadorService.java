@@ -19,6 +19,7 @@ import jakarta.inject.Inject;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -170,22 +171,23 @@ public class SolicitudEvaluadorService {
     s.setRevisadoPor(revisor);
 
     if (req.aprobar()) {
-      String eje = req.ejeAsignacion() != null ? req.ejeAsignacion().trim() : "";
-      if (!EjesTematicos.esValido(eje)) {
-        throw new NegocioException("Debés indicar un eje temático válido al aprobar");
+      Map<String, Integer> caps = new LinkedHashMap<>();
+      if (s.getCapacidades() != null) {
+        for (var c : s.getCapacidades()) {
+          if (c.getCapacidad() > 0 && EjesTematicos.esValido(c.getEjeTematico())) {
+            caps.put(c.getEjeTematico().trim(), c.getCapacidad());
+          }
+        }
       }
-      boolean tieneCapacidad =
-          s.getCapacidades().stream()
-              .anyMatch(c -> eje.equals(c.getEjeTematico()) && c.getCapacidad() > 0);
-      if (!tieneCapacidad) {
+      if (caps.isEmpty()) {
         throw new NegocioException(
-            "El eje elegido no tiene capacidad declarada (> 0) en la solicitud");
+            "La solicitud no tiene ejes con capacidad > 0 para asignar");
       }
       s.setEstado(EstadoSolicitudEvaluador.APROBADA);
       s.setMotivoRechazo(null);
-      s.setEjeAsignado(eje);
+      s.setEjeAsignado(String.join(" · ", caps.keySet()));
       solicitudDAO.modificar(s);
-      evaluadorEjeService.asignarEvaluadorAEje(s.getUsuario().getId(), eje);
+      evaluadorEjeService.asignarCuposDesdeSolicitud(s.getUsuario().getId(), caps);
       notificarAprobacion(s);
       if (req.enviarInvitacionTaller()) {
         enviarInvitacionTaller(s);
@@ -210,6 +212,30 @@ public class SolicitudEvaluadorService {
     SolicitudEvaluador s = requireSolicitud(id);
     enviarInvitacionTaller(s);
     return SolicitudEvaluadorDTO.from(requireSolicitud(id));
+  }
+
+  /**
+   * Al retirar el rol EVALUADOR: las solicitudes APROBADAS pasan a REVOCADA para que el usuario
+   * pueda volver a postularse. Se conserva el historial para el comité.
+   */
+  public void revocarAprobadasPorRetiroDeRol(Long usuarioId) {
+    if (usuarioId == null) {
+      return;
+    }
+    List<SolicitudEvaluador> aprobadas =
+        solicitudDAO.listarPorUsuarioYEstado(usuarioId, EstadoSolicitudEvaluador.APROBADA);
+    if (aprobadas.isEmpty()) {
+      return;
+    }
+    LocalDateTime ahora = LocalDateTime.now();
+    for (SolicitudEvaluador s : aprobadas) {
+      s.setEstado(EstadoSolicitudEvaluador.REVOCADA);
+      s.setFechaRevision(ahora);
+      s.setMotivoRechazo(
+          "Rol EVALUADOR retirado. Podés volver a enviar una solicitud si querés reintegrarte.");
+      s.setEjeAsignado(null);
+      solicitudDAO.modificar(s);
+    }
   }
 
   private void enviarInvitacionTaller(SolicitudEvaluador s) {
@@ -256,10 +282,10 @@ public class SolicitudEvaluadorService {
     vars.put(
         "contexto",
         "Tu solicitud para integrar el comité de evaluadores fue aprobada. "
-            + "Quedaste habilitado/a como evaluador/a en el eje indicado.");
+            + "Quedaste habilitado/a como evaluador/a en los ejes con capacidad declarada.");
     vars.put(
         "proximo_paso",
-        "Recordá: el taller de evaluadorxs no garantiza recibir trabajos; depende de cupos y carga por eje.");
+        "Recordá: el taller de evaluadorxs no garantiza recibir trabajos; depende de cupos restantes por eje.");
     notificacionService.enviarConPlantilla(
         s.getUsuario().getId(), "SOLICITUD_EVALUADOR_APROBADA", vars);
   }

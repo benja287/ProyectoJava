@@ -52,6 +52,22 @@ public class SolicitudEvaluadorDAOImpl extends AbstractJpaDAO<SolicitudEvaluador
   }
 
   @Override
+  public List<SolicitudEvaluador> listarPorUsuarioYEstado(
+      Long usuarioId, EstadoSolicitudEvaluador estado) {
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery(
+              "SELECT s FROM SolicitudEvaluador s WHERE s.usuario.id = :uid AND s.estado = :est ORDER BY s.fechaSolicitud DESC",
+              SolicitudEvaluador.class)
+          .setParameter("uid", usuarioId)
+          .setParameter("est", estado)
+          .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
   public List<SolicitudEvaluador> listarPorEstado(
       EstadoSolicitudEvaluador estado, int offset, int limit) {
     EntityManager em = emConsulta();

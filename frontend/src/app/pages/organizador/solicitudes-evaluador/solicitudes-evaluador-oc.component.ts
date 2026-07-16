@@ -39,6 +39,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <option value="PENDIENTE">Pendientes</option>
           <option value="APROBADA">Aprobadas</option>
           <option value="RECHAZADA">Rechazadas</option>
+          <option value="REVOCADA">Revocadas</option>
           <option value="">Todas</option>
         </select>
       </label>
@@ -94,8 +95,12 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                   <dt>Revisó</dt>
                   <dd>{{ s.revisadoPorNombre }} · {{ formatFecha(s.fechaRevision) }}</dd>
                 }
+                @if (s.estado === 'REVOCADA' && s.motivoRechazo) {
+                  <dt>Revocación</dt>
+                  <dd>{{ s.motivoRechazo }}</dd>
+                }
                 @if (s.ejeAsignado) {
-                  <dt>Eje asignado</dt>
+                  <dt>Ejes asignados</dt>
                   <dd>{{ s.ejeAsignado }}</dd>
                 }
               </dl>
@@ -105,21 +110,12 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                   {{ s.invitacionTallerEnviada ? 'Reenviar invitación taller' : 'Invitar al taller' }}
                 </button>
                 @if (s.estado === 'PENDIENTE') {
-                  <label class="inline-label">
-                    Eje al aprobar
-                    <select [(ngModel)]="ejeDraft[s.id!]">
-                      <option value="">Elegí eje...</option>
-                      @for (c of s.capacidades; track c.ejeTematico) {
-                        @if (c.capacidad > 0) {
-                          <option [value]="c.ejeTematico">
-                            {{ c.ejeTematico }} ({{ c.capacidad }})
-                          </option>
-                        }
-                      }
-                    </select>
-                  </label>
+                  <p class="form-hint">
+                    Al aprobar se asignan <strong>todos</strong> los ejes con capacidad &gt; 0 (cupos
+                    = capacidad declarada).
+                  </p>
                   <button type="button" class="btn-ok" (click)="aprobar(s)" [disabled]="procesandoId != null">
-                    Aprobar y dar rol EVALUADOR
+                    Aprobar y asignar ejes con cupo
                   </button>
                   <button type="button" class="btn-warn" (click)="rechazar(s)" [disabled]="procesandoId != null">
                     Rechazar
@@ -170,7 +166,6 @@ export class SolicitudesEvaluadorOcComponent implements OnInit {
   error = '';
   mensaje = '';
   procesandoId: number | null = null;
-  ejeDraft: Record<number, string> = {};
 
   ngOnInit(): void {
     this.cargar();
@@ -184,14 +179,6 @@ export class SolicitudesEvaluadorOcComponent implements OnInit {
         this.items = p.items;
         this.total = p.total;
         this.totalPaginas = p.totalPages;
-        for (const s of p.items) {
-          if (s.id && s.estado === 'PENDIENTE' && !this.ejeDraft[s.id]) {
-            const preferido = (s.capacidades || [])
-              .filter((c) => c.capacidad > 0)
-              .sort((a, b) => b.capacidad - a.capacidad)[0];
-            this.ejeDraft[s.id] = preferido?.ejeTematico || '';
-          }
-        }
         this.cargando = false;
       },
       error: (err) => {
@@ -208,14 +195,14 @@ export class SolicitudesEvaluadorOcComponent implements OnInit {
 
   aprobar(s: SolicitudEvaluador): void {
     if (!s.id) return;
-    const eje = this.ejeDraft[s.id];
-    if (!eje) {
-      this.error = 'Elegí el eje temático al aprobar.';
-      return;
-    }
+    const ejes =
+      (s.capacidades || [])
+        .filter((c) => c.capacidad > 0)
+        .map((c) => `• ${c.ejeTematico} (cupo ${c.capacidad})`)
+        .join('\n') || '(sin ejes con capacidad)';
     if (
       !confirm(
-        `¿Aprobar a ${s.nombreCompleto} y asignarlo como EVALUADOR en:\n${eje}?\n\nTambién podés enviar/renviar invitación al taller.`
+        `¿Aprobar a ${s.nombreCompleto} como EVALUADOR y asignar estos ejes?\n\n${ejes}\n\nTambién se envía invitación al taller.`
       )
     ) {
       return;
@@ -224,12 +211,12 @@ export class SolicitudesEvaluadorOcComponent implements OnInit {
     this.service
       .validar(s.id, {
         aprobar: true,
-        ejeAsignacion: eje,
         enviarInvitacionTaller: true,
       })
       .subscribe({
         next: () => {
-          this.mensaje = 'Solicitud aprobada. Rol EVALUADOR habilitado y eje asignado.';
+          this.mensaje =
+            'Solicitud aprobada. Rol EVALUADOR y cupos por eje asignados.';
           this.procesandoId = null;
           this.cargar();
         },

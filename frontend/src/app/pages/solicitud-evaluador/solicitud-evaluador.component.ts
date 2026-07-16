@@ -53,14 +53,36 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
           }
           @if (solicitud.estado === 'APROBADA') {
             <p class="ok">
-              Aprobada. Eje asignado: <strong>{{ solicitud.ejeAsignado || '—' }}</strong>
+              Aprobada. Ejes asignados: <strong>{{ solicitud.ejeAsignado || '—' }}</strong>
               @if (solicitud.revisadoPorNombre) {
                 · Revisó: {{ solicitud.revisadoPorNombre }}
               }
             </p>
+            @if (!tieneRolEvaluador) {
+              <p class="notice-box">
+                El rol EVALUADOR ya no está en tu cuenta (fue retirado). Podés volver a postularte.
+              </p>
+              <button type="button" class="btn-primary" (click)="nuevaSolicitud()">
+                Enviar nueva solicitud
+              </button>
+            }
           }
           @if (solicitud.estado === 'RECHAZADA') {
             <p class="error">Motivo: {{ solicitud.motivoRechazo || '—' }}</p>
+            <button type="button" class="btn-primary" (click)="nuevaSolicitud()">
+              Enviar nueva solicitud
+            </button>
+          }
+          @if (solicitud.estado === 'REVOCADA') {
+            <p class="notice-box">
+              Tu postulación aprobada fue revocada porque se te retiró el rol de evaluador.
+              @if (solicitud.motivoRechazo) {
+                <br />{{ solicitud.motivoRechazo }}
+              }
+            </p>
+            <button type="button" class="btn-primary" (click)="nuevaSolicitud()">
+              Enviar nueva solicitud
+            </button>
           }
           <dl class="detalle">
             <dt>Nombre</dt>
@@ -78,11 +100,6 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
               </ul>
             </dd>
           </dl>
-          @if (solicitud.estado === 'RECHAZADA') {
-            <button type="button" class="btn-primary" (click)="nuevaSolicitud()">
-              Enviar nueva solicitud
-            </button>
-          }
         </section>
       } @else {
         <section class="panel-card">
@@ -236,6 +253,10 @@ export class SolicitudEvaluadorComponent implements OnInit {
   guardando = false;
   error = '';
   mensaje = '';
+
+  get tieneRolEvaluador(): boolean {
+    return this.loginService.hasRole('EVALUADOR');
+  }
 
   form = this.fb.nonNullable.group({
     nombreCompleto: ['', Validators.required],

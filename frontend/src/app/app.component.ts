@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { Router, RouterLink, RouterOutlet, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { IdleSessionService } from './auth/idle-session.service';
 import { LoginService } from './auth/login.service';
@@ -23,6 +24,7 @@ import { CongresoConfig, etiquetaSedeAnio } from './models/congreso-config.model
 import { mensajeErrorApi } from './utils/api-error.util';
 import { etiquetaRol } from './models/role-labels';
 import { navegarConRecargaCompleta } from './utils/hard-navigation.util';
+import { Usuario } from './models/usuario.model';
 
 @Component({
   selector: 'app-root',
@@ -41,9 +43,13 @@ export class AppComponent implements OnInit, OnDestroy {
   errorRol = '';
   noLeidas = 0;
   congresoConfig?: CongresoConfig;
+  /** Snapshot reactivo de la sesión (roles se actualizan sin re-login). */
+  usuario: Usuario | null = null;
 
   /** Referencia al div del menú de usuario (#userMenu en el HTML) */
   @ViewChild('userMenu') userMenu?: ElementRef<HTMLElement>;
+
+  private subs = new Subscription();
 
   /**
    * Inyección de dependencias (DI):
@@ -61,17 +67,45 @@ export class AppComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.usuario = this.loginService.getUser();
+    this.subs.add(
+      this.loginService.usuario$.subscribe((u) => {
+        this.usuario = u;
+      })
+    );
     this.appVersionService.checkForUpdate();
     this.appVersionService.startPolling();
     this.idleSession.startWatching();
     this.refrescarNotificaciones();
     this.cargarConfigCongreso();
-    this.router.events
-      .pipe(filter((e) => e instanceof NavigationEnd))
-      .subscribe(() => {
+    this.sincronizarSesion();
+    this.subs.add(
+      this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
+        this.sincronizarSesion();
         this.refrescarNotificaciones();
         this.appVersionService.checkForUpdate();
-      });
+      })
+    );
+  }
+
+  /** Al volver a la pestaña: roles pueden haber cambiado en otra ventana (comité). */
+  @HostListener('document:visibilitychange')
+  onVisibilityChange(): void {
+    if (document.visibilityState === 'visible') {
+      this.sincronizarSesion(true);
+      this.refrescarNotificaciones();
+    }
+  }
+
+  private sincronizarSesion(force = false): void {
+    if (!this.loginService.isLogged()) {
+      return;
+    }
+    this.loginService.refreshSession(force).subscribe({
+      error: () => {
+        /* red / idle: no molestar; el interceptor maneja 401 */
+      },
+    });
   }
 
   private cargarConfigCongreso(): void {
@@ -108,13 +142,9 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.subs.unsubscribe();
     this.idleSession.stopWatching();
     this.appVersionService.ngOnDestroy();
-  }
-
-  /** Getter: el template usa "usuario" sin llamar al servicio directamente */
-  get usuario() {
-    return this.loginService.getUser();
   }
 
   /** Convierte código de rol (ADMINISTRADOR) a etiqueta legible */
@@ -126,6 +156,9 @@ export class AppComponent implements OnInit, OnDestroy {
   toggleMenu(event: MouseEvent): void {
     event.stopPropagation();
     this.menuAbierto = !this.menuAbierto;
+    if (this.menuAbierto) {
+      this.sincronizarSesion(true);
+    }
   }
 
   cerrarMenu(): void {

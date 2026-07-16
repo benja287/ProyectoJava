@@ -146,11 +146,29 @@ export class UsuarioService {
     return this.http.put<Usuario>(`${this.baseUrl}/${id}/promover-autor`, {});
   }
 
-  asignarEvaluadorEje(id: number, ejeTematico: string): Observable<Usuario> {
-    return this.http.put<Usuario>(`${this.baseUrl}/${id}/evaluador-eje`, { ejeTematico });
+  asignarEvaluadorEje(
+    id: number,
+    ejeTematico: string,
+    capacidad?: number
+  ): Observable<Usuario> {
+    const body: { ejeTematico: string; capacidad?: number } = { ejeTematico };
+    if (capacidad != null && capacidad > 0) {
+      body.capacidad = capacidad;
+    }
+    return this.http.put<Usuario>(`${this.baseUrl}/${id}/evaluador-eje`, body);
   }
 
-  quitarEvaluadorEje(id: number): Observable<Usuario> {
-    return this.http.delete<Usuario>(`${this.baseUrl}/${id}/evaluador-eje`);
+  reiniciarCupoEvaluador(id: number, ejeTematico: string): Observable<Usuario> {
+    return this.http.put<Usuario>(`${this.baseUrl}/${id}/evaluador-eje/cupo/reiniciar`, {
+      ejeTematico,
+    });
+  }
+
+  quitarEvaluadorEje(id: number, eje?: string): Observable<Usuario> {
+    const options =
+      eje && eje.trim()
+        ? { params: { eje: eje.trim() } }
+        : {};
+    return this.http.delete<Usuario>(`${this.baseUrl}/${id}/evaluador-eje`, options);
   }
 }

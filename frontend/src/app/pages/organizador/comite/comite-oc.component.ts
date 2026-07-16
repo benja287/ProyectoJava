@@ -351,6 +351,11 @@ interface PrecheckChecks {
                         <div>
                           <strong>{{ ev.nombre }} {{ ev.apellido }}</strong>
                           <p class="muted evaluador-email">{{ ev.email }}</p>
+                          @if (cupoRestante(ev, seleccionado.ejeTematico) != null) {
+                            <p class="muted">
+                              Cupo restante: {{ cupoRestante(ev, seleccionado.ejeTematico) }}
+                            </p>
+                          }
                         </div>
                         <input
                           type="checkbox"
@@ -576,9 +581,20 @@ export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
     const eje = this.seleccionado?.ejeTematico;
     const autorId = this.seleccionado?.autorId;
     if (!eje) return [];
-    return this.usuarios.filter(
-      (u) => u.ejeTematicoEvaluador === eje && u.id !== autorId
-    );
+    return this.usuarios.filter((u) => {
+      if (u.id === autorId) return false;
+      const cupos = (u.cuposEje || []).filter((c) => c.activo !== false);
+      if (cupos.length > 0) {
+        return cupos.some((c) => c.ejeTematico === eje && c.restantes > 0);
+      }
+      return u.ejeTematicoEvaluador === eje;
+    });
+  }
+
+  cupoRestante(u: Usuario, eje: string | null | undefined): number | null {
+    if (!eje) return null;
+    const c = (u.cuposEje || []).find((x) => x.ejeTematico === eje && x.activo !== false);
+    return c ? c.restantes : null;
   }
 
   get mostrarPrecheck(): boolean {

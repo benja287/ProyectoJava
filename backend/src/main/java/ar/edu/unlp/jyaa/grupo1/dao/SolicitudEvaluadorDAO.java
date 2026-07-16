@@ -11,6 +11,8 @@ public interface SolicitudEvaluadorDAO extends GenericDAO<SolicitudEvaluador> {
 
   Optional<SolicitudEvaluador> buscarPendientePorUsuario(Long usuarioId);
 
+  List<SolicitudEvaluador> listarPorUsuarioYEstado(Long usuarioId, EstadoSolicitudEvaluador estado);
+
   List<SolicitudEvaluador> listarPorEstado(EstadoSolicitudEvaluador estado, int offset, int limit);
 
   long contarPorEstado(EstadoSolicitudEvaluador estado);

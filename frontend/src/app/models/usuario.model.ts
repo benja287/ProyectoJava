@@ -1,4 +1,12 @@
 /** Espejo de UsuarioDTO del backend Java. */
+export interface EvaluadorEjeCupo {
+  id?: number;
+  ejeTematico: string;
+  capacidadMax: number;
+  restantes: number;
+  activo?: boolean;
+}
+
 export interface Usuario {
   id?: number;
   email: string;
@@ -10,6 +18,8 @@ export interface Usuario {
   rolActual?: string | null;
   categoriaInscripcion?: string | null;
   ejeTematicoEvaluador?: string | null;
+  /** Cupos activos por eje (capacidad / restantes). */
+  cuposEje?: EvaluadorEjeCupo[];
 }
 
 export interface PaginaUsuarios {

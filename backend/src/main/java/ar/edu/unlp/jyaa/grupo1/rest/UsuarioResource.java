@@ -42,6 +42,7 @@ public class UsuarioResource {
 
   @Inject private UsuarioService usuarioService;
   @Inject private ar.edu.unlp.jyaa.grupo1.servicio.EvaluadorEjeService evaluadorEjeService;
+  @Inject private ar.edu.unlp.jyaa.grupo1.servicio.SolicitudEvaluadorService solicitudEvaluadorService;
 
   @GET
   @Operation(summary = "Listar usuarios")
@@ -70,7 +71,7 @@ public class UsuarioResource {
     if (usuario == null) {
       throw new NotFoundException("Usuario no encontrado");
     }
-    return UsuarioDTO.from(usuario);
+    return evaluadorEjeService.toDto(usuario);
   }
 
   @PUT
@@ -83,7 +84,7 @@ public class UsuarioResource {
   public UsuarioDTO actualizarMiPerfil(
       ActualizarPerfilRequest request, @Context ContainerRequestContext ctx) {
     AuthenticatedUser auth = AuthenticatedUser.from(ctx);
-    return UsuarioDTO.from(usuarioService.actualizarPerfilPropio(auth.userId(), request));
+    return evaluadorEjeService.toDto(usuarioService.actualizarPerfilPropio(auth.userId(), request));
   }
 
   @GET
@@ -96,7 +97,7 @@ public class UsuarioResource {
     if (usuario == null) {
       throw new NotFoundException("Usuario no encontrado");
     }
-    return UsuarioDTO.from(usuario);
+    return evaluadorEjeService.toDto(usuario);
   }
 
   @POST
@@ -195,15 +196,36 @@ public class UsuarioResource {
 
   @PUT
   @Path("/{id}/evaluador-eje")
-  @Operation(summary = "Asignar evaluador a un eje temático (sin tope por eje)")
+  @Operation(
+      summary = "Asignar evaluador a un eje temático con cupo",
+      description =
+          "Crea o reinicia el cupo del eje (capacidad opcional; default 5). Se pueden asignar"
+              + " varios ejes al mismo usuario.")
   public UsuarioDTO asignarEvaluadorEje(
       @PathParam("id") Long id,
       ar.edu.unlp.jyaa.grupo1.rest.dto.EvaluadorEjeRequest request,
       @Context ContainerRequestContext ctx) {
     requireGestionEvaluadores(ctx);
     try {
-      return UsuarioDTO.from(
-          evaluadorEjeService.asignarEvaluadorAEje(id, request.ejeTematico()));
+      return evaluadorEjeService.toDto(
+          evaluadorEjeService.asignarEvaluadorAEje(
+              id, request.ejeTematico(), request.capacidad()));
+    } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
+      throw new NotFoundException(e.getMessage());
+    }
+  }
+
+  @PUT
+  @Path("/{id}/evaluador-eje/cupo/reiniciar")
+  @Operation(summary = "Reiniciar cupo restante de un eje (= capacidad máxima)")
+  public UsuarioDTO reiniciarCupoEvaluador(
+      @PathParam("id") Long id,
+      ar.edu.unlp.jyaa.grupo1.rest.dto.EvaluadorEjeRequest request,
+      @Context ContainerRequestContext ctx) {
+    requireGestionEvaluadores(ctx);
+    try {
+      return evaluadorEjeService.toDto(
+          evaluadorEjeService.reiniciarCupo(id, request.ejeTematico()));
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }
@@ -211,12 +233,29 @@ public class UsuarioResource {
 
   @DELETE
   @Path("/{id}/evaluador-eje")
-  @Operation(summary = "Quitar evaluador de su eje temático")
+  @Operation(
+      summary = "Quitar evaluador del eje (o de todos)",
+      description =
+          "Sin query eje: quita todos los cupos, el rol EVALUADOR y revoca solicitudes aprobadas."
+              + " Con ?eje=...: quita solo ese eje.")
   public UsuarioDTO quitarEvaluadorEje(
-      @PathParam("id") Long id, @Context ContainerRequestContext ctx) {
+      @PathParam("id") Long id,
+      @QueryParam("eje") String eje,
+      @Context ContainerRequestContext ctx) {
     requireGestionEvaluadores(ctx);
     try {
-      return UsuarioDTO.from(evaluadorEjeService.quitarEvaluadorDeEje(id));
+      if (eje != null && !eje.isBlank()) {
+        Usuario actualizado = evaluadorEjeService.quitarEvaluadorDeUnEje(id, eje);
+        // Si no quedan cupos activos, retirar rol y revocar solicitud aprobada.
+        if (evaluadorEjeService.listarCuposDto(id).isEmpty()) {
+          actualizado = evaluadorEjeService.quitarEvaluadorDeEje(id);
+          solicitudEvaluadorService.revocarAprobadasPorRetiroDeRol(id);
+        }
+        return evaluadorEjeService.toDto(actualizado);
+      }
+      Usuario actualizado = evaluadorEjeService.quitarEvaluadorDeEje(id);
+      solicitudEvaluadorService.revocarAprobadasPorRetiroDeRol(id);
+      return evaluadorEjeService.toDto(actualizado);
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }

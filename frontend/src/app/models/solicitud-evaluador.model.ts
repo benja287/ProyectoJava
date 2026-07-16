@@ -57,7 +57,7 @@ export interface SolicitudEvaluador {
   usuarioId?: number;
   usuarioNombre?: string;
   usuarioApellido?: string;
-  estado?: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | string;
+  estado?: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'REVOCADA' | string;
   fechaSolicitud?: string;
   fechaRevision?: string | null;
   revisadoPorId?: number | null;

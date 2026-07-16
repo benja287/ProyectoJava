@@ -53,13 +53,21 @@ export class SeleccionRolComponent implements OnInit {
       this.router.navigate(['/login']);
       return;
     }
-    const u = this.loginService.getUser();
-    if (!u) {
-      this.router.navigate(['/login']);
-      return;
-    }
+    this.loginService.refreshSession(true).subscribe({
+      next: (u) => this.aplicarRoles(u),
+      error: () => {
+        const u = this.loginService.getUser();
+        if (!u) {
+          this.router.navigate(['/login']);
+          return;
+        }
+        this.aplicarRoles(u);
+      },
+    });
+  }
+
+  private aplicarRoles(u: { roles?: string[] }): void {
     this.roles = u.roles ?? [];
-    // Si solo tiene un rol, no tiene sentido esta pantalla
     if (this.roles.length <= 1) {
       navegarConRecargaCompleta(this.loginService.homeRoute());
     }

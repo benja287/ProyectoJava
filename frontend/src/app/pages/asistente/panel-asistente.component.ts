@@ -29,6 +29,14 @@ import { feedbackTextoTrabajo } from '../../utils/trabajo-rol.util';
           <p class="ok panel-asistente-aviso">{{ mensajeTrabajo }}</p>
         }
 
+        @if (pendienteRehabilitacionAutor) {
+          <p class="notice-box panel-asistente-aviso">
+            Ya tenés al menos un trabajo <strong>aprobado</strong> como asistente y no tenés el rol
+            Autor. No hace falta enviar otro trabajo: el administrador puede volver a habilitarte
+            Autor desde “Habilitación Autor”. Si te lo habían sacado, pedile que te lo reactive.
+          </p>
+        }
+
         <div class="panel-asistente-grid">
           @if (mostrarEnvioTrabajo || trabajos.length > 0) {
             <a routerLink="/asistente/trabajos" class="accion-card">
@@ -216,6 +224,14 @@ export class PanelAsistenteComponent implements OnInit {
 
   get mostrarEnvioTrabajo(): boolean {
     return this.esAsistente && this.trabajos.length === 0 && (this.resumen?.puedeEnviarNuevo ?? true);
+  }
+
+  /** Trabajo aprobado + sin rol AUTOR → no enviar de nuevo; basta re-habilitación admin. */
+  get pendienteRehabilitacionAutor(): boolean {
+    if (!this.esAsistente || this.loginService.hasRole('AUTOR')) {
+      return false;
+    }
+    return this.trabajos.some((t) => t.estado === 'APROBADO');
   }
 
   etiquetaEstado(t: Trabajo): string {

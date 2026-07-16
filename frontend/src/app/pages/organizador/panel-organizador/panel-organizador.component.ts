@@ -51,14 +51,14 @@ import {
           <span class="accion-icono accion-icono--azul" aria-hidden="true">👤</span>
           <div>
             <h3>Evaluadores por eje temático</h3>
-            <p>Asignar y quitar evaluadores en cada eje</p>
+            <p>Asignar ejes, ver restantes y reiniciar cupos</p>
           </div>
         </a>
         <a routerLink="/organizador/solicitudes-evaluador" class="accion-card">
           <span class="accion-icono accion-icono--naranja" aria-hidden="true">📋</span>
           <div>
             <h3>Solicitudes de evaluadores</h3>
-            <p>Postulaciones pendientes: perfil, capacidad por eje, aprobar o rechazar</p>
+            <p>Al aprobar se asignan todos los ejes con capacidad &gt; 0</p>
           </div>
         </a>
         <a routerLink="/organizador/plazo-envio" class="accion-card">

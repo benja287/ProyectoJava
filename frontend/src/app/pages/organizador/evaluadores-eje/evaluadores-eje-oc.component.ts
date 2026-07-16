@@ -8,7 +8,7 @@ import {
 import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
 import { EJES_TEMATICOS } from '../../../constants/ejes-tematicos';
 import { etiquetaCategoria } from '../../../models/inscripcion.model';
-import { Usuario } from '../../../models/usuario.model';
+import { EvaluadorEjeCupo, Usuario } from '../../../models/usuario.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
@@ -28,7 +28,7 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
         <span class="panel-hero-icon" aria-hidden="true">👤</span>
         <div>
           <h1>Evaluadores por eje temático</h1>
-          <p>Asignar y quitar evaluadores en cada eje</p>
+          <p>Cupos por eje, restantes y reinicio cuando se agotan</p>
         </div>
       </div>
 
@@ -53,8 +53,9 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
         <p class="notice-box">
           Subsección de postulaciones:
           <a routerLink="/organizador/solicitudes-evaluador">Solicitudes de evaluadores</a>
-          (pendientes / aprobadas / rechazadas, con perfil y capacidad por eje). Al aprobar, el
-          usuario recibe rol EVALUADOR y se asigna el eje elegido.
+          (pendientes / aprobadas / rechazadas). Al aprobar se asignan
+          <strong>todos</strong> los ejes con capacidad &gt; 0 y sus cupos. Al asignar trabajos se
+          descuentan restantes; cuando llegan a 0 podés reiniciar el cupo de ese eje.
         </p>
 
         <app-filter-bar
@@ -95,45 +96,79 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                     categoriaLabel(u.categoriaInscripcion)
                   }}</span>
                 </p>
-                @if (!esEvaluadorConEje(u)) {
-                  <label class="eval-select-label">
-                    Elegí eje temático para hacerlo evaluador
-                    <select
-                      [value]="ejeDraft[u.id!] || ''"
-                      (change)="setEjeDraft(u.id!, $any($event.target).value)"
-                    >
-                      <option value="">Seleccionar eje...</option>
-                      @for (eje of ejesTematicos; track eje) {
-                        <option [value]="eje">{{ eje }}</option>
+
+                @if (cuposActivos(u).length) {
+                  <div class="cupos-lista">
+                    <p class="eval-select-label">Ejes y cupos</p>
+                    <ul>
+                      @for (c of cuposActivos(u); track c.ejeTematico) {
+                        <li class="cupo-item" [class.cupo-item--agotado]="c.restantes <= 0">
+                          <div>
+                            <strong>{{ c.ejeTematico }}</strong>
+                            <span class="muted">
+                              restantes {{ c.restantes }} / {{ c.capacidadMax }}
+                            </span>
+                          </div>
+                          <div class="cupo-acciones">
+                            @if (c.restantes <= 0) {
+                              <button
+                                type="button"
+                                class="btn-secundario"
+                                (click)="reiniciarCupo(u, c)"
+                                [disabled]="procesando"
+                              >
+                                Reiniciar cupo
+                              </button>
+                            }
+                            <button
+                              type="button"
+                              class="btn-quitar-eje"
+                              (click)="quitarUnEje(u, c.ejeTematico)"
+                              [disabled]="procesando"
+                            >
+                              Quitar eje
+                            </button>
+                          </div>
+                        </li>
                       }
-                    </select>
-                  </label>
-                  <button
-                    type="button"
-                    class="btn-primary-full"
-                    (click)="hacerEvaluador(u)"
-                    [disabled]="procesando"
+                    </ul>
+                  </div>
+                }
+
+                <label class="eval-select-label">
+                  {{ esEvaluadorConEje(u) ? 'Sumar otro eje' : 'Elegí eje temático para hacerlo evaluador' }}
+                  <select
+                    [value]="ejeDraft[u.id!] || ''"
+                    (change)="setEjeDraft(u.id!, $any($event.target).value)"
                   >
-                    Hacer evaluador en este eje
-                  </button>
-                } @else {
-                  <label class="eval-select-label">
-                    Eje temático asignado
-                    <select disabled>
-                      <option>{{ u.ejeTematicoEvaluador || '(sin eje)' }}</option>
-                    </select>
-                  </label>
+                    <option value="">Seleccionar eje...</option>
+                    @for (eje of ejesTematicos; track eje) {
+                      <option [value]="eje">{{ eje }}</option>
+                    }
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  class="btn-primary-full"
+                  (click)="hacerEvaluador(u)"
+                  [disabled]="procesando"
+                >
+                  {{ esEvaluadorConEje(u) ? 'Asignar eje (cupo 5)' : 'Hacer evaluador en este eje' }}
+                </button>
+
+                @if (esEvaluadorConEje(u)) {
                   <button
                     type="button"
                     class="btn-quitar-eje"
                     (click)="quitarDelEje(u)"
                     [disabled]="procesando"
                   >
-                    Quitar del eje temático
+                    Quitar todos los ejes
                   </button>
                   <p class="form-hint">
-                    Podés sumar todos los evaluadores que necesites por eje. El autor de un trabajo no
-                    puede evaluarlo ni gestionarlo como comité (conflicto de interés).
+                    El autor de un trabajo no puede evaluarlo ni gestionarlo como comité (conflicto de
+                    interés). Si restantes = 0, no se puede asignar más trabajos de ese eje hasta
+                    reiniciar el cupo.
                   </p>
                 }
               </article>
@@ -155,6 +190,41 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
       <p><a routerLink="/organizador">← Volver al panel del comité</a></p>
     </div>
   `,
+  styles: [
+    `
+      .cupos-lista ul {
+        list-style: none;
+        margin: 0 0 0.75rem;
+        padding: 0;
+        display: grid;
+        gap: 0.5rem;
+      }
+      .cupo-item {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid #dbe3f0;
+        border-radius: 8px;
+        background: #f8fafc;
+      }
+      .cupo-item--agotado {
+        border-color: #f0c9a0;
+        background: #fff8f0;
+      }
+      .cupo-item .muted {
+        display: block;
+        font-size: 0.85rem;
+      }
+      .cupo-acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        align-items: center;
+      }
+    `,
+  ],
 })
 export class EvaluadoresEjeOcComponent extends ListadoPaginadoBase {
   readonly ejesTematicos = [...EJES_TEMATICOS];
@@ -192,7 +262,11 @@ export class EvaluadoresEjeOcComponent extends ListadoPaginadoBase {
   }
 
   esEvaluadorConEje(u: Usuario): boolean {
-    return !!u.ejeTematicoEvaluador?.trim();
+    return this.cuposActivos(u).length > 0 || !!u.ejeTematicoEvaluador?.trim();
+  }
+
+  cuposActivos(u: Usuario): EvaluadorEjeCupo[] {
+    return (u.cuposEje || []).filter((c) => c.activo !== false);
   }
 
   categoriaLabel(categoria?: string | null): string {
@@ -214,7 +288,7 @@ export class EvaluadoresEjeOcComponent extends ListadoPaginadoBase {
     this.error = '';
     this.usuarioService.asignarEvaluadorEje(u.id, eje).subscribe({
       next: () => {
-        this.mensaje = `${u.nombre} ${u.apellido} quedó como evaluador en el eje seleccionado.`;
+        this.mensaje = `${u.nombre} ${u.apellido} quedó con cupo en el eje seleccionado.`;
         this.procesando = false;
         this.ejeDraft = { ...this.ejeDraft, [u.id!]: '' };
         this.cargarPagina();
@@ -227,12 +301,52 @@ export class EvaluadoresEjeOcComponent extends ListadoPaginadoBase {
     });
   }
 
+  reiniciarCupo(u: Usuario, c: EvaluadorEjeCupo): void {
+    if (!u.id) return;
+    if (
+      !confirm(
+        `¿Reiniciar el cupo de «${c.ejeTematico}»?\nRestantes volverán a ${c.capacidadMax}.`
+      )
+    ) {
+      return;
+    }
+    this.procesando = true;
+    this.usuarioService.reiniciarCupoEvaluador(u.id, c.ejeTematico).subscribe({
+      next: () => {
+        this.mensaje = `Cupo reiniciado en «${c.ejeTematico}».`;
+        this.procesando = false;
+        this.cargarPagina();
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo reiniciar el cupo.');
+        this.procesando = false;
+      },
+    });
+  }
+
+  quitarUnEje(u: Usuario, eje: string): void {
+    if (!u.id || !confirm(`¿Quitar el eje «${eje}» de este evaluador?`)) return;
+    this.procesando = true;
+    this.usuarioService.quitarEvaluadorEje(u.id, eje).subscribe({
+      next: () => {
+        this.mensaje = `Se quitó el eje «${eje}».`;
+        this.procesando = false;
+        this.cargarPagina();
+        this.cargarTotalEvaluadores();
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo quitar el eje.');
+        this.procesando = false;
+      },
+    });
+  }
+
   quitarDelEje(u: Usuario): void {
-    if (!u.id || !confirm('¿Quitar a este usuario del eje temático?')) return;
+    if (!u.id || !confirm('¿Quitar a este usuario de todos los ejes temáticos?')) return;
     this.procesando = true;
     this.usuarioService.quitarEvaluadorEje(u.id).subscribe({
       next: () => {
-        this.mensaje = 'Se quitó al evaluador del eje.';
+        this.mensaje = 'Se quitaron todos los ejes del evaluador.';
         this.procesando = false;
         this.cargarPagina();
         this.cargarTotalEvaluadores();

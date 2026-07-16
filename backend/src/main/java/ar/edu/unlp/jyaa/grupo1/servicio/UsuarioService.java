@@ -29,6 +29,8 @@ public class UsuarioService {
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private InscripcionCongresoDAO inscripcionDAO;
   @Inject private NotificacionService notificacionService;
+  @Inject private EvaluadorEjeService evaluadorEjeService;
+  @Inject private SolicitudEvaluadorService solicitudEvaluadorService;
 
   public PaginaUsuariosDTO listar(int page, int size, UsuarioFiltro filtro, AuthenticatedUser auth) {
     if (!auth.canListAllUsuarios()) {
@@ -42,7 +44,7 @@ public class UsuarioService {
 
     long total = usuarioDAO.contarFiltrado(effective);
     List<UsuarioDTO> items =
-        usuarioDAO.listarFiltrado(effective, offset, safeSize).stream().map(UsuarioDTO::from).toList();
+        evaluadorEjeService.toDtos(usuarioDAO.listarFiltrado(effective, offset, safeSize));
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
 
     return new PaginaUsuariosDTO(items, safePage, safeSize, total, totalPages);
@@ -168,9 +170,17 @@ public class UsuarioService {
     if (roles == null || roles.isEmpty()) {
       throw new NegocioException("Debe indicar al menos un rol");
     }
+    boolean teniaEvaluador =
+        usuario.getRoles() != null && usuario.getRoles().contains(Rol.EVALUADOR);
+    boolean quedaEvaluador = roles.contains(Rol.EVALUADOR);
     usuario.setRoles(new HashSet<>(roles));
     normalizarRolActual(usuario, rolActual);
-    return usuarioDAO.modificar(usuario);
+    Usuario actualizado = usuarioDAO.modificar(usuario);
+    if (teniaEvaluador && !quedaEvaluador) {
+      evaluadorEjeService.limpiarCuposYEje(id);
+      solicitudEvaluadorService.revocarAprobadasPorRetiroDeRol(id);
+    }
+    return actualizado;
   }
 
   public Usuario setActivo(Long id, boolean activo) {

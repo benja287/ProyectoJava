@@ -1,6 +1,8 @@
 package ar.edu.unlp.jyaa.grupo1.rest;
 
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
+import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
+import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.security.JwtException;
 import ar.edu.unlp.jyaa.grupo1.security.JwtService;
 import jakarta.annotation.Priority;
@@ -12,13 +14,14 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Valida Authorization: Bearer en rutas protegidas de /api.
- * Tras verificar el JWT, consulta activo en BD (sin caché) para que la
- * inhabilitación de cuentas sea efectiva al instante.
+ * Tras verificar el JWT, consulta en BD (sin caché) si la cuenta sigue activa y cuáles son
+ * los roles actuales — así un alta/baja de rol (p. ej. EVALUADOR) vale al instante sin
+ * volver a iniciar sesión.
  */
 @Provider
 @Priority(Priorities.AUTHENTICATION)
@@ -31,72 +34,70 @@ public class JwtAuthFilter implements ContainerRequestFilter {
   public void filter(ContainerRequestContext requestContext) {
     String method = requestContext.getMethod();
     if ("OPTIONS".equalsIgnoreCase(method)) {
-      // Preflight CORS: no autenticar acá (lo resuelve CorsRequestFilter).
       return;
     }
 
     String path = normalizePath(requestContext.getUriInfo().getPath());
     if (isPublicPath(path, method)) {
-      // Endpoints públicos: login, registro, swagger y algunos GET (programa, circulares, etc.).
       return;
     }
 
     String authorization = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
     if (authorization == null || !authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
-      // Sin header Authorization o sin prefijo "Bearer " → no hay credencial.
       abortUnauthorized(requestContext, "Token requerido");
       return;
     }
 
     String token = authorization.substring(7).trim();
     if (token.isEmpty()) {
-      // Evita "Bearer    " (vacío).
       abortUnauthorized(requestContext, "Token requerido");
       return;
     }
 
     try {
-      // 1) Valida firma + issuer + expiración (JwtService.parse).
       var claims = jwtService.parse(token);
 
-      // 2) Publica info en el request context para que Resources/Services la lean vía AuthenticatedUser.
       requestContext.setProperty("jwtSubject", claims.getSubject());
       requestContext.setProperty("jwtEmail", claims.get("email", String.class));
-      @SuppressWarnings("unchecked")
-      var roles = (java.util.List<String>) claims.get("roles", java.util.List.class);
-      requestContext.setProperty("jwtRoles", roles != null ? roles : java.util.List.of());
 
-      // 3) Seguridad adicional: la cuenta debe seguir activa en BD.
-      // Esto evita que un usuario deshabilitado siga operando con un token aún vigente.
-      if (!isAccountActive(claims.getSubject(), requestContext)) {
+      // Roles desde BD (no desde el claim del token): reflejan cambios en caliente.
+      if (!cargarUsuarioActivoYRoles(claims.getSubject(), requestContext)) {
         return;
       }
     } catch (JwtException e) {
-      // Token inválido/expirado (mensaje ya normalizado en JwtService.parse).
       abortUnauthorized(requestContext, e.getMessage());
     }
   }
 
-  private boolean isAccountActive(String subject, ContainerRequestContext requestContext) {
+  /**
+   * Carga el usuario, valida activo y publica roles actuales en el request.
+   *
+   * @return false si ya se abortó la request
+   */
+  private boolean cargarUsuarioActivoYRoles(String subject, ContainerRequestContext requestContext) {
     Long userId;
     try {
-      // subject = userId (string) definido por JwtService.generate().subject(...)
       userId = Long.parseLong(subject);
     } catch (NumberFormatException e) {
       abortUnauthorized(requestContext, "Token inválido");
       return false;
     }
 
-    Optional<Boolean> activo = usuarioDAO.isActivoById(userId);
-    if (activo.isEmpty()) {
+    Usuario usuario = usuarioDAO.recuperarPorId(userId);
+    if (usuario == null) {
       abortUnauthorized(requestContext, "Usuario no encontrado");
       return false;
     }
-    if (!activo.get()) {
-      // Caso especial para UX: el frontend detecta accountDisabled y muestra mensaje específico.
+    if (!usuario.isActivo()) {
       abortForbidden(requestContext, "Cuenta deshabilitada");
       return false;
     }
+
+    List<String> roles =
+        usuario.getRoles() == null
+            ? List.of()
+            : usuario.getRoles().stream().map(Rol::name).sorted().toList();
+    requestContext.setProperty("jwtRoles", roles);
     return true;
   }
 

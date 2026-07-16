@@ -13,9 +13,14 @@ public record UsuarioDTO(
     String rolActual,
     boolean activo,
     String categoriaInscripcion,
-    String ejeTematicoEvaluador) {
+    String ejeTematicoEvaluador,
+    List<EvaluadorEjeCupoDTO> cuposEje) {
 
   public static UsuarioDTO from(Usuario u) {
+    return from(u, List.of());
+  }
+
+  public static UsuarioDTO from(Usuario u, List<EvaluadorEjeCupoDTO> cuposEje) {
     return new UsuarioDTO(
         u.getId(),
         u.getEmail(),
@@ -25,6 +30,7 @@ public record UsuarioDTO(
         u.getRolActual() != null ? u.getRolActual().name() : null,
         u.isActivo(),
         u.getCategoriaInscripcion(),
-        u.getEjeTematicoEvaluador());
+        u.getEjeTematicoEvaluador(),
+        cuposEje != null ? cuposEje : List.of());
   }
 }
