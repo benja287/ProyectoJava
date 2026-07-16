@@ -104,10 +104,10 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                       <span class="muted"> — {{ etiquetaOrigenCupo(u) }}</span>
                     </p>
                     <p class="form-hint cupos-hint">
-                      Restantes = cupos libres para asignar trabajos. Bajan al
-                      <strong>asignar</strong> un trabajo y se liberan solos cuando el evaluador
-                      <strong>emite el dictamen</strong> (o si rechaza/desasignan). Si un cupo quedó
-                      trabado en 0, usá Reiniciar cupo.
+                      Restantes bajan al <strong>asignar</strong> un trabajo y vuelven solos al
+                      <strong>emitir el dictamen</strong> (o rechazar/desasignar). Si ves
+                      “esperando dictamen”, es normal: no hace falta reiniciar. “Reiniciar cupo”
+                      solo aparece si quedó en 0 sin trabajos pendientes (caso trabado).
                     </p>
                     <ul>
                       @for (c of cuposActivos(u); track c.ejeTematico) {
@@ -116,16 +116,29 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                             <strong>{{ c.ejeTematico }}</strong>
                             <span class="muted">
                               restantes {{ c.restantes }} / {{ c.capacidadMax }}
-                              @if (c.restantes < c.capacidadMax && c.restantes > 0) {
+                              @if ((c.pendientesDictamen ?? 0) > 0) {
+                                · {{ c.pendientesDictamen }} esperando dictamen
+                              } @else if (c.restantes < c.capacidadMax && c.restantes > 0) {
                                 · en uso
-                              }
-                              @if (c.restantes <= 0) {
+                              } @else if (c.restantes <= 0) {
                                 · agotado
                               }
                             </span>
+                            @if (c.restantes <= 0 && (c.pendientesDictamen ?? 0) > 0) {
+                              <span class="cupo-estado-msg">
+                                Cupo lleno: hay trabajos asignados sin dictamen. Se libera solo
+                                cuando el evaluador emite el dictamen (no hace falta reiniciar).
+                              </span>
+                            }
+                            @if (c.restantes <= 0 && (c.pendientesDictamen ?? 0) === 0) {
+                              <span class="cupo-estado-msg">
+                                No hay dictámenes pendientes pero el cupo quedó en 0 (caso trabado).
+                                Podés reiniciar.
+                              </span>
+                            }
                           </div>
                           <div class="cupo-acciones">
-                            @if (c.restantes <= 0) {
+                            @if (c.restantes <= 0 && (c.pendientesDictamen ?? 0) === 0) {
                               <button
                                 type="button"
                                 class="btn-secundario"
@@ -250,6 +263,13 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
       .cupos-hint {
         margin: 0 0 0.5rem;
         font-size: 0.85rem;
+      }
+      .cupo-estado-msg {
+        display: block;
+        margin-top: 0.35rem;
+        font-size: 0.82rem;
+        color: #5c4a32;
+        line-height: 1.35;
       }
     `,
   ],

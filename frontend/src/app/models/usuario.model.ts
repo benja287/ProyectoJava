@@ -5,6 +5,8 @@ export interface EvaluadorEjeCupo {
   capacidadMax: number;
   restantes: number;
   activo?: boolean;
+  /** Asignaciones sin dictamen que consumen cupo. */
+  pendientesDictamen?: number;
 }
 
 export interface Usuario {

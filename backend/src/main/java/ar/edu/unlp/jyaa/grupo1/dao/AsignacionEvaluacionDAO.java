@@ -28,4 +28,9 @@ public interface AsignacionEvaluacionDAO extends GenericDAO<AsignacionEvaluacion
   Optional<AsignacionEvaluacion> buscarActiva(Long trabajoId, Long evaluadorId);
 
   Optional<AsignacionEvaluacion> recuperarPorIdConDetalle(Long id);
+
+  /**
+   * Asignaciones que aún consumen cupo: sin dictamen y no rechazadas por el evaluador.
+   */
+  long contarPendientesDictamenPorEvaluadorYEje(Long evaluadorId, String ejeTematico);
 }

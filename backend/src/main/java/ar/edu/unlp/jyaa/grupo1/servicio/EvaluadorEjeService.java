@@ -1,5 +1,6 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
+import ar.edu.unlp.jyaa.grupo1.dao.AsignacionEvaluacionDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.EvaluadorEjeCapacidadDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.modelo.EjesTematicos;
@@ -16,7 +17,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RequestScoped
 public class EvaluadorEjeService {
@@ -26,6 +26,7 @@ public class EvaluadorEjeService {
 
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private EvaluadorEjeCapacidadDAO capacidadDAO;
+  @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
 
   public Usuario asignarEvaluadorAEje(Long usuarioId, String ejeTematico) {
     return asignarEvaluadorAEje(usuarioId, ejeTematico, CAPACIDAD_MANUAL_DEFAULT);
@@ -197,7 +198,7 @@ public class EvaluadorEjeService {
     return capacidadDAO.listarPorUsuario(usuarioId).stream()
         .filter(EvaluadorEjeCapacidad::isActivo)
         .sorted(Comparator.comparing(EvaluadorEjeCapacidad::getEjeTematico))
-        .map(EvaluadorEjeCupoDTO::from)
+        .map(c -> toCupoDtoReconciliado(usuarioId, c))
         .toList();
   }
 
@@ -222,14 +223,36 @@ public class EvaluadorEjeService {
   }
 
   private Map<Long, List<EvaluadorEjeCupoDTO>> cuposAgrupados(Collection<Long> usuarioIds) {
-    return capacidadDAO.listarPorUsuarios(usuarioIds).stream()
-        .filter(EvaluadorEjeCapacidad::isActivo)
-        .sorted(Comparator.comparing(EvaluadorEjeCapacidad::getEjeTematico))
-        .collect(
-            Collectors.groupingBy(
-                c -> c.getUsuario().getId(),
-                HashMap::new,
-                Collectors.mapping(EvaluadorEjeCupoDTO::from, Collectors.toList())));
+    Map<Long, List<EvaluadorEjeCupoDTO>> out = new HashMap<>();
+    for (EvaluadorEjeCapacidad c : capacidadDAO.listarPorUsuarios(usuarioIds)) {
+      if (!c.isActivo()) {
+        continue;
+      }
+      Long uid = c.getUsuario().getId();
+      out.computeIfAbsent(uid, k -> new ArrayList<>()).add(toCupoDtoReconciliado(uid, c));
+    }
+    for (List<EvaluadorEjeCupoDTO> list : out.values()) {
+      list.sort(Comparator.comparing(EvaluadorEjeCupoDTO::ejeTematico));
+    }
+    return out;
+  }
+
+  /**
+   * Alinea restantes con asignaciones reales sin dictamen. Si ya dictaminaron y el cupo no se
+   * liberó (datos viejos), corrige restantes al listar.
+   */
+  private EvaluadorEjeCupoDTO toCupoDtoReconciliado(Long usuarioId, EvaluadorEjeCapacidad c) {
+    int pendientes =
+        (int)
+            asignacionEvaluacionDAO.contarPendientesDictamenPorEvaluadorYEje(
+                usuarioId, c.getEjeTematico());
+    int consumidosEsperados = Math.min(c.getCapacidadMax(), pendientes);
+    int restantesEsperados = c.getCapacidadMax() - consumidosEsperados;
+    if (c.getRestantes() != restantesEsperados) {
+      c.setRestantes(Math.max(0, restantesEsperados));
+      capacidadDAO.modificar(c);
+    }
+    return EvaluadorEjeCupoDTO.from(c, pendientes);
   }
 
   private void upsertCupo(Usuario usuario, String eje, int capacidadMax, boolean activo) {

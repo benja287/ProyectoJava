@@ -189,6 +189,28 @@ public class AsignacionEvaluacionDAOImpl extends AbstractJpaDAO<AsignacionEvalua
     }
   }
 
+  @Override
+  public long contarPendientesDictamenPorEvaluadorYEje(Long evaluadorId, String ejeTematico) {
+    if (evaluadorId == null || ejeTematico == null || ejeTematico.isBlank()) {
+      return 0;
+    }
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery(
+              "SELECT COUNT(a) FROM AsignacionEvaluacion a"
+                  + " WHERE a.evaluador.id = :eid"
+                  + " AND a.trabajo.ejeTematico = :eje"
+                  + " AND a.evaluacion IS NULL"
+                  + " AND (a.fechaRespuesta IS NULL OR a.aceptada = true)",
+              Long.class)
+          .setParameter("eid", evaluadorId)
+          .setParameter("eje", ejeTematico.trim())
+          .getSingleResult();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
   private static String buildWhere(
       String select,
       boolean soloPendientes,
