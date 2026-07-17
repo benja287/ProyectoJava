@@ -6,5 +6,6 @@ public enum TipoArchivoAlmacenado {
   CERTIFICADO_INSCRIPCION,
   CIRCULAR,
   EVALUACION_CORRECCION,
-  QR_PAGO
+  QR_PAGO,
+  FACTURA
 }

@@ -27,6 +27,10 @@ public class Pago implements Serializable {
   @Column(name = "comprobante_url", length = 500)
   private String comprobanteUrl;
 
+  /** PDF de factura emitida por admin (cuando el participante solicitó factura). */
+  @Column(name = "factura_url", length = 500)
+  private String facturaUrl;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private EstadoPago estado = EstadoPago.PENDIENTE;
@@ -99,6 +103,14 @@ public class Pago implements Serializable {
 
   public void setComprobanteUrl(String comprobanteUrl) {
     this.comprobanteUrl = comprobanteUrl;
+  }
+
+  public String getFacturaUrl() {
+    return facturaUrl;
+  }
+
+  public void setFacturaUrl(String facturaUrl) {
+    this.facturaUrl = facturaUrl;
   }
 
   public EstadoPago getEstado() {

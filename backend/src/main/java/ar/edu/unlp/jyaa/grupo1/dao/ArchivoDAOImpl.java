@@ -22,6 +22,9 @@ public class ArchivoDAOImpl extends AbstractJpaDAO<Archivo> implements ArchivoDA
         SELECT 1 FROM pagos p
         WHERE p.comprobante_url = CONCAT('/api/archivos/', a.id))
       AND NOT EXISTS (
+        SELECT 1 FROM pagos p
+        WHERE p.factura_url = CONCAT('/api/archivos/', a.id))
+      AND NOT EXISTS (
         SELECT 1 FROM inscripciones_congreso i
         WHERE i.certificado_url = CONCAT('/api/archivos/', a.id))
       AND NOT EXISTS (

@@ -15,6 +15,7 @@ import {
   etiquetaTipoParticipacion,
 } from '../../../models/inscripcion.model';
 import { InscripcionService } from '../../../servicios/inscripcion.service';
+import { PagoService } from '../../../servicios/pago.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
@@ -110,7 +111,8 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         @if (esEfectivo && inscripcion.estado === 'PENDIENTE') {
           <p class="aviso-amarillo">
             <strong>Efectivo / presencial:</strong> no hay archivo: el asistente declaró pagar en caja
-            o durante el congreso. Usá «Validar pago efectivo» e ingresá el número de recibo.
+            o durante el congreso. Usá «Validar pago efectivo» y confirmá la recepción física; el
+            recibo lo asigna el sistema.
           </p>
         }
         <dl class="detalle">
@@ -138,7 +140,51 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
               —
             }
           </dd>
+          @if (inscripcion.requiereFactura) {
+            <dt>Factura</dt>
+            <dd>
+              @if (inscripcion.pagoFacturaUrl) {
+                <app-archivo-link [url]="inscripcion.pagoFacturaUrl" label="Ver factura" />
+              } @else {
+                <span class="muted">Pendiente de emitir / adjuntar</span>
+              }
+            </dd>
+          }
         </dl>
+
+        @if (
+          inscripcion.requiereFactura &&
+          inscripcion.pagoId &&
+          inscripcion.pagoEstado === 'APROBADO'
+        ) {
+          <h2>Enviar factura al participante</h2>
+          <p class="muted">
+            Subí el PDF emitido. Se notifica por campana y email para que lo descargue en Estado de
+            pago.
+          </p>
+          <div class="inline-form-row" style="gap: 0.75rem; flex-wrap: wrap; align-items: center">
+            <input
+              type="file"
+              accept=".pdf,application/pdf"
+              (change)="onFacturaSeleccionada($event)"
+              [disabled]="procesando || subiendoFactura"
+            />
+            <button
+              type="button"
+              class="btn-ok"
+              (click)="subirFactura()"
+              [disabled]="!archivoFactura || procesando || subiendoFactura"
+            >
+              {{
+                subiendoFactura
+                  ? 'Enviando…'
+                  : inscripcion.pagoFacturaUrl
+                    ? 'Reemplazar y notificar'
+                    : 'Adjuntar y notificar'
+              }}
+            </button>
+          </div>
+        }
 
         @if (mostrarInfoPagoAuditada) {
           <h2>Información de pago</h2>
@@ -196,12 +242,15 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
   error = '';
   mensaje = '';
   procesando = false;
+  subiendoFactura = false;
+  archivoFactura?: File;
   modalEfectivoAbierto = false;
   private sub?: Subscription;
 
   constructor(
     private route: ActivatedRoute,
-    private inscripcionService: InscripcionService
+    private inscripcionService: InscripcionService,
+    private pagoService: PagoService
   ) {}
 
   ngOnInit(): void {
@@ -272,6 +321,38 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
 
   cerrarModalEfectivo(): void {
     this.modalEfectivoAbierto = false;
+  }
+
+  onFacturaSeleccionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.archivoFactura = input.files?.[0] ?? undefined;
+  }
+
+  subirFactura(): void {
+    if (!this.inscripcion?.pagoId || !this.archivoFactura || this.subiendoFactura) {
+      return;
+    }
+    this.subiendoFactura = true;
+    this.error = '';
+    this.mensaje = '';
+    this.pagoService.adjuntarFactura(this.inscripcion.pagoId, this.archivoFactura).subscribe({
+      next: (pago) => {
+        if (this.inscripcion) {
+          this.inscripcion = {
+            ...this.inscripcion,
+            pagoFacturaUrl: pago.facturaUrl ?? null,
+          };
+        }
+        this.archivoFactura = undefined;
+        this.mensaje =
+          'Factura adjuntada. El participante recibió aviso en la plataforma y por email.';
+        this.subiendoFactura = false;
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo adjuntar la factura.');
+        this.subiendoFactura = false;
+      },
+    });
   }
 
   validar(

@@ -17,6 +17,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         Pagos en efectivo aprobados con recepción física confirmada. Contá el dinero y contrastá
         con el total del sistema.
       </p>
+      <p class="muted small">
+        Cada vez que se aprueba un cobro en efectivo, los administradores reciben
+        <strong>automáticamente</strong> el arqueo del día por campana y email (no hace falta
+        avisarlo a mano).
+      </p>
 
       <div class="inline-form-row" style="flex-wrap: wrap; gap: 0.75rem; margin: 1rem 0">
         <label>
@@ -30,10 +35,22 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         <button type="button" class="btn-primary" (click)="consultar()" [disabled]="cargando">
           {{ cargando ? 'Consultando…' : 'Consultar' }}
         </button>
+        <button
+          type="button"
+          class="btn-link"
+          (click)="notificarAdmins()"
+          [disabled]="cargando || notificando || !reporte"
+          title="Opcional: reenvía el resumen del período seleccionado"
+        >
+          {{ notificando ? 'Reenviando…' : 'Reenviar aviso del período' }}
+        </button>
       </div>
 
       @if (error) {
         <p class="error">{{ error }}</p>
+      }
+      @if (mensaje) {
+        <p class="ok">{{ mensaje }}</p>
       }
 
       @if (reporte) {
@@ -105,7 +122,9 @@ export class ArqueoCajaComponent implements OnInit {
   hasta = '';
   reporte?: ArqueoCaja;
   cargando = false;
+  notificando = false;
   error = '';
+  mensaje = '';
 
   constructor(private pagoService: PagoService) {}
 
@@ -126,6 +145,7 @@ export class ArqueoCajaComponent implements OnInit {
     }
     this.cargando = true;
     this.error = '';
+    this.mensaje = '';
     this.pagoService.arqueoCaja(this.desde, this.hasta).subscribe({
       next: (r) => {
         this.reporte = r;
@@ -135,6 +155,26 @@ export class ArqueoCajaComponent implements OnInit {
         this.reporte = undefined;
         this.error = mensajeErrorApi(err, 'No se pudo obtener el arqueo.');
         this.cargando = false;
+      },
+    });
+  }
+
+  notificarAdmins(): void {
+    if (!this.desde || !this.hasta || this.notificando) {
+      return;
+    }
+    this.notificando = true;
+    this.error = '';
+    this.mensaje = '';
+    this.pagoService.notificarArqueoCaja(this.desde, this.hasta).subscribe({
+      next: (r) => {
+        this.reporte = r.arqueo;
+        this.mensaje = r.mensaje;
+        this.notificando = false;
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo notificar el arqueo.');
+        this.notificando = false;
       },
     });
   }

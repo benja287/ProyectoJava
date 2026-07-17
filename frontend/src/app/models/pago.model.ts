@@ -4,6 +4,7 @@ export interface Pago {
   metodo: string;
   requiereFactura: boolean;
   comprobanteUrl?: string | null;
+  facturaUrl?: string | null;
   estado?: string;
   motivoRechazo?: string | null;
   idAsociacion?: string | null;
@@ -49,4 +50,10 @@ export interface ArqueoCaja {
   cantidadPagos: number;
   totalCobrado: number;
   items: ArqueoCajaItem[];
+}
+
+export interface ArqueoNotificacionResult {
+  administradoresNotificados: number;
+  mensaje: string;
+  arqueo: ArqueoCaja;
 }

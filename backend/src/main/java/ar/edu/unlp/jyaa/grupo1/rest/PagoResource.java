@@ -2,6 +2,7 @@ package ar.edu.unlp.jyaa.grupo1.rest;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ComprobanteUploadForm;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.FacturaUploadForm;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.PagoRegistroRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ValidacionPagoRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
@@ -94,6 +95,19 @@ public class PagoResource {
     java.time.LocalDate dDesde = parseFecha(desde, "desde");
     java.time.LocalDate dHasta = parseFecha(hasta, "hasta");
     return pagoService.arqueoCaja(dDesde, dHasta, AuthenticatedUser.from(ctx));
+  }
+
+  @POST
+  @Path("/arqueo-caja/notificar")
+  @Operation(summary = "Notificar el arqueo de caja a todos los administradores (campana + email)")
+  @ApiResponse(responseCode = "200", description = "Administradores notificados")
+  public ar.edu.unlp.jyaa.grupo1.web.dto.ArqueoNotificacionResultDTO notificarArqueoCaja(
+      @QueryParam("desde") String desde,
+      @QueryParam("hasta") String hasta,
+      @Context ContainerRequestContext ctx) {
+    java.time.LocalDate dDesde = parseFecha(desde, "desde");
+    java.time.LocalDate dHasta = parseFecha(hasta, "hasta");
+    return pagoService.notificarArqueoCaja(dDesde, dHasta, AuthenticatedUser.from(ctx));
   }
 
   @GET
@@ -190,6 +204,33 @@ public class PagoResource {
     }
     String nombre = fileDetail != null ? fileDetail.getFileName() : "comprobante.pdf";
     return pagoService.adjuntarComprobante(id, file, nombre);
+  }
+
+  @POST
+  @Path("/{id}/factura")
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  @Operation(
+      summary = "Adjuntar factura emitida (admin) y notificar al participante",
+      requestBody =
+          @RequestBody(
+              required = true,
+              content =
+                  @Content(
+                      mediaType = MediaType.MULTIPART_FORM_DATA,
+                      schema = @Schema(implementation = FacturaUploadForm.class))))
+  @ApiResponse(responseCode = "200", description = "Factura registrada y usuario notificado")
+  public Pago adjuntarFactura(
+      @PathParam("id") Long id,
+      @FormDataParam("file") java.io.InputStream file,
+      @FormDataParam("file")
+          org.glassfish.jersey.media.multipart.FormDataContentDisposition fileDetail,
+      @Context ContainerRequestContext ctx)
+      throws IOException {
+    if (file == null) {
+      throw new ar.edu.unlp.jyaa.grupo1.servicio.NegocioException("Debe adjuntar la factura (PDF)");
+    }
+    String nombre = fileDetail != null ? fileDetail.getFileName() : "factura.pdf";
+    return pagoService.adjuntarFactura(id, file, nombre, AuthenticatedUser.from(ctx));
   }
 
   @DELETE

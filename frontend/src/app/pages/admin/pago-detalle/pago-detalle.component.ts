@@ -65,6 +65,16 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
               —
             }
           </dd>
+          @if (pago.requiereFactura) {
+            <dt>Factura</dt>
+            <dd>
+              @if (pago.facturaUrl) {
+                <app-archivo-link [url]="pago.facturaUrl" label="Ver factura" />
+              } @else {
+                <span class="muted">Pendiente de emitir / adjuntar</span>
+              }
+            </dd>
+          }
         </dl>
 
         @if (mostrarInfoAuditada) {
@@ -83,6 +93,30 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
               <dd>{{ pago.observacionesValidacion }}</dd>
             }
           </dl>
+        }
+
+        @if (pago.requiereFactura && pago.estado === 'APROBADO') {
+          <h2>Enviar factura al participante</h2>
+          <p class="muted">
+            Subí el PDF emitido. El sistema notifica por campana y email para que lo descargue en
+            Estado de pago.
+          </p>
+          <div class="inline-form-row" style="gap: 0.75rem; flex-wrap: wrap; align-items: center">
+            <input
+              type="file"
+              accept=".pdf,application/pdf"
+              (change)="onFacturaSeleccionada($event)"
+              [disabled]="procesando || subiendoFactura"
+            />
+            <button
+              type="button"
+              class="btn-ok"
+              (click)="subirFactura()"
+              [disabled]="!archivoFactura || procesando || subiendoFactura"
+            >
+              {{ subiendoFactura ? 'Enviando…' : pago.facturaUrl ? 'Reemplazar y notificar' : 'Adjuntar y notificar' }}
+            </button>
+          </div>
         }
 
         <h2>Acciones</h2>
@@ -125,6 +159,8 @@ export class PagoDetalleComponent implements OnInit, OnDestroy {
   error = '';
   mensaje = '';
   procesando = false;
+  subiendoFactura = false;
+  archivoFactura?: File;
   modalEfectivoAbierto = false;
   private sub?: Subscription;
 
@@ -182,6 +218,33 @@ export class PagoDetalleComponent implements OnInit, OnDestroy {
 
   cerrarModalEfectivo(): void {
     this.modalEfectivoAbierto = false;
+  }
+
+  onFacturaSeleccionada(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.archivoFactura = input.files?.[0] ?? undefined;
+  }
+
+  subirFactura(): void {
+    if (!this.pago?.id || !this.archivoFactura || this.subiendoFactura) {
+      return;
+    }
+    this.subiendoFactura = true;
+    this.error = '';
+    this.mensaje = '';
+    this.pagoService.adjuntarFactura(this.pago.id, this.archivoFactura).subscribe({
+      next: (p) => {
+        this.pago = p;
+        this.archivoFactura = undefined;
+        this.mensaje =
+          'Factura adjuntada. El participante recibió aviso en la plataforma y por email.';
+        this.subiendoFactura = false;
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo adjuntar la factura.');
+        this.subiendoFactura = false;
+      },
+    });
   }
 
   validar(

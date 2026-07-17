@@ -438,6 +438,9 @@ public class InscripcionService {
       pago.marcarAprobadoConAuditoria(
           admin, reciboAsignado, observaciones, efectivoFisicoRecibido);
       pagoDAO.modificar(pago);
+      if (pago.getMetodo() == MetodoPago.EFECTIVO) {
+        pagoServiceProvider.get().notificarAdminsCobroEfectivo(pago, admin, adminId);
+      }
     }
     inscripcionDAO.modificar(inscripcion);
     if (inscripcion.getUsuario() != null) {

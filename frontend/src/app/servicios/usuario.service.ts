@@ -38,6 +38,13 @@ export interface UsuarioAltaPayload {
   rolActual: string;
   categoriaInscripcion?: string | null;
   activo?: boolean;
+  /** Obligatorios si roles incluye ASISTENTE */
+  telefono?: string;
+  tipoIdentificacion?: string;
+  numeroIdentificacion?: string;
+  nacionalidad?: string;
+  institucion?: string;
+  provincia?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -102,7 +109,6 @@ export class UsuarioService {
       apellido: payload.apellido,
       email: payload.email,
       password: payload.password,
-      activo: payload.activo ?? true,
       roles: payload.roles,
       rolActual: payload.rolActual,
     };
@@ -110,6 +116,12 @@ export class UsuarioService {
     if (categoria) {
       body['categoriaInscripcion'] = categoria;
     }
+    if (payload.telefono) body['telefono'] = payload.telefono;
+    if (payload.tipoIdentificacion) body['tipoIdentificacion'] = payload.tipoIdentificacion;
+    if (payload.numeroIdentificacion) body['numeroIdentificacion'] = payload.numeroIdentificacion;
+    if (payload.nacionalidad) body['nacionalidad'] = payload.nacionalidad;
+    if (payload.institucion) body['institucion'] = payload.institucion;
+    if (payload.provincia) body['provincia'] = payload.provincia;
     return this.http.post<Usuario>(this.baseUrl, body);
   }
 

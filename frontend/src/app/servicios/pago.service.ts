@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { ArqueoCaja, PaginaPagos, Pago, ValidacionPagoRequest } from '../models/pago.model';
+import { ArqueoCaja, ArqueoNotificacionResult, PaginaPagos, Pago, ValidacionPagoRequest } from '../models/pago.model';
 import { buildListHttpParams } from '../utils/filtro-params.util';
 
 export interface PagoListFiltro {
@@ -68,6 +68,14 @@ export class PagoService {
     return this.http.get<ArqueoCaja>(`${this.baseUrl}/arqueo-caja`, { params });
   }
 
+  /** Notifica el arqueo actual a todos los administradores (campana + email). */
+  notificarArqueoCaja(desde: string, hasta: string): Observable<ArqueoNotificacionResult> {
+    const params = new HttpParams().set('desde', desde).set('hasta', hasta);
+    return this.http.post<ArqueoNotificacionResult>(`${this.baseUrl}/arqueo-caja/notificar`, null, {
+      params,
+    });
+  }
+
   /** Preview del próximo REC-AAAA-NNNNN (no consume el correlativo). */
   proximoRecibo(): Observable<{ numeroRecibo: string; anio: number; correlativo: number }> {
     return this.http.get<{ numeroRecibo: string; anio: number; correlativo: number }>(
@@ -79,6 +87,13 @@ export class PagoService {
     const form = new FormData();
     form.append('file', file);
     return this.http.post<Pago>(`${this.baseUrl}/${id}/comprobante`, form);
+  }
+
+  /** Admin: sube factura PDF y notifica al participante. */
+  adjuntarFactura(id: number, file: File): Observable<Pago> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<Pago>(`${this.baseUrl}/${id}/factura`, form);
   }
 
   baja(id: number): Observable<void> {

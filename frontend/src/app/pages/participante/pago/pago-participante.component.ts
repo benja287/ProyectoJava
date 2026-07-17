@@ -60,6 +60,18 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                 Pago en efectivo / sin comprobante digital
               }
             </dd>
+            @if (pago.requiereFactura) {
+              <dt>Factura</dt>
+              <dd>
+                @if (pago.facturaUrl) {
+                  <app-archivo-link [url]="pago.facturaUrl" label="Descargar factura" />
+                } @else if (pago.estado === 'APROBADO') {
+                  <span class="muted">Aún no disponible. Te avisaremos por email cuando esté lista.</span>
+                } @else {
+                  <span class="muted">Se emitirá tras aprobar el pago.</span>
+                }
+              </dd>
+            }
           </dl>
         } @else if (!cargando) {
           <p class="muted">

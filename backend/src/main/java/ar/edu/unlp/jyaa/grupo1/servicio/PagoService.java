@@ -6,11 +6,14 @@ import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.PagoFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
+import ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
+import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.ArqueoCajaDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.ArqueoCajaItemDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ArqueoNotificacionResultDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaPagosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.ProximoReciboDTO;
 import jakarta.enterprise.context.RequestScoped;
@@ -95,6 +98,38 @@ public class PagoService {
     }
   }
 
+  /**
+   * Admin adjunta la factura emitida (PDF). Notifica al participante por campana + email para que
+   * la descargue.
+   */
+  public Pago adjuntarFactura(
+      Long id, InputStream contenido, String filename, AuthenticatedUser auth) {
+    if (auth == null || !auth.isAdmin()) {
+      throw new NegocioException("Solo administradores pueden adjuntar facturas");
+    }
+    Pago pago = consultarPorId(id);
+    if (!pago.isRequiereFactura()) {
+      throw new NegocioException("Este pago no solicitó factura");
+    }
+    if (pago.getEstado() != EstadoPago.APROBADO) {
+      throw new NegocioException("Primero aprobá el pago; después adjuntá la factura");
+    }
+    try {
+      if (pago.getFacturaUrl() != null && !pago.getFacturaUrl().isBlank()) {
+        documentStorageService.eliminarPorUrl(pago.getFacturaUrl());
+      }
+      String url =
+          documentStorageService.guardar(
+              DocumentStorageService.TipoArchivo.FACTURA, filename, contenido);
+      pago.setFacturaUrl(url);
+      pagoDAO.modificar(pago);
+      notificarFacturaDisponible(pago);
+      return pago;
+    } catch (IOException e) {
+      throw new NegocioException("No se pudo guardar la factura: " + e.getMessage());
+    }
+  }
+
   public PaginaPagosDTO listarPendientes(
       int page, int size, PagoFiltro filtro, AuthenticatedUser auth) {
     PagoFiltro scoped = aplicarAlcance(filtro, auth);
@@ -151,6 +186,7 @@ public class PagoService {
   public void baja(Long id) {
     Pago pago = consultarPorId(id);
     documentStorageService.eliminarPorUrl(pago.getComprobanteUrl());
+    documentStorageService.eliminarPorUrl(pago.getFacturaUrl());
     for (InscripcionCongreso inscripcion : inscripcionDAO.listarPorPago(id)) {
       inscripcion.setPago(null);
       inscripcionDAO.modificar(inscripcion);
@@ -197,7 +233,7 @@ public class PagoService {
 
     // Efectivo: el recibo lo asigna el sistema en esta transacción (no el del cliente).
     String reciboAsignado = numeroRecibo;
-    if (pago.getMetodo() == ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago.EFECTIVO) {
+    if (pago.getMetodo() == MetodoPago.EFECTIVO) {
       reciboAsignado = generarProximoNumeroRecibo();
     }
 
@@ -213,9 +249,16 @@ public class PagoService {
     pago.getValidadoPorNombre();
     inscripcionService.confirmarCongresoPorPagoAprobado(pago.getId());
     notificarPago(usuarioIdFromPago(pago), true, null, pago.getNumeroRecibo());
-    if (pago.getMetodo() == ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago.EFECTIVO
-        && pago.getNumeroRecibo() != null) {
-      mensaje = "Pago en efectivo registrado. Recibo: " + pago.getNumeroRecibo();
+    if (pago.getMetodo() == MetodoPago.EFECTIVO) {
+      notificarAdminsCobroEfectivo(pago, admin, auth.userId());
+      if (pago.getNumeroRecibo() != null) {
+        mensaje = "Pago en efectivo registrado. Recibo: " + pago.getNumeroRecibo();
+      }
+    }
+    if (pago.isRequiereFactura()) {
+      mensaje =
+          (mensaje != null ? mensaje + ". " : "")
+              + "El participante solicitó factura: adjuntála cuando esté emitida.";
     }
     return new ValidacionPagoResult(pago, mensaje);
   }
@@ -270,6 +313,10 @@ public class PagoService {
     if (hasta.isBefore(desde)) {
       throw new NegocioException("La fecha hasta no puede ser anterior a desde");
     }
+    return construirArqueo(desde, hasta);
+  }
+
+  private ArqueoCajaDTO construirArqueo(LocalDate desde, LocalDate hasta) {
     LocalDateTime desdeDt = desde.atStartOfDay();
     LocalDateTime hastaExcl = hasta.plusDays(1).atStartOfDay();
     List<Pago> pagos = pagoDAO.listarArqueoEfectivo(desdeDt, hastaExcl);
@@ -290,14 +337,93 @@ public class PagoService {
     return new ArqueoCajaDTO(desde, hasta, items.size(), total, items);
   }
 
+  /**
+   * Avisa a todos los administradores (campana + email) el arqueo del rango indicado. Opcional
+   * desde la página (reenvío); el aviso principal es automático al aprobar efectivo.
+   */
+  public ArqueoNotificacionResultDTO notificarArqueoCaja(
+      LocalDate desde, LocalDate hasta, AuthenticatedUser auth) {
+    ArqueoCajaDTO arqueo = arqueoCaja(desde, hasta, auth);
+    int n =
+        enviarArqueoAAdmins(
+            arqueo,
+            "Se reenvió el arqueo de caja del período "
+                + desde
+                + " a "
+                + hasta
+                + ". Contrastá el efectivo físico con el total del sistema.",
+            null);
+    return new ArqueoNotificacionResultDTO(
+        n, "Arqueo notificado a " + n + " administrador(es).", arqueo);
+  }
+
+  /**
+   * Notificación automática: cada cobro en efectivo dispara el arqueo del día a todos los admins
+   * (campana + email), para que no dependa de un botón manual.
+   */
+  public void notificarAdminsCobroEfectivo(Pago pago, Usuario admin, Long excluirUsuarioId) {
+    if (pago == null || pago.getMetodo() != MetodoPago.EFECTIVO) {
+      return;
+    }
+    LocalDate dia =
+        pago.getFechaValidacion() != null
+            ? pago.getFechaValidacion().toLocalDate()
+            : LocalDate.now();
+    ArqueoCajaDTO arqueo = construirArqueo(dia, dia);
+    String recibo =
+        pago.getNumeroRecibo() != null && !pago.getNumeroRecibo().isBlank()
+            ? pago.getNumeroRecibo().trim()
+            : "—";
+    String validadoPor =
+        admin != null
+            ? (admin.getNombre() + " " + admin.getApellido()).trim()
+            : (pago.getValidadoPorNombre() != null ? pago.getValidadoPorNombre() : "admin");
+    String contexto =
+        "Nuevo cobro en efectivo automático: recibo "
+            + recibo
+            + ", monto "
+            + String.format(java.util.Locale.US, "%.2f", pago.getMonto())
+            + ", validado por "
+            + validadoPor
+            + ". Arqueo del día "
+            + dia
+            + " actualizado.";
+    enviarArqueoAAdmins(arqueo, contexto, excluirUsuarioId);
+  }
+
+  private int enviarArqueoAAdmins(
+      ArqueoCajaDTO arqueo, String contexto, Long excluirUsuarioId) {
+    Map<String, String> vars = new HashMap<>();
+    vars.put("desde", arqueo.desde().toString());
+    vars.put("hasta", arqueo.hasta().toString());
+    vars.put("cantidad_pagos", String.valueOf(arqueo.cantidadPagos()));
+    vars.put("total_cobrado", String.format(java.util.Locale.US, "%.2f", arqueo.totalCobrado()));
+    vars.put("contexto", contexto != null ? contexto : "");
+    vars.put("enlace", "/admin/pagos/arqueo");
+    return notificacionService.enviarPorRolConPlantilla(
+        Rol.ADMINISTRADOR, "ARQUEO_CAJA_ADMIN", vars, excluirUsuarioId);
+  }
+
   /** Usado también al aprobar inscripción con pago efectivo pendiente. */
   public static void exigirEfectivoFisicoSiCorresponde(Pago pago, boolean efectivoFisicoRecibido) {
     if (pago != null
-        && pago.getMetodo() == ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago.EFECTIVO
+        && pago.getMetodo() == MetodoPago.EFECTIVO
         && !efectivoFisicoRecibido) {
       throw new NegocioException(
           "Debés confirmar la recepción del efectivo físico antes de aprobar");
     }
+  }
+
+  private void notificarFacturaDisponible(Pago pago) {
+    Long usuarioId = usuarioIdFromPago(pago);
+    if (usuarioId == null) {
+      return;
+    }
+    Map<String, String> vars = new HashMap<>();
+    vars.put("contexto", "Tu factura del congreso ya fue cargada por la organización.");
+    vars.put("proximo_paso", "Entrá a Estado de pago y descargá el PDF.");
+    vars.put("enlace", "/pago");
+    notificacionService.enviarConPlantilla(usuarioId, "FACTURA_DISPONIBLE", vars);
   }
 
   private Long usuarioIdFromPago(Pago pago) {

@@ -2,7 +2,10 @@ import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ROLES } from '../../../models/enums';
-import { CATEGORIAS_INSCRIPCION } from '../../../models/inscripcion.model';
+import {
+  CATEGORIAS_INSCRIPCION,
+  TIPOS_IDENTIFICACION_INSCRIPCION,
+} from '../../../models/inscripcion.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
@@ -13,7 +16,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   template: `
     <section class="card">
       <h1>Alta de usuario (admin)</h1>
-      <p>POST <code>/api/usuarios</code> — distinto del registro de participante.</p>
+      <p class="muted">
+        <strong>Staff</strong> (admin, evaluador, comité…): alta corta con roles.
+        <strong>Asistente</strong>: mismos datos del registro + filiación; se crea inscripción y pago
+        en efectivo <em>aprobados</em> (ya asiste al congreso).
+      </p>
 
       @if (mensaje) {
         <p class="ok">{{ mensaje }}</p>
@@ -38,17 +45,6 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         <label class="span-full">
           Contraseña
           <input formControlName="password" type="password" minlength="8" autocomplete="new-password" />
-        </label>
-
-        <label class="span-full">
-          Categoría de inscripción
-          <select formControlName="categoriaInscripcion">
-            <option value="">Sin categoría (opcional)</option>
-            @for (c of categorias; track c.value) {
-              <option [value]="c.value">{{ c.label }}</option>
-            }
-          </select>
-          <span class="muted">Tarifa y certificados según la categoría elegida al inscribirse al congreso.</span>
         </label>
 
         <fieldset class="roles-fieldset span-full">
@@ -78,12 +74,77 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <span class="muted">Perfil con el que ingresará si tiene un solo rol o al elegir sesión.</span>
         </label>
 
+        @if (incluyeAsistente) {
+          <fieldset class="span-full" style="border: 1px solid #d0d7de; border-radius: 8px; padding: 1rem; margin: 0">
+            <legend>Datos de asistente (obligatorios)</legend>
+            <p class="muted small" style="margin-top: 0">
+              Se registrará inscripción aprobada + pago en efectivo aprobado (recibo automático) y se
+              avisará al usuario.
+            </p>
+            <div class="form-grid form-grid-wide">
+              <label>
+                Teléfono
+                <input formControlName="telefono" placeholder="+54 9 221 1234567" />
+              </label>
+              <label>
+                Tipo de identificación
+                <select formControlName="tipoIdentificacion">
+                  @for (t of tiposId; track t.value) {
+                    <option [value]="t.value">{{ t.label }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                Número de identificación
+                <input formControlName="numeroIdentificacion" />
+              </label>
+              <label>
+                Nacionalidad
+                <input formControlName="nacionalidad" placeholder="Argentina" />
+              </label>
+              <label class="span-full">
+                Categoría de inscripción
+                <select formControlName="categoriaInscripcion">
+                  <option value="">Seleccioná una categoría</option>
+                  @for (c of categorias; track c.value) {
+                    <option [value]="c.value">{{ c.label }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                Institución
+                <input formControlName="institucion" />
+              </label>
+              <label>
+                Provincia
+                <input formControlName="provincia" />
+              </label>
+            </div>
+          </fieldset>
+        } @else {
+          <label class="span-full">
+            Categoría de inscripción
+            <select formControlName="categoriaInscripcion">
+              <option value="">Sin categoría (opcional para staff)</option>
+              @for (c of categorias; track c.value) {
+                <option [value]="c.value">{{ c.label }}</option>
+              }
+            </select>
+          </label>
+        }
+
         <div class="actions span-full">
           <button
             type="submit"
             [disabled]="form.invalid || guardando || rolesSeleccionados.size === 0"
           >
-            {{ guardando ? 'Guardando...' : 'Guardar' }}
+            {{
+              guardando
+                ? 'Guardando...'
+                : incluyeAsistente
+                  ? 'Crear asistente (inscripción + pago)'
+                  : 'Guardar'
+            }}
           </button>
           <a routerLink="/admin/usuarios">Cancelar</a>
         </div>
@@ -95,6 +156,7 @@ export class UsuarioAltaComponent {
   private fb = inject(FormBuilder);
 
   categorias = [...CATEGORIAS_INSCRIPCION];
+  tiposId = [...TIPOS_IDENTIFICACION_INSCRIPCION];
   rolesDisponibles = [...ROLES];
   rolesSeleccionados = new Set<string>();
 
@@ -105,6 +167,12 @@ export class UsuarioAltaComponent {
     password: ['12345678', [Validators.required, Validators.minLength(8)]],
     categoriaInscripcion: [''],
     rolActual: ['', Validators.required],
+    telefono: [''],
+    tipoIdentificacion: ['DNI'],
+    numeroIdentificacion: [''],
+    nacionalidad: ['Argentina'],
+    institucion: [''],
+    provincia: [''],
   });
 
   mensaje = '';
@@ -115,6 +183,10 @@ export class UsuarioAltaComponent {
     private usuarioService: UsuarioService,
     private router: Router
   ) {}
+
+  get incluyeAsistente(): boolean {
+    return this.rolesSeleccionados.has('ASISTENTE');
+  }
 
   toggleRol(rol: string, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
@@ -130,10 +202,34 @@ export class UsuarioAltaComponent {
         this.form.patchValue({ rolActual: primero });
       }
     }
+    this.actualizarValidadoresAsistente();
+  }
+
+  private actualizarValidadoresAsistente(): void {
+    for (const key of [
+      'telefono',
+      'tipoIdentificacion',
+      'numeroIdentificacion',
+      'nacionalidad',
+      'categoriaInscripcion',
+      'institucion',
+      'provincia',
+    ] as const) {
+      const ctrl = this.form.get(key);
+      if (!ctrl) continue;
+      if (this.incluyeAsistente) {
+        ctrl.setValidators([Validators.required]);
+      } else {
+        ctrl.clearValidators();
+      }
+      ctrl.updateValueAndValidity({ emitEvent: false });
+    }
   }
 
   guardar(): void {
+    this.actualizarValidadoresAsistente();
     if (this.form.invalid || this.rolesSeleccionados.size === 0) {
+      this.form.markAllAsTouched();
       return;
     }
     const raw = this.form.getRawValue();
@@ -145,26 +241,38 @@ export class UsuarioAltaComponent {
     this.mensaje = '';
     this.error = '';
     this.guardando = true;
-    this.usuarioService
-      .alta({
-        apellido: raw.apellido!,
-        nombre: raw.nombre!,
-        email: raw.email!,
-        password: raw.password!,
-        categoriaInscripcion: raw.categoriaInscripcion?.trim() || null,
-        roles: [...this.rolesSeleccionados],
-        rolActual: raw.rolActual!,
-      })
-      .subscribe({
-        next: (creado) => {
-          this.mensaje = `Usuario creado (id ${creado.id}).`;
-          this.guardando = false;
-          setTimeout(() => this.router.navigate(['/admin/usuarios']), 1000);
-        },
-        error: (err) => {
-          this.error = mensajeErrorApi(err, 'No se pudo crear el usuario.');
-          this.guardando = false;
-        },
-      });
+
+    const payload: Parameters<UsuarioService['alta']>[0] = {
+      apellido: raw.apellido!,
+      nombre: raw.nombre!,
+      email: raw.email!,
+      password: raw.password!,
+      categoriaInscripcion: raw.categoriaInscripcion?.trim() || null,
+      roles: [...this.rolesSeleccionados],
+      rolActual: raw.rolActual!,
+    };
+
+    if (this.incluyeAsistente) {
+      payload.telefono = raw.telefono!.trim();
+      payload.tipoIdentificacion = raw.tipoIdentificacion!.trim();
+      payload.numeroIdentificacion = raw.numeroIdentificacion!.trim();
+      payload.nacionalidad = raw.nacionalidad!.trim();
+      payload.institucion = raw.institucion!.trim();
+      payload.provincia = raw.provincia!.trim();
+    }
+
+    this.usuarioService.alta(payload).subscribe({
+      next: (creado) => {
+        this.mensaje = this.incluyeAsistente
+          ? `Asistente creado (id ${creado.id}) con inscripción y pago aprobados.`
+          : `Usuario creado (id ${creado.id}).`;
+        this.guardando = false;
+        setTimeout(() => this.router.navigate(['/admin/usuarios']), 1200);
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo crear el usuario.');
+        this.guardando = false;
+      },
+    });
   }
 }

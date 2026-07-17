@@ -101,10 +101,17 @@ public class UsuarioResource {
   }
 
   @POST
-  @Operation(summary = "Alta de usuario")
+  @Operation(
+      summary = "Alta de usuario",
+      description =
+          "Staff: alta corta con roles. Si incluye ASISTENTE, exige datos de certificado +"
+              + " categoría/filiación y crea inscripción + pago en efectivo aprobados.")
   @ApiResponse(responseCode = "201", description = "Usuario creado")
-  public Response alta(Usuario usuario, @Context UriInfo uriInfo) {
-    Usuario creado = usuarioService.alta(usuario);
+  public Response alta(
+      ar.edu.unlp.jyaa.grupo1.rest.dto.UsuarioAltaRequest request,
+      @Context UriInfo uriInfo,
+      @Context ContainerRequestContext ctx) {
+    Usuario creado = usuarioService.alta(request, AuthenticatedUser.from(ctx));
     URI location = uriInfo.getAbsolutePathBuilder().path(creado.getId().toString()).build();
     return Response.created(location).entity(UsuarioDTO.from(creado)).build();
   }

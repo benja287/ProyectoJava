@@ -47,6 +47,9 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillaInscripcionAprobadaConRecibo);
     // APPEND — confirmación efectivo físico + arqueo
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPagoEfectivoFisicoRecibido);
+    // APPEND — factura PDF emitida + notificación arqueo a admins
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPagoFacturaUrl);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasFacturaYArqueo);
   }
 
   private static void migrarDatosCertificadoUsuario(EntityManager em) {
@@ -1158,6 +1161,71 @@ public final class SchemaMigration {
     p.setCuerpo(cuerpo);
     em.merge(p);
     log.info("Plantilla INSCRIPCION_APROBADA_USUARIO actualizada con {{contexto}}");
+  }
+
+  private static void migrarPagoFacturaUrl(EntityManager em) {
+    agregarColumnaSiFalta(
+        em,
+        "pagos",
+        "factura_url",
+        "ALTER TABLE pagos ADD COLUMN factura_url VARCHAR(500) NULL");
+  }
+
+  private static void migrarPlantillasFacturaYArqueo(EntityManager em) {
+    insertarPlantillaSiFalta(
+        em,
+        "FACTURA_DISPONIBLE",
+        "[FACTURA] Tu factura del congreso ya está disponible",
+        """
+            Hola {{nombre}},
+
+            {{contexto}}
+
+            Podés descargarla desde tu estado de pago en la plataforma:
+            {{url_plataforma}}{{enlace}}
+
+            {{proximo_paso}}
+
+            Saludos,
+            Organización del congreso
+            """);
+    insertarPlantillaSiFalta(
+        em,
+        "ARQUEO_CAJA_ADMIN",
+        "[CAJA] Arqueo de efectivo {{desde}} — {{hasta}}",
+        """
+            Hola {{nombre}},
+
+            {{contexto}}
+
+            Período: {{desde}} a {{hasta}}
+            Cobros: {{cantidad_pagos}}
+            Total cobrado: {{total_cobrado}}
+
+            Revisá el detalle en: {{url_plataforma}}{{enlace}}
+
+            Saludos,
+            Sistema de gestión del congreso
+            """);
+    insertarPlantillaSiFalta(
+        em,
+        "PAGO_EFECTIVO_CAJA_ADMIN",
+        "[CAJA] Nuevo cobro en efectivo — recibo {{numero_recibo}}",
+        """
+            Hola {{nombre}},
+
+            {{contexto}}
+
+            Monto: {{monto}}
+            Recibo: {{numero_recibo}}
+            Validado por: {{validado_por}}
+
+            Arqueo de caja: {{url_plataforma}}{{enlace}}
+
+            Saludos,
+            Sistema de gestión del congreso
+            """);
+    log.info("Plantillas factura y arqueo verificadas/insertadas");
   }
 
   private static void agregarColumnaSiFalta(

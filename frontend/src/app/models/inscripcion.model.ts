@@ -120,6 +120,7 @@ export interface InscripcionCongreso {
   /** TRANSFERENCIA | EFECTIVO | TARJETA */
   pagoMetodo?: string | null;
   pagoComprobanteUrl?: string | null;
+  pagoFacturaUrl?: string | null;
   pagoNumeroRecibo?: string | null;
   pagoFechaValidacion?: string | null;
   pagoValidadoPorNombre?: string | null;

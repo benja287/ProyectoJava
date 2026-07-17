@@ -1,20 +1,27 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.InscripcionCongresoDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.PagoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.UsuarioFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.CategoriaInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
+import ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago;
+import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
+import ar.edu.unlp.jyaa.grupo1.modelo.TipoParticipacionInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ActualizarPerfilRequest;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.UsuarioAltaRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaUsuariosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.UsuarioDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +35,9 @@ public class UsuarioService {
 
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private InscripcionCongresoDAO inscripcionDAO;
+  @Inject private PagoDAO pagoDAO;
+  @Inject private ArancelesService arancelesService;
+  @Inject private Provider<PagoService> pagoServiceProvider;
   @Inject private NotificacionService notificacionService;
   @Inject private EvaluadorEjeService evaluadorEjeService;
   @Inject private SolicitudEvaluadorService solicitudEvaluadorService;
@@ -137,20 +147,40 @@ public class UsuarioService {
   }
 
   public Usuario alta(Usuario usuario) {
+    return alta(usuario, null, null, null);
+  }
+
+  /**
+   * Alta admin. Si el usuario incluye rol {@link Rol#ASISTENTE}, exige datos de certificado +
+   * categoría/filiación y deja inscripción + pago en efectivo aprobados (asistente presencial).
+   * Staff (sin ASISTENTE) usa el alta corta.
+   */
+  public Usuario alta(UsuarioAltaRequest request, AuthenticatedUser auth) {
+    if (request == null) {
+      throw new NegocioException("Datos de alta requeridos");
+    }
+    Usuario usuario = new Usuario();
+    usuario.setNombre(request.nombre);
+    usuario.setApellido(request.apellido);
+    usuario.setEmail(request.email);
+    usuario.setPassword(request.password);
+    usuario.setRoles(request.roles != null ? new HashSet<>(request.roles) : new HashSet<>());
+    usuario.setRolActual(request.rolActual);
+    usuario.setCategoriaInscripcion(request.categoriaInscripcion);
+    usuario.setTelefono(request.telefono);
+    usuario.setTipoIdentificacion(request.tipoIdentificacion);
+    usuario.setNumeroIdentificacion(request.numeroIdentificacion);
+    usuario.setNacionalidad(request.nacionalidad);
+    return alta(usuario, auth, request.institucion, request.provincia);
+  }
+
+  public Usuario alta(
+      Usuario usuario, AuthenticatedUser auth, String institucion, String provincia) {
     if (usuario.getEmail() != null) {
       usuario.setEmail(usuario.getEmail().trim().toLowerCase());
     }
     if (usuarioDAO.buscarPorEmail(usuario.getEmail()).isPresent()) {
       throw new NegocioException("El email ya está registrado");
-    }
-    if (usuario.getCategoriaInscripcion() != null && !usuario.getCategoriaInscripcion().isBlank()) {
-      try {
-        usuario.setCategoriaInscripcion(CategoriaInscripcion.parse(usuario.getCategoriaInscripcion()).name());
-      } catch (IllegalArgumentException e) {
-        throw new NegocioException("Categoría de inscripción inválida: " + usuario.getCategoriaInscripcion());
-      }
-    } else {
-      usuario.setCategoriaInscripcion(null);
     }
     if (usuario.getRoles() == null) {
       usuario.setRoles(new HashSet<>());
@@ -159,9 +189,119 @@ public class UsuarioService {
     if (usuario.getRoles().isEmpty()) {
       throw new NegocioException("Debe indicar al menos un rol");
     }
+
+    boolean esAsistente = usuario.getRoles().contains(Rol.ASISTENTE);
+    if (esAsistente) {
+      if (auth == null || !auth.isAdmin()) {
+        throw new NegocioException("Solo un administrador puede dar de alta un asistente presencial");
+      }
+      if (usuario.getCategoriaInscripcion() == null || usuario.getCategoriaInscripcion().isBlank()) {
+        throw new NegocioException("La categoría de inscripción es obligatoria para asistentes");
+      }
+      validarDatosCertificado(
+          usuario.getTelefono(),
+          usuario.getTipoIdentificacion(),
+          usuario.getNumeroIdentificacion(),
+          usuario.getNacionalidad(),
+          true);
+      normalizarDatosCertificado(usuario);
+      if (institucion == null || institucion.isBlank() || provincia == null || provincia.isBlank()) {
+        throw new NegocioException(
+            "Institución y provincia son obligatorias para el alta de asistente");
+      }
+    } else {
+      // Staff: no forzar datos de certificado
+      usuario.setTelefono(blankToNull(usuario.getTelefono()));
+      usuario.setTipoIdentificacion(blankToNull(usuario.getTipoIdentificacion()));
+      usuario.setNumeroIdentificacion(blankToNull(usuario.getNumeroIdentificacion()));
+      usuario.setNacionalidad(blankToNull(usuario.getNacionalidad()));
+    }
+
+    if (usuario.getCategoriaInscripcion() != null && !usuario.getCategoriaInscripcion().isBlank()) {
+      try {
+        usuario.setCategoriaInscripcion(
+            CategoriaInscripcion.parse(usuario.getCategoriaInscripcion()).name());
+      } catch (IllegalArgumentException e) {
+        throw new NegocioException(
+            "Categoría de inscripción inválida: " + usuario.getCategoriaInscripcion());
+      }
+    } else {
+      usuario.setCategoriaInscripcion(null);
+    }
+
     usuario.setActivo(true);
     normalizarRolActual(usuario, usuario.getRolActual());
-    return usuarioDAO.alta(usuario);
+    Usuario creado = usuarioDAO.alta(usuario);
+
+    if (esAsistente) {
+      crearInscripcionYPagoAprobados(creado, auth, institucion.trim(), provincia.trim());
+      notificacionService.enviar(
+          creado.getId(),
+          "Alta como asistente del congreso",
+          "Te dieron de alta como asistente. Ya podés ingresar con tu email y la contraseña"
+              + " asignada. Tu inscripción y pago quedaron registrados.",
+          "/asistente");
+    }
+    return creado;
+  }
+
+  private void crearInscripcionYPagoAprobados(
+      Usuario asistente, AuthenticatedUser auth, String institucion, String provincia) {
+    inscripcionDAO
+        .buscarUltimaPorUsuario(asistente.getId())
+        .ifPresent(
+            existente -> {
+              if (existente.getEstado() != EstadoInscripcion.RECHAZADA) {
+                throw new NegocioException(
+                    "El usuario ya tiene una inscripción "
+                        + existente.getEstado().name().toLowerCase());
+              }
+            });
+
+    CategoriaInscripcion categoria =
+        CategoriaInscripcion.parse(asistente.getCategoriaInscripcion());
+    double monto = arancelesService.montoOficial(categoria);
+
+    Usuario admin = usuarioDAO.recuperarPorId(auth.userId());
+    if (admin == null) {
+      throw new NegocioException("Administrador no encontrado");
+    }
+
+    PagoService pagoService = pagoServiceProvider.get();
+    String recibo = pagoService.generarProximoNumeroRecibo();
+
+    Pago pago = new Pago();
+    pago.setMonto(monto);
+    pago.setMetodo(MetodoPago.EFECTIVO);
+    pago.setRequiereFactura(false);
+    pago.setFechaRegistro(LocalDate.now());
+    pago.marcarAprobadoConAuditoria(
+        admin,
+        recibo,
+        "Alta admin: asistente presencial (inscripción y pago aprobados al crear usuario)",
+        true);
+    pagoDAO.alta(pago);
+
+    InscripcionCongreso inscripcion = new InscripcionCongreso();
+    inscripcion.setUsuario(asistente);
+    inscripcion.setCategoria(categoria.name());
+    inscripcion.setInstitucion(institucion);
+    inscripcion.setProvincia(provincia);
+    inscripcion.setRequiereFactura(false);
+    inscripcion.setTiposParticipacion(List.of(TipoParticipacionInscripcion.ASISTENTE.name()));
+    inscripcion.setEstado(EstadoInscripcion.APROBADA);
+    inscripcion.setFechaSolicitud(LocalDate.now());
+    inscripcion.setPago(pago);
+    inscripcionDAO.alta(inscripcion);
+
+    pagoService.notificarAdminsCobroEfectivo(pago, admin, auth.userId());
+  }
+
+  private static String blankToNull(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    return value.trim();
   }
 
   public Usuario modificar(Long id, Usuario datos) {
