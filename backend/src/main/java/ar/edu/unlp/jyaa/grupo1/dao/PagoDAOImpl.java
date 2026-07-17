@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RequestScoped
 public class PagoDAOImpl extends AbstractJpaDAO<Pago> implements PagoDAO {
@@ -133,6 +134,31 @@ public class PagoDAOImpl extends AbstractJpaDAO<Pago> implements PagoDAO {
           .setParameter("desde", desdeInclusive)
           .setParameter("hasta", hastaExclusive)
           .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public Optional<String> buscarUltimoNumeroReciboConPrefijo(String prefijo) {
+    if (prefijo == null || prefijo.isBlank()) {
+      return Optional.empty();
+    }
+    EntityManager em = emConsulta();
+    try {
+      List<String> rows =
+          em.createQuery(
+                  """
+                  SELECT p.numeroRecibo FROM Pago p
+                  WHERE p.numeroRecibo IS NOT NULL
+                    AND p.numeroRecibo LIKE :prefijo
+                  ORDER BY p.numeroRecibo DESC
+                  """,
+                  String.class)
+              .setParameter("prefijo", prefijo + "%")
+              .setMaxResults(1)
+              .getResultList();
+      return rows.isEmpty() ? Optional.empty() : Optional.ofNullable(rows.getFirst());
     } finally {
       closeLegacy(em);
     }

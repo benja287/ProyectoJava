@@ -337,10 +337,11 @@ export class InscripcionesAdminComponent extends ListadoPaginadoBase {
     if (!this.pendienteEfectivo) {
       return;
     }
+    // El backend asigna REC-AAAA-NNNNN en la misma transacción.
     this.validar(
       this.pendienteEfectivo,
       true,
-      data.numeroRecibo,
+      undefined,
       data.observaciones,
       data.efectivoFisicoRecibido
     );
@@ -380,10 +381,11 @@ export class InscripcionesAdminComponent extends ListadoPaginadoBase {
         efectivoFisicoRecibido,
       })
       .subscribe({
-        next: () => {
+        next: (actualizada) => {
+          const recibo = actualizada?.pagoNumeroRecibo ?? numeroRecibo;
           this.mensaje = aprobar
-            ? numeroRecibo
-              ? `Inscripción aprobada. Recibo ${numeroRecibo} registrado. El usuario ahora es Asistente.`
+            ? recibo
+              ? `Inscripción aprobada. Recibo ${recibo} registrado. El usuario ahora es Asistente.`
               : 'Inscripción aprobada. El usuario ahora es Asistente.'
             : 'Inscripción rechazada.';
           this.procesandoId = undefined;

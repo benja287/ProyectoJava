@@ -43,6 +43,7 @@ public class InscripcionService {
   @Inject private UsuarioService usuarioService;
   @Inject private NotificacionService notificacionService;
   @Inject private ArancelesService arancelesService;
+  @Inject private jakarta.inject.Provider<PagoService> pagoServiceProvider;
 
   public InscripcionCongresoDTO crear(
       AuthenticatedUser auth,
@@ -425,14 +426,17 @@ public class InscripcionService {
         && inscripcion.getPago() != null
         && inscripcion.getPago().getEstado() == EstadoPago.PENDIENTE) {
       Pago pago = inscripcion.getPago();
-      PagoService.exigirReciboSiEfectivo(pago, numeroRecibo);
       PagoService.exigirEfectivoFisicoSiCorresponde(pago, efectivoFisicoRecibido);
       Usuario admin = usuarioDAO.recuperarPorId(adminId);
       if (admin == null) {
         throw new NegocioException("Administrador no encontrado");
       }
+      String reciboAsignado = numeroRecibo;
+      if (pago.getMetodo() == MetodoPago.EFECTIVO) {
+        reciboAsignado = pagoServiceProvider.get().generarProximoNumeroRecibo();
+      }
       pago.marcarAprobadoConAuditoria(
-          admin, numeroRecibo, observaciones, efectivoFisicoRecibido);
+          admin, reciboAsignado, observaciones, efectivoFisicoRecibido);
       pagoDAO.modificar(pago);
     }
     inscripcionDAO.modificar(inscripcion);

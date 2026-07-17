@@ -68,6 +68,13 @@ export class PagoService {
     return this.http.get<ArqueoCaja>(`${this.baseUrl}/arqueo-caja`, { params });
   }
 
+  /** Preview del próximo REC-AAAA-NNNNN (no consume el correlativo). */
+  proximoRecibo(): Observable<{ numeroRecibo: string; anio: number; correlativo: number }> {
+    return this.http.get<{ numeroRecibo: string; anio: number; correlativo: number }>(
+      `${this.baseUrl}/proximo-recibo`
+    );
+  }
+
   adjuntarComprobante(id: number, file: File): Observable<Pago> {
     const form = new FormData();
     form.append('file', file);

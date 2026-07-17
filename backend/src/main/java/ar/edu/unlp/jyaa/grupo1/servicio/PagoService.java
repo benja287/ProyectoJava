@@ -12,6 +12,7 @@ import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.ArqueoCajaDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.ArqueoCajaItemDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaPagosDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ProximoReciboDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.io.IOException;
@@ -192,8 +193,13 @@ public class PagoService {
       throw new NegocioException("Administrador no encontrado");
     }
     boolean fisico = Boolean.TRUE.equals(efectivoFisicoRecibido);
-    exigirReciboSiEfectivo(pago, numeroRecibo);
     exigirEfectivoFisicoSiCorresponde(pago, fisico);
+
+    // Efectivo: el recibo lo asigna el sistema en esta transacción (no el del cliente).
+    String reciboAsignado = numeroRecibo;
+    if (pago.getMetodo() == ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago.EFECTIVO) {
+      reciboAsignado = generarProximoNumeroRecibo();
+    }
 
     String mensaje = "Pago aprobado";
     if (montoAjustado != null && montoAjustado != pago.getMonto()) {
@@ -201,7 +207,7 @@ public class PagoService {
       pago.setMonto(montoAjustado);
       mensaje = "Pago aprobado con ajuste de monto (diferencia: " + diferencia + ")";
     }
-    pago.marcarAprobadoConAuditoria(admin, numeroRecibo, observaciones, fisico);
+    pago.marcarAprobadoConAuditoria(admin, reciboAsignado, observaciones, fisico);
     pagoDAO.modificar(pago);
     // Fuerza carga del admin antes de serializar la respuesta JSON.
     pago.getValidadoPorNombre();
@@ -212,6 +218,46 @@ public class PagoService {
       mensaje = "Pago en efectivo registrado. Recibo: " + pago.getNumeroRecibo();
     }
     return new ValidacionPagoResult(pago, mensaje);
+  }
+
+  /** Preview sin consumir correlativo (para el modal de admin). */
+  public ProximoReciboDTO previewProximoRecibo(AuthenticatedUser auth) {
+    if (auth == null || !auth.isAdmin()) {
+      throw new NegocioException("Solo administradores");
+    }
+    int anio = LocalDate.now().getYear();
+    int siguiente = siguienteCorrelativo(anio);
+    return new ProximoReciboDTO(formatearRecibo(anio, siguiente), anio, siguiente);
+  }
+
+  /** Asigna el próximo REC-AAAA-NNNNN en la transacción de aprobación. */
+  public String generarProximoNumeroRecibo() {
+    int anio = LocalDate.now().getYear();
+    return formatearRecibo(anio, siguienteCorrelativo(anio));
+  }
+
+  private int siguienteCorrelativo(int anio) {
+    String prefijo = "REC-" + anio + "-";
+    return pagoDAO
+        .buscarUltimoNumeroReciboConPrefijo(prefijo)
+        .map(ultimo -> parseCorrelativo(ultimo, prefijo) + 1)
+        .orElse(1);
+  }
+
+  private static int parseCorrelativo(String numeroRecibo, String prefijo) {
+    if (numeroRecibo == null || !numeroRecibo.startsWith(prefijo)) {
+      return 0;
+    }
+    String cola = numeroRecibo.substring(prefijo.length()).trim();
+    try {
+      return Integer.parseInt(cola);
+    } catch (NumberFormatException e) {
+      return 0;
+    }
+  }
+
+  private static String formatearRecibo(int anio, int correlativo) {
+    return String.format("REC-%d-%05d", anio, Math.max(1, correlativo));
   }
 
   public ArqueoCajaDTO arqueoCaja(LocalDate desde, LocalDate hasta, AuthenticatedUser auth) {
@@ -245,15 +291,6 @@ public class PagoService {
   }
 
   /** Usado también al aprobar inscripción con pago efectivo pendiente. */
-  public static void exigirReciboSiEfectivo(Pago pago, String numeroRecibo) {
-    if (pago != null
-        && pago.getMetodo() == ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago.EFECTIVO
-        && (numeroRecibo == null || numeroRecibo.isBlank())) {
-      throw new NegocioException(
-          "Para aprobar un pago en efectivo debés indicar el número de recibo de caja");
-    }
-  }
-
   public static void exigirEfectivoFisicoSiCorresponde(Pago pago, boolean efectivoFisicoRecibido) {
     if (pago != null
         && pago.getMetodo() == ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago.EFECTIVO

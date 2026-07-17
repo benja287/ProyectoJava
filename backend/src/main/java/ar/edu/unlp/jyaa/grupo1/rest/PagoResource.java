@@ -97,6 +97,15 @@ public class PagoResource {
   }
 
   @GET
+  @Path("/proximo-recibo")
+  @Operation(summary = "Preview del próximo número de recibo de caja (no lo consume)")
+  @ApiResponse(responseCode = "200", description = "Próximo recibo sugerido")
+  public ar.edu.unlp.jyaa.grupo1.web.dto.ProximoReciboDTO proximoRecibo(
+      @Context ContainerRequestContext ctx) {
+    return pagoService.previewProximoRecibo(AuthenticatedUser.from(ctx));
+  }
+
+  @GET
   @Path("/{id}")
   @Operation(summary = "Consultar pago por id")
   @ApiResponse(responseCode = "200", description = "Pago encontrado")

@@ -176,7 +176,8 @@ export class PagoDetalleComponent implements OnInit, OnDestroy {
   }
 
   onConfirmarEfectivo(data: ValidacionEfectivoResultado): void {
-    this.validar(true, data.numeroRecibo, data.observaciones, data.efectivoFisicoRecibido);
+    // El backend asigna REC-AAAA-NNNNN en la misma transacción.
+    this.validar(true, undefined, data.observaciones, data.efectivoFisicoRecibido);
   }
 
   cerrarModalEfectivo(): void {

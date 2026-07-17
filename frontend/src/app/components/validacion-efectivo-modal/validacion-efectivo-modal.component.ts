@@ -1,9 +1,19 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { PagoService } from '../../servicios/pago.service';
 
 export interface ValidacionEfectivoResultado {
-  numeroRecibo: string;
+  /** Solo preview; el backend asigna el definitivo al confirmar. */
+  numeroReciboPreview?: string;
   observaciones?: string;
   efectivoFisicoRecibido: true;
 }
@@ -24,21 +34,28 @@ export interface ValidacionEfectivoResultado {
         >
           <h3 id="validacion-efectivo-titulo">Validar pago en efectivo</h3>
           <p class="muted">
-            Registrá el cobro físico. El número de recibo y la confirmación de efectivo quedan
-            auditados junto con tu usuario y la fecha.
+            El número de recibo lo genera el sistema al confirmar. Solo confirmá que tenés el
+            efectivo físico.
           </p>
 
           <label>
-            Número de recibo *
+            Número de recibo (automático)
             <input
               type="text"
-              [(ngModel)]="numeroRecibo"
+              [ngModel]="numeroReciboPreview"
               [ngModelOptions]="{ standalone: true }"
-              placeholder="Ej. REC-0042"
-              autocomplete="off"
-              maxlength="80"
+              readonly
+              [attr.aria-busy]="cargandoPreview"
             />
           </label>
+          <p class="muted small">
+            @if (cargandoPreview) {
+              Calculando próximo recibo…
+            } @else {
+              Vista previa. El correlativo definitivo se asigna al confirmar (si cancelás, no se
+              gasta).
+            }
+          </p>
 
           <label>
             Observaciones
@@ -93,37 +110,45 @@ export interface ValidacionEfectivoResultado {
       .checkbox-row input {
         margin-top: 0.2rem;
       }
+      input[readonly] {
+        background: #f3f5f7;
+        cursor: default;
+      }
     `,
   ],
 })
-export class ValidacionEfectivoModalComponent {
+export class ValidacionEfectivoModalComponent implements OnChanges {
   @Input() abierto = false;
   @Input() disabled = false;
   @Output() confirmarValidacion = new EventEmitter<ValidacionEfectivoResultado>();
   @Output() cancelar = new EventEmitter<void>();
 
-  numeroRecibo = '';
+  private pagoService = inject(PagoService);
+
+  numeroReciboPreview = '';
   observaciones = '';
   efectivoFisicoRecibido = false;
   errorLocal = '';
+  cargandoPreview = false;
 
   get puedeConfirmar(): boolean {
-    return this.efectivoFisicoRecibido && this.numeroRecibo.trim().length > 0;
+    return this.efectivoFisicoRecibido && !this.cargandoPreview;
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['abierto'] && this.abierto) {
+      this.cargarPreview();
+    }
   }
 
   confirmar(): void {
-    const recibo = this.numeroRecibo.trim();
-    if (!recibo) {
-      this.errorLocal = 'El número de recibo es obligatorio.';
-      return;
-    }
     if (!this.efectivoFisicoRecibido) {
       this.errorLocal = 'Debés confirmar la recepción del efectivo físico.';
       return;
     }
     this.errorLocal = '';
     this.confirmarValidacion.emit({
-      numeroRecibo: recibo,
+      numeroReciboPreview: this.numeroReciboPreview || undefined,
       observaciones: this.observaciones.trim() || undefined,
       efectivoFisicoRecibido: true,
     });
@@ -131,9 +156,25 @@ export class ValidacionEfectivoModalComponent {
 
   /** Limpia el formulario al cerrar/reabrir desde el padre. */
   reset(): void {
-    this.numeroRecibo = '';
+    this.numeroReciboPreview = '';
     this.observaciones = '';
     this.efectivoFisicoRecibido = false;
     this.errorLocal = '';
+    this.cargandoPreview = false;
+  }
+
+  private cargarPreview(): void {
+    this.cargandoPreview = true;
+    this.errorLocal = '';
+    this.pagoService.proximoRecibo().subscribe({
+      next: (r) => {
+        this.numeroReciboPreview = r.numeroRecibo;
+        this.cargandoPreview = false;
+      },
+      error: () => {
+        this.numeroReciboPreview = 'REC-… (se asigna al confirmar)';
+        this.cargandoPreview = false;
+      },
+    });
   }
 }

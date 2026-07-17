@@ -266,7 +266,8 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
   }
 
   onConfirmarEfectivo(data: ValidacionEfectivoResultado): void {
-    this.validar(true, data.numeroRecibo, data.observaciones, data.efectivoFisicoRecibido);
+    // El backend asigna REC-AAAA-NNNNN en la misma transacción.
+    this.validar(true, undefined, data.observaciones, data.efectivoFisicoRecibido);
   }
 
   cerrarModalEfectivo(): void {
@@ -303,9 +304,10 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (actualizada) => {
           this.inscripcion = actualizada;
+          const recibo = actualizada.pagoNumeroRecibo ?? numeroRecibo;
           this.mensaje = aprobar
-            ? numeroRecibo
-              ? `Inscripción aprobada. Recibo ${numeroRecibo} registrado. El usuario ahora es Asistente.`
+            ? recibo
+              ? `Inscripción aprobada. Recibo ${recibo} registrado. El usuario ahora es Asistente.`
               : 'Inscripción aprobada. El usuario ahora es Asistente.'
             : 'Inscripción rechazada.';
           this.procesando = false;

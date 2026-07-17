@@ -142,10 +142,11 @@ export class PagosPendientesComponent extends ListadoPaginadoBase {
     if (!this.pendienteEfectivo) {
       return;
     }
+    // El backend asigna REC-AAAA-NNNNN en la misma transacción.
     this.validar(
       this.pendienteEfectivo,
       true,
-      data.numeroRecibo,
+      undefined,
       data.observaciones,
       data.efectivoFisicoRecibido
     );

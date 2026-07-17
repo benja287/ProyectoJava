@@ -24,4 +24,7 @@ public interface PagoDAO extends GenericDAO<Pago> {
 
   /** Efectivo aprobado con recepción física confirmada, por rango de fechaValidacion. */
   List<Pago> listarArqueoEfectivo(LocalDateTime desdeInclusive, LocalDateTime hastaExclusive);
+
+  /** Último número de recibo con el prefijo dado (ej. {@code REC-2026-}), orden lexicográfico. */
+  java.util.Optional<String> buscarUltimoNumeroReciboConPrefijo(String prefijo);
 }
