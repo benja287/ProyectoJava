@@ -49,6 +49,7 @@ export interface ActualizarPerfilRequest {
   tipoIdentificacion?: string;
   numeroIdentificacion?: string;
   nacionalidad?: string;
+  categoriaInscripcion?: string;
   passwordActual?: string;
   passwordNueva?: string;
 }

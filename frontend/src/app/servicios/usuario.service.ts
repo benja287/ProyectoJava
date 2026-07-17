@@ -84,6 +84,7 @@ export class UsuarioService {
       tipoIdentificacion: payload.tipoIdentificacion?.trim() || '',
       numeroIdentificacion: payload.numeroIdentificacion?.trim() || '',
       nacionalidad: payload.nacionalidad?.trim() || '',
+      categoriaInscripcion: payload.categoriaInscripcion?.trim() || '',
     };
     const actual = payload.passwordActual?.trim();
     const nueva = payload.passwordNueva?.trim();

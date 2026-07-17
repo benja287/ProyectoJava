@@ -59,8 +59,8 @@ public class UsuarioService {
   }
 
   /**
-   * Actualiza solo datos personales del propio usuario. No permite cambiar roles, activo,
-   * categoría de inscripción ni eje de evaluador.
+   * Actualiza datos personales del propio usuario (certificado + categoría). No permite cambiar
+   * roles, activo ni eje de evaluador.
    */
   public Usuario actualizarPerfilPropio(Long usuarioId, ActualizarPerfilRequest req) {
     if (req == null) {
@@ -108,6 +108,17 @@ public class UsuarioService {
     existente.setNumeroIdentificacion(
         req.numeroIdentificacion() != null ? req.numeroIdentificacion().trim() : null);
     existente.setNacionalidad(req.nacionalidad() != null ? req.nacionalidad().trim() : null);
+
+    String categoriaRaw =
+        req.categoriaInscripcion() != null ? req.categoriaInscripcion().trim() : "";
+    if (categoriaRaw.isBlank()) {
+      throw new NegocioException("Debe indicar la categoría de inscripción");
+    }
+    try {
+      existente.setCategoriaInscripcion(CategoriaInscripcion.parse(categoriaRaw).name());
+    } catch (IllegalArgumentException e) {
+      throw new NegocioException("Categoría de inscripción inválida: " + categoriaRaw);
+    }
 
     String passwordNueva =
         req.passwordNueva() != null && !req.passwordNueva().isBlank() ? req.passwordNueva() : null;

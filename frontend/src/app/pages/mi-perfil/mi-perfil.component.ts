@@ -3,7 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
-import { etiquetaCategoria, TIPOS_IDENTIFICACION_INSCRIPCION } from '../../models/inscripcion.model';
+import {
+  CATEGORIAS_INSCRIPCION,
+  etiquetaCategoria,
+  TIPOS_IDENTIFICACION_INSCRIPCION,
+} from '../../models/inscripcion.model';
 import { etiquetaRol } from '../../models/role-labels';
 import { Usuario } from '../../models/usuario.model';
 import { UsuarioService } from '../../servicios/usuario.service';
@@ -41,8 +45,8 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
           <section class="panel-card">
             <h2>Datos editables</h2>
             <p class="muted small">
-              Podés cambiar nombre, apellido, email, datos del certificado y contraseña. Los roles y
-              la categoría de inscripción los gestiona el congreso.
+              Completá o actualizá nombre, datos del certificado y categoría de inscripción. Los
+              roles los gestiona el congreso.
             </p>
 
             <form [formGroup]="form" (ngSubmit)="guardar()" class="auth-form perfil-form">
@@ -77,6 +81,16 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
               <label>
                 Nacionalidad
                 <input formControlName="nacionalidad" />
+              </label>
+              <label>
+                Categoría de inscripción
+                <select formControlName="categoriaInscripcion">
+                  <option value="">Seleccioná una categoría</option>
+                  @for (c of categorias; track c.value) {
+                    <option [value]="c.value">{{ c.label }}</option>
+                  }
+                </select>
+                <span class="muted small">Define el arancel al inscribirte al congreso.</span>
               </label>
 
               <fieldset class="perfil-password">
@@ -116,7 +130,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
 
           <section class="panel-card">
             <h2>Información del congreso</h2>
-            <p class="muted small">Solo lectura — no se editan desde este perfil.</p>
+            <p class="muted small">Solo lectura — roles y estado de cuenta.</p>
             <dl class="perfil-readonly">
               <div>
                 <dt>Estado de cuenta</dt>
@@ -137,7 +151,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
                 </dd>
               </div>
               <div>
-                <dt>Categoría de inscripción</dt>
+                <dt>Categoría guardada</dt>
                 <dd>{{ categoriaEtiqueta }}</dd>
               </div>
               @if (usuario.roles?.includes('EVALUADOR')) {
@@ -232,6 +246,7 @@ export class MiPerfilComponent implements OnInit {
 
   readonly etiquetaRol = etiquetaRol;
   readonly tiposId = [...TIPOS_IDENTIFICACION_INSCRIPCION];
+  readonly categorias = [...CATEGORIAS_INSCRIPCION];
 
   form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.maxLength(80)]],
@@ -241,6 +256,7 @@ export class MiPerfilComponent implements OnInit {
     tipoIdentificacion: ['DNI', Validators.required],
     numeroIdentificacion: ['', [Validators.required, Validators.maxLength(60)]],
     nacionalidad: ['', [Validators.required, Validators.maxLength(80)]],
+    categoriaInscripcion: ['', Validators.required],
     passwordActual: [''],
     passwordNueva: ['', [Validators.minLength(8)]],
     confirmPassword: [''],
@@ -273,6 +289,7 @@ export class MiPerfilComponent implements OnInit {
           tipoIdentificacion: u.tipoIdentificacion || 'DNI',
           numeroIdentificacion: u.numeroIdentificacion ?? '',
           nacionalidad: u.nacionalidad ?? '',
+          categoriaInscripcion: u.categoriaInscripcion ?? '',
           passwordActual: '',
           passwordNueva: '',
           confirmPassword: '',
@@ -321,6 +338,7 @@ export class MiPerfilComponent implements OnInit {
         tipoIdentificacion: v.tipoIdentificacion,
         numeroIdentificacion: v.numeroIdentificacion,
         nacionalidad: v.nacionalidad,
+        categoriaInscripcion: v.categoriaInscripcion,
         ...(quierePassword
           ? { passwordActual: v.passwordActual, passwordNueva: v.passwordNueva }
           : {}),
@@ -338,6 +356,7 @@ export class MiPerfilComponent implements OnInit {
                 tipoIdentificacion: actualizado.tipoIdentificacion || 'DNI',
                 numeroIdentificacion: actualizado.numeroIdentificacion ?? '',
                 nacionalidad: actualizado.nacionalidad ?? '',
+                categoriaInscripcion: actualizado.categoriaInscripcion ?? '',
                 passwordActual: '',
                 passwordNueva: '',
                 confirmPassword: '',
