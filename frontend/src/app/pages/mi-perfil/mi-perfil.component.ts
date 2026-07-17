@@ -23,7 +23,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
         <span class="panel-hero-icon" aria-hidden="true">👤</span>
         <div>
           <h1>Mi perfil</h1>
-          <p>Consultá y actualizá tus datos personales</p>
+          <p>Consultá tus datos y editá solo cuando lo necesites</p>
         </div>
       </div>
 
@@ -43,89 +43,148 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
       } @else if (usuario) {
         <div class="perfil-layout">
           <section class="panel-card">
-            <h2>Datos editables</h2>
-            <p class="muted small">
-              Completá o actualizá nombre, datos del certificado y categoría de inscripción. Los
-              roles los gestiona el congreso.
-            </p>
+            <div class="perfil-card-header">
+              <div>
+                <h2>Datos personales</h2>
+                <p class="muted small">
+                  Nombre, contacto, identificación y categoría para certificado e inscripción.
+                </p>
+              </div>
+              @if (!editando) {
+                <button type="button" class="btn-secundario" (click)="iniciarEdicion()">
+                  Editar perfil
+                </button>
+              }
+            </div>
 
-            <form [formGroup]="form" (ngSubmit)="guardar()" class="auth-form perfil-form">
-              <label>
-                Nombre
-                <input formControlName="nombre" autocomplete="given-name" />
-              </label>
-              <label>
-                Apellido
-                <input formControlName="apellido" autocomplete="family-name" />
-              </label>
-              <label>
-                Email
-                <input formControlName="email" type="email" autocomplete="email" />
-              </label>
-              <label>
-                Teléfono (formato internacional)
-                <input formControlName="telefono" placeholder="+54 9 221..." autocomplete="tel" />
-              </label>
-              <label>
-                Tipo de identificación
-                <select formControlName="tipoIdentificacion">
-                  @for (t of tiposId; track t.value) {
-                    <option [value]="t.value">{{ t.label }}</option>
-                  }
-                </select>
-              </label>
-              <label>
-                Número de identificación
-                <input formControlName="numeroIdentificacion" />
-              </label>
-              <label>
-                Nacionalidad
-                <input formControlName="nacionalidad" />
-              </label>
-              <label>
-                Categoría de inscripción
-                <select formControlName="categoriaInscripcion">
-                  <option value="">Seleccioná una categoría</option>
-                  @for (c of categorias; track c.value) {
-                    <option [value]="c.value">{{ c.label }}</option>
-                  }
-                </select>
-                <span class="muted small">Define el arancel al inscribirte al congreso.</span>
-              </label>
-
-              <fieldset class="perfil-password">
-                <legend>Cambiar contraseña (opcional)</legend>
+            @if (!editando) {
+              <dl class="perfil-readonly">
+                <div>
+                  <dt>Nombre</dt>
+                  <dd>{{ usuario.nombre || '—' }}</dd>
+                </div>
+                <div>
+                  <dt>Apellido</dt>
+                  <dd>{{ usuario.apellido || '—' }}</dd>
+                </div>
+                <div>
+                  <dt>Email</dt>
+                  <dd>{{ usuario.email || '—' }}</dd>
+                </div>
+                <div>
+                  <dt>Teléfono</dt>
+                  <dd>{{ usuario.telefono || '—' }}</dd>
+                </div>
+                <div>
+                  <dt>Tipo de identificación</dt>
+                  <dd>{{ etiquetaTipoId(usuario.tipoIdentificacion) }}</dd>
+                </div>
+                <div>
+                  <dt>Número de identificación</dt>
+                  <dd>{{ usuario.numeroIdentificacion || '—' }}</dd>
+                </div>
+                <div>
+                  <dt>Nacionalidad</dt>
+                  <dd>{{ usuario.nacionalidad || '—' }}</dd>
+                </div>
+                <div>
+                  <dt>Categoría de inscripción</dt>
+                  <dd>{{ categoriaEtiqueta }}</dd>
+                </div>
+              </dl>
+            } @else {
+              <form [formGroup]="form" (ngSubmit)="guardar()" class="auth-form perfil-form">
                 <label>
-                  Contraseña actual
-                  <input
-                    formControlName="passwordActual"
-                    type="password"
-                    autocomplete="current-password"
-                  />
+                  Nombre
+                  <input formControlName="nombre" autocomplete="given-name" />
                 </label>
                 <label>
-                  Nueva contraseña
-                  <input
-                    formControlName="passwordNueva"
-                    type="password"
-                    autocomplete="new-password"
-                  />
+                  Apellido
+                  <input formControlName="apellido" autocomplete="family-name" />
                 </label>
                 <label>
-                  Confirmar nueva contraseña
-                  <input
-                    formControlName="confirmPassword"
-                    type="password"
-                    autocomplete="new-password"
-                  />
+                  Email
+                  <input formControlName="email" type="email" autocomplete="email" />
                 </label>
-                <p class="muted small">Mínimo 8 caracteres. Dejá vacío para no cambiarla.</p>
-              </fieldset>
+                <label>
+                  Teléfono (formato internacional)
+                  <input formControlName="telefono" placeholder="+54 9 221..." autocomplete="tel" />
+                </label>
+                <label>
+                  Tipo de identificación
+                  <select formControlName="tipoIdentificacion">
+                    @for (t of tiposId; track t.value) {
+                      <option [value]="t.value">{{ t.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  Número de identificación
+                  <input formControlName="numeroIdentificacion" />
+                </label>
+                <label>
+                  Nacionalidad
+                  <input formControlName="nacionalidad" />
+                </label>
+                <label>
+                  Categoría de inscripción
+                  <select formControlName="categoriaInscripcion">
+                    <option value="">Seleccioná una categoría</option>
+                    @for (c of categorias; track c.value) {
+                      <option [value]="c.value">{{ c.label }}</option>
+                    }
+                  </select>
+                  <span class="muted small">Define el arancel al inscribirte al congreso.</span>
+                </label>
 
-              <button type="submit" class="btn-primary" [disabled]="form.invalid || guardando">
-                {{ guardando ? 'Guardando...' : 'Guardar cambios' }}
-              </button>
-            </form>
+                <fieldset class="perfil-password">
+                  <legend>Cambiar contraseña (opcional)</legend>
+                  <label>
+                    Contraseña actual
+                    <input
+                      formControlName="passwordActual"
+                      type="password"
+                      autocomplete="current-password"
+                    />
+                  </label>
+                  <label>
+                    Nueva contraseña
+                    <input
+                      formControlName="passwordNueva"
+                      type="password"
+                      autocomplete="new-password"
+                    />
+                  </label>
+                  <label>
+                    Confirmar nueva contraseña
+                    <input
+                      formControlName="confirmPassword"
+                      type="password"
+                      autocomplete="new-password"
+                    />
+                  </label>
+                  <p class="muted small">Mínimo 8 caracteres. Dejá vacío para no cambiarla.</p>
+                </fieldset>
+
+                <div class="perfil-acciones">
+                  <button
+                    type="submit"
+                    class="btn-primary"
+                    [disabled]="form.invalid || guardando"
+                  >
+                    {{ guardando ? 'Guardando...' : 'Guardar cambios' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-secundario"
+                    (click)="cancelarEdicion()"
+                    [disabled]="guardando"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            }
           </section>
 
           <section class="panel-card">
@@ -187,14 +246,25 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
         display: grid;
         gap: 1.25rem;
         grid-template-columns: 1.4fr 1fr;
+        align-items: start;
       }
       @media (max-width: 900px) {
         .perfil-layout {
           grid-template-columns: 1fr;
         }
       }
+      .perfil-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+      }
+      .perfil-card-header h2 {
+        margin: 0 0 0.25rem;
+      }
       .perfil-form {
-        margin-top: 1rem;
+        margin-top: 0.75rem;
         max-width: 32rem;
       }
       .perfil-password {
@@ -206,6 +276,12 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
       .perfil-password legend {
         padding: 0 0.35rem;
         font-weight: 600;
+      }
+      .perfil-acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
       }
       .perfil-readonly {
         margin: 1rem 0;
@@ -241,6 +317,7 @@ export class MiPerfilComponent implements OnInit {
   usuario: Usuario | null = null;
   cargando = true;
   guardando = false;
+  editando = false;
   error = '';
   mensaje = '';
 
@@ -275,25 +352,32 @@ export class MiPerfilComponent implements OnInit {
     this.cargar();
   }
 
+  etiquetaTipoId(tipo?: string | null): string {
+    if (!tipo) return '—';
+    return this.tiposId.find((t) => t.value === tipo)?.label ?? tipo;
+  }
+
+  iniciarEdicion(): void {
+    this.error = '';
+    this.mensaje = '';
+    this.rellenarFormularioDesdeUsuario();
+    this.editando = true;
+  }
+
+  cancelarEdicion(): void {
+    this.error = '';
+    this.mensaje = '';
+    this.rellenarFormularioDesdeUsuario();
+    this.editando = false;
+  }
+
   cargar(): void {
     this.cargando = true;
     this.error = '';
     this.usuarioService.miPerfil().subscribe({
       next: (u) => {
         this.usuario = u;
-        this.form.patchValue({
-          nombre: u.nombre ?? '',
-          apellido: u.apellido ?? '',
-          email: u.email ?? '',
-          telefono: u.telefono ?? '',
-          tipoIdentificacion: u.tipoIdentificacion || 'DNI',
-          numeroIdentificacion: u.numeroIdentificacion ?? '',
-          nacionalidad: u.nacionalidad ?? '',
-          categoriaInscripcion: u.categoriaInscripcion ?? '',
-          passwordActual: '',
-          passwordNueva: '',
-          confirmPassword: '',
-        });
+        this.rellenarFormularioDesdeUsuario();
         this.cargando = false;
       },
       error: (err) => {
@@ -348,25 +432,15 @@ export class MiPerfilComponent implements OnInit {
           this.loginService.refreshUser().subscribe({
             next: (actualizado) => {
               this.usuario = actualizado;
-              this.form.patchValue({
-                nombre: actualizado.nombre ?? '',
-                apellido: actualizado.apellido ?? '',
-                email: actualizado.email ?? '',
-                telefono: actualizado.telefono ?? '',
-                tipoIdentificacion: actualizado.tipoIdentificacion || 'DNI',
-                numeroIdentificacion: actualizado.numeroIdentificacion ?? '',
-                nacionalidad: actualizado.nacionalidad ?? '',
-                categoriaInscripcion: actualizado.categoriaInscripcion ?? '',
-                passwordActual: '',
-                passwordNueva: '',
-                confirmPassword: '',
-              });
+              this.rellenarFormularioDesdeUsuario();
+              this.editando = false;
               this.mensaje = 'Perfil actualizado.';
               this.guardando = false;
             },
             error: (err) => {
               this.error = mensajeErrorApi(err, 'Se guardó, pero no se pudo refrescar la sesión.');
               this.guardando = false;
+              this.editando = false;
               this.cargar();
             },
           });
@@ -376,5 +450,23 @@ export class MiPerfilComponent implements OnInit {
           this.guardando = false;
         },
       });
+  }
+
+  private rellenarFormularioDesdeUsuario(): void {
+    const u = this.usuario;
+    if (!u) return;
+    this.form.patchValue({
+      nombre: u.nombre ?? '',
+      apellido: u.apellido ?? '',
+      email: u.email ?? '',
+      telefono: u.telefono ?? '',
+      tipoIdentificacion: u.tipoIdentificacion || 'DNI',
+      numeroIdentificacion: u.numeroIdentificacion ?? '',
+      nacionalidad: u.nacionalidad ?? '',
+      categoriaInscripcion: u.categoriaInscripcion ?? '',
+      passwordActual: '',
+      passwordNueva: '',
+      confirmPassword: '',
+    });
   }
 }
