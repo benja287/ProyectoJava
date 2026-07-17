@@ -97,6 +97,28 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <button type="submit" [disabled]="procesando || rolesSeleccionados.size === 0">Guardar roles</button>
         </form>
 
+        <h2>Excepción de cupo de envío</h2>
+        <p class="muted">
+          Opcional: subir el máximo de trabajos activos de este usuario sin cambiar el cupo global
+          del comité.
+        </p>
+        <form [formGroup]="cuposForm" (ngSubmit)="guardarCupos()" class="form-grid">
+          <label>
+            Máx. AUTOR (vacío = global)
+            <input type="number" min="1" max="20" formControlName="maxTrabajosAutorOverride" />
+          </label>
+          <label>
+            Máx. ASISTENTE (vacío = global)
+            <input type="number" min="1" max="20" formControlName="maxTrabajosAsistenteOverride" />
+          </label>
+          <div class="actions">
+            <button type="submit" [disabled]="procesando">Guardar cupos</button>
+            <button type="button" class="btn-secundario" (click)="quitarCupos()" [disabled]="procesando">
+              Quitar excepciones
+            </button>
+          </div>
+        </form>
+
         <p><a routerLink="/admin/usuarios">← Volver al listado</a></p>
       }
     </section>
@@ -119,6 +141,10 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
     password: [''],
   });
   rolesForm = this.fb.group({ rolActual: [''] });
+  cuposForm = this.fb.group({
+    maxTrabajosAutorOverride: [null as number | null],
+    maxTrabajosAsistenteOverride: [null as number | null],
+  });
   private sub?: Subscription;
 
   constructor(
@@ -249,6 +275,10 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
           password: '',
         });
         this.rolesForm.patchValue({ rolActual: u!.rolActual ?? '' });
+        this.cuposForm.patchValue({
+          maxTrabajosAutorOverride: u!.maxTrabajosAutorOverride ?? null,
+          maxTrabajosAsistenteOverride: u!.maxTrabajosAsistenteOverride ?? null,
+        });
         this.cargando = false;
       },
       error: (err) => {
@@ -256,5 +286,65 @@ export class UsuarioDetalleComponent implements OnInit, OnDestroy {
         this.cargando = false;
       },
     });
+  }
+
+  guardarCupos(): void {
+    if (!this.usuario?.id) {
+      return;
+    }
+    const raw = this.cuposForm.getRawValue();
+    const autor = raw.maxTrabajosAutorOverride;
+    const asistente = raw.maxTrabajosAsistenteOverride;
+    this.procesando = true;
+    this.error = '';
+    this.mensaje = '';
+    this.usuarioService
+      .actualizarCuposEnvio(this.usuario.id, {
+        maxTrabajosAutorOverride:
+          autor != null && String(autor).trim() !== '' ? Number(autor) : null,
+        maxTrabajosAsistenteOverride:
+          asistente != null && String(asistente).trim() !== '' ? Number(asistente) : null,
+      })
+      .subscribe({
+        next: (u) => {
+          this.usuario = u;
+          this.mensaje = 'Excepción de cupo actualizada.';
+          this.procesando = false;
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudo guardar el cupo.');
+          this.procesando = false;
+        },
+      });
+  }
+
+  quitarCupos(): void {
+    if (!this.usuario?.id) {
+      return;
+    }
+    this.procesando = true;
+    this.error = '';
+    this.mensaje = '';
+    this.usuarioService
+      .actualizarCuposEnvio(this.usuario.id, {
+        maxTrabajosAutorOverride: null,
+        maxTrabajosAsistenteOverride: null,
+        motivo: 'Se quitaron las excepciones de cupo.',
+      })
+      .subscribe({
+        next: (u) => {
+          this.usuario = u;
+          this.cuposForm.patchValue({
+            maxTrabajosAutorOverride: null,
+            maxTrabajosAsistenteOverride: null,
+          });
+          this.mensaje = 'Excepciones de cupo quitadas.';
+          this.procesando = false;
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudo quitar el cupo.');
+          this.procesando = false;
+        },
+      });
   }
 }

@@ -57,6 +57,19 @@ public class Usuario implements Serializable {
   @Column(name = "nacionalidad", length = 80)
   private String nacionalidad;
 
+  /**
+   * Excepción de cupo: máx. trabajos activos como AUTOR. Null = usa el límite global del congreso.
+   */
+  @Column(name = "max_trabajos_autor_override")
+  private Integer maxTrabajosAutorOverride;
+
+  /**
+   * Excepción de cupo: máx. trabajos activos como ASISTENTE. Null = usa el límite global del
+   * congreso.
+   */
+  @Column(name = "max_trabajos_asistente_override")
+  private Integer maxTrabajosAsistenteOverride;
+
   /** Eje temático asignado cuando el usuario actúa como evaluador. */
   @Column(name = "eje_tematico_evaluador", length = 300)
   private String ejeTematicoEvaluador;
@@ -180,6 +193,22 @@ public class Usuario implements Serializable {
 
   public void setNacionalidad(String nacionalidad) {
     this.nacionalidad = nacionalidad;
+  }
+
+  public Integer getMaxTrabajosAutorOverride() {
+    return maxTrabajosAutorOverride;
+  }
+
+  public void setMaxTrabajosAutorOverride(Integer maxTrabajosAutorOverride) {
+    this.maxTrabajosAutorOverride = maxTrabajosAutorOverride;
+  }
+
+  public Integer getMaxTrabajosAsistenteOverride() {
+    return maxTrabajosAsistenteOverride;
+  }
+
+  public void setMaxTrabajosAsistenteOverride(Integer maxTrabajosAsistenteOverride) {
+    this.maxTrabajosAsistenteOverride = maxTrabajosAsistenteOverride;
   }
 
   public String getEjeTematicoEvaluador() {

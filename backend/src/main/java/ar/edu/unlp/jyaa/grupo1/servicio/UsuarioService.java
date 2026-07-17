@@ -14,6 +14,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoParticipacionInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.ActualizarPerfilRequest;
+import ar.edu.unlp.jyaa.grupo1.rest.dto.CuposEnvioUsuarioRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.UsuarioAltaRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaUsuariosDTO;
@@ -58,6 +59,62 @@ public class UsuarioService {
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
 
     return new PaginaUsuariosDTO(items, safePage, safeSize, total, totalPages);
+  }
+
+  public PaginaUsuariosDTO listarExcepcionesCupoEnvio(int page, int size, AuthenticatedUser auth) {
+    if (auth == null || !auth.canListAllUsuarios()) {
+      throw new NegocioException("No tiene permiso para listar excepciones de cupo");
+    }
+    int safePage = Math.max(PAGE_DEFAULT, page);
+    int safeSize = Math.min(Math.max(1, size), SIZE_MAX);
+    int offset = (safePage - 1) * safeSize;
+    long total = usuarioDAO.contarConExcepcionCupoEnvio();
+    List<UsuarioDTO> items =
+        evaluadorEjeService.toDtos(usuarioDAO.listarConExcepcionCupoEnvio(offset, safeSize));
+    int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
+    return new PaginaUsuariosDTO(items, safePage, safeSize, total, totalPages);
+  }
+
+  public Usuario actualizarCuposEnvio(
+      Long id, CuposEnvioUsuarioRequest request, AuthenticatedUser auth) {
+    if (auth == null || !auth.canListAllUsuarios()) {
+      throw new NegocioException("Solo admin o comité pueden gestionar excepciones de cupo");
+    }
+    if (request == null) {
+      throw new NegocioException("Datos de cupo requeridos");
+    }
+    Usuario usuario = usuarioDAO.recuperarPorId(id);
+    if (usuario == null) {
+      return null;
+    }
+    Integer autor = request.maxTrabajosAutorOverride;
+    Integer asistente = request.maxTrabajosAsistenteOverride;
+    if (autor != null && (autor < 1 || autor > 20)) {
+      throw new NegocioException("Excepción AUTOR: entre 1 y 20 (o vacío para quitar)");
+    }
+    if (asistente != null && (asistente < 1 || asistente > 20)) {
+      throw new NegocioException("Excepción ASISTENTE: entre 1 y 20 (o vacío para quitar)");
+    }
+    // Distinguir "no enviado" vs "quitar": usamos Integer; el cliente manda null para quitar.
+    usuario.setMaxTrabajosAutorOverride(autor);
+    usuario.setMaxTrabajosAsistenteOverride(asistente);
+    Usuario actualizado = usuarioDAO.modificar(usuario);
+    String motivo =
+        request.motivo != null && !request.motivo.isBlank()
+            ? request.motivo.trim()
+            : "Actualización de cupo de envío de trabajos.";
+    StringBuilder msg = new StringBuilder();
+    msg.append(motivo).append(" Cupos excepcionales: autor=");
+    msg.append(autor != null ? autor : "global");
+    msg.append(", asistente=");
+    msg.append(asistente != null ? asistente : "global");
+    msg.append(".");
+    notificacionService.enviar(
+        actualizado.getId(),
+        "Cupo de envío de trabajos actualizado",
+        msg.toString(),
+        "/autor");
+    return actualizado;
   }
 
   public List<Usuario> listarTodos() {

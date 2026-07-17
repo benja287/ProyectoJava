@@ -61,7 +61,8 @@ public class CongresoResource {
             || request.edicion() != null
             || request.sede() != null
             || (request.grupo() != null
-                && !"ENVIO".equalsIgnoreCase(request.grupo().trim())))) {
+                && !"ENVIO".equalsIgnoreCase(request.grupo().trim())
+                && !"CUPOS".equalsIgnoreCase(request.grupo().trim())))) {
       throw new NotAuthorizedException(
           "Solo administradores pueden modificar programa, certificados o ventanas del congreso");
     }

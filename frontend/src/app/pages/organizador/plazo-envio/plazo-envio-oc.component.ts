@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -14,8 +14,8 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       <div class="panel-hero panel-hero--indigo">
         <span class="panel-hero-icon" aria-hidden="true">📅</span>
         <div>
-          <h1>Límite para envíos nuevos</h1>
-          <p>Fecha límite para envíos nuevos de trabajos</p>
+          <h1>Límites de envío de trabajos</h1>
+          <p>Fecha límite y cantidad máxima de trabajos activos (global)</p>
         </div>
       </div>
 
@@ -27,20 +27,54 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       }
 
       <section class="panel-card comite-deadline">
-        <h2>Límite para envíos nuevos de trabajos</h2>
-        <p class="muted">Después de esta fecha, no se podrán enviar trabajos nuevos (sí reenvíos por corrección).</p>
+        <h2>Fecha límite para envíos nuevos</h2>
+        <p class="muted">
+          Después de esta fecha no se podrán enviar trabajos nuevos (sí reenvíos por corrección).
+        </p>
         <div class="comite-deadline-row">
           <input type="date" [formControl]="deadlineCtrl" />
           <button type="button" class="btn-primary" (click)="guardarDeadline()" [disabled]="procesando">
-            Guardar
+            Guardar fecha
           </button>
           <button type="button" class="btn-secundario" (click)="quitarDeadline()" [disabled]="procesando">
-            Quitar
+            Quitar fecha
           </button>
         </div>
       </section>
 
-      <p><a routerLink="/organizador">← Volver al panel del comité</a></p>
+      <section class="panel-card" style="margin-top: 1rem">
+        <h2>Cupo global de trabajos activos</h2>
+        <p class="muted">
+          Aplica a todos. Las excepciones por usuario se gestionan en
+          <a routerLink="/organizador/excepciones-cupo">Excepciones de cupo</a>.
+        </p>
+        <form [formGroup]="cuposForm" class="form-grid" style="max-width: 28rem">
+          <label>
+            Máx. trabajos como AUTOR
+            <input type="number" min="1" max="20" formControlName="maxTrabajosAutor" />
+          </label>
+          <label>
+            Máx. trabajos como ASISTENTE
+            <input type="number" min="1" max="20" formControlName="maxTrabajosAsistente" />
+          </label>
+          <div class="actions span-full">
+            <button
+              type="button"
+              class="btn-primary"
+              (click)="guardarCupos()"
+              [disabled]="cuposForm.invalid || procesando"
+            >
+              Guardar cupos globales
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <p style="margin-top: 1rem">
+        <a routerLink="/organizador">← Volver al panel del comité</a>
+        ·
+        <a routerLink="/organizador/excepciones-cupo">Excepciones por usuario</a>
+      </p>
     </div>
   `,
 })
@@ -51,6 +85,10 @@ export class PlazoEnvioOcComponent implements OnInit {
   error = '';
   mensaje = '';
   deadlineCtrl = this.fb.control('');
+  cuposForm = this.fb.group({
+    maxTrabajosAutor: [2, [Validators.required, Validators.min(1), Validators.max(20)]],
+    maxTrabajosAsistente: [1, [Validators.required, Validators.min(1), Validators.max(20)]],
+  });
 
   constructor(private congresoConfigService: CongresoConfigService) {}
 
@@ -60,6 +98,10 @@ export class PlazoEnvioOcComponent implements OnInit {
         if (cfg.envioTrabajosHasta) {
           this.deadlineCtrl.setValue(cfg.envioTrabajosHasta);
         }
+        this.cuposForm.patchValue({
+          maxTrabajosAutor: cfg.maxTrabajosAutor ?? 2,
+          maxTrabajosAsistente: cfg.maxTrabajosAsistente ?? 1,
+        });
       },
     });
   }
@@ -71,6 +113,7 @@ export class PlazoEnvioOcComponent implements OnInit {
       return;
     }
     this.procesando = true;
+    this.error = '';
     this.congresoConfigService.actualizar({ envioTrabajosHasta: v }).subscribe({
       next: () => {
         this.mensaje = `Fecha límite guardada: ${v}.`;
@@ -85,6 +128,7 @@ export class PlazoEnvioOcComponent implements OnInit {
 
   quitarDeadline(): void {
     this.procesando = true;
+    this.error = '';
     this.congresoConfigService.actualizar({ envioTrabajosHasta: null }).subscribe({
       next: () => {
         this.deadlineCtrl.reset('');
@@ -96,5 +140,30 @@ export class PlazoEnvioOcComponent implements OnInit {
         this.procesando = false;
       },
     });
+  }
+
+  guardarCupos(): void {
+    if (this.cuposForm.invalid) {
+      return;
+    }
+    const raw = this.cuposForm.getRawValue();
+    this.procesando = true;
+    this.error = '';
+    this.congresoConfigService
+      .actualizar({
+        grupo: 'CUPOS',
+        maxTrabajosAutor: Number(raw.maxTrabajosAutor),
+        maxTrabajosAsistente: Number(raw.maxTrabajosAsistente),
+      })
+      .subscribe({
+        next: (cfg) => {
+          this.mensaje = `Cupos globales: AUTOR=${cfg.maxTrabajosAutor}, ASISTENTE=${cfg.maxTrabajosAsistente}.`;
+          this.procesando = false;
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudieron guardar los cupos.');
+          this.procesando = false;
+        },
+      });
   }
 }

@@ -64,8 +64,15 @@ import {
         <a routerLink="/organizador/plazo-envio" class="accion-card">
           <span class="accion-icono accion-icono--indigo" aria-hidden="true">📅</span>
           <div>
-            <h3>Límite para envíos nuevos</h3>
-            <p>Fecha límite para envíos nuevos de trabajos</p>
+            <h3>Límites de envío</h3>
+            <p>Fecha límite y cupo global de trabajos (autor / asistente)</p>
+          </div>
+        </a>
+        <a routerLink="/organizador/excepciones-cupo" class="accion-card">
+          <span class="accion-icono accion-icono--naranja" aria-hidden="true">⬆</span>
+          <div>
+            <h3>Excepciones de cupo</h3>
+            <p>Aumentar el límite de trabajos a usuarios concretos</p>
           </div>
         </a>
         <a routerLink="/organizador/estadisticas" class="accion-card">

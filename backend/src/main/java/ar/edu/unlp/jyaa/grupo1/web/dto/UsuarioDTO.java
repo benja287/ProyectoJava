@@ -18,6 +18,8 @@ public record UsuarioDTO(
     String numeroIdentificacion,
     String nacionalidad,
     String ejeTematicoEvaluador,
+    Integer maxTrabajosAutorOverride,
+    Integer maxTrabajosAsistenteOverride,
     List<EvaluadorEjeCupoDTO> cuposEje) {
 
   public static UsuarioDTO from(Usuario u) {
@@ -39,6 +41,8 @@ public record UsuarioDTO(
         u.getNumeroIdentificacion(),
         u.getNacionalidad(),
         u.getEjeTematicoEvaluador(),
+        u.getMaxTrabajosAutorOverride(),
+        u.getMaxTrabajosAsistenteOverride(),
         cuposEje != null ? cuposEje : List.of());
   }
 }

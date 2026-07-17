@@ -35,6 +35,7 @@ public class CongresoService {
   public static final String GRUPO_EVALUACION = "EVALUACION";
   public static final String GRUPO_DATOS = "DATOS";
   public static final String GRUPO_JORNADA = "JORNADA";
+  public static final String GRUPO_CUPOS = "CUPOS";
 
   @Inject private NotificacionService notificacionService;
 
@@ -60,7 +61,9 @@ public class CongresoService {
               if (grupo == null) {
                 aplicarUpdateLegacy(congreso, request);
               } else {
-                if (!GRUPO_DATOS.equals(grupo) && !GRUPO_JORNADA.equals(grupo)) {
+                if (!GRUPO_DATOS.equals(grupo)
+                    && !GRUPO_JORNADA.equals(grupo)
+                    && !GRUPO_CUPOS.equals(grupo)) {
                   exigirMotivo(request.motivo());
                 }
                 switch (grupo) {
@@ -80,8 +83,10 @@ public class CongresoService {
                   case GRUPO_INSCRIPCIONES -> aplicarInscripciones(congreso, request);
                   case GRUPO_ENVIO -> aplicarEnvio(congreso, request);
                   case GRUPO_EVALUACION -> aplicarEvaluacion(congreso, request);
+                  case GRUPO_CUPOS -> aplicarCuposEnvio(congreso, request);
                   default -> throw new NegocioException(
-                      "grupo inválido (use CONGRESO, INSCRIPCIONES, ENVIO, EVALUACION, DATOS o JORNADA)");
+                      "grupo inválido (use CONGRESO, INSCRIPCIONES, ENVIO, EVALUACION, DATOS,"
+                          + " JORNADA o CUPOS)");
                 }
               }
 
@@ -90,7 +95,10 @@ public class CongresoService {
               return CongresoConfigDTO.from(congreso);
             });
 
-    if (grupo != null && !GRUPO_DATOS.equals(grupo) && !GRUPO_JORNADA.equals(grupo)) {
+    if (grupo != null
+        && !GRUPO_DATOS.equals(grupo)
+        && !GRUPO_JORNADA.equals(grupo)
+        && !GRUPO_CUPOS.equals(grupo)) {
       notificarSoloGrupo(grupo, antes, dto, request.motivo().trim(), actividadesRemapeadas[0]);
     } else if (grupo == null
         && request.envioTrabajosHasta() != null
@@ -115,6 +123,29 @@ public class CongresoService {
     }
     if (request.envioTrabajosHasta() != null) {
       congreso.setEnvioTrabajosHasta(parseFechaOpcional(request.envioTrabajosHasta()));
+    }
+    aplicarCuposEnvioSiPresentes(congreso, request);
+  }
+
+  private void aplicarCuposEnvio(Congreso congreso, CongresoConfigUpdateRequest request) {
+    if (request.maxTrabajosAutor() == null && request.maxTrabajosAsistente() == null) {
+      throw new NegocioException("Indicá al menos un cupo (autor o asistente).");
+    }
+    aplicarCuposEnvioSiPresentes(congreso, request);
+  }
+
+  private void aplicarCuposEnvioSiPresentes(Congreso congreso, CongresoConfigUpdateRequest request) {
+    if (request.maxTrabajosAutor() != null) {
+      if (request.maxTrabajosAutor() < 1 || request.maxTrabajosAutor() > 20) {
+        throw new NegocioException("El máx. de trabajos como AUTOR debe estar entre 1 y 20");
+      }
+      congreso.setMaxTrabajosAutor(request.maxTrabajosAutor());
+    }
+    if (request.maxTrabajosAsistente() != null) {
+      if (request.maxTrabajosAsistente() < 1 || request.maxTrabajosAsistente() > 20) {
+        throw new NegocioException("El máx. de trabajos como ASISTENTE debe estar entre 1 y 20");
+      }
+      congreso.setMaxTrabajosAsistente(request.maxTrabajosAsistente());
     }
   }
 

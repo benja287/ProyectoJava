@@ -70,6 +70,43 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
   }
 
   @Override
+  public List<Usuario> listarConExcepcionCupoEnvio(int offset, int limit) {
+    EntityManager em = entityManagerParaConsulta();
+    try {
+      return em.createQuery(
+              """
+              SELECT u FROM Usuario u
+              WHERE u.maxTrabajosAutorOverride IS NOT NULL
+                 OR u.maxTrabajosAsistenteOverride IS NOT NULL
+              ORDER BY u.apellido, u.nombre
+              """,
+              Usuario.class)
+          .setFirstResult(Math.max(0, offset))
+          .setMaxResults(Math.max(1, limit))
+          .getResultList();
+    } finally {
+      cerrarSiLegacy(em);
+    }
+  }
+
+  @Override
+  public long contarConExcepcionCupoEnvio() {
+    EntityManager em = entityManagerParaConsulta();
+    try {
+      return em.createQuery(
+              """
+              SELECT COUNT(u) FROM Usuario u
+              WHERE u.maxTrabajosAutorOverride IS NOT NULL
+                 OR u.maxTrabajosAsistenteOverride IS NOT NULL
+              """,
+              Long.class)
+          .getSingleResult();
+    } finally {
+      cerrarSiLegacy(em);
+    }
+  }
+
+  @Override
   public Optional<Boolean> isActivoById(Long id) {
     EntityManager em = entityManagerParaConsulta();
     try {

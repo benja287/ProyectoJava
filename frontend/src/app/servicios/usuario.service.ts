@@ -161,6 +161,25 @@ export class UsuarioService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
+  /** PUT /api/usuarios/{id}/cupos-envio */
+  actualizarCuposEnvio(
+    id: number,
+    payload: {
+      maxTrabajosAutorOverride?: number | null;
+      maxTrabajosAsistenteOverride?: number | null;
+      motivo?: string;
+    }
+  ): Observable<Usuario> {
+    return this.http.put<Usuario>(`${this.baseUrl}/${id}/cupos-envio`, payload);
+  }
+
+  /** GET /api/usuarios/cupos-envio/excepciones */
+  listarExcepcionesCupo(page = 1, size = 50): Observable<PaginaUsuarios> {
+    return this.http.get<PaginaUsuarios>(`${this.baseUrl}/cupos-envio/excepciones`, {
+      params: { page: String(page), size: String(size) },
+    });
+  }
+
   /** PUT /api/usuarios/{id}/roles — usado por LoginService.cambiarRolActual */
   asignarRoles(id: number, request: RolesRequest): Observable<Usuario> {
     return this.http.put<Usuario>(`${this.baseUrl}/${id}/roles`, request);

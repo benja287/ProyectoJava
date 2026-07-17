@@ -8,6 +8,7 @@ import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.TrabajoFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
+import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.EjesTematicos;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
@@ -766,15 +767,15 @@ public class TrabajoService {
   }
 
   private int limiteActivos(Usuario autor, Rol rolEnvio) {
-    boolean tieneAutor = autor.getRoles().contains(Rol.AUTOR);
-    boolean tieneAsistente = autor.getRoles().contains(Rol.ASISTENTE);
+    Congreso congreso = congresoDAO.obtenerPrincipal();
+    int globalAutor = Math.max(1, congreso.getMaxTrabajosAutor());
+    int globalAsistente = Math.max(1, congreso.getMaxTrabajosAsistente());
     if (rolEnvio == Rol.ASISTENTE) {
-      return 1;
+      Integer override = autor.getMaxTrabajosAsistenteOverride();
+      return override != null && override > 0 ? override : globalAsistente;
     }
-    if (tieneAutor && tieneAsistente) {
-      return 1;
-    }
-    return 2;
+    Integer override = autor.getMaxTrabajosAutorOverride();
+    return override != null && override > 0 ? override : globalAutor;
   }
 
   private List<Trabajo> filtrarPorRolEnvio(

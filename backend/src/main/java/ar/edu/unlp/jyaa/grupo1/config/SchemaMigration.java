@@ -50,6 +50,8 @@ public final class SchemaMigration {
     // APPEND — factura PDF emitida + notificación arqueo a admins
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPagoFacturaUrl);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasFacturaYArqueo);
+    // APPEND — cupos de envío de trabajos (global + excepción por usuario)
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCuposEnvioTrabajos);
   }
 
   private static void migrarDatosCertificadoUsuario(EntityManager em) {
@@ -1226,6 +1228,30 @@ public final class SchemaMigration {
             Sistema de gestión del congreso
             """);
     log.info("Plantillas factura y arqueo verificadas/insertadas");
+  }
+
+  private static void migrarCuposEnvioTrabajos(EntityManager em) {
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "max_trabajos_autor",
+        "ALTER TABLE congresos ADD COLUMN max_trabajos_autor INT NOT NULL DEFAULT 2");
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "max_trabajos_asistente",
+        "ALTER TABLE congresos ADD COLUMN max_trabajos_asistente INT NOT NULL DEFAULT 1");
+    agregarColumnaSiFalta(
+        em,
+        "usuarios",
+        "max_trabajos_autor_override",
+        "ALTER TABLE usuarios ADD COLUMN max_trabajos_autor_override INT NULL");
+    agregarColumnaSiFalta(
+        em,
+        "usuarios",
+        "max_trabajos_asistente_override",
+        "ALTER TABLE usuarios ADD COLUMN max_trabajos_asistente_override INT NULL");
+    log.info("Cupos de envío de trabajos (global + override) verificados");
   }
 
   private static void agregarColumnaSiFalta(

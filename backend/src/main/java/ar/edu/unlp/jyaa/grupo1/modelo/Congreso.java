@@ -44,6 +44,14 @@ public class Congreso implements Serializable {
   @Column(name = "envio_trabajos_hasta")
   private LocalDate envioTrabajosHasta;
 
+  /** Máximo de trabajos activos como AUTOR (configurable por comité). Default 2. */
+  @Column(name = "max_trabajos_autor", nullable = false)
+  private int maxTrabajosAutor = 2;
+
+  /** Máximo de trabajos activos como ASISTENTE (configurable por comité). Default 1. */
+  @Column(name = "max_trabajos_asistente", nullable = false)
+  private int maxTrabajosAsistente = 1;
+
   @Column(name = "congreso_desde")
   private LocalDate congresoDesde;
 
@@ -179,6 +187,22 @@ public class Congreso implements Serializable {
 
   public void setEnvioTrabajosHasta(LocalDate envioTrabajosHasta) {
     this.envioTrabajosHasta = envioTrabajosHasta;
+  }
+
+  public int getMaxTrabajosAutor() {
+    return maxTrabajosAutor;
+  }
+
+  public void setMaxTrabajosAutor(int maxTrabajosAutor) {
+    this.maxTrabajosAutor = maxTrabajosAutor;
+  }
+
+  public int getMaxTrabajosAsistente() {
+    return maxTrabajosAsistente;
+  }
+
+  public void setMaxTrabajosAsistente(int maxTrabajosAsistente) {
+    this.maxTrabajosAsistente = maxTrabajosAsistente;
   }
 
   public LocalDate getCongresoDesde() {

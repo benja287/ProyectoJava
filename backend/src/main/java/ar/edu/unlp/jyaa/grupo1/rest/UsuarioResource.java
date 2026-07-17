@@ -88,6 +88,31 @@ public class UsuarioResource {
   }
 
   @GET
+  @Path("/cupos-envio/excepciones")
+  @Operation(summary = "Listar usuarios con excepción de cupo de envío de trabajos")
+  public PaginaUsuariosDTO listarExcepcionesCupo(
+      @QueryParam("page") @DefaultValue("1") int page,
+      @QueryParam("size") @DefaultValue("50") int size,
+      @Context ContainerRequestContext ctx) {
+    return usuarioService.listarExcepcionesCupoEnvio(page, size, AuthenticatedUser.from(ctx));
+  }
+
+  @PUT
+  @Path("/{id}/cupos-envio")
+  @Operation(summary = "Definir o quitar excepción de cupo de envío (admin / comité)")
+  public UsuarioDTO actualizarCuposEnvio(
+      @PathParam("id") Long id,
+      ar.edu.unlp.jyaa.grupo1.rest.dto.CuposEnvioUsuarioRequest request,
+      @Context ContainerRequestContext ctx) {
+    Usuario actualizado =
+        usuarioService.actualizarCuposEnvio(id, request, AuthenticatedUser.from(ctx));
+    if (actualizado == null) {
+      throw new NotFoundException("Usuario no encontrado");
+    }
+    return evaluadorEjeService.toDto(actualizado);
+  }
+
+  @GET
   @Path("/{id}")
   @Operation(summary = "Buscar usuario por id")
   @ApiResponse(responseCode = "200", description = "Usuario encontrado")

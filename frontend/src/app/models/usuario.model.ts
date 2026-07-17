@@ -24,6 +24,10 @@ export interface Usuario {
   numeroIdentificacion?: string | null;
   nacionalidad?: string | null;
   ejeTematicoEvaluador?: string | null;
+  /** Excepción de cupo AUTOR (null = usa global del congreso). */
+  maxTrabajosAutorOverride?: number | null;
+  /** Excepción de cupo ASISTENTE (null = usa global del congreso). */
+  maxTrabajosAsistenteOverride?: number | null;
   /** Cupos activos por eje (capacidad / restantes). */
   cuposEje?: EvaluadorEjeCupo[];
 }

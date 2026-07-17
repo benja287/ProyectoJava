@@ -17,6 +17,11 @@ public interface UsuarioDAO extends GenericDAO<Usuario> {
 
   Optional<Usuario> buscarPorEmail(String email);
 
+  /** Usuarios con excepción de cupo de envío de trabajos. */
+  List<Usuario> listarConExcepcionCupoEnvio(int offset, int limit);
+
+  long contarConExcepcionCupoEnvio();
+
   /** Consulta liviana: solo el flag activo (sin cargar roles ni password). */
   Optional<Boolean> isActivoById(Long id);
 

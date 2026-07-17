@@ -11,12 +11,15 @@ export type CongresoConfigGrupo =
   | 'ENVIO'
   | 'EVALUACION'
   | 'DATOS'
-  | 'JORNADA';
+  | 'JORNADA'
+  | 'CUPOS';
 
 export type CongresoConfigUpdate = Partial<{
   programaPublicado: boolean;
   certificadosDisponiblesDesde: string | null;
   envioTrabajosHasta: string | null;
+  maxTrabajosAutor?: number | null;
+  maxTrabajosAsistente?: number | null;
   congresoDesde: string | null;
   congresoHasta: string | null;
   inscripcionesDesde: string | null;

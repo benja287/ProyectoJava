@@ -7,6 +7,8 @@ export interface CongresoConfig {
   programaPublicado: boolean;
   certificadosDisponiblesDesde: string | null;
   envioTrabajosHasta?: string | null;
+  maxTrabajosAutor?: number;
+  maxTrabajosAsistente?: number;
   congresoDesde?: string | null;
   congresoHasta?: string | null;
   inscripcionesDesde?: string | null;
