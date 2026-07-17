@@ -95,26 +95,19 @@ public class UsuarioService {
     existente.setNombre(nombre);
     existente.setApellido(apellido);
 
-    if (req.telefono() != null
-        || req.tipoIdentificacion() != null
-        || req.numeroIdentificacion() != null
-        || req.nacionalidad() != null) {
-      String tel = req.telefono() != null ? req.telefono() : existente.getTelefono();
-      String tipo =
-          req.tipoIdentificacion() != null
-              ? req.tipoIdentificacion()
-              : existente.getTipoIdentificacion();
-      String numero =
-          req.numeroIdentificacion() != null
-              ? req.numeroIdentificacion()
-              : existente.getNumeroIdentificacion();
-      String nac = req.nacionalidad() != null ? req.nacionalidad() : existente.getNacionalidad();
-      validarDatosCertificado(tel, tipo, numero, nac, true);
-      existente.setTelefono(tel != null ? tel.trim() : null);
-      existente.setTipoIdentificacion(tipo != null ? tipo.trim() : null);
-      existente.setNumeroIdentificacion(numero != null ? numero.trim() : null);
-      existente.setNacionalidad(nac != null ? nac.trim() : null);
-    }
+    // Datos de certificado: siempre se actualizan desde el perfil (obligatorios en UI).
+    validarDatosCertificado(
+        req.telefono(),
+        req.tipoIdentificacion(),
+        req.numeroIdentificacion(),
+        req.nacionalidad(),
+        true);
+    existente.setTelefono(req.telefono() != null ? req.telefono().trim() : null);
+    existente.setTipoIdentificacion(
+        req.tipoIdentificacion() != null ? req.tipoIdentificacion().trim() : null);
+    existente.setNumeroIdentificacion(
+        req.numeroIdentificacion() != null ? req.numeroIdentificacion().trim() : null);
+    existente.setNacionalidad(req.nacionalidad() != null ? req.nacionalidad().trim() : null);
 
     String passwordNueva =
         req.passwordNueva() != null && !req.passwordNueva().isBlank() ? req.passwordNueva() : null;

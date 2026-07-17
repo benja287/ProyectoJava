@@ -331,6 +331,13 @@ export class MiPerfilComponent implements OnInit {
             next: (actualizado) => {
               this.usuario = actualizado;
               this.form.patchValue({
+                nombre: actualizado.nombre ?? '',
+                apellido: actualizado.apellido ?? '',
+                email: actualizado.email ?? '',
+                telefono: actualizado.telefono ?? '',
+                tipoIdentificacion: actualizado.tipoIdentificacion || 'DNI',
+                numeroIdentificacion: actualizado.numeroIdentificacion ?? '',
+                nacionalidad: actualizado.nacionalidad ?? '',
                 passwordActual: '',
                 passwordNueva: '',
                 confirmPassword: '',

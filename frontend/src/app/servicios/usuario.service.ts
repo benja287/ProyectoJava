@@ -80,6 +80,10 @@ export class UsuarioService {
       nombre: payload.nombre.trim(),
       apellido: payload.apellido.trim(),
       email: payload.email.trim(),
+      telefono: payload.telefono?.trim() || '',
+      tipoIdentificacion: payload.tipoIdentificacion?.trim() || '',
+      numeroIdentificacion: payload.numeroIdentificacion?.trim() || '',
+      nacionalidad: payload.nacionalidad?.trim() || '',
     };
     const actual = payload.passwordActual?.trim();
     const nueva = payload.passwordNueva?.trim();
