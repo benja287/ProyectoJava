@@ -3,6 +3,8 @@ package ar.edu.unlp.jyaa.grupo1.modelo;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "inscripciones_congreso")
@@ -33,6 +35,28 @@ public class InscripcionCongreso implements Serializable {
 
   @Column(name = "requiere_factura", nullable = false)
   private boolean requiereFactura;
+
+  @Column(name = "factura_razon_social", length = 200)
+  private String facturaRazonSocial;
+
+  @Column(name = "factura_cuit", length = 20)
+  private String facturaCuit;
+
+  @Column(name = "factura_condicion_iva", length = 80)
+  private String facturaCondicionIva;
+
+  @Column(name = "factura_domicilio_fiscal", length = 300)
+  private String facturaDomicilioFiscal;
+
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(
+      name = "inscripcion_tipos_participacion",
+      joinColumns = @JoinColumn(name = "inscripcion_id"))
+  @Column(name = "tipo", length = 40)
+  private List<String> tiposParticipacion = new ArrayList<>();
+
+  @Column(name = "participacion_otro", length = 300)
+  private String participacionOtro;
 
   @Column(name = "certificado_url", length = 500)
   private String certificadoUrl;
@@ -109,6 +133,54 @@ public class InscripcionCongreso implements Serializable {
 
   public void setRequiereFactura(boolean requiereFactura) {
     this.requiereFactura = requiereFactura;
+  }
+
+  public String getFacturaRazonSocial() {
+    return facturaRazonSocial;
+  }
+
+  public void setFacturaRazonSocial(String facturaRazonSocial) {
+    this.facturaRazonSocial = facturaRazonSocial;
+  }
+
+  public String getFacturaCuit() {
+    return facturaCuit;
+  }
+
+  public void setFacturaCuit(String facturaCuit) {
+    this.facturaCuit = facturaCuit;
+  }
+
+  public String getFacturaCondicionIva() {
+    return facturaCondicionIva;
+  }
+
+  public void setFacturaCondicionIva(String facturaCondicionIva) {
+    this.facturaCondicionIva = facturaCondicionIva;
+  }
+
+  public String getFacturaDomicilioFiscal() {
+    return facturaDomicilioFiscal;
+  }
+
+  public void setFacturaDomicilioFiscal(String facturaDomicilioFiscal) {
+    this.facturaDomicilioFiscal = facturaDomicilioFiscal;
+  }
+
+  public List<String> getTiposParticipacion() {
+    return tiposParticipacion;
+  }
+
+  public void setTiposParticipacion(List<String> tiposParticipacion) {
+    this.tiposParticipacion = tiposParticipacion != null ? tiposParticipacion : new ArrayList<>();
+  }
+
+  public String getParticipacionOtro() {
+    return participacionOtro;
+  }
+
+  public void setParticipacionOtro(String participacionOtro) {
+    this.participacionOtro = participacionOtro;
   }
 
   public String getCertificadoUrl() {

@@ -9,6 +9,7 @@ import {
   InscripcionCreateRequest,
   InscripcionListFiltro,
   PaginaInscripciones,
+  ReglasCategoria,
   ValidacionInscripcionRequest,
 } from '../models/inscripcion.model';
 import { buildListHttpParams } from '../utils/filtro-params.util';
@@ -31,6 +32,34 @@ export class InscripcionService {
     form.append('requiereFactura', String(request.requiereFactura));
     form.append('metodoPago', request.metodoPago);
     form.append('monto', String(request.monto));
+    form.append('tiposParticipacion', request.tiposParticipacion.join(','));
+    if (request.participacionOtro) {
+      form.append('participacionOtro', request.participacionOtro);
+    }
+    if (request.facturaRazonSocial) {
+      form.append('facturaRazonSocial', request.facturaRazonSocial);
+    }
+    if (request.facturaCuit) {
+      form.append('facturaCuit', request.facturaCuit);
+    }
+    if (request.facturaCondicionIva) {
+      form.append('facturaCondicionIva', request.facturaCondicionIva);
+    }
+    if (request.facturaDomicilioFiscal) {
+      form.append('facturaDomicilioFiscal', request.facturaDomicilioFiscal);
+    }
+    if (request.telefono) {
+      form.append('telefono', request.telefono);
+    }
+    if (request.tipoIdentificacion) {
+      form.append('tipoIdentificacion', request.tipoIdentificacion);
+    }
+    if (request.numeroIdentificacion) {
+      form.append('numeroIdentificacion', request.numeroIdentificacion);
+    }
+    if (request.nacionalidad) {
+      form.append('nacionalidad', request.nacionalidad);
+    }
     if (request.certificado) {
       form.append('certificado', request.certificado);
     }
@@ -38,6 +67,10 @@ export class InscripcionService {
       form.append('comprobante', request.comprobante);
     }
     return this.http.post<InscripcionCongreso>(this.baseUrl, form);
+  }
+
+  reglasCategorias(): Observable<ReglasCategoria[]> {
+    return this.http.get<ReglasCategoria[]>(`${this.baseUrl}/reglas-categorias`);
   }
 
   misEstado(): Observable<EstadoInscripcionParticipante> {

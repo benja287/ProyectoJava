@@ -2,7 +2,10 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { CATEGORIAS_INSCRIPCION } from '../../models/inscripcion.model';
+import {
+  CATEGORIAS_INSCRIPCION,
+  TIPOS_IDENTIFICACION_INSCRIPCION,
+} from '../../models/inscripcion.model';
 import { RegistroService } from '../../servicios/registro.service';
 import { mensajeErrorApi } from '../../utils/api-error.util';
 
@@ -16,7 +19,10 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
         <div class="auth-header">
           <div class="auth-icon">+</div>
           <h2>Registrarse</h2>
-          <p>Creá tu cuenta. Después del login completás la inscripción al congreso.</p>
+          <p>
+            Creá tu cuenta con los datos del certificado. Después del login completás la inscripción
+            al congreso.
+          </p>
         </div>
 
         @if (mensaje) {
@@ -28,16 +34,36 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
 
         <form [formGroup]="form" (ngSubmit)="guardar()" class="auth-form">
           <label>
-            Nombre
+            Nombre (tal como aparecerá en el certificado)
             <input formControlName="nombre" autocomplete="given-name" />
           </label>
           <label>
-            Apellido
+            Apellido (tal como aparecerá en el certificado)
             <input formControlName="apellido" autocomplete="family-name" />
           </label>
           <label>
             Email
             <input formControlName="email" type="email" autocomplete="email" />
+          </label>
+          <label>
+            Teléfono (formato internacional)
+            <input formControlName="telefono" placeholder="+54 9 221 1234567" autocomplete="tel" />
+          </label>
+          <label>
+            Tipo de identificación
+            <select formControlName="tipoIdentificacion">
+              @for (t of tiposId; track t.value) {
+                <option [value]="t.value">{{ t.label }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Número de identificación
+            <input formControlName="numeroIdentificacion" />
+          </label>
+          <label>
+            Nacionalidad
+            <input formControlName="nacionalidad" placeholder="Argentina" />
           </label>
           <label>
             Categoría
@@ -95,6 +121,7 @@ export class RegistroComponent {
   private fb = inject(FormBuilder);
 
   categorias = [...CATEGORIAS_INSCRIPCION];
+  tiposId = [...TIPOS_IDENTIFICACION_INSCRIPCION];
   mostrarPassword = false;
   mostrarConfirm = false;
   mensaje = '';
@@ -106,6 +133,10 @@ export class RegistroComponent {
       nombre: ['', Validators.required],
       apellido: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
+      telefono: ['', [Validators.required, Validators.minLength(6)]],
+      tipoIdentificacion: ['DNI', Validators.required],
+      numeroIdentificacion: ['', Validators.required],
+      nacionalidad: ['Argentina', Validators.required],
       categoria: ['', Validators.required],
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', Validators.required],
@@ -133,6 +164,10 @@ export class RegistroComponent {
         email: raw.email!,
         password: raw.password!,
         categoria: raw.categoria!,
+        telefono: raw.telefono!,
+        tipoIdentificacion: raw.tipoIdentificacion!,
+        numeroIdentificacion: raw.numeroIdentificacion!,
+        nacionalidad: raw.nacionalidad!,
       })
       .subscribe({
         next: () => {

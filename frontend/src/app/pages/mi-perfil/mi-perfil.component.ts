@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { LoginService } from '../../auth/login.service';
-import { etiquetaCategoria } from '../../models/inscripcion.model';
+import { etiquetaCategoria, TIPOS_IDENTIFICACION_INSCRIPCION } from '../../models/inscripcion.model';
 import { etiquetaRol } from '../../models/role-labels';
 import { Usuario } from '../../models/usuario.model';
 import { UsuarioService } from '../../servicios/usuario.service';
@@ -41,8 +41,8 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
           <section class="panel-card">
             <h2>Datos editables</h2>
             <p class="muted small">
-              Podés cambiar nombre, apellido, email y contraseña. Los roles y la categoría de
-              inscripción los gestiona el congreso.
+              Podés cambiar nombre, apellido, email, datos del certificado y contraseña. Los roles y
+              la categoría de inscripción los gestiona el congreso.
             </p>
 
             <form [formGroup]="form" (ngSubmit)="guardar()" class="auth-form perfil-form">
@@ -57,6 +57,26 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
               <label>
                 Email
                 <input formControlName="email" type="email" autocomplete="email" />
+              </label>
+              <label>
+                Teléfono (formato internacional)
+                <input formControlName="telefono" placeholder="+54 9 221..." autocomplete="tel" />
+              </label>
+              <label>
+                Tipo de identificación
+                <select formControlName="tipoIdentificacion">
+                  @for (t of tiposId; track t.value) {
+                    <option [value]="t.value">{{ t.label }}</option>
+                  }
+                </select>
+              </label>
+              <label>
+                Número de identificación
+                <input formControlName="numeroIdentificacion" />
+              </label>
+              <label>
+                Nacionalidad
+                <input formControlName="nacionalidad" />
               </label>
 
               <fieldset class="perfil-password">
@@ -211,11 +231,16 @@ export class MiPerfilComponent implements OnInit {
   mensaje = '';
 
   readonly etiquetaRol = etiquetaRol;
+  readonly tiposId = [...TIPOS_IDENTIFICACION_INSCRIPCION];
 
   form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.maxLength(80)]],
     apellido: ['', [Validators.required, Validators.maxLength(80)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(180)]],
+    telefono: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(40)]],
+    tipoIdentificacion: ['DNI', Validators.required],
+    numeroIdentificacion: ['', [Validators.required, Validators.maxLength(60)]],
+    nacionalidad: ['', [Validators.required, Validators.maxLength(80)]],
     passwordActual: [''],
     passwordNueva: ['', [Validators.minLength(8)]],
     confirmPassword: [''],
@@ -244,6 +269,10 @@ export class MiPerfilComponent implements OnInit {
           nombre: u.nombre ?? '',
           apellido: u.apellido ?? '',
           email: u.email ?? '',
+          telefono: u.telefono ?? '',
+          tipoIdentificacion: u.tipoIdentificacion || 'DNI',
+          numeroIdentificacion: u.numeroIdentificacion ?? '',
+          nacionalidad: u.nacionalidad ?? '',
           passwordActual: '',
           passwordNueva: '',
           confirmPassword: '',
@@ -288,6 +317,10 @@ export class MiPerfilComponent implements OnInit {
         nombre: v.nombre,
         apellido: v.apellido,
         email: v.email,
+        telefono: v.telefono,
+        tipoIdentificacion: v.tipoIdentificacion,
+        numeroIdentificacion: v.numeroIdentificacion,
+        nacionalidad: v.nacionalidad,
         ...(quierePassword
           ? { passwordActual: v.passwordActual, passwordNueva: v.passwordNueva }
           : {}),

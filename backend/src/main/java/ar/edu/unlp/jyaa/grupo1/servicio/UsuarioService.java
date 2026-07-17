@@ -95,6 +95,27 @@ public class UsuarioService {
     existente.setNombre(nombre);
     existente.setApellido(apellido);
 
+    if (req.telefono() != null
+        || req.tipoIdentificacion() != null
+        || req.numeroIdentificacion() != null
+        || req.nacionalidad() != null) {
+      String tel = req.telefono() != null ? req.telefono() : existente.getTelefono();
+      String tipo =
+          req.tipoIdentificacion() != null
+              ? req.tipoIdentificacion()
+              : existente.getTipoIdentificacion();
+      String numero =
+          req.numeroIdentificacion() != null
+              ? req.numeroIdentificacion()
+              : existente.getNumeroIdentificacion();
+      String nac = req.nacionalidad() != null ? req.nacionalidad() : existente.getNacionalidad();
+      validarDatosCertificado(tel, tipo, numero, nac, true);
+      existente.setTelefono(tel != null ? tel.trim() : null);
+      existente.setTipoIdentificacion(tipo != null ? tipo.trim() : null);
+      existente.setNumeroIdentificacion(numero != null ? numero.trim() : null);
+      existente.setNacionalidad(nac != null ? nac.trim() : null);
+    }
+
     String passwordNueva =
         req.passwordNueva() != null && !req.passwordNueva().isBlank() ? req.passwordNueva() : null;
     if (passwordNueva != null) {
@@ -271,10 +292,57 @@ public class UsuarioService {
         throw new NegocioException("Categoría de inscripción inválida: " + categoriaRaw);
       }
     }
+    validarDatosCertificado(
+        usuario.getTelefono(),
+        usuario.getTipoIdentificacion(),
+        usuario.getNumeroIdentificacion(),
+        usuario.getNacionalidad(),
+        true);
+    normalizarDatosCertificado(usuario);
     usuario.setActivo(true);
     usuario.setRoles(new HashSet<>());
     usuario.setRolActual(null);
     return usuarioDAO.alta(usuario);
+  }
+
+  private static void validarDatosCertificado(
+      String telefono,
+      String tipoIdentificacion,
+      String numeroIdentificacion,
+      String nacionalidad,
+      boolean obligatorios) {
+    String tel = telefono != null ? telefono.trim() : "";
+    String tipo = tipoIdentificacion != null ? tipoIdentificacion.trim() : "";
+    String numero = numeroIdentificacion != null ? numeroIdentificacion.trim() : "";
+    String nac = nacionalidad != null ? nacionalidad.trim() : "";
+    if (!obligatorios && tel.isBlank() && tipo.isBlank() && numero.isBlank() && nac.isBlank()) {
+      return;
+    }
+    if (tel.isBlank() || tipo.isBlank() || numero.isBlank() || nac.isBlank()) {
+      throw new NegocioException(
+          "Teléfono, tipo y número de identificación y nacionalidad son obligatorios");
+    }
+    if (tel.length() < 6 || tel.length() > 40) {
+      throw new NegocioException("Teléfono inválido (usá formato internacional, ej. +54 9 221...)");
+    }
+    if (tipo.length() > 40 || numero.length() > 60 || nac.length() > 80) {
+      throw new NegocioException("Datos de identificación demasiado largos");
+    }
+  }
+
+  private static void normalizarDatosCertificado(Usuario usuario) {
+    if (usuario.getTelefono() != null) {
+      usuario.setTelefono(usuario.getTelefono().trim());
+    }
+    if (usuario.getTipoIdentificacion() != null) {
+      usuario.setTipoIdentificacion(usuario.getTipoIdentificacion().trim());
+    }
+    if (usuario.getNumeroIdentificacion() != null) {
+      usuario.setNumeroIdentificacion(usuario.getNumeroIdentificacion().trim());
+    }
+    if (usuario.getNacionalidad() != null) {
+      usuario.setNacionalidad(usuario.getNacionalidad().trim());
+    }
   }
 
   /** Tras aprobar la inscripción al congreso, habilita el rol operativo de asistente. */

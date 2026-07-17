@@ -10,6 +10,10 @@ export interface RegistroParticipanteRequest {
   email: string;
   password: string;
   categoria: string;
+  telefono: string;
+  tipoIdentificacion: string;
+  numeroIdentificacion: string;
+  nacionalidad: string;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -39,6 +39,57 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasSolicitudEvaluador);
     // APPEND — Word opcional en trabajos (Alexis)
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarTrabajoDocumentoDocx);
+    // APPEND — datos certificado usuario + factura/participación inscripción (Alexis)
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarDatosCertificadoUsuario);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarInscripcionFacturaYParticipacion);
+  }
+
+  private static void migrarDatosCertificadoUsuario(EntityManager em) {
+    agregarColumnaSiFalta(
+        em, "usuarios", "telefono", "ALTER TABLE usuarios ADD COLUMN telefono VARCHAR(40) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "usuarios",
+        "tipo_identificacion",
+        "ALTER TABLE usuarios ADD COLUMN tipo_identificacion VARCHAR(40) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "usuarios",
+        "numero_identificacion",
+        "ALTER TABLE usuarios ADD COLUMN numero_identificacion VARCHAR(60) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "usuarios",
+        "nacionalidad",
+        "ALTER TABLE usuarios ADD COLUMN nacionalidad VARCHAR(80) NULL");
+  }
+
+  private static void migrarInscripcionFacturaYParticipacion(EntityManager em) {
+    agregarColumnaSiFalta(
+        em,
+        "inscripciones_congreso",
+        "factura_razon_social",
+        "ALTER TABLE inscripciones_congreso ADD COLUMN factura_razon_social VARCHAR(200) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "inscripciones_congreso",
+        "factura_cuit",
+        "ALTER TABLE inscripciones_congreso ADD COLUMN factura_cuit VARCHAR(20) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "inscripciones_congreso",
+        "factura_condicion_iva",
+        "ALTER TABLE inscripciones_congreso ADD COLUMN factura_condicion_iva VARCHAR(80) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "inscripciones_congreso",
+        "factura_domicilio_fiscal",
+        "ALTER TABLE inscripciones_congreso ADD COLUMN factura_domicilio_fiscal VARCHAR(300) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "inscripciones_congreso",
+        "participacion_otro",
+        "ALTER TABLE inscripciones_congreso ADD COLUMN participacion_otro VARCHAR(300) NULL");
   }
 
   private static void migrarTrabajoDocumentoDocx(EntityManager em) {

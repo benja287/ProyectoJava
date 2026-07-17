@@ -11,6 +11,34 @@ export const CATEGORIAS_INSCRIPCION = [
 
 export type CategoriaInscripcion = (typeof CATEGORIAS_INSCRIPCION)[number]['value'];
 
+export const TIPOS_IDENTIFICACION_INSCRIPCION = [
+  { value: 'DNI', label: 'DNI' },
+  { value: 'PASAPORTE', label: 'Pasaporte' },
+  { value: 'CI', label: 'Cédula de identidad' },
+  { value: 'OTRO', label: 'Otro' },
+] as const;
+
+export const TIPOS_PARTICIPACION = [
+  {
+    value: 'PRESENTACION_TRABAJO',
+    label: 'Presentación de trabajo científico / relato de experiencia',
+  },
+  { value: 'EXPOSITOR_MESA', label: 'Expositor/a en mesa' },
+  { value: 'EXPOSITOR_TALLER', label: 'Expositor/a en taller' },
+  { value: 'FERIANTE', label: 'Feriante' },
+  { value: 'ASISTENTE', label: 'Asistente' },
+  { value: 'OTRO', label: 'Otro' },
+] as const;
+
+export type TipoParticipacion = (typeof TIPOS_PARTICIPACION)[number]['value'];
+
+export const CONDICIONES_IVA = [
+  { value: 'RESPONSABLE_INSCRIPTO', label: 'Responsable inscripto' },
+  { value: 'MONOTRIBUTO', label: 'Monotributo' },
+  { value: 'EXENTO', label: 'Exento' },
+  { value: 'CONSUMIDOR_FINAL', label: 'Consumidor final' },
+] as const;
+
 export const PROVINCIAS = [
   'Buenos Aires',
   'CABA',
@@ -52,6 +80,16 @@ export const ARANCELES_CATEGORIA: Record<
   EXTRANJERO: { monto: 170, etiqueta: 'USD 170', linkLabel: 'Link extranjeros' },
 };
 
+export interface ReglasCategoria {
+  categoria: string;
+  requiereCertificado: boolean;
+  requierePago: boolean;
+  requiereInstitucion: boolean;
+  requiereComprobanteSiTransferencia: boolean;
+  destacaFiliacionInstitucional: boolean;
+  ayuda: string;
+}
+
 export interface InscripcionCongreso {
   id?: number;
   categoria: string;
@@ -61,11 +99,21 @@ export interface InscripcionCongreso {
   institucion?: string;
   provincia?: string;
   requiereFactura?: boolean;
+  facturaRazonSocial?: string | null;
+  facturaCuit?: string | null;
+  facturaCondicionIva?: string | null;
+  facturaDomicilioFiscal?: string | null;
+  tiposParticipacion?: string[];
+  participacionOtro?: string | null;
   certificadoUrl?: string | null;
   usuarioId?: number;
   usuarioNombre?: string;
   usuarioApellido?: string;
   usuarioEmail?: string;
+  usuarioTelefono?: string | null;
+  usuarioTipoIdentificacion?: string | null;
+  usuarioNumeroIdentificacion?: string | null;
+  usuarioNacionalidad?: string | null;
   pagoId?: number | null;
   pagoMonto?: number | null;
   pagoEstado?: string | null;
@@ -96,6 +144,16 @@ export interface InscripcionCreateRequest {
   requiereFactura: boolean;
   metodoPago: 'TRANSFERENCIA' | 'EFECTIVO';
   monto: number;
+  tiposParticipacion: string[];
+  participacionOtro?: string;
+  facturaRazonSocial?: string;
+  facturaCuit?: string;
+  facturaCondicionIva?: string;
+  facturaDomicilioFiscal?: string;
+  telefono?: string;
+  tipoIdentificacion?: string;
+  numeroIdentificacion?: string;
+  nacionalidad?: string;
   certificado?: File;
   comprobante?: File;
 }
@@ -139,7 +197,6 @@ export function esPagoEfectivo(inscripcion: {
   if (inscripcion.pagoMetodo) {
     return inscripcion.pagoMetodo === 'EFECTIVO';
   }
-  // Compatibilidad con respuestas viejas sin pagoMetodo.
   return !!inscripcion.pagoEstado && !inscripcion.pagoComprobanteUrl;
 }
 
@@ -154,4 +211,8 @@ export function etiquetaMetodoPago(metodo?: string | null): string {
     default:
       return metodo || '—';
   }
+}
+
+export function etiquetaTipoParticipacion(tipo: string): string {
+  return TIPOS_PARTICIPACION.find((t) => t.value === tipo)?.label ?? tipo;
 }

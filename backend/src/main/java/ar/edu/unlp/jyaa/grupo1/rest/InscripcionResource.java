@@ -49,6 +49,16 @@ public class InscripcionResource {
       @FormDataParam("requiereFactura") String requiereFactura,
       @FormDataParam("metodoPago") String metodoPago,
       @FormDataParam("monto") String monto,
+      @FormDataParam("tiposParticipacion") String tiposParticipacion,
+      @FormDataParam("participacionOtro") String participacionOtro,
+      @FormDataParam("facturaRazonSocial") String facturaRazonSocial,
+      @FormDataParam("facturaCuit") String facturaCuit,
+      @FormDataParam("facturaCondicionIva") String facturaCondicionIva,
+      @FormDataParam("facturaDomicilioFiscal") String facturaDomicilioFiscal,
+      @FormDataParam("telefono") String telefono,
+      @FormDataParam("tipoIdentificacion") String tipoIdentificacion,
+      @FormDataParam("numeroIdentificacion") String numeroIdentificacion,
+      @FormDataParam("nacionalidad") String nacionalidad,
       @FormDataParam("certificado") InputStream certificado,
       @FormDataParam("certificado")
           org.glassfish.jersey.media.multipart.FormDataContentDisposition certificadoDetail,
@@ -66,12 +76,30 @@ public class InscripcionResource {
             parseBoolean(requiereFactura),
             metodoPago,
             parseMonto(monto),
+            tiposParticipacion,
+            participacionOtro,
+            facturaRazonSocial,
+            facturaCuit,
+            facturaCondicionIva,
+            facturaDomicilioFiscal,
+            telefono,
+            tipoIdentificacion,
+            numeroIdentificacion,
+            nacionalidad,
             certificado,
             certificadoDetail != null ? certificadoDetail.getFileName() : "certificado.pdf",
             comprobante,
             comprobanteDetail != null ? comprobanteDetail.getFileName() : "comprobante.pdf");
     URI location = uriInfo.getAbsolutePathBuilder().path(creada.id().toString()).build();
     return Response.created(location).entity(creada).build();
+  }
+
+  @GET
+  @Path("/reglas-categorias")
+  @Operation(summary = "Reglas de inscripción por categoría")
+  @ApiResponse(responseCode = "200", description = "Listado de reglas")
+  public java.util.List<ar.edu.unlp.jyaa.grupo1.web.dto.ReglasCategoriaDTO> reglasCategorias() {
+    return inscripcionService.listarReglasCategorias();
   }
 
   @GET

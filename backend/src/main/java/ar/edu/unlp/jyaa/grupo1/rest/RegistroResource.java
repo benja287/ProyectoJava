@@ -38,6 +38,10 @@ public class RegistroResource {
     usuario.setApellido(request.apellido());
     usuario.setEmail(request.email());
     usuario.setPassword(request.password());
+    usuario.setTelefono(request.telefono());
+    usuario.setTipoIdentificacion(request.tipoIdentificacion());
+    usuario.setNumeroIdentificacion(request.numeroIdentificacion());
+    usuario.setNacionalidad(request.nacionalidad());
     Usuario creado = usuarioService.registrarParticipante(usuario, request.categoria());
     URI location =
         uriInfo.getBaseUriBuilder().path("usuarios").path(creado.getId().toString()).build();

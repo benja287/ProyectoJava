@@ -19,6 +19,10 @@ export interface Usuario {
   roles?: string[];
   rolActual?: string | null;
   categoriaInscripcion?: string | null;
+  telefono?: string | null;
+  tipoIdentificacion?: string | null;
+  numeroIdentificacion?: string | null;
+  nacionalidad?: string | null;
   ejeTematicoEvaluador?: string | null;
   /** Cupos activos por eje (capacidad / restantes). */
   cuposEje?: EvaluadorEjeCupo[];
@@ -41,6 +45,10 @@ export interface ActualizarPerfilRequest {
   nombre: string;
   apellido: string;
   email: string;
+  telefono?: string;
+  tipoIdentificacion?: string;
+  numeroIdentificacion?: string;
+  nacionalidad?: string;
   passwordActual?: string;
   passwordNueva?: string;
 }

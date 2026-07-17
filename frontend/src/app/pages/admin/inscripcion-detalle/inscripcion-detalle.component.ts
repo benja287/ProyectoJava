@@ -8,6 +8,7 @@ import {
   esPagoEfectivo,
   etiquetaCategoria,
   etiquetaMetodoPago,
+  etiquetaTipoParticipacion,
 } from '../../../models/inscripcion.model';
 import { InscripcionService } from '../../../servicios/inscripcion.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -50,17 +51,43 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
             }
             <br />
             <span class="muted">{{ inscripcion.usuarioEmail }}</span>
+            @if (inscripcion.usuarioTelefono) {
+              <br />
+              <span class="muted small">Tel: {{ inscripcion.usuarioTelefono }}</span>
+            }
+            @if (inscripcion.usuarioTipoIdentificacion || inscripcion.usuarioNumeroIdentificacion) {
+              <br />
+              <span class="muted small">
+                {{ inscripcion.usuarioTipoIdentificacion }}
+                {{ inscripcion.usuarioNumeroIdentificacion }}
+                @if (inscripcion.usuarioNacionalidad) {
+                  · {{ inscripcion.usuarioNacionalidad }}
+                }
+              </span>
+            }
             @if (inscripcion.requiereFactura) {
               <br />
               <span class="muted small"><strong>Solicitó factura</strong></span>
             }
           </dd>
+          <dt>Participación declarada</dt>
+          <dd>{{ resumenParticipacion(inscripcion) }}</dd>
           <dt>Institución</dt>
           <dd>{{ inscripcion.institucion || '—' }}</dd>
           <dt>Provincia</dt>
           <dd>{{ inscripcion.provincia || '—' }}</dd>
           <dt>Requiere factura</dt>
           <dd>{{ inscripcion.requiereFactura ? 'Sí' : 'No' }}</dd>
+          @if (inscripcion.requiereFactura) {
+            <dt>Razón social</dt>
+            <dd>{{ inscripcion.facturaRazonSocial || '—' }}</dd>
+            <dt>CUIT</dt>
+            <dd>{{ inscripcion.facturaCuit || '—' }}</dd>
+            <dt>Condición IVA</dt>
+            <dd>{{ inscripcion.facturaCondicionIva || '—' }}</dd>
+            <dt>Domicilio fiscal</dt>
+            <dd>{{ inscripcion.facturaDomicilioFiscal || '—' }}</dd>
+          }
           <dt>Fecha solicitud</dt>
           <dd>{{ inscripcion.fechaSolicitud || '—' }}</dd>
           <dt>Motivo rechazo</dt>
@@ -169,6 +196,14 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
 
   etiquetaMetodo(metodo?: string | null): string {
     return etiquetaMetodoPago(metodo);
+  }
+
+  resumenParticipacion(i: InscripcionCongreso): string {
+    const tipos = (i.tiposParticipacion || []).map(etiquetaTipoParticipacion).join(', ');
+    if (i.participacionOtro) {
+      return `${tipos || 'Otro'} (${i.participacionOtro})`;
+    }
+    return tipos || '—';
   }
 
   validar(aprobar: boolean): void {

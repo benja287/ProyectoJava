@@ -13,6 +13,10 @@ public record UsuarioDTO(
     String rolActual,
     boolean activo,
     String categoriaInscripcion,
+    String telefono,
+    String tipoIdentificacion,
+    String numeroIdentificacion,
+    String nacionalidad,
     String ejeTematicoEvaluador,
     List<EvaluadorEjeCupoDTO> cuposEje) {
 
@@ -30,6 +34,10 @@ public record UsuarioDTO(
         u.getRolActual() != null ? u.getRolActual().name() : null,
         u.isActivo(),
         u.getCategoriaInscripcion(),
+        u.getTelefono(),
+        u.getTipoIdentificacion(),
+        u.getNumeroIdentificacion(),
+        u.getNacionalidad(),
         u.getEjeTematicoEvaluador(),
         cuposEje != null ? cuposEje : List.of());
   }

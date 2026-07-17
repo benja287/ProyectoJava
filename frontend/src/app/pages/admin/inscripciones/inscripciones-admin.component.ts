@@ -13,6 +13,7 @@ import {
   esPagoEfectivo,
   etiquetaCategoria,
   etiquetaMetodoPago,
+  etiquetaTipoParticipacion,
 } from '../../../models/inscripcion.model';
 import { InscripcionService } from '../../../servicios/inscripcion.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
@@ -99,6 +100,23 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                   <dd>{{ etiqueta(i.categoria) }}</dd>
                 </div>
                 <div>
+                  <dt>Identificación</dt>
+                  <dd>
+                    {{ i.usuarioTipoIdentificacion || '—' }}
+                    {{ i.usuarioNumeroIdentificacion || '' }}
+                    @if (i.usuarioNacionalidad) {
+                      · {{ i.usuarioNacionalidad }}
+                    }
+                    @if (i.usuarioTelefono) {
+                      <br /><span class="muted small">{{ i.usuarioTelefono }}</span>
+                    }
+                  </dd>
+                </div>
+                <div>
+                  <dt>Participación</dt>
+                  <dd>{{ resumenParticipacion(i) }}</dd>
+                </div>
+                <div>
                   <dt>Forma de pago</dt>
                   <dd>{{ etiquetaMetodo(i.pagoMetodo) }} — {{ i.pagoEstado || 'sin pago' }}</dd>
                 </div>
@@ -109,7 +127,12 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                 @if (i.requiereFactura) {
                   <div>
                     <dt>Factura</dt>
-                    <dd>Solicitó factura</dd>
+                    <dd>
+                      {{ i.facturaRazonSocial || 'Solicitó factura' }}
+                      @if (i.facturaCuit) {
+                        · CUIT {{ i.facturaCuit }}
+                      }
+                    </dd>
                   </div>
                 }
               </dl>
@@ -271,6 +294,14 @@ export class InscripcionesAdminComponent extends ListadoPaginadoBase {
 
   etiquetaMetodo(metodo?: string | null): string {
     return etiquetaMetodoPago(metodo);
+  }
+
+  resumenParticipacion(i: InscripcionCongreso): string {
+    const tipos = (i.tiposParticipacion || []).map(etiquetaTipoParticipacion).join(', ');
+    if (i.participacionOtro) {
+      return `${tipos || 'Otro'} (${i.participacionOtro})`;
+    }
+    return tipos || '—';
   }
 
   esEfectivo(i: InscripcionCongreso): boolean {

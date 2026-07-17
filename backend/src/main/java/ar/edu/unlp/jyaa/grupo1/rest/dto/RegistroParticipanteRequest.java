@@ -5,4 +5,8 @@ public record RegistroParticipanteRequest(
     String apellido,
     String email,
     String password,
-    String categoria) {}
+    String categoria,
+    String telefono,
+    String tipoIdentificacion,
+    String numeroIdentificacion,
+    String nacionalidad) {}

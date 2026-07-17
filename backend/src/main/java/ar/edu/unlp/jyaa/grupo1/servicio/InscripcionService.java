@@ -9,18 +9,22 @@ import ar.edu.unlp.jyaa.grupo1.modelo.EstadoInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago;
+import ar.edu.unlp.jyaa.grupo1.modelo.ReglasInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
+import ar.edu.unlp.jyaa.grupo1.modelo.TipoParticipacionInscripcion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
 import ar.edu.unlp.jyaa.grupo1.web.dto.EstadoInscripcionParticipanteDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.InscripcionCongresoDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaInscripcionesDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ReglasCategoriaDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +52,16 @@ public class InscripcionService {
       boolean requiereFactura,
       String metodoPagoRaw,
       Double monto,
+      String tiposParticipacionCsv,
+      String participacionOtro,
+      String facturaRazonSocial,
+      String facturaCuit,
+      String facturaCondicionIva,
+      String facturaDomicilioFiscal,
+      String telefono,
+      String tipoIdentificacion,
+      String numeroIdentificacion,
+      String nacionalidad,
       InputStream certificado,
       String certificadoNombre,
       InputStream comprobante,
@@ -56,6 +70,9 @@ public class InscripcionService {
     if (usuario == null) {
       throw new NegocioException("Usuario no encontrado");
     }
+
+    actualizarDatosCertificadoUsuario(
+        usuario, telefono, tipoIdentificacion, numeroIdentificacion, nacionalidad);
 
     String categoriaEfectiva =
         categoriaRaw != null && !categoriaRaw.isBlank()
@@ -66,11 +83,25 @@ public class InscripcionService {
     }
 
     CategoriaInscripcion categoria = parseCategoria(categoriaEfectiva);
+    ReglasInscripcion.ReglasCategoria reglas = ReglasInscripcion.de(categoria);
     MetodoPago metodoPago = parseMetodoPago(metodoPagoRaw);
     arancelesService.assertArancelesPublicadosYVentana();
     double montoOficial = arancelesService.montoOficial(categoria);
+    List<String> tiposParticipacion = parseTiposParticipacion(tiposParticipacionCsv);
     validarDatos(
-        categoria, institucion, provincia, requiereFactura, certificado, metodoPago, comprobante);
+        reglas,
+        institucion,
+        provincia,
+        requiereFactura,
+        facturaRazonSocial,
+        facturaCuit,
+        facturaCondicionIva,
+        facturaDomicilioFiscal,
+        tiposParticipacion,
+        participacionOtro,
+        certificado,
+        metodoPago,
+        comprobante);
 
     inscripcionDAO
         .buscarUltimaPorUsuario(auth.userId())
@@ -90,6 +121,17 @@ public class InscripcionService {
     inscripcion.setInstitucion(institucion.trim());
     inscripcion.setProvincia(provincia.trim());
     inscripcion.setRequiereFactura(requiereFactura);
+    inscripcion.setTiposParticipacion(tiposParticipacion);
+    inscripcion.setParticipacionOtro(
+        tiposParticipacion.contains(TipoParticipacionInscripcion.OTRO.name())
+            ? blankToNull(participacionOtro)
+            : null);
+    if (requiereFactura) {
+      inscripcion.setFacturaRazonSocial(blankToNull(facturaRazonSocial));
+      inscripcion.setFacturaCuit(blankToNull(facturaCuit));
+      inscripcion.setFacturaCondicionIva(blankToNull(facturaCondicionIva));
+      inscripcion.setFacturaDomicilioFiscal(blankToNull(facturaDomicilioFiscal));
+    }
     inscripcion.setEstado(EstadoInscripcion.PENDIENTE);
     inscripcion.setFechaSolicitud(LocalDate.now());
 
@@ -137,6 +179,66 @@ public class InscripcionService {
     notificarUsuarioInscripcionRecibida(usuario, categoria, montoOficial, metodoPago);
 
     return InscripcionCongresoDTO.from(recuperarConRelaciones(creada.getId()));
+  }
+
+  public List<ReglasCategoriaDTO> listarReglasCategorias() {
+    List<ReglasCategoriaDTO> out = new ArrayList<>();
+    for (CategoriaInscripcion c : CategoriaInscripcion.values()) {
+      out.add(ReglasCategoriaDTO.from(c.name(), ReglasInscripcion.de(c)));
+    }
+    return out;
+  }
+
+  private void actualizarDatosCertificadoUsuario(
+      Usuario usuario,
+      String telefono,
+      String tipoIdentificacion,
+      String numeroIdentificacion,
+      String nacionalidad) {
+    String tel = telefono != null && !telefono.isBlank() ? telefono : usuario.getTelefono();
+    String tipo =
+        tipoIdentificacion != null && !tipoIdentificacion.isBlank()
+            ? tipoIdentificacion
+            : usuario.getTipoIdentificacion();
+    String numero =
+        numeroIdentificacion != null && !numeroIdentificacion.isBlank()
+            ? numeroIdentificacion
+            : usuario.getNumeroIdentificacion();
+    String nac =
+        nacionalidad != null && !nacionalidad.isBlank() ? nacionalidad : usuario.getNacionalidad();
+    if (tel == null
+        || tel.isBlank()
+        || tipo == null
+        || tipo.isBlank()
+        || numero == null
+        || numero.isBlank()
+        || nac == null
+        || nac.isBlank()) {
+      throw new NegocioException(
+          "Completá teléfono, identificación y nacionalidad (datos del certificado) antes de inscribirte");
+    }
+    usuario.setTelefono(tel.trim());
+    usuario.setTipoIdentificacion(tipo.trim());
+    usuario.setNumeroIdentificacion(numero.trim());
+    usuario.setNacionalidad(nac.trim());
+    usuarioDAO.modificar(usuario);
+  }
+
+  private static List<String> parseTiposParticipacion(String csv) {
+    if (csv == null || csv.isBlank()) {
+      return List.of();
+    }
+    List<String> raw = new ArrayList<>();
+    for (String part : csv.split(",")) {
+      if (part != null && !part.isBlank()) {
+        raw.add(part.trim());
+      }
+    }
+    return TipoParticipacionInscripcion.parseLista(raw).stream().map(Enum::name).toList();
+  }
+
+  private static String blankToNull(String value) {
+    return value != null && !value.isBlank() ? value.trim() : null;
   }
 
   private void notificarAdminInscripcionPendiente(
@@ -402,26 +504,52 @@ public class InscripcionService {
   }
 
   private static void validarDatos(
-      CategoriaInscripcion categoria,
+      ReglasInscripcion.ReglasCategoria reglas,
       String institucion,
       String provincia,
       boolean requiereFactura,
+      String facturaRazonSocial,
+      String facturaCuit,
+      String facturaCondicionIva,
+      String facturaDomicilioFiscal,
+      List<String> tiposParticipacion,
+      String participacionOtro,
       InputStream certificado,
       MetodoPago metodoPago,
       InputStream comprobante) {
-    if (institucion == null || institucion.isBlank()) {
+    if (reglas.requiereInstitucion() && (institucion == null || institucion.isBlank())) {
       throw new NegocioException("Debe indicar la institución");
     }
     if (provincia == null || provincia.isBlank()) {
       throw new NegocioException("Debe indicar la provincia");
     }
-    if (requiereFactura && (institucion.isBlank() || provincia.isBlank())) {
-      throw new NegocioException("Para factura debe completar institución y provincia");
+    if (tiposParticipacion == null || tiposParticipacion.isEmpty()) {
+      throw new NegocioException("Declará al menos un tipo de participación");
     }
-    if (categoria.requiereCertificado() && certificado == null) {
-      throw new NegocioException("La categoría " + categoria.name() + " requiere adjuntar certificado");
+    if (tiposParticipacion.contains(TipoParticipacionInscripcion.OTRO.name())
+        && (participacionOtro == null || participacionOtro.isBlank())) {
+      throw new NegocioException("Si elegís «Otro», detallá el tipo de participación");
     }
-    if (metodoPago == MetodoPago.TRANSFERENCIA && comprobante == null) {
+    if (requiereFactura) {
+      if (facturaRazonSocial == null || facturaRazonSocial.isBlank()) {
+        throw new NegocioException("Para factura indicá la razón social");
+      }
+      if (facturaCuit == null || facturaCuit.isBlank()) {
+        throw new NegocioException("Para factura indicá CUIT/CUIL");
+      }
+      if (facturaCondicionIva == null || facturaCondicionIva.isBlank()) {
+        throw new NegocioException("Para factura indicá la condición frente al IVA");
+      }
+      if (facturaDomicilioFiscal == null || facturaDomicilioFiscal.isBlank()) {
+        throw new NegocioException("Para factura indicá el domicilio fiscal");
+      }
+    }
+    if (reglas.requiereCertificado() && certificado == null) {
+      throw new NegocioException("Esta categoría requiere adjuntar certificado");
+    }
+    if (reglas.requiereComprobanteSiTransferencia()
+        && metodoPago == MetodoPago.TRANSFERENCIA
+        && comprobante == null) {
       throw new NegocioException("Debe adjuntar comprobante de transferencia");
     }
   }

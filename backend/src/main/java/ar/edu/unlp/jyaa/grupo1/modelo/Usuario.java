@@ -43,6 +43,20 @@ public class Usuario implements Serializable {
   @Column(name = "categoria_inscripcion", length = 80)
   private String categoriaInscripcion;
 
+  /** Teléfono con formato internacional (datos de certificado). */
+  @Column(name = "telefono", length = 40)
+  private String telefono;
+
+  /** DNI, Pasaporte, etc. */
+  @Column(name = "tipo_identificacion", length = 40)
+  private String tipoIdentificacion;
+
+  @Column(name = "numero_identificacion", length = 60)
+  private String numeroIdentificacion;
+
+  @Column(name = "nacionalidad", length = 80)
+  private String nacionalidad;
+
   /** Eje temático asignado cuando el usuario actúa como evaluador. */
   @Column(name = "eje_tematico_evaluador", length = 300)
   private String ejeTematicoEvaluador;
@@ -134,6 +148,38 @@ public class Usuario implements Serializable {
 
   public void setCategoriaInscripcion(String categoriaInscripcion) {
     this.categoriaInscripcion = categoriaInscripcion;
+  }
+
+  public String getTelefono() {
+    return telefono;
+  }
+
+  public void setTelefono(String telefono) {
+    this.telefono = telefono;
+  }
+
+  public String getTipoIdentificacion() {
+    return tipoIdentificacion;
+  }
+
+  public void setTipoIdentificacion(String tipoIdentificacion) {
+    this.tipoIdentificacion = tipoIdentificacion;
+  }
+
+  public String getNumeroIdentificacion() {
+    return numeroIdentificacion;
+  }
+
+  public void setNumeroIdentificacion(String numeroIdentificacion) {
+    this.numeroIdentificacion = numeroIdentificacion;
+  }
+
+  public String getNacionalidad() {
+    return nacionalidad;
+  }
+
+  public void setNacionalidad(String nacionalidad) {
+    this.nacionalidad = nacionalidad;
   }
 
   public String getEjeTematicoEvaluador() {
