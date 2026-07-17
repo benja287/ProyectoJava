@@ -149,7 +149,13 @@ public class InscripcionResource {
       @Context ContainerRequestContext ctx) {
     InscripcionCongresoDTO actualizada =
         inscripcionService.validar(
-            id, request.aprobar(), request.motivoRechazo(), AuthenticatedUser.from(ctx));
+            id,
+            request.aprobar(),
+            request.motivoRechazo(),
+            request.numeroRecibo(),
+            request.observaciones(),
+            request.efectivoFisicoRecibido(),
+            AuthenticatedUser.from(ctx));
     if (actualizada == null) {
       throw new NotFoundException("Inscripción no encontrada");
     }

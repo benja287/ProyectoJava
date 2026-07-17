@@ -120,6 +120,11 @@ export interface InscripcionCongreso {
   /** TRANSFERENCIA | EFECTIVO | TARJETA */
   pagoMetodo?: string | null;
   pagoComprobanteUrl?: string | null;
+  pagoNumeroRecibo?: string | null;
+  pagoFechaValidacion?: string | null;
+  pagoValidadoPorNombre?: string | null;
+  pagoObservacionesValidacion?: string | null;
+  pagoEfectivoFisicoRecibido?: boolean | null;
 }
 
 export interface EstadoInscripcionParticipante {
@@ -161,6 +166,9 @@ export interface InscripcionCreateRequest {
 export interface ValidacionInscripcionRequest {
   aprobar: boolean;
   motivoRechazo?: string;
+  numeroRecibo?: string;
+  observaciones?: string;
+  efectivoFisicoRecibido?: boolean;
 }
 
 export interface InscripcionListFiltro {

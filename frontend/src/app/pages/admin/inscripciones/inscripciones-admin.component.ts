@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
@@ -7,6 +7,10 @@ import {
   FilterFieldConfig,
 } from '../../../components/filter-bar/filter-bar.component';
 import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
+import {
+  ValidacionEfectivoModalComponent,
+  ValidacionEfectivoResultado,
+} from '../../../components/validacion-efectivo-modal/validacion-efectivo-modal.component';
 import {
   CATEGORIAS_INSCRIPCION,
   InscripcionCongreso,
@@ -28,6 +32,7 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
     FilterBarComponent,
     ArchivoLinkComponent,
     AppPaginatorComponent,
+    ValidacionEfectivoModalComponent,
   ],
   template: `
     <section class="card">
@@ -35,8 +40,7 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
       <p>
         Al aprobar, el usuario pasa a <strong>Asistente</strong> y se confirma el pago.
         <strong>Transferencia:</strong> basta con revisar el comprobante enviado.
-        <strong>Efectivo:</strong> no hay archivo; aprobá solo si ya validaste el cobro en caja /
-        acreditación.
+        <strong>Efectivo:</strong> registrá el número de recibo de caja al validar.
       </p>
 
       <app-filter-bar
@@ -79,8 +83,7 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                   <strong>Efectivo / presencial — validar cobro antes de aprobar</strong>
                 </p>
                 <p class="muted small">
-                  Sin archivo (correcto para efectivo). Aprobá cuando conste el pago en caja /
-                  acreditación.
+                  Sin archivo (correcto para efectivo). Al validar pediremos el número de recibo.
                   @if (i.requiereFactura) {
                     El usuario pidió factura: figura el aviso debajo del nombre.
                   }
@@ -156,14 +159,14 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
                   <button
                     type="button"
                     class="btn-ok"
-                    (click)="validar(i, true)"
+                    (click)="iniciarAprobacion(i)"
                     [disabled]="procesandoId != null"
                   >
                     {{
                       procesandoId === i.id
                         ? 'Procesando...'
                         : esEfectivo(i)
-                          ? 'Aprobar (cobro efectivo OK)'
+                          ? 'Validar pago efectivo'
                           : 'Aprobar'
                     }}
                   </button>
@@ -192,6 +195,14 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
 
       <p><a routerLink="/admin">← Menú admin</a></p>
     </section>
+
+    <app-validacion-efectivo-modal
+      #modalEfectivo
+      [abierto]="modalEfectivoAbierto"
+      [disabled]="procesandoId != null"
+      (confirmarValidacion)="onConfirmarEfectivo($event)"
+      (cancelar)="cerrarModalEfectivo()"
+    />
   `,
   styles: [
     `
@@ -259,6 +270,8 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
   ],
 })
 export class InscripcionesAdminComponent extends ListadoPaginadoBase {
+  @ViewChild('modalEfectivo') modalEfectivo?: ValidacionEfectivoModalComponent;
+
   readonly filterFields: FilterFieldConfig[] = [
     {
       key: 'estado',
@@ -283,6 +296,8 @@ export class InscripcionesAdminComponent extends ListadoPaginadoBase {
   inscripciones: InscripcionCongreso[] = [];
   mensaje = '';
   procesandoId?: number;
+  modalEfectivoAbierto = false;
+  private pendienteEfectivo?: InscripcionCongreso;
 
   constructor(private inscripcionService: InscripcionService) {
     super();
@@ -308,7 +323,41 @@ export class InscripcionesAdminComponent extends ListadoPaginadoBase {
     return esPagoEfectivo(i);
   }
 
-  validar(inscripcion: InscripcionCongreso, aprobar: boolean): void {
+  iniciarAprobacion(inscripcion: InscripcionCongreso): void {
+    if (this.esEfectivo(inscripcion)) {
+      this.pendienteEfectivo = inscripcion;
+      this.modalEfectivo?.reset();
+      this.modalEfectivoAbierto = true;
+      return;
+    }
+    this.validar(inscripcion, true);
+  }
+
+  onConfirmarEfectivo(data: ValidacionEfectivoResultado): void {
+    if (!this.pendienteEfectivo) {
+      return;
+    }
+    this.validar(
+      this.pendienteEfectivo,
+      true,
+      data.numeroRecibo,
+      data.observaciones,
+      data.efectivoFisicoRecibido
+    );
+  }
+
+  cerrarModalEfectivo(): void {
+    this.modalEfectivoAbierto = false;
+    this.pendienteEfectivo = undefined;
+  }
+
+  validar(
+    inscripcion: InscripcionCongreso,
+    aprobar: boolean,
+    numeroRecibo?: string,
+    observaciones?: string,
+    efectivoFisicoRecibido?: boolean
+  ): void {
     if (!inscripcion.id || this.procesandoId != null) {
       return;
     }
@@ -318,30 +367,35 @@ export class InscripcionesAdminComponent extends ListadoPaginadoBase {
       if (!motivoRechazo) {
         return;
       }
-    } else if (this.esEfectivo(inscripcion)) {
-      const ok = confirm(
-        '¿Confirmás que ya verificaste el cobro en efectivo (caja / recepción / acreditación)?\n\nAl aprobar, el usuario pasa a Asistente.'
-      );
-      if (!ok) {
-        return;
-      }
     }
     this.procesandoId = inscripcion.id;
     this.error = '';
     this.mensaje = '';
-    this.inscripcionService.validar(inscripcion.id, { aprobar, motivoRechazo }).subscribe({
-      next: () => {
-        this.mensaje = aprobar
-          ? 'Inscripción aprobada. El usuario ahora es Asistente.'
-          : 'Inscripción rechazada.';
-        this.procesandoId = undefined;
-        this.cargarPagina();
-      },
-      error: (err) => {
-        this.error = mensajeErrorApi(err, 'No se pudo validar la inscripción.');
-        this.procesandoId = undefined;
-      },
-    });
+    this.inscripcionService
+      .validar(inscripcion.id, {
+        aprobar,
+        motivoRechazo,
+        numeroRecibo,
+        observaciones,
+        efectivoFisicoRecibido,
+      })
+      .subscribe({
+        next: () => {
+          this.mensaje = aprobar
+            ? numeroRecibo
+              ? `Inscripción aprobada. Recibo ${numeroRecibo} registrado. El usuario ahora es Asistente.`
+              : 'Inscripción aprobada. El usuario ahora es Asistente.'
+            : 'Inscripción rechazada.';
+          this.procesandoId = undefined;
+          this.modalEfectivoAbierto = false;
+          this.pendienteEfectivo = undefined;
+          this.cargarPagina();
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudo validar la inscripción.');
+          this.procesandoId = undefined;
+        },
+      });
   }
 
   protected override cargarPagina(): void {

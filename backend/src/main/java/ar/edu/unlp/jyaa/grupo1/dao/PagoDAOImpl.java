@@ -8,6 +8,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,6 +105,34 @@ public class PagoDAOImpl extends AbstractJpaDAO<Pago> implements PagoDAO {
       TypedQuery<Long> q = em.createQuery(jpql, Long.class);
       params.forEach(q::setParameter);
       return q.getSingleResult();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public List<Pago> listarArqueoEfectivo(
+      LocalDateTime desdeInclusive, LocalDateTime hastaExclusive) {
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery(
+              """
+              SELECT p FROM Pago p
+              LEFT JOIN FETCH p.validadoPor
+              WHERE p.metodo = :metodo
+                AND p.estado = :estado
+                AND p.efectivoFisicoRecibido = true
+                AND p.fechaValidacion IS NOT NULL
+                AND p.fechaValidacion >= :desde
+                AND p.fechaValidacion < :hasta
+              ORDER BY p.fechaValidacion ASC, p.id ASC
+              """,
+              Pago.class)
+          .setParameter("metodo", ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago.EFECTIVO)
+          .setParameter("estado", EstadoPago.APROBADO)
+          .setParameter("desde", desdeInclusive)
+          .setParameter("hasta", hastaExclusive)
+          .getResultList();
     } finally {
       closeLegacy(em);
     }

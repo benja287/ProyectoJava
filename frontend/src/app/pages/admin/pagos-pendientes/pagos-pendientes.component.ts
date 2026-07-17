@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Pago } from '../../../models/pago.model';
@@ -10,6 +10,10 @@ import {
   FilterFieldConfig,
 } from '../../../components/filter-bar/filter-bar.component';
 import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
+import {
+  ValidacionEfectivoModalComponent,
+  ValidacionEfectivoResultado,
+} from '../../../components/validacion-efectivo-modal/validacion-efectivo-modal.component';
 import { PagoFilaComponent } from './pago-fila.component';
 
 @Component({
@@ -21,13 +25,14 @@ import { PagoFilaComponent } from './pago-fila.component';
     PagoFilaComponent,
     FilterBarComponent,
     AppPaginatorComponent,
+    ValidacionEfectivoModalComponent,
   ],
   template: `
     <section class="card">
       <h1>Pagos pendientes de validación</h1>
       <p>
         Al aprobar un pago se confirma la inscripción vinculada y el usuario recibe el rol
-        <strong>Asistente</strong>.
+        <strong>Asistente</strong>. En efectivo se exige número de recibo de caja.
       </p>
 
       <app-filter-bar
@@ -69,8 +74,8 @@ import { PagoFilaComponent } from './pago-fila.component';
               <app-pago-fila
                 [pago]="p"
                 [disabled]="procesandoId != null"
-                (aprobar)="validar(p, true)"
-                (rechazar)="validar(p, false)"
+                (aprobar)="iniciarAprobacion($event)"
+                (rechazar)="validar($event, false)"
               />
             }
           </tbody>
@@ -88,12 +93,24 @@ import { PagoFilaComponent } from './pago-fila.component';
       <p>
         <a routerLink="/admin/pagos/todos">Listado de pagos (limpieza)</a>
         ·
+        <a routerLink="/admin/pagos/arqueo">Arqueo de caja</a>
+        ·
         <a routerLink="/admin">← Panel admin</a>
       </p>
     </section>
+
+    <app-validacion-efectivo-modal
+      #modalEfectivo
+      [abierto]="modalEfectivoAbierto"
+      [disabled]="procesandoId != null"
+      (confirmarValidacion)="onConfirmarEfectivo($event)"
+      (cancelar)="cerrarModalEfectivo()"
+    />
   `,
 })
 export class PagosPendientesComponent extends ListadoPaginadoBase {
+  @ViewChild('modalEfectivo') modalEfectivo?: ValidacionEfectivoModalComponent;
+
   readonly filterFields: FilterFieldConfig[] = [
     { key: 'monto', label: 'Monto', type: 'number', placeholder: 'Ej. 1500' },
     { key: 'motivoRechazo', label: 'Motivo rechazo', placeholder: 'Buscar motivo' },
@@ -104,12 +121,48 @@ export class PagosPendientesComponent extends ListadoPaginadoBase {
   pagos: Pago[] = [];
   mensaje = '';
   procesandoId?: number;
+  modalEfectivoAbierto = false;
+  private pendienteEfectivo?: Pago;
 
   constructor(private pagoService: PagoService) {
     super();
   }
 
-  validar(pago: Pago, aprobar: boolean): void {
+  iniciarAprobacion(pago: Pago): void {
+    if (pago.metodo === 'EFECTIVO') {
+      this.pendienteEfectivo = pago;
+      this.modalEfectivo?.reset();
+      this.modalEfectivoAbierto = true;
+      return;
+    }
+    this.validar(pago, true);
+  }
+
+  onConfirmarEfectivo(data: ValidacionEfectivoResultado): void {
+    if (!this.pendienteEfectivo) {
+      return;
+    }
+    this.validar(
+      this.pendienteEfectivo,
+      true,
+      data.numeroRecibo,
+      data.observaciones,
+      data.efectivoFisicoRecibido
+    );
+  }
+
+  cerrarModalEfectivo(): void {
+    this.modalEfectivoAbierto = false;
+    this.pendienteEfectivo = undefined;
+  }
+
+  validar(
+    pago: Pago,
+    aprobar: boolean,
+    numeroRecibo?: string,
+    observaciones?: string,
+    efectivoFisicoRecibido?: boolean
+  ): void {
     if (!pago.id || this.procesandoId != null) {
       return;
     }
@@ -123,17 +176,27 @@ export class PagosPendientesComponent extends ListadoPaginadoBase {
     this.procesandoId = pago.id;
     this.error = '';
     this.mensaje = '';
-    this.pagoService.validar(pago.id, { aprobar, motivoRechazo }).subscribe({
-      next: (res) => {
-        this.mensaje = res.mensaje;
-        this.procesandoId = undefined;
-        this.cargarPagina();
-      },
-      error: (err) => {
-        this.error = mensajeErrorApi(err, 'No se pudo validar el pago.');
-        this.procesandoId = undefined;
-      },
-    });
+    this.pagoService
+      .validar(pago.id, {
+        aprobar,
+        motivoRechazo,
+        numeroRecibo,
+        observaciones,
+        efectivoFisicoRecibido,
+      })
+      .subscribe({
+        next: (res) => {
+          this.mensaje = res.mensaje;
+          this.procesandoId = undefined;
+          this.modalEfectivoAbierto = false;
+          this.pendienteEfectivo = undefined;
+          this.cargarPagina();
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudo validar el pago.');
+          this.procesandoId = undefined;
+        },
+      });
   }
 
   protected override cargarPagina(): void {

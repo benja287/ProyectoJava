@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { PaginaPagos, Pago, ValidacionPagoRequest } from '../models/pago.model';
+import { ArqueoCaja, PaginaPagos, Pago, ValidacionPagoRequest } from '../models/pago.model';
 import { buildListHttpParams } from '../utils/filtro-params.util';
 
 export interface PagoListFiltro {
@@ -61,6 +61,11 @@ export class PagoService {
       `${this.baseUrl}/${id}/validacion`,
       request
     );
+  }
+
+  arqueoCaja(desde: string, hasta: string): Observable<ArqueoCaja> {
+    const params = new HttpParams().set('desde', desde).set('hasta', hasta);
+    return this.http.get<ArqueoCaja>(`${this.baseUrl}/arqueo-caja`, { params });
   }
 
   adjuntarComprobante(id: number, file: File): Observable<Pago> {

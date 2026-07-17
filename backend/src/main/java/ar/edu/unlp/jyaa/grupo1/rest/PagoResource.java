@@ -84,6 +84,19 @@ public class PagoResource {
   }
 
   @GET
+  @Path("/arqueo-caja")
+  @Operation(summary = "Arqueo de caja: efectivo aprobado en un rango de fechas")
+  @ApiResponse(responseCode = "200", description = "Reporte de arqueo")
+  public ar.edu.unlp.jyaa.grupo1.web.dto.ArqueoCajaDTO arqueoCaja(
+      @QueryParam("desde") String desde,
+      @QueryParam("hasta") String hasta,
+      @Context ContainerRequestContext ctx) {
+    java.time.LocalDate dDesde = parseFecha(desde, "desde");
+    java.time.LocalDate dHasta = parseFecha(hasta, "hasta");
+    return pagoService.arqueoCaja(dDesde, dHasta, AuthenticatedUser.from(ctx));
+  }
+
+  @GET
   @Path("/{id}")
   @Operation(summary = "Consultar pago por id")
   @ApiResponse(responseCode = "200", description = "Pago encontrado")
@@ -112,14 +125,36 @@ public class PagoResource {
   @ApiResponse(responseCode = "200", description = "Pago validado")
   @ApiResponse(responseCode = "404", description = "Pago no encontrado")
   public Map<String, Object> validar(
-      @PathParam("id") Long id, ValidacionPagoRequest request) {
+      @PathParam("id") Long id,
+      ValidacionPagoRequest request,
+      @Context ContainerRequestContext ctx) {
     PagoService.ValidacionPagoResult result =
         pagoService.validarPago(
-            id, request.aprobar(), request.motivoRechazo(), request.montoAjustado());
+            id,
+            request.aprobar(),
+            request.motivoRechazo(),
+            request.montoAjustado(),
+            request.numeroRecibo(),
+            request.observaciones(),
+            request.efectivoFisicoRecibido(),
+            AuthenticatedUser.from(ctx));
     if (result == null) {
       throw new NotFoundException("Pago no encontrado");
     }
     return Map.of("pago", result.pago(), "mensaje", result.mensaje());
+  }
+
+  private static java.time.LocalDate parseFecha(String raw, String campo) {
+    if (raw == null || raw.isBlank()) {
+      throw new ar.edu.unlp.jyaa.grupo1.servicio.NegocioException(
+          "Indicá la fecha " + campo + " (yyyy-MM-dd)");
+    }
+    try {
+      return java.time.LocalDate.parse(raw.trim());
+    } catch (java.time.format.DateTimeParseException e) {
+      throw new ar.edu.unlp.jyaa.grupo1.servicio.NegocioException(
+          "Fecha " + campo + " inválida (use yyyy-MM-dd)");
+    }
   }
 
   @POST

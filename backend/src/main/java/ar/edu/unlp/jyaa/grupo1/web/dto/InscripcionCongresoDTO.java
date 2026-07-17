@@ -5,6 +5,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record InscripcionCongresoDTO(
@@ -35,11 +36,21 @@ public record InscripcionCongresoDTO(
     Double pagoMonto,
     String pagoEstado,
     String pagoMetodo,
-    String pagoComprobanteUrl) {
+    String pagoComprobanteUrl,
+    String pagoNumeroRecibo,
+    LocalDateTime pagoFechaValidacion,
+    String pagoValidadoPorNombre,
+    String pagoObservacionesValidacion,
+    Boolean pagoEfectivoFisicoRecibido) {
 
   public static InscripcionCongresoDTO from(InscripcionCongreso inscripcion) {
     Pago pago = inscripcion.getPago();
     Usuario u = inscripcion.getUsuario();
+    String validadoPorNombre = null;
+    if (pago != null && pago.getValidadoPor() != null) {
+      validadoPorNombre =
+          (pago.getValidadoPor().getNombre() + " " + pago.getValidadoPor().getApellido()).trim();
+    }
     return new InscripcionCongresoDTO(
         inscripcion.getId(),
         inscripcion.getCategoria(),
@@ -70,6 +81,11 @@ public record InscripcionCongresoDTO(
         pago != null ? pago.getMonto() : null,
         pago != null && pago.getEstado() != null ? pago.getEstado().name() : null,
         pago != null && pago.getMetodo() != null ? pago.getMetodo().name() : null,
-        pago != null ? pago.getComprobanteUrl() : null);
+        pago != null ? pago.getComprobanteUrl() : null,
+        pago != null ? pago.getNumeroRecibo() : null,
+        pago != null ? pago.getFechaValidacion() : null,
+        validadoPorNombre,
+        pago != null ? pago.getObservacionesValidacion() : null,
+        pago != null ? pago.isEfectivoFisicoRecibido() : null);
   }
 }

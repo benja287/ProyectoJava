@@ -42,6 +42,11 @@ public final class SchemaMigration {
     // APPEND — datos certificado usuario + factura/participación inscripción (Alexis)
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarDatosCertificadoUsuario);
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarInscripcionFacturaYParticipacion);
+    // APPEND — auditoría validación pago efectivo (recibo / admin / fecha)
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPagoAuditoriaValidacion);
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillaInscripcionAprobadaConRecibo);
+    // APPEND — confirmación efectivo físico + arqueo
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPagoEfectivoFisicoRecibido);
   }
 
   private static void migrarDatosCertificadoUsuario(EntityManager em) {
@@ -1084,6 +1089,75 @@ public final class SchemaMigration {
         "Invitación al taller de evaluadorxs",
         "Hola {{nombre}},\n\n{{contexto}}\n\n{{proximo_paso}}\n\nMás info en: {{url_plataforma}}{{enlace}}\n\nContacto comisión científica: vía plataforma.\n\nSaludos,\nComisión científica");
     log.info("Plantillas solicitud evaluador verificadas/insertadas");
+  }
+
+  private static void migrarPagoAuditoriaValidacion(EntityManager em) {
+    agregarColumnaSiFalta(
+        em,
+        "pagos",
+        "numero_recibo",
+        "ALTER TABLE pagos ADD COLUMN numero_recibo VARCHAR(80) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "pagos",
+        "observaciones_validacion",
+        "ALTER TABLE pagos ADD COLUMN observaciones_validacion VARCHAR(1000) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "pagos",
+        "fecha_validacion",
+        "ALTER TABLE pagos ADD COLUMN fecha_validacion DATETIME(6) NULL");
+    agregarColumnaSiFalta(
+        em,
+        "pagos",
+        "validado_por_id",
+        "ALTER TABLE pagos ADD COLUMN validado_por_id BIGINT NULL");
+  }
+
+  private static void migrarPagoEfectivoFisicoRecibido(EntityManager em) {
+    agregarColumnaSiFalta(
+        em,
+        "pagos",
+        "efectivo_fisico_recibido",
+        "ALTER TABLE pagos ADD COLUMN efectivo_fisico_recibido TINYINT(1) NOT NULL DEFAULT 0");
+  }
+
+  private static void migrarPlantillaInscripcionAprobadaConRecibo(EntityManager em) {
+    @SuppressWarnings("unchecked")
+    List<PlantillaEmail> existentes =
+        em.createQuery(
+                "SELECT p FROM PlantillaEmail p WHERE p.nombre = :n", PlantillaEmail.class)
+            .setParameter("n", "INSCRIPCION_APROBADA_USUARIO")
+            .getResultList();
+    String cuerpo =
+        """
+            Hola {{nombre}},
+
+            Tu inscripción al congreso fue aprobada. Ya tenés el rol de asistente habilitado.
+
+            {{contexto}}
+
+            Ingresá a tu panel de asistente:
+            {{url_plataforma}}/asistente
+
+            ¡Te esperamos en el congreso!
+
+            Sistema de gestión del congreso""";
+    if (existentes.isEmpty()) {
+      insertarPlantillaSiFalta(
+          em,
+          "INSCRIPCION_APROBADA_USUARIO",
+          "[INSCRIPCIÓN] Fuiste aceptado/a como asistente",
+          cuerpo);
+      return;
+    }
+    PlantillaEmail p = existentes.getFirst();
+    if (p.getCuerpo() != null && p.getCuerpo().contains("{{contexto}}")) {
+      return;
+    }
+    p.setCuerpo(cuerpo);
+    em.merge(p);
+    log.info("Plantilla INSCRIPCION_APROBADA_USUARIO actualizada con {{contexto}}");
   }
 
   private static void agregarColumnaSiFalta(

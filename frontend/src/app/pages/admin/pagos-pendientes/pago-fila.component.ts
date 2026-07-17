@@ -33,7 +33,7 @@ import { Pago } from '../../../models/pago.model';
           (click)="aprobar.emit(pago)"
           [disabled]="disabled"
         >
-          {{ disabled ? 'Procesando...' : pago.metodo === 'EFECTIVO' ? 'Aprobar (cobro efectivo OK)' : 'Aprobar' }}
+          {{ disabled ? 'Procesando...' : pago.metodo === 'EFECTIVO' ? 'Validar pago efectivo' : 'Aprobar' }}
         </button>
         <button
           type="button"

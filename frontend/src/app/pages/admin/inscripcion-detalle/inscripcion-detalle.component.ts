@@ -1,8 +1,12 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
+import {
+  ValidacionEfectivoModalComponent,
+  ValidacionEfectivoResultado,
+} from '../../../components/validacion-efectivo-modal/validacion-efectivo-modal.component';
 import {
   InscripcionCongreso,
   esPagoEfectivo,
@@ -16,7 +20,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 @Component({
   selector: 'app-inscripcion-detalle',
   standalone: true,
-  imports: [CommonModule, RouterLink, ArchivoLinkComponent],
+  imports: [CommonModule, RouterLink, ArchivoLinkComponent, ValidacionEfectivoModalComponent],
   template: `
     <section class="card">
       @if (cargando) {
@@ -103,14 +107,10 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         </dl>
 
         <h2>Pago vinculado</h2>
-        @if (esEfectivo) {
+        @if (esEfectivo && inscripcion.estado === 'PENDIENTE') {
           <p class="aviso-amarillo">
             <strong>Efectivo / presencial:</strong> no hay archivo: el asistente declaró pagar en caja
-            o durante el congreso. Aprobá solo si ya verificaste el cobro en efectivo (recepción, caja
-            o acreditación).
-            @if (inscripcion.requiereFactura) {
-              Si el usuario pidió factura, figura el aviso debajo del nombre.
-            }
+            o durante el congreso. Usá «Validar pago efectivo» e ingresá el número de recibo.
           </p>
         }
         <dl class="detalle">
@@ -140,11 +140,34 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           </dd>
         </dl>
 
+        @if (mostrarInfoPagoAuditada) {
+          <h2>Información de pago</h2>
+          <dl class="detalle">
+            <dt>Validado por</dt>
+            <dd>{{ inscripcion.pagoValidadoPorNombre || '—' }}</dd>
+            <dt>Fecha</dt>
+            <dd>{{ formatearFecha(inscripcion.pagoFechaValidacion) }}</dd>
+            <dt>Recibo</dt>
+            <dd>{{ inscripcion.pagoNumeroRecibo || '—' }}</dd>
+            <dt>Efectivo físico recibido</dt>
+            <dd>{{ inscripcion.pagoEfectivoFisicoRecibido ? 'Sí' : 'No' }}</dd>
+            @if (inscripcion.pagoObservacionesValidacion) {
+              <dt>Observaciones</dt>
+              <dd>{{ inscripcion.pagoObservacionesValidacion }}</dd>
+            }
+          </dl>
+        }
+
         @if (inscripcion.estado === 'PENDIENTE') {
           <h2>Acciones</h2>
           <div class="actions">
-            <button type="button" class="btn-ok" (click)="validar(true)" [disabled]="procesando">
-              {{ esEfectivo ? 'Aprobar (cobro efectivo OK)' : 'Aprobar' }}
+            <button
+              type="button"
+              class="btn-ok"
+              (click)="iniciarAprobacion()"
+              [disabled]="procesando"
+            >
+              {{ esEfectivo ? 'Validar pago efectivo' : 'Aprobar' }}
             </button>
             <button type="button" class="btn-warn" (click)="validar(false)" [disabled]="procesando">
               Rechazar
@@ -155,14 +178,25 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         <p><a routerLink="/admin/inscripciones">← Volver al listado</a></p>
       }
     </section>
+
+    <app-validacion-efectivo-modal
+      #modalEfectivo
+      [abierto]="modalEfectivoAbierto"
+      [disabled]="procesando"
+      (confirmarValidacion)="onConfirmarEfectivo($event)"
+      (cancelar)="cerrarModalEfectivo()"
+    />
   `,
 })
 export class InscripcionDetalleComponent implements OnInit, OnDestroy {
+  @ViewChild('modalEfectivo') modalEfectivo?: ValidacionEfectivoModalComponent;
+
   inscripcion?: InscripcionCongreso;
   cargando = true;
   error = '';
   mensaje = '';
   procesando = false;
+  modalEfectivoAbierto = false;
   private sub?: Subscription;
 
   constructor(
@@ -190,6 +224,15 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
     return this.inscripcion ? esPagoEfectivo(this.inscripcion) : false;
   }
 
+  get mostrarInfoPagoAuditada(): boolean {
+    return (
+      !!this.inscripcion &&
+      (this.inscripcion.pagoEstado === 'APROBADO' ||
+        !!this.inscripcion.pagoNumeroRecibo ||
+        !!this.inscripcion.pagoValidadoPorNombre)
+    );
+  }
+
   etiqueta(categoria: string): string {
     return etiquetaCategoria(categoria);
   }
@@ -206,7 +249,36 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
     return tipos || '—';
   }
 
-  validar(aprobar: boolean): void {
+  formatearFecha(valor?: string | null): string {
+    if (!valor) return '—';
+    const d = new Date(valor);
+    if (Number.isNaN(d.getTime())) return valor;
+    return d.toLocaleString('es-AR');
+  }
+
+  iniciarAprobacion(): void {
+    if (this.esEfectivo) {
+      this.modalEfectivo?.reset();
+      this.modalEfectivoAbierto = true;
+      return;
+    }
+    this.validar(true);
+  }
+
+  onConfirmarEfectivo(data: ValidacionEfectivoResultado): void {
+    this.validar(true, data.numeroRecibo, data.observaciones, data.efectivoFisicoRecibido);
+  }
+
+  cerrarModalEfectivo(): void {
+    this.modalEfectivoAbierto = false;
+  }
+
+  validar(
+    aprobar: boolean,
+    numeroRecibo?: string,
+    observaciones?: string,
+    efectivoFisicoRecibido?: boolean
+  ): void {
     if (!this.inscripcion?.id || this.procesando) {
       return;
     }
@@ -216,28 +288,34 @@ export class InscripcionDetalleComponent implements OnInit, OnDestroy {
       if (!motivoRechazo) {
         return;
       }
-    } else if (this.esEfectivo) {
-      const ok = confirm(
-        '¿Confirmás que ya verificaste el cobro en efectivo (caja / recepción / acreditación)?\n\nAl aprobar, el usuario pasa a Asistente.'
-      );
-      if (!ok) {
-        return;
-      }
     }
     this.procesando = true;
     this.error = '';
     this.mensaje = '';
-    this.inscripcionService.validar(this.inscripcion.id, { aprobar, motivoRechazo }).subscribe({
-      next: (actualizada) => {
-        this.inscripcion = actualizada;
-        this.mensaje = aprobar ? 'Inscripción aprobada. El usuario ahora es Asistente.' : 'Inscripción rechazada.';
-        this.procesando = false;
-      },
-      error: (err) => {
-        this.error = mensajeErrorApi(err, 'No se pudo validar la inscripción.');
-        this.procesando = false;
-      },
-    });
+    this.inscripcionService
+      .validar(this.inscripcion.id, {
+        aprobar,
+        motivoRechazo,
+        numeroRecibo,
+        observaciones,
+        efectivoFisicoRecibido,
+      })
+      .subscribe({
+        next: (actualizada) => {
+          this.inscripcion = actualizada;
+          this.mensaje = aprobar
+            ? numeroRecibo
+              ? `Inscripción aprobada. Recibo ${numeroRecibo} registrado. El usuario ahora es Asistente.`
+              : 'Inscripción aprobada. El usuario ahora es Asistente.'
+            : 'Inscripción rechazada.';
+          this.procesando = false;
+          this.modalEfectivoAbierto = false;
+        },
+        error: (err) => {
+          this.error = mensajeErrorApi(err, 'No se pudo validar la inscripción.');
+          this.procesando = false;
+        },
+      });
   }
 
   private cargar(id: number): void {

@@ -86,6 +86,13 @@ import {
             <p>Revisar transferencias y efectivo</p>
           </div>
         </a>
+        <a routerLink="/admin/pagos/arqueo" class="accion-card">
+          <span class="accion-icono accion-icono--verde" aria-hidden="true">🧮</span>
+          <div>
+            <h3>Arqueo de caja</h3>
+            <p>Efectivo aprobado vs dinero físico</p>
+          </div>
+        </a>
         <a routerLink="/admin/trabajos" class="accion-card">
           <span class="accion-icono accion-icono--violeta" aria-hidden="true">📄</span>
           <div>

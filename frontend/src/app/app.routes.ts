@@ -18,6 +18,7 @@ import { UsuarioAltaComponent } from './pages/admin/usuario-alta/usuario-alta.co
 import { PagosPendientesComponent } from './pages/admin/pagos-pendientes/pagos-pendientes.component';
 import { PagosListaComponent } from './pages/admin/pagos-lista/pagos-lista.component';
 import { PagoDetalleComponent } from './pages/admin/pago-detalle/pago-detalle.component';
+import { ArqueoCajaComponent } from './pages/admin/arqueo-caja/arqueo-caja.component';
 import { TrabajosAdminComponent } from './pages/admin/trabajos/trabajos-admin.component';
 import { TrabajoDetalleComponent } from './pages/admin/trabajo-detalle/trabajo-detalle.component';
 import { InscripcionDetalleComponent } from './pages/admin/inscripcion-detalle/inscripcion-detalle.component';
@@ -140,6 +141,7 @@ export const routes: Routes = [
   { path: 'admin/usuarios/:id', component: UsuarioDetalleComponent, canActivate: [admin] },
   { path: 'admin/pagos', component: PagosPendientesComponent, canActivate: [admin] },
   { path: 'admin/pagos/todos', component: PagosListaComponent, canActivate: [admin] },
+  { path: 'admin/pagos/arqueo', component: ArqueoCajaComponent, canActivate: [admin] },
   { path: 'admin/pagos/:id', component: PagoDetalleComponent, canActivate: [admin] },
   { path: 'admin/inscripciones', component: InscripcionesAdminComponent, canActivate: [admin] },
   { path: 'admin/inscripciones/:id', component: InscripcionDetalleComponent, canActivate: [admin] },

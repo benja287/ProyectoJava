@@ -8,6 +8,12 @@ export interface Pago {
   motivoRechazo?: string | null;
   idAsociacion?: string | null;
   fechaRegistro?: string | null;
+  numeroRecibo?: string | null;
+  observacionesValidacion?: string | null;
+  fechaValidacion?: string | null;
+  validadoPorId?: number | null;
+  validadoPorNombre?: string | null;
+  efectivoFisicoRecibido?: boolean;
 }
 
 export interface PaginaPagos {
@@ -22,4 +28,25 @@ export interface ValidacionPagoRequest {
   aprobar: boolean;
   motivoRechazo?: string;
   montoAjustado?: number;
+  numeroRecibo?: string;
+  observaciones?: string;
+  efectivoFisicoRecibido?: boolean;
+}
+
+export interface ArqueoCajaItem {
+  pagoId: number;
+  monto: number;
+  numeroRecibo: string | null;
+  fechaValidacion: string | null;
+  validadoPorNombre: string | null;
+  efectivoFisicoRecibido: boolean;
+  observaciones: string | null;
+}
+
+export interface ArqueoCaja {
+  desde: string;
+  hasta: string;
+  cantidadPagos: number;
+  totalCobrado: number;
+  items: ArqueoCajaItem[];
 }

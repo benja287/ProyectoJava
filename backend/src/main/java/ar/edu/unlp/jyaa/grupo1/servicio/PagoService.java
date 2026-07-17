@@ -9,12 +9,16 @@ import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ArqueoCajaDTO;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ArqueoCajaItemDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaPagosDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -154,7 +158,17 @@ public class PagoService {
   }
 
   public ValidacionPagoResult validarPago(
-      Long id, boolean aprobar, String motivoRechazo, Double montoAjustado) {
+      Long id,
+      boolean aprobar,
+      String motivoRechazo,
+      Double montoAjustado,
+      String numeroRecibo,
+      String observaciones,
+      Boolean efectivoFisicoRecibido,
+      AuthenticatedUser auth) {
+    if (auth == null || !auth.isAdmin()) {
+      throw new NegocioException("Solo administradores pueden validar pagos");
+    }
     Pago pago = pagoDAO.recuperarPorId(id);
     if (pago == null) {
       return null;
@@ -169,9 +183,17 @@ public class PagoService {
       pago.setEstado(EstadoPago.RECHAZADO);
       pago.setMotivoRechazo(motivoRechazo);
       pagoDAO.modificar(pago);
-      notificarPago(usuarioIdFromPago(pago), false, motivoRechazo);
+      notificarPago(usuarioIdFromPago(pago), false, motivoRechazo, null);
       return new ValidacionPagoResult(pago, "Pago rechazado");
     }
+
+    Usuario admin = usuarioDAO.recuperarPorId(auth.userId());
+    if (admin == null) {
+      throw new NegocioException("Administrador no encontrado");
+    }
+    boolean fisico = Boolean.TRUE.equals(efectivoFisicoRecibido);
+    exigirReciboSiEfectivo(pago, numeroRecibo);
+    exigirEfectivoFisicoSiCorresponde(pago, fisico);
 
     String mensaje = "Pago aprobado";
     if (montoAjustado != null && montoAjustado != pago.getMonto()) {
@@ -179,12 +201,66 @@ public class PagoService {
       pago.setMonto(montoAjustado);
       mensaje = "Pago aprobado con ajuste de monto (diferencia: " + diferencia + ")";
     }
-    pago.setEstado(EstadoPago.APROBADO);
-    pago.setMotivoRechazo(null);
+    pago.marcarAprobadoConAuditoria(admin, numeroRecibo, observaciones, fisico);
     pagoDAO.modificar(pago);
+    // Fuerza carga del admin antes de serializar la respuesta JSON.
+    pago.getValidadoPorNombre();
     inscripcionService.confirmarCongresoPorPagoAprobado(pago.getId());
-    notificarPago(usuarioIdFromPago(pago), true, null);
+    notificarPago(usuarioIdFromPago(pago), true, null, pago.getNumeroRecibo());
+    if (pago.getMetodo() == ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago.EFECTIVO
+        && pago.getNumeroRecibo() != null) {
+      mensaje = "Pago en efectivo registrado. Recibo: " + pago.getNumeroRecibo();
+    }
     return new ValidacionPagoResult(pago, mensaje);
+  }
+
+  public ArqueoCajaDTO arqueoCaja(LocalDate desde, LocalDate hasta, AuthenticatedUser auth) {
+    if (auth == null || !auth.isAdmin()) {
+      throw new NegocioException("Solo administradores pueden consultar el arqueo de caja");
+    }
+    if (desde == null || hasta == null) {
+      throw new NegocioException("Indicá el rango de fechas (desde / hasta)");
+    }
+    if (hasta.isBefore(desde)) {
+      throw new NegocioException("La fecha hasta no puede ser anterior a desde");
+    }
+    LocalDateTime desdeDt = desde.atStartOfDay();
+    LocalDateTime hastaExcl = hasta.plusDays(1).atStartOfDay();
+    List<Pago> pagos = pagoDAO.listarArqueoEfectivo(desdeDt, hastaExcl);
+    List<ArqueoCajaItemDTO> items = new ArrayList<>();
+    double total = 0;
+    for (Pago p : pagos) {
+      total += p.getMonto();
+      items.add(
+          new ArqueoCajaItemDTO(
+              p.getId(),
+              p.getMonto(),
+              p.getNumeroRecibo(),
+              p.getFechaValidacion(),
+              p.getValidadoPorNombre(),
+              p.isEfectivoFisicoRecibido(),
+              p.getObservacionesValidacion()));
+    }
+    return new ArqueoCajaDTO(desde, hasta, items.size(), total, items);
+  }
+
+  /** Usado también al aprobar inscripción con pago efectivo pendiente. */
+  public static void exigirReciboSiEfectivo(Pago pago, String numeroRecibo) {
+    if (pago != null
+        && pago.getMetodo() == ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago.EFECTIVO
+        && (numeroRecibo == null || numeroRecibo.isBlank())) {
+      throw new NegocioException(
+          "Para aprobar un pago en efectivo debés indicar el número de recibo de caja");
+    }
+  }
+
+  public static void exigirEfectivoFisicoSiCorresponde(Pago pago, boolean efectivoFisicoRecibido) {
+    if (pago != null
+        && pago.getMetodo() == ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago.EFECTIVO
+        && !efectivoFisicoRecibido) {
+      throw new NegocioException(
+          "Debés confirmar la recepción del efectivo físico antes de aprobar");
+    }
   }
 
   private Long usuarioIdFromPago(Pago pago) {
@@ -194,13 +270,21 @@ public class PagoService {
         .orElse(null);
   }
 
-  private void notificarPago(Long usuarioId, boolean aprobado, String motivo) {
+  private void notificarPago(Long usuarioId, boolean aprobado, String motivo, String numeroRecibo) {
     if (usuarioId == null) {
       return;
     }
     if (aprobado) {
-      notificacionService.enviarConPlantilla(
-          usuarioId, "INSCRIPCION_APROBADA_USUARIO", Map.of("enlace", "/asistente"));
+      Map<String, String> vars = new HashMap<>();
+      vars.put("enlace", "/asistente");
+      if (numeroRecibo != null && !numeroRecibo.isBlank()) {
+        vars.put(
+            "contexto",
+            "Tu pago en efectivo quedó registrado con recibo N° " + numeroRecibo.trim() + ".");
+      } else {
+        vars.put("contexto", "");
+      }
+      notificacionService.enviarConPlantilla(usuarioId, "INSCRIPCION_APROBADA_USUARIO", vars);
     } else {
       Map<String, String> vars = new HashMap<>();
       vars.put("motivo", motivo != null && !motivo.isBlank() ? motivo : "Sin motivo indicado");

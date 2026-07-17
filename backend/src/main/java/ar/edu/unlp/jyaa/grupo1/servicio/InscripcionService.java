@@ -351,7 +351,13 @@ public class InscripcionService {
   }
 
   public InscripcionCongresoDTO validar(
-      Long id, boolean aprobar, String motivoRechazo, AuthenticatedUser auth) {
+      Long id,
+      boolean aprobar,
+      String motivoRechazo,
+      String numeroRecibo,
+      String observaciones,
+      Boolean efectivoFisicoRecibido,
+      AuthenticatedUser auth) {
     if (!auth.canValidarInscripciones()) {
       throw new NegocioException("No tiene permiso para validar inscripciones");
     }
@@ -372,7 +378,13 @@ public class InscripcionService {
       inscripcionDAO.modificar(inscripcion);
       notificarUsuarioInscripcionRechazada(inscripcion.getUsuario(), motivoRechazo.trim());
     } else {
-      aprobarInscripcion(inscripcion, true);
+      aprobarInscripcion(
+          inscripcion,
+          true,
+          auth.userId(),
+          numeroRecibo,
+          observaciones,
+          Boolean.TRUE.equals(efectivoFisicoRecibido));
     }
 
     return InscripcionCongresoDTO.from(recuperarConRelaciones(id));
@@ -400,28 +412,53 @@ public class InscripcionService {
     }
   }
 
-  private void aprobarInscripcion(InscripcionCongreso inscripcion, boolean aprobarPagoSiPendiente) {
+  private void aprobarInscripcion(
+      InscripcionCongreso inscripcion,
+      boolean aprobarPagoSiPendiente,
+      Long adminId,
+      String numeroRecibo,
+      String observaciones,
+      boolean efectivoFisicoRecibido) {
     inscripcion.setEstado(EstadoInscripcion.APROBADA);
     inscripcion.setMotivoRechazo(null);
     if (aprobarPagoSiPendiente
         && inscripcion.getPago() != null
         && inscripcion.getPago().getEstado() == EstadoPago.PENDIENTE) {
-      inscripcion.getPago().setEstado(EstadoPago.APROBADO);
-      pagoDAO.modificar(inscripcion.getPago());
+      Pago pago = inscripcion.getPago();
+      PagoService.exigirReciboSiEfectivo(pago, numeroRecibo);
+      PagoService.exigirEfectivoFisicoSiCorresponde(pago, efectivoFisicoRecibido);
+      Usuario admin = usuarioDAO.recuperarPorId(adminId);
+      if (admin == null) {
+        throw new NegocioException("Administrador no encontrado");
+      }
+      pago.marcarAprobadoConAuditoria(
+          admin, numeroRecibo, observaciones, efectivoFisicoRecibido);
+      pagoDAO.modificar(pago);
     }
     inscripcionDAO.modificar(inscripcion);
     if (inscripcion.getUsuario() != null) {
       usuarioService.promoverAsistente(inscripcion.getUsuario().getId());
-      notificarUsuarioInscripcionAprobada(inscripcion.getUsuario());
+      String recibo =
+          inscripcion.getPago() != null ? inscripcion.getPago().getNumeroRecibo() : null;
+      notificarUsuarioInscripcionAprobada(inscripcion.getUsuario(), recibo);
     }
   }
 
-  private void notificarUsuarioInscripcionAprobada(Usuario usuario) {
+  private void notificarUsuarioInscripcionAprobada(Usuario usuario, String numeroRecibo) {
     if (usuario == null || usuario.getId() == null) {
       return;
     }
+    Map<String, String> vars = new HashMap<>();
+    vars.put("enlace", "/asistente");
+    if (numeroRecibo != null && !numeroRecibo.isBlank()) {
+      vars.put(
+          "contexto",
+          "Tu pago en efectivo quedó registrado con recibo N° " + numeroRecibo.trim() + ".");
+    } else {
+      vars.put("contexto", "");
+    }
     notificacionService.enviarConPlantilla(
-        usuario.getId(), "INSCRIPCION_APROBADA_USUARIO", Map.of("enlace", "/asistente"));
+        usuario.getId(), "INSCRIPCION_APROBADA_USUARIO", vars);
   }
 
   private void notificarUsuarioInscripcionRechazada(Usuario usuario, String motivo) {
@@ -473,6 +510,9 @@ public class InscripcionService {
     inscripcion.getUsuario().getNombre();
     if (inscripcion.getPago() != null) {
       inscripcion.getPago().getEstado();
+      if (inscripcion.getPago().getValidadoPor() != null) {
+        inscripcion.getPago().getValidadoPor().getNombre();
+      }
     }
     return inscripcion;
   }
