@@ -24,9 +24,7 @@ export class InscripcionService {
 
   crear(request: InscripcionCreateRequest): Observable<InscripcionCongreso> {
     const form = new FormData();
-    if (request.categoria) {
-      form.append('categoria', request.categoria);
-    }
+    form.append('categoria', request.categoria ?? '');
     form.append('institucion', request.institucion);
     form.append('provincia', request.provincia);
     form.append('requiereFactura', String(request.requiereFactura));

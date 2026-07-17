@@ -747,6 +747,7 @@ export class InscripcionParticipanteComponent implements OnInit {
         tipoIdentificacion: raw.tipoIdentificacion!,
         numeroIdentificacion: raw.numeroIdentificacion!,
         nacionalidad: raw.nacionalidad!,
+        categoriaInscripcion: this.categoriaActual,
       })
       .subscribe({
         next: () => this.crearInscripcion(raw),
@@ -758,9 +759,16 @@ export class InscripcionParticipanteComponent implements OnInit {
   }
 
   private crearInscripcion(raw: ReturnType<typeof this.form.getRawValue>): void {
+    const categoria = this.categoriaActual || this.categoriaPreferida || '';
+    if (!categoria) {
+      this.error = 'Debe indicar la categoría de inscripción.';
+      this.guardando = false;
+      this.paso = 2;
+      return;
+    }
     this.inscripcionService
       .crear({
-        categoria: this.categoriaActual,
+        categoria,
         institucion: raw.institucion!,
         provincia: raw.provincia!,
         requiereFactura: !!raw.requiereFactura,
