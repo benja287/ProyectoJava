@@ -39,6 +39,7 @@ import { PlazoEnvioOcComponent } from './pages/organizador/plazo-envio/plazo-env
 import { EvaluadoresEjeOcComponent } from './pages/organizador/evaluadores-eje/evaluadores-eje-oc.component';
 import { ProponerTallerAsistenteComponent } from './pages/asistente/proponer-taller/proponer-taller-asistente.component';
 import { CertificadoAsistenteComponent } from './pages/asistente/certificado-asistente.component';
+import { MiInscripcionAsistenteComponent } from './pages/asistente/mi-inscripcion-asistente.component';
 import { PanelAdminComponent } from './pages/admin/panel-admin/panel-admin.component';
 import { NotificacionesComponent } from './pages/notificaciones/notificaciones.component';
 import { AdminEstadisticasComponent } from './pages/admin/admin-estadisticas/admin-estadisticas.component';
@@ -118,6 +119,11 @@ export const routes: Routes = [
   {
     path: 'asistente/certificado',
     component: CertificadoAsistenteComponent,
+    canActivate: [asistenteGuard],
+  },
+  {
+    path: 'asistente/inscripcion',
+    component: MiInscripcionAsistenteComponent,
     canActivate: [asistenteGuard],
   },
 

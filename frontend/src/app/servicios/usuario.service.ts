@@ -45,6 +45,11 @@ export interface UsuarioAltaPayload {
   nacionalidad?: string;
   institucion?: string;
   provincia?: string;
+  requiereFactura?: boolean;
+  facturaRazonSocial?: string;
+  facturaCuit?: string;
+  facturaCondicionIva?: string;
+  facturaDomicilioFiscal?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -122,6 +127,13 @@ export class UsuarioService {
     if (payload.nacionalidad) body['nacionalidad'] = payload.nacionalidad;
     if (payload.institucion) body['institucion'] = payload.institucion;
     if (payload.provincia) body['provincia'] = payload.provincia;
+    if (payload.requiereFactura != null) body['requiereFactura'] = payload.requiereFactura;
+    if (payload.facturaRazonSocial) body['facturaRazonSocial'] = payload.facturaRazonSocial;
+    if (payload.facturaCuit) body['facturaCuit'] = payload.facturaCuit;
+    if (payload.facturaCondicionIva) body['facturaCondicionIva'] = payload.facturaCondicionIva;
+    if (payload.facturaDomicilioFiscal) {
+      body['facturaDomicilioFiscal'] = payload.facturaDomicilioFiscal;
+    }
     return this.http.post<Usuario>(this.baseUrl, body);
   }
 

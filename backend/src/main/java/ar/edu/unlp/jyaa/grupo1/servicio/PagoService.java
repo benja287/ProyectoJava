@@ -421,8 +421,8 @@ public class PagoService {
     }
     Map<String, String> vars = new HashMap<>();
     vars.put("contexto", "Tu factura del congreso ya fue cargada por la organización.");
-    vars.put("proximo_paso", "Entrá a Estado de pago y descargá el PDF.");
-    vars.put("enlace", "/pago");
+    vars.put("proximo_paso", "Entrá a Ver mi inscripción y descargá el PDF.");
+    vars.put("enlace", "/asistente/inscripcion");
     notificacionService.enviarConPlantilla(usuarioId, "FACTURA_DISPONIBLE", vars);
   }
 
@@ -439,7 +439,7 @@ public class PagoService {
     }
     if (aprobado) {
       Map<String, String> vars = new HashMap<>();
-      vars.put("enlace", "/asistente");
+      vars.put("enlace", "/asistente/inscripcion");
       if (numeroRecibo != null && !numeroRecibo.isBlank()) {
         vars.put(
             "contexto",

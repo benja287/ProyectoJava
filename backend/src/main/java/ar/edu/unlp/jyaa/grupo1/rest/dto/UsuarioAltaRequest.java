@@ -5,7 +5,8 @@ import java.util.Set;
 
 /**
  * Alta de usuario por admin. Si incluye rol {@code ASISTENTE}, exige datos de certificado +
- * categoría/filiación y crea inscripción + pago aprobados (asistente presencial).
+ * categoría/filiación y crea inscripción + pago aprobados (asistente presencial). Opcionalmente
+ * puede solicitar factura.
  */
 public class UsuarioAltaRequest {
 
@@ -25,4 +26,10 @@ public class UsuarioAltaRequest {
   public String nacionalidad;
   public String institucion;
   public String provincia;
+
+  public Boolean requiereFactura;
+  public String facturaRazonSocial;
+  public String facturaCuit;
+  public String facturaCondicionIva;
+  public String facturaDomicilioFiscal;
 }

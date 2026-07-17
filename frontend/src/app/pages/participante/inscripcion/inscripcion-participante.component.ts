@@ -71,10 +71,23 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
               <dd>{{ etiquetaMetodo(inscripcion.pagoMetodo) }}</dd>
               <dt>Estado pago</dt>
               <dd>{{ inscripcion.pagoEstado || '—' }}</dd>
+              @if (inscripcion.pagoNumeroRecibo) {
+                <dt>Recibo de caja</dt>
+                <dd><strong>{{ inscripcion.pagoNumeroRecibo }}</strong></dd>
+              }
               @if (inscripcion.requiereFactura) {
-                <dt>Factura</dt>
+                <dt>Factura (datos)</dt>
                 <dd>
                   {{ inscripcion.facturaRazonSocial }} · CUIT {{ inscripcion.facturaCuit }}
+                </dd>
+                <dt>PDF factura</dt>
+                <dd>
+                  @if (inscripcion.pagoFacturaUrl) {
+                    Disponible — descargala desde
+                    <a routerLink="/asistente/inscripcion">Ver mi inscripción</a>
+                  } @else {
+                    Pendiente de emisión por la organización
+                  }
                 </dd>
               }
             </dl>

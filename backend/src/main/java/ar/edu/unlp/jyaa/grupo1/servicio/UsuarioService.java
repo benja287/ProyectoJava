@@ -147,7 +147,7 @@ public class UsuarioService {
   }
 
   public Usuario alta(Usuario usuario) {
-    return alta(usuario, null, null, null);
+    return alta(usuario, null, null, null, false, null, null, null, null);
   }
 
   /**
@@ -171,11 +171,28 @@ public class UsuarioService {
     usuario.setTipoIdentificacion(request.tipoIdentificacion);
     usuario.setNumeroIdentificacion(request.numeroIdentificacion);
     usuario.setNacionalidad(request.nacionalidad);
-    return alta(usuario, auth, request.institucion, request.provincia);
+    return alta(
+        usuario,
+        auth,
+        request.institucion,
+        request.provincia,
+        Boolean.TRUE.equals(request.requiereFactura),
+        request.facturaRazonSocial,
+        request.facturaCuit,
+        request.facturaCondicionIva,
+        request.facturaDomicilioFiscal);
   }
 
   public Usuario alta(
-      Usuario usuario, AuthenticatedUser auth, String institucion, String provincia) {
+      Usuario usuario,
+      AuthenticatedUser auth,
+      String institucion,
+      String provincia,
+      boolean requiereFactura,
+      String facturaRazonSocial,
+      String facturaCuit,
+      String facturaCondicionIva,
+      String facturaDomicilioFiscal) {
     if (usuario.getEmail() != null) {
       usuario.setEmail(usuario.getEmail().trim().toLowerCase());
     }
@@ -209,8 +226,21 @@ public class UsuarioService {
         throw new NegocioException(
             "Institución y provincia son obligatorias para el alta de asistente");
       }
+      if (requiereFactura) {
+        if (facturaRazonSocial == null || facturaRazonSocial.isBlank()) {
+          throw new NegocioException("Para factura indicá la razón social");
+        }
+        if (facturaCuit == null || facturaCuit.isBlank()) {
+          throw new NegocioException("Para factura indicá CUIT/CUIL");
+        }
+        if (facturaCondicionIva == null || facturaCondicionIva.isBlank()) {
+          throw new NegocioException("Para factura indicá la condición frente al IVA");
+        }
+        if (facturaDomicilioFiscal == null || facturaDomicilioFiscal.isBlank()) {
+          throw new NegocioException("Para factura indicá el domicilio fiscal");
+        }
+      }
     } else {
-      // Staff: no forzar datos de certificado
       usuario.setTelefono(blankToNull(usuario.getTelefono()));
       usuario.setTipoIdentificacion(blankToNull(usuario.getTipoIdentificacion()));
       usuario.setNumeroIdentificacion(blankToNull(usuario.getNumeroIdentificacion()));
@@ -234,19 +264,41 @@ public class UsuarioService {
     Usuario creado = usuarioDAO.alta(usuario);
 
     if (esAsistente) {
-      crearInscripcionYPagoAprobados(creado, auth, institucion.trim(), provincia.trim());
-      notificacionService.enviar(
-          creado.getId(),
-          "Alta como asistente del congreso",
+      String recibo =
+          crearInscripcionYPagoAprobados(
+              creado,
+              auth,
+              institucion.trim(),
+              provincia.trim(),
+              requiereFactura,
+              blankToNull(facturaRazonSocial),
+              blankToNull(facturaCuit),
+              blankToNull(facturaCondicionIva),
+              blankToNull(facturaDomicilioFiscal));
+      String msg =
           "Te dieron de alta como asistente. Ya podés ingresar con tu email y la contraseña"
-              + " asignada. Tu inscripción y pago quedaron registrados.",
-          "/asistente");
+              + " asignada. Tu inscripción y pago en efectivo quedaron registrados"
+              + (recibo != null ? " con recibo N° " + recibo : "")
+              + ". Consultá el detalle en Ver mi inscripción.";
+      if (requiereFactura) {
+        msg += " Solicitaste factura: te avisaremos cuando esté disponible para descargar.";
+      }
+      notificacionService.enviar(
+          creado.getId(), "Alta como asistente del congreso", msg, "/asistente/inscripcion");
     }
     return creado;
   }
 
-  private void crearInscripcionYPagoAprobados(
-      Usuario asistente, AuthenticatedUser auth, String institucion, String provincia) {
+  private String crearInscripcionYPagoAprobados(
+      Usuario asistente,
+      AuthenticatedUser auth,
+      String institucion,
+      String provincia,
+      boolean requiereFactura,
+      String facturaRazonSocial,
+      String facturaCuit,
+      String facturaCondicionIva,
+      String facturaDomicilioFiscal) {
     inscripcionDAO
         .buscarUltimaPorUsuario(asistente.getId())
         .ifPresent(
@@ -273,7 +325,7 @@ public class UsuarioService {
     Pago pago = new Pago();
     pago.setMonto(monto);
     pago.setMetodo(MetodoPago.EFECTIVO);
-    pago.setRequiereFactura(false);
+    pago.setRequiereFactura(requiereFactura);
     pago.setFechaRegistro(LocalDate.now());
     pago.marcarAprobadoConAuditoria(
         admin,
@@ -287,7 +339,13 @@ public class UsuarioService {
     inscripcion.setCategoria(categoria.name());
     inscripcion.setInstitucion(institucion);
     inscripcion.setProvincia(provincia);
-    inscripcion.setRequiereFactura(false);
+    inscripcion.setRequiereFactura(requiereFactura);
+    if (requiereFactura) {
+      inscripcion.setFacturaRazonSocial(facturaRazonSocial);
+      inscripcion.setFacturaCuit(facturaCuit);
+      inscripcion.setFacturaCondicionIva(facturaCondicionIva);
+      inscripcion.setFacturaDomicilioFiscal(facturaDomicilioFiscal);
+    }
     inscripcion.setTiposParticipacion(List.of(TipoParticipacionInscripcion.ASISTENTE.name()));
     inscripcion.setEstado(EstadoInscripcion.APROBADA);
     inscripcion.setFechaSolicitud(LocalDate.now());
@@ -295,6 +353,7 @@ public class UsuarioService {
     inscripcionDAO.alta(inscripcion);
 
     pagoService.notificarAdminsCobroEfectivo(pago, admin, auth.userId());
+    return recibo;
   }
 
   private static String blankToNull(String value) {

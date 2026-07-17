@@ -456,7 +456,7 @@ public class InscripcionService {
       return;
     }
     Map<String, String> vars = new HashMap<>();
-    vars.put("enlace", "/asistente");
+    vars.put("enlace", "/asistente/inscripcion");
     if (numeroRecibo != null && !numeroRecibo.isBlank()) {
       vars.put(
           "contexto",

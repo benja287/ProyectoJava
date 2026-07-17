@@ -70,6 +70,14 @@ import { feedbackTextoTrabajo } from '../../utils/trabajo-rol.util';
             </div>
           </a>
 
+          <a routerLink="/asistente/inscripcion" class="accion-card">
+            <span class="accion-icono accion-icono--verde" aria-hidden="true">🧾</span>
+            <div>
+              <h3>Ver mi inscripción</h3>
+              <p>Consultá tu inscripción, recibo de caja y factura (si la pediste)</p>
+            </div>
+          </a>
+
           <a routerLink="/asistente/certificado" class="accion-card">
             <span class="accion-icono accion-icono--azul" aria-hidden="true">✓</span>
             <div>

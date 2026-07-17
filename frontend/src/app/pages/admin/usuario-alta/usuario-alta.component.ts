@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ROLES } from '../../../models/enums';
 import {
   CATEGORIAS_INSCRIPCION,
+  CONDICIONES_IVA,
   TIPOS_IDENTIFICACION_INSCRIPCION,
 } from '../../../models/inscripcion.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
@@ -119,6 +120,33 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
                 Provincia
                 <input formControlName="provincia" />
               </label>
+              <label class="span-full checkbox-inline">
+                <input type="checkbox" formControlName="requiereFactura" />
+                Requiere factura
+              </label>
+              @if (form.get('requiereFactura')?.value) {
+                <label>
+                  Razón social
+                  <input formControlName="facturaRazonSocial" />
+                </label>
+                <label>
+                  CUIT/CUIL
+                  <input formControlName="facturaCuit" />
+                </label>
+                <label>
+                  Condición frente al IVA
+                  <select formControlName="facturaCondicionIva">
+                    <option value="">Seleccioná</option>
+                    @for (c of condicionesIva; track c.value) {
+                      <option [value]="c.value">{{ c.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="span-full">
+                  Domicilio fiscal
+                  <input formControlName="facturaDomicilioFiscal" />
+                </label>
+              }
             </div>
           </fieldset>
         } @else {
@@ -157,6 +185,7 @@ export class UsuarioAltaComponent {
 
   categorias = [...CATEGORIAS_INSCRIPCION];
   tiposId = [...TIPOS_IDENTIFICACION_INSCRIPCION];
+  condicionesIva = [...CONDICIONES_IVA];
   rolesDisponibles = [...ROLES];
   rolesSeleccionados = new Set<string>();
 
@@ -173,6 +202,11 @@ export class UsuarioAltaComponent {
     nacionalidad: ['Argentina'],
     institucion: [''],
     provincia: [''],
+    requiereFactura: [false],
+    facturaRazonSocial: [''],
+    facturaCuit: [''],
+    facturaCondicionIva: [''],
+    facturaDomicilioFiscal: [''],
   });
 
   mensaje = '';
@@ -182,7 +216,9 @@ export class UsuarioAltaComponent {
   constructor(
     private usuarioService: UsuarioService,
     private router: Router
-  ) {}
+  ) {
+    this.form.get('requiereFactura')?.valueChanges.subscribe(() => this.actualizarValidadoresFactura());
+  }
 
   get incluyeAsistente(): boolean {
     return this.rolesSeleccionados.has('ASISTENTE');
@@ -224,6 +260,29 @@ export class UsuarioAltaComponent {
       }
       ctrl.updateValueAndValidity({ emitEvent: false });
     }
+    if (!this.incluyeAsistente) {
+      this.form.patchValue({ requiereFactura: false }, { emitEvent: false });
+    }
+    this.actualizarValidadoresFactura();
+  }
+
+  private actualizarValidadoresFactura(): void {
+    const activo = this.incluyeAsistente && !!this.form.get('requiereFactura')?.value;
+    for (const key of [
+      'facturaRazonSocial',
+      'facturaCuit',
+      'facturaCondicionIva',
+      'facturaDomicilioFiscal',
+    ] as const) {
+      const ctrl = this.form.get(key);
+      if (!ctrl) continue;
+      if (activo) {
+        ctrl.setValidators([Validators.required]);
+      } else {
+        ctrl.clearValidators();
+      }
+      ctrl.updateValueAndValidity({ emitEvent: false });
+    }
   }
 
   guardar(): void {
@@ -259,12 +318,19 @@ export class UsuarioAltaComponent {
       payload.nacionalidad = raw.nacionalidad!.trim();
       payload.institucion = raw.institucion!.trim();
       payload.provincia = raw.provincia!.trim();
+      payload.requiereFactura = !!raw.requiereFactura;
+      if (payload.requiereFactura) {
+        payload.facturaRazonSocial = raw.facturaRazonSocial!.trim();
+        payload.facturaCuit = raw.facturaCuit!.trim();
+        payload.facturaCondicionIva = raw.facturaCondicionIva!.trim();
+        payload.facturaDomicilioFiscal = raw.facturaDomicilioFiscal!.trim();
+      }
     }
 
     this.usuarioService.alta(payload).subscribe({
       next: (creado) => {
         this.mensaje = this.incluyeAsistente
-          ? `Asistente creado (id ${creado.id}) con inscripción y pago aprobados.`
+          ? `Asistente creado (id ${creado.id}) con inscripción, pago y recibo. El usuario ve el detalle en «Ver mi inscripción».`
           : `Usuario creado (id ${creado.id}).`;
         this.guardando = false;
         setTimeout(() => this.router.navigate(['/admin/usuarios']), 1200);
