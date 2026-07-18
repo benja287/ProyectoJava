@@ -1769,6 +1769,12 @@ textarea {
   background: #f5f3ff;
 }
 
+.badge-progreso--empate {
+  color: #b45309;
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
 .presentacion-autor-card {
   border: 1px solid #e5e7eb;
   border-left-width: 4px;

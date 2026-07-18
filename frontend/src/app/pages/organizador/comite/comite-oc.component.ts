@@ -20,6 +20,7 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
 import {
   etiquetaRolEnvio,
   esEnvioAsistente,
+  mensajeComiteEmpateEvaluacion,
   mensajeComiteEvaluacionObservado,
   mensajeComitePrecheckObservado,
 } from '../../../utils/trabajo-rol.util';
@@ -185,6 +186,9 @@ interface PrecheckChecks {
                       <span class="badge-progreso badge-progreso--revision"
                         >Revisión {{ Math.min(t.revisionIntentos ?? 0, 2) }}/2</span
                       >
+                      @if (t.empateEvaluacion || ((t.aprobaciones ?? 0) === 1 && (t.rechazos ?? 0) === 1)) {
+                        <span class="badge-progreso badge-progreso--empate">Empate 1/1</span>
+                      }
                     </div>
                   </button>
                 </li>
@@ -238,6 +242,14 @@ interface PrecheckChecks {
               <div class="comite-bloque comite-bloque--aviso">
                 <p class="notice-box notice-box--amber">
                   {{ mensajeComiteEvaluacionObservado(seleccionado!) }}
+                </p>
+              </div>
+            }
+
+            @if (hayEmpate && seleccionado?.estado === 'EN_EVALUACION') {
+              <div class="comite-bloque comite-bloque--aviso">
+                <p class="notice-box notice-box--amber">
+                  {{ mensajeComiteEmpateEvaluacion(seleccionado!) }}
                 </p>
               </div>
             }
@@ -626,6 +638,7 @@ export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
   readonly esEnvioAsistente = esEnvioAsistente;
   readonly mensajeComitePrecheckObservado = mensajeComitePrecheckObservado;
   readonly mensajeComiteEvaluacionObservado = mensajeComiteEvaluacionObservado;
+  readonly mensajeComiteEmpateEvaluacion = mensajeComiteEmpateEvaluacion;
 
   participanteObservaciones(t: Trabajo): string {
     return esEnvioAsistente(t) ? 'asistente' : 'autor';
@@ -663,6 +676,9 @@ export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
   }
 
   get hayEmpate(): boolean {
+    if (this.seleccionado?.empateEvaluacion) {
+      return true;
+    }
     return (this.seleccionado?.aprobaciones ?? 0) === 1 && (this.seleccionado?.rechazos ?? 0) === 1;
   }
 

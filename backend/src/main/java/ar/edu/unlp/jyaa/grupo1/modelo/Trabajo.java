@@ -40,6 +40,13 @@ public class Trabajo implements Serializable {
   @Column(name = "revision_intentos", nullable = false)
   private int revisionIntentos = 0;
 
+  /**
+   * Empate 1 a favor / 1 en contra: el trabajo sigue en evaluación y el comité puede asignar un
+   * tercer evaluador. Se limpia al resolverse (2 a favor, 2 en contra o reenvío).
+   */
+  @Column(name = "empate_evaluacion", nullable = false)
+  private boolean empateEvaluacion = false;
+
   @Column(name = "observaciones_precheck", columnDefinition = "TEXT")
   private String observacionesPrecheck;
 
@@ -138,6 +145,14 @@ public class Trabajo implements Serializable {
 
   public void setRevisionIntentos(int revisionIntentos) {
     this.revisionIntentos = revisionIntentos;
+  }
+
+  public boolean isEmpateEvaluacion() {
+    return empateEvaluacion;
+  }
+
+  public void setEmpateEvaluacion(boolean empateEvaluacion) {
+    this.empateEvaluacion = empateEvaluacion;
   }
 
   public String getObservacionesPrecheck() {

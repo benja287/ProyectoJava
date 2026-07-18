@@ -52,6 +52,8 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarPlantillasFacturaYArqueo);
     // APPEND — cupos de envío de trabajos (global + excepción por usuario)
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCuposEnvioTrabajos);
+    // APPEND — empate 1/1 en evaluación (3er evaluador)
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarEmpateEvaluacionTrabajo);
   }
 
   private static void migrarDatosCertificadoUsuario(EntityManager em) {
@@ -1252,6 +1254,50 @@ public final class SchemaMigration {
         "max_trabajos_asistente_override",
         "ALTER TABLE usuarios ADD COLUMN max_trabajos_asistente_override INT NULL");
     log.info("Cupos de envío de trabajos (global + override) verificados");
+  }
+
+  private static void migrarEmpateEvaluacionTrabajo(EntityManager em) {
+    boolean columnaNueva =
+        leerTipoColumna(em, "trabajos", "empate_evaluacion") == null;
+    agregarColumnaSiFalta(
+        em,
+        "trabajos",
+        "empate_evaluacion",
+        "ALTER TABLE trabajos ADD COLUMN empate_evaluacion BOOLEAN NOT NULL DEFAULT FALSE");
+    // Solo al crear la columna: recupera empates 1/1 ya cargados con la lógica vieja.
+    // Los empates futuros los marca TrabajoService (no depende de este UPDATE).
+    if (!columnaNueva) {
+      log.info("Columna trabajos.empate_evaluacion ya existía; no se reaplicó backfill");
+      return;
+    }
+    int recuperados =
+        em.createNativeQuery(
+                """
+                UPDATE trabajos t
+                SET t.empate_evaluacion = TRUE, t.estado = 'EN_EVALUACION'
+                WHERE t.estado IN ('EN_EVALUACION', 'OBSERVADO_EVALUACION')
+                  AND t.id IN (
+                    SELECT trabajo_id FROM (
+                      SELECT a.trabajo_id AS trabajo_id
+                      FROM asignaciones_evaluacion a
+                      INNER JOIN evaluaciones e ON e.asignacion_id = a.id
+                      WHERE a.aceptada = TRUE
+                      GROUP BY a.trabajo_id
+                      HAVING SUM(CASE
+                                   WHEN e.recomendacion IN ('APROBADO', 'APROBADO_CON_CORRECCIONES')
+                                   THEN 1 ELSE 0 END) = 1
+                         AND SUM(CASE
+                                   WHEN e.recomendacion = 'RECHAZADO'
+                                   THEN 1 ELSE 0 END) = 1
+                         AND SUM(CASE
+                                   WHEN e.recomendacion IN (
+                                     'APROBADO', 'APROBADO_CON_CORRECCIONES', 'RECHAZADO')
+                                   THEN 1 ELSE 0 END) = 2
+                    ) empates
+                  )
+                """)
+            .executeUpdate();
+    log.info("Backfill empate 1/1 (una sola vez): recuperados={}", recuperados);
   }
 
   private static void agregarColumnaSiFalta(

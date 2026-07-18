@@ -410,6 +410,7 @@ public class TrabajoService {
 
     if (reenvioRevision) {
       limpiarAsignaciones(trabajo.getId());
+      trabajo.setEmpateEvaluacion(false);
     }
 
     if (primerEnvio || trabajo.getRolEnvio() == null) {
@@ -603,9 +604,6 @@ public class TrabajoService {
         asignaciones.stream()
             .filter(a -> a.isAceptada() && a.getEvaluacion() != null)
             .count();
-    if (evaluacionesCompletas < 1) {
-      return;
-    }
     long aprobaciones =
         asignaciones.stream()
             .filter(
@@ -625,7 +623,13 @@ public class TrabajoService {
                         && a.getEvaluacion().getRecomendacion() == RecomendacionEvaluacion.RECHAZADO)
             .count();
 
+    // Esperar al menos 2 dictámenes salvo que ya haya 2 a favor (p. ej. con 3er evaluador).
+    if (evaluacionesCompletas < 2 && aprobaciones < 2) {
+      return;
+    }
+
     if (aprobaciones >= 2) {
+      trabajo.setEmpateEvaluacion(false);
       trabajo.setEstado(EstadoTrabajo.PENDIENTE_APROBACION_COMITE);
       Map<String, String> varsFavorable = new HashMap<>();
       varsFavorable.put(
@@ -643,12 +647,27 @@ public class TrabajoService {
               "Confirmá la aprobación o el rechazo definitivo en el panel del comité."),
           null,
           TrabajoNotificacionHelper.RUTA_COMITE);
+    } else if (aprobaciones == 1 && rechazos == 1) {
+      // Empate 1/1: permanece EN_EVALUACION para que el comité asigne un 3er evaluador.
+      boolean yaMarcado = trabajo.isEmpateEvaluacion();
+      trabajo.setEmpateEvaluacion(true);
+      trabajo.setEstado(EstadoTrabajo.EN_EVALUACION);
+      if (!yaMarcado) {
+        notificacionService.enviarPorRol(
+            Rol.ORGANIZADOR_CIENTIFICO,
+            "Empate en evaluación: asignar 3er evaluador",
+            TrabajoNotificacionHelper.formatear(
+                "El trabajo \""
+                    + trabajo.getTitulo()
+                    + "\" quedó 1 a favor y 1 en contra. "
+                    + TrabajoNotificacionHelper.contextoParticipante(trabajo),
+                "Asigná un tercer evaluador del eje en el panel del comité. No hace falta reenvío."),
+            null,
+            TrabajoNotificacionHelper.RUTA_COMITE);
+      }
     } else if (rechazos >= 2) {
-      trabajo.setEstado(EstadoTrabajo.RECHAZADO);
-      Map<String, String> varsFinal = new HashMap<>();
-      varsFinal.put("proximo_paso", "Consultá el estado en tu panel. No admite más reenvíos.");
-      notificarAutorPlantilla(trabajo, "EVALUACION_RECHAZADO_FINAL", varsFinal);
-    } else if (rechazos >= 1 && aprobaciones < 2) {
+      // Ambos (o mayoría) rechazaron: reenvío con correcciones, o rechazo final.
+      trabajo.setEmpateEvaluacion(false);
       int intentos = trabajo.getRevisionIntentos() + 1;
       trabajo.setRevisionIntentos(intentos);
       if (intentos >= MAX_REVISION_INTENTOS) {
@@ -678,7 +697,7 @@ public class TrabajoService {
             TrabajoNotificacionHelper.formatear(
                 "El trabajo \""
                     + trabajo.getTitulo()
-                    + "\" pasó a observado por evaluación. "
+                    + "\" fue rechazado por los evaluadores. "
                     + TrabajoNotificacionHelper.contextoParticipante(trabajo),
                 "El participante debe corregir y reenviar. Podés ver el dictamen en el panel del comité."),
             null,

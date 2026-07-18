@@ -17,6 +17,8 @@ export interface Trabajo {
   autorCategoria?: string;
   precheckIntentos?: number;
   revisionIntentos?: number;
+  /** Empate 1 a favor / 1 en contra: el comité puede asignar un 3er evaluador. */
+  empateEvaluacion?: boolean;
   observacionesPrecheck?: string;
   rolEnvio?: string;
   asignacionesCount?: number;

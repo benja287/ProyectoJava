@@ -31,14 +31,29 @@ export function mensajeComiteEvaluacionObservado(t: Trabajo): string {
   const revision = Math.min(t.revisionIntentos ?? 0, 2);
   if (esEnvioAsistente(t)) {
     return (
-      `Un evaluador rechazó este trabajo (${revision}/2 reenvíos). Fue enviado como asistente: ` +
+      `Los evaluadores rechazaron este trabajo (${revision}/2 reenvíos). Fue enviado como asistente: ` +
       `el participante debe corregirlo y reenviarlo desde el panel asistente. Tras dos evaluaciones ` +
       `favorables y el dictamen final del comité, el rol Autor se habilita automáticamente.`
     );
   }
   return (
-    `Un evaluador rechazó este trabajo (${revision}/2 reenvíos). Fue enviado como autor: ` +
+    `Los evaluadores rechazaron este trabajo (${revision}/2 reenvíos). Fue enviado como autor: ` +
     `debe corregirlo y reenviarlo desde Mis trabajos para una nueva evaluación.`
+  );
+}
+
+export function mensajeComiteEmpateEvaluacion(t: Trabajo): string {
+  if (esEnvioAsistente(t)) {
+    return (
+      `Empate 1 a favor / 1 en contra. El trabajo sigue en evaluación: asigná un tercer evaluador ` +
+      `del eje. No hace falta reenvío ni nueva prevalidación. Si el tercero aprueba, el trabajo ` +
+      `pasa al dictamen final del comité (y al aprobarse se habilita el rol Autor).`
+    );
+  }
+  return (
+    `Empate 1 a favor / 1 en contra. El trabajo sigue en evaluación: asigná un tercer evaluador ` +
+    `del eje. No hace falta reenvío ni nueva prevalidación. Si el tercero aprueba, el trabajo ` +
+    `pasa al dictamen final del comité.`
   );
 }
 
@@ -58,9 +73,9 @@ export function feedbackTextoTrabajo(t: Trabajo, vista: 'asistente' | 'autor'): 
   }
   if (t.estado === 'OBSERVADO_EVALUACION') {
     if (vista === 'asistente' || esAsistente) {
-      return 'Rechazado por un evaluador (envío como asistente). Corregí y reenviá. Si el comité aprueba el trabajo, el rol Autor se habilita automáticamente.';
+      return 'Rechazado por los evaluadores (envío como asistente). Corregí y reenviá. Si el comité aprueba el trabajo, el rol Autor se habilita automáticamente.';
     }
-    return 'Rechazado por un evaluador (envío como autor). Corregí y reenviá para nueva evaluación.';
+    return 'Rechazado por los evaluadores (envío como autor). Corregí y reenviá para nueva evaluación.';
   }
   if (t.estado === 'PENDIENTE_APROBACION_COMITE') {
     return esAsistente
@@ -68,6 +83,9 @@ export function feedbackTextoTrabajo(t: Trabajo, vista: 'asistente' | 'autor'): 
       : 'Evaluaciones favorables. Pendiente de confirmación final del comité.';
   }
   if (t.estado === 'EN_EVALUACION') {
+    if (t.empateEvaluacion || ((t.aprobaciones ?? 0) === 1 && (t.rechazos ?? 0) === 1)) {
+      return 'Empate 1/1 entre evaluadores. El comité asignará un tercer evaluador. No tenés que reenviar.';
+    }
     return 'En evaluación por los evaluadores asignados.';
   }
   if (t.estado === 'APROBADO') {
