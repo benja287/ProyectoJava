@@ -9,6 +9,7 @@ import { AulaService } from '../../../servicios/aula.service';
 import { formatFechaActividad } from '../../../utils/fecha.util';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { AulaUbicacionLinkComponent } from '../../../components/aula-mapa/aula-ubicacion-link.component';
+import { cupoAgendaCompleto, etiquetaCupoAgenda } from '../../../utils/cupo-agenda.util';
 
 const ETIQUETAS_TIPO: Record<string, string> = {
   MESA_TEMATICA: 'Mesa temática',
@@ -72,6 +73,16 @@ type ConfirmDelete = { id: number; titulo: string; tipo: string; conTrabajos: bo
                         />
                       } @else {
                         | 📍 —
+                      }
+                      @if (etiquetaCupo(a); as cupo) {
+                        |
+                        <span
+                          class="cupo-aula"
+                          [class.cupo-aula--lleno]="cupoLleno(a)"
+                          title="Agendados / capacidad del aula"
+                        >
+                          Cupo {{ cupo }}
+                        </span>
                       }
                     </p>
                     @if (a.tipoActividad === 'MESA_REDONDA') {
@@ -304,6 +315,14 @@ export class CronogramaCongresoAdminComponent implements OnInit {
       return null;
     }
     return this.aulasPorId.get(a.aulaId) ?? null;
+  }
+
+  etiquetaCupo(a: ActividadCronograma): string | null {
+    return etiquetaCupoAgenda(a);
+  }
+
+  cupoLleno(a: ActividadCronograma): boolean {
+    return cupoAgendaCompleto(a);
   }
 
   recargar(): void {

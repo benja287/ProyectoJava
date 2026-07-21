@@ -16,6 +16,7 @@ import {
 import { Aula } from '../../../models/aula.model';
 import { AulaService } from '../../../servicios/aula.service';
 import { AulaUbicacionLinkComponent } from '../../../components/aula-mapa/aula-ubicacion-link.component';
+import { cupoAgendaCompleto, etiquetaCupoAgenda } from '../../../utils/cupo-agenda.util';
 
 const ETIQUETAS_TIPO: Record<string, string> = {
   MESA_TEMATICA: 'Mesa temática',
@@ -97,6 +98,15 @@ const ORDEN_TIPO: Record<string, number> = {
                                 [sala]="a.sala || ''"
                               />
                             }
+                            @if (etiquetaCupo(a); as cupo) {
+                              <span
+                                class="cupo-aula"
+                                [class.cupo-aula--lleno]="cupoLleno(a)"
+                                [attr.title]="'Agendados / capacidad del aula'"
+                              >
+                                Cupo {{ cupo }}
+                              </span>
+                            }
                           </div>
                         </div>
                         <button
@@ -141,15 +151,30 @@ const ORDEN_TIPO: Record<string, number> = {
                                 [sala]="a.sala || ''"
                               />
                             }
+                            @if (etiquetaCupo(a); as cupo) {
+                              <span
+                                class="cupo-aula"
+                                [class.cupo-aula--lleno]="cupoLleno(a)"
+                                [attr.title]="'Agendados / capacidad del aula'"
+                              >
+                                Cupo {{ cupo }}
+                              </span>
+                            }
                           </div>
                         </div>
                         <button
                           type="button"
                           class="agenda-btn-agregar"
-                          [disabled]="procesandoAgregarId === a.id"
+                          [disabled]="procesandoAgregarId === a.id || cupoLleno(a)"
                           (click)="agregar(a)"
                         >
-                          {{ procesandoAgregarId === a.id ? 'Agregando...' : 'Agregar a mi agenda' }}
+                          @if (cupoLleno(a)) {
+                            Cupo completo
+                          } @else if (procesandoAgregarId === a.id) {
+                            Agregando...
+                          } @else {
+                            Agregar a mi agenda
+                          }
                         </button>
                       </div>
                     </article>
@@ -321,8 +346,16 @@ export class CronogramaParticipanteComponent implements OnInit {
     return this.aulasPorId.get(a.aulaId) ?? null;
   }
 
+  etiquetaCupo(a: Actividad): string | null {
+    return etiquetaCupoAgenda(a);
+  }
+
+  cupoLleno(a: Actividad): boolean {
+    return cupoAgendaCompleto(a);
+  }
+
   agregar(actividad: Actividad): void {
-    if (!this.usuarioId || !actividad.id) {
+    if (!this.usuarioId || !actividad.id || this.cupoLleno(actividad)) {
       return;
     }
     this.error = '';
@@ -331,6 +364,7 @@ export class CronogramaParticipanteComponent implements OnInit {
     this.cronogramaService.agregarActividad(this.usuarioId, actividad.id).subscribe({
       next: (c) => {
         this.cronograma = c;
+        this.sincronizarOcupacionDesde(c.actividades ?? []);
         this.procesandoAgregarId = undefined;
         this.mensaje = `"${actividad.titulo}" agregada a tu agenda.`;
       },
@@ -358,6 +392,7 @@ export class CronogramaParticipanteComponent implements OnInit {
           ...this.cronograma!,
           actividades: (this.cronograma?.actividades ?? []).filter((a) => a.id !== id),
         };
+        this.bumpOcupacionLocal(id, -1);
         this.procesandoQuitarId = undefined;
         this.mensaje = `"${actividad.titulo}" eliminada de tu agenda.`;
       },
@@ -366,6 +401,39 @@ export class CronogramaParticipanteComponent implements OnInit {
         this.error = mensajeErrorApi(err, 'No se pudo quitar la actividad.');
       },
     });
+  }
+
+  private sincronizarOcupacionDesde(items: Actividad[]): void {
+    for (const a of items) {
+      if (a.id == null) continue;
+      this.todasActividades = this.todasActividades.map((t) =>
+        t.id === a.id
+          ? {
+              ...t,
+              agendasOcupacion: a.agendasOcupacion ?? t.agendasOcupacion,
+              aulaCapacidad: a.aulaCapacidad ?? t.aulaCapacidad,
+            }
+          : t
+      );
+    }
+  }
+
+  private bumpOcupacionLocal(actividadId: number, delta: number): void {
+    this.todasActividades = this.todasActividades.map((t) => {
+      if (t.id !== actividadId) return t;
+      const actual = t.agendasOcupacion ?? 0;
+      return { ...t, agendasOcupacion: Math.max(0, actual + delta) };
+    });
+    if (this.cronograma?.actividades) {
+      this.cronograma = {
+        ...this.cronograma,
+        actividades: this.cronograma.actividades.map((t) => {
+          if (t.id !== actividadId) return t;
+          const actual = t.agendasOcupacion ?? 0;
+          return { ...t, agendasOcupacion: Math.max(0, actual + delta) };
+        }),
+      };
+    }
   }
 
   private cargarCronograma(): void {

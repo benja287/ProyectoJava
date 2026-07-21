@@ -3,6 +3,7 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 import ar.edu.unlp.jyaa.grupo1.dao.ActividadDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.AulaDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.CongresoDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.CronogramaPersonalDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.FranjaHorariaDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.ActividadFiltro;
@@ -30,7 +31,9 @@ import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -48,6 +51,7 @@ public class ActividadService {
   @Inject private FranjaHorariaDAO franjaHorariaDAO;
   @Inject private TrabajoDAO trabajoDAO;
   @Inject private CongresoDAO congresoDAO;
+  @Inject private CronogramaPersonalDAO cronogramaPersonalDAO;
   @Inject private CongresoService congresoService;
   @Inject private NotificacionService notificacionService;
 
@@ -90,13 +94,37 @@ public class ActividadService {
     int offset = (safePage - 1) * safeSize;
 
     long total = actividadDAO.contarFiltrado(filtro);
+    List<Actividad> actividades = actividadDAO.listarFiltrado(filtro, offset, safeSize);
+    Map<Long, Long> ocupacion = ocupacionDe(actividades);
     List<ActividadResumenDTO> items =
-        actividadDAO.listarFiltrado(filtro, offset, safeSize).stream()
-            .map(ActividadResumenDTO::from)
+        actividades.stream()
+            .map(a -> ActividadResumenDTO.from(a, ocupacion.getOrDefault(a.getId(), 0L)))
             .toList();
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
 
     return new PaginaActividadesDTO(items, safePage, safeSize, total, totalPages);
+  }
+
+  public ActividadResumenDTO resumenConOcupacion(Actividad actividad) {
+    if (actividad == null) {
+      return null;
+    }
+    long ocup =
+        actividad.getId() != null
+            ? cronogramaPersonalDAO.contarAgendasConActividad(actividad.getId())
+            : 0L;
+    return ActividadResumenDTO.from(actividad, ocup);
+  }
+
+  public ActividadCronogramaDTO cronogramaConOcupacion(Actividad actividad) {
+    if (actividad == null) {
+      return null;
+    }
+    long ocup =
+        actividad.getId() != null
+            ? cronogramaPersonalDAO.contarAgendasConActividad(actividad.getId())
+            : 0L;
+    return ActividadCronogramaDTO.from(actividad, ocup);
   }
 
   public Actividad buscar(Long id) {
@@ -252,7 +280,20 @@ public class ActividadService {
   }
 
   public List<ActividadCronogramaDTO> listarCronogramaAdmin() {
-    return actividadDAO.listarCronogramaCompleto().stream().map(ActividadCronogramaDTO::from).toList();
+    List<Actividad> actividades = actividadDAO.listarCronogramaCompleto();
+    Map<Long, Long> ocupacion = ocupacionDe(actividades);
+    return actividades.stream()
+        .map(a -> ActividadCronogramaDTO.from(a, ocupacion.getOrDefault(a.getId(), 0L)))
+        .toList();
+  }
+
+  private Map<Long, Long> ocupacionDe(List<Actividad> actividades) {
+    Set<Long> ids =
+        actividades.stream()
+            .map(Actividad::getId)
+            .filter(id -> id != null)
+            .collect(Collectors.toSet());
+    return cronogramaPersonalDAO.contarAgendasPorActividadIds(ids);
   }
 
   public Actividad actualizarPrograma(Long id, ActualizarActividadProgramaRequest request) {

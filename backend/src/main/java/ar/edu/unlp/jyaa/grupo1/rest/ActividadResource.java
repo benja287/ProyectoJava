@@ -84,7 +84,7 @@ public class ActividadResource {
     if (actividad == null) {
       throw new NotFoundException("Actividad no encontrada");
     }
-    return ActividadResumenDTO.from(actividad);
+    return actividadService.resumenConOcupacion(actividad);
   }
 
   @POST
@@ -93,7 +93,7 @@ public class ActividadResource {
   public Response crearMesaTematica(CrearMesaTematicaRequest request, @Context UriInfo uriInfo) {
     Actividad creada = actividadService.crearMesaTematica(request);
     URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
-    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
+    return Response.created(location).entity(actividadService.resumenConOcupacion(creada)).build();
   }
 
   @POST
@@ -102,7 +102,7 @@ public class ActividadResource {
   public Response crearSesionPosters(CrearSesionPostersRequest request, @Context UriInfo uriInfo) {
     Actividad creada = actividadService.crearSesionPosters(request);
     URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
-    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
+    return Response.created(location).entity(actividadService.resumenConOcupacion(creada)).build();
   }
 
   @POST
@@ -111,7 +111,7 @@ public class ActividadResource {
   public Response crearMesaRedonda(CrearMesaRedondaRequest request, @Context UriInfo uriInfo) {
     Actividad creada = actividadService.crearMesaRedonda(request);
     URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
-    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
+    return Response.created(location).entity(actividadService.resumenConOcupacion(creada)).build();
   }
 
   @POST
@@ -120,7 +120,7 @@ public class ActividadResource {
   public Response crearTallerOficial(CrearTallerOficialRequest request, @Context UriInfo uriInfo) {
     Actividad creada = actividadService.crearTallerOficial(request);
     URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
-    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
+    return Response.created(location).entity(actividadService.resumenConOcupacion(creada)).build();
   }
 
   @POST
@@ -129,7 +129,7 @@ public class ActividadResource {
   public Response crearConferencia(CrearConferenciaRequest request, @Context UriInfo uriInfo) {
     Actividad creada = actividadService.crearConferencia(request);
     URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
-    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
+    return Response.created(location).entity(actividadService.resumenConOcupacion(creada)).build();
   }
 
   @POST
@@ -138,7 +138,7 @@ public class ActividadResource {
   public Response alta(Actividad actividad, @Context UriInfo uriInfo) {
     Actividad creada = actividadService.alta(actividad);
     URI location = uriInfo.getAbsolutePathBuilder().path(creada.getId().toString()).build();
-    return Response.created(location).entity(ActividadResumenDTO.from(creada)).build();
+    return Response.created(location).entity(actividadService.resumenConOcupacion(creada)).build();
   }
 
   @PUT
@@ -155,7 +155,7 @@ public class ActividadResource {
     if (actualizada == null) {
       throw new NotFoundException("Actividad no encontrada");
     }
-    return ActividadCronogramaDTO.from(actualizada);
+    return actividadService.cronogramaConOcupacion(actualizada);
   }
 
   @DELETE
@@ -182,7 +182,7 @@ public class ActividadResource {
     if (actualizada == null) {
       throw new NotFoundException("Actividad no encontrada");
     }
-    return ActividadResumenDTO.from(actualizada);
+    return actividadService.resumenConOcupacion(actualizada);
   }
 
   @DELETE

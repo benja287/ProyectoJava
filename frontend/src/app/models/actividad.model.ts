@@ -15,6 +15,10 @@ export interface Actividad {
   institucion?: string;
   diaCongreso?: number | null;
   aulaId?: number | null;
+  /** Agendas personales que ya incluyen esta actividad. */
+  agendasOcupacion?: number;
+  /** Capacidad del aula; null/undefined = sin límite. */
+  aulaCapacidad?: number | null;
 }
 
 export interface PaginaActividades {

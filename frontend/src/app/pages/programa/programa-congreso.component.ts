@@ -15,6 +15,7 @@ import {
 } from '../../utils/fecha.util';
 import { mensajeErrorApi } from '../../utils/api-error.util';
 import { AulaUbicacionLinkComponent } from '../../components/aula-mapa/aula-ubicacion-link.component';
+import { etiquetaCupoAgenda } from '../../utils/cupo-agenda.util';
 import { filter, Subscription } from 'rxjs';
 
 const ETIQUETAS_TIPO: Record<string, string> = {
@@ -91,6 +92,9 @@ const ORDEN_TIPO: Record<string, number> = {
                         [aulaId]="a.aulaId ?? null"
                         [sala]="a.sala || ''"
                       />
+                    }
+                    @if (etiquetaCupo(a); as cupo) {
+                      <span class="cupo-aula" title="Agendados / capacidad del aula">Cupo {{ cupo }}</span>
                     }
                   </div>
                   @if (a.moderador) {
@@ -171,6 +175,10 @@ export class ProgramaCongresoComponent implements OnInit, OnDestroy {
       return null;
     }
     return this.aulasPorId.get(a.aulaId) ?? null;
+  }
+
+  etiquetaCupo(a: Actividad): string | null {
+    return etiquetaCupoAgenda(a);
   }
 
   get subtituloPrograma(): string {

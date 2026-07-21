@@ -22,13 +22,20 @@ public record ActividadCronogramaDTO(
     String institucion,
     Integer diaCongreso,
     Long aulaId,
-    List<TrabajoCronogramaItemDTO> trabajos) {
+    List<TrabajoCronogramaItemDTO> trabajos,
+    long agendasOcupacion,
+    Integer aulaCapacidad) {
 
   public static ActividadCronogramaDTO from(Actividad a) {
+    return from(a, 0L);
+  }
+
+  public static ActividadCronogramaDTO from(Actividad a, long agendasOcupacion) {
     List<TrabajoCronogramaItemDTO> trabajos =
         a.getTrabajos() == null
             ? List.of()
             : a.getTrabajos().stream().map(TrabajoCronogramaItemDTO::from).toList();
+    Integer capacidad = a.getAula() != null ? a.getAula().getCapacidad() : null;
     return new ActividadCronogramaDTO(
         a.getId(),
         a.getTitulo(),
@@ -46,6 +53,8 @@ public record ActividadCronogramaDTO(
         a.getInstitucion(),
         a.getDiaCongreso(),
         a.getAula() != null ? a.getAula().getId() : null,
-        trabajos);
+        trabajos,
+        agendasOcupacion,
+        capacidad);
   }
 }

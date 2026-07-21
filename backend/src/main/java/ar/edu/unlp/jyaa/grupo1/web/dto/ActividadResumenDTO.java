@@ -21,9 +21,18 @@ public record ActividadResumenDTO(
     String conferencistas,
     String institucion,
     Integer diaCongreso,
-    Long aulaId) {
+    Long aulaId,
+    /** Cuántas agendas personales ya incluyen esta actividad. */
+    long agendasOcupacion,
+    /** Capacidad del aula; null = sin límite configurado. */
+    Integer aulaCapacidad) {
 
   public static ActividadResumenDTO from(Actividad a) {
+    return from(a, 0L);
+  }
+
+  public static ActividadResumenDTO from(Actividad a, long agendasOcupacion) {
+    Integer capacidad = a.getAula() != null ? a.getAula().getCapacidad() : null;
     return new ActividadResumenDTO(
         a.getId(),
         a.getTitulo(),
@@ -40,6 +49,8 @@ public record ActividadResumenDTO(
         a.getConferencistas(),
         a.getInstitucion(),
         a.getDiaCongreso(),
-        a.getAula() != null ? a.getAula().getId() : null);
+        a.getAula() != null ? a.getAula().getId() : null,
+        agendasOcupacion,
+        capacidad);
   }
 }

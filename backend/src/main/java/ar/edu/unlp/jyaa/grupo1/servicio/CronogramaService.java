@@ -8,8 +8,12 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Aula;
 import ar.edu.unlp.jyaa.grupo1.modelo.CronogramaPersonal;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoActividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
+import ar.edu.unlp.jyaa.grupo1.web.dto.CronogramaDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RequestScoped
 public class CronogramaService {
@@ -18,6 +22,21 @@ public class CronogramaService {
   @Inject private ActividadDAO actividadDAO;
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private CongresoService congresoService;
+
+  public CronogramaDTO obtenerCronogramaDTO(Long usuarioId) {
+    CronogramaPersonal cronograma = obtenerCronograma(usuarioId);
+    return toDto(cronograma);
+  }
+
+  public CronogramaDTO toDto(CronogramaPersonal cronograma) {
+    List<Long> ids =
+        cronograma.getActividades().stream()
+            .map(Actividad::getId)
+            .filter(id -> id != null)
+            .collect(Collectors.toList());
+    Map<Long, Long> ocupacion = cronogramaPersonalDAO.contarAgendasPorActividadIds(ids);
+    return CronogramaDTO.from(cronograma, ocupacion);
+  }
 
   public CronogramaPersonal obtenerCronograma(Long usuarioId) {
     return cronogramaPersonalDAO

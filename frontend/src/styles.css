@@ -2747,6 +2747,23 @@ textarea {
   color: #64748b;
 }
 
+.cupo-aula {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #0f766e;
+  background: #ccfbf1;
+  padding: 0.1rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.cupo-aula--lleno {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
 .agenda-btn-quitar {
   flex-shrink: 0;
   border: 1px solid #fecaca;

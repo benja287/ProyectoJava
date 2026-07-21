@@ -47,7 +47,7 @@ public class CronogramaResource {
             u != null ? u.getApellido() : null,
             List.of());
       }
-      return CronogramaDTO.from(cronograma);
+      return cronogramaService.toDto(cronograma);
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       throw new NotFoundException(e.getMessage());
     }
@@ -62,7 +62,7 @@ public class CronogramaResource {
       @PathParam("usuarioId") Long usuarioId, @PathParam("actividadId") Long actividadId) {
     try {
       CronogramaPersonal cronograma = cronogramaService.agregarActividad(usuarioId, actividadId);
-      return CronogramaDTO.from(cronograma);
+      return cronogramaService.toDto(cronograma);
     } catch (ar.edu.unlp.jyaa.grupo1.servicio.NegocioException e) {
       if (e.getMessage().contains("Usuario no encontrado")) {
         throw new NotFoundException(e.getMessage());

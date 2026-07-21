@@ -73,7 +73,7 @@ public class ActividadDAOImpl extends AbstractJpaDAO<Actividad> implements Activ
     EntityManager em = emConsulta();
     try {
       Map<String, Object> params = new HashMap<>();
-      String jpql = buildActividadWhere("SELECT a FROM Actividad a", filtro, params);
+      String jpql = buildActividadWhere("SELECT DISTINCT a FROM Actividad a LEFT JOIN FETCH a.aula", filtro, params);
       jpql += " ORDER BY a.inicio";
       TypedQuery<Actividad> q = em.createQuery(jpql, Actividad.class);
       params.forEach(q::setParameter);
@@ -170,6 +170,7 @@ public class ActividadDAOImpl extends AbstractJpaDAO<Actividad> implements Activ
     try {
       return em.createQuery(
               "SELECT DISTINCT a FROM Actividad a"
+                  + " LEFT JOIN FETCH a.aula"
                   + " LEFT JOIN FETCH a.trabajos t LEFT JOIN FETCH t.autor"
                   + " ORDER BY a.inicio ASC, a.tipoActividad ASC",
               Actividad.class)
