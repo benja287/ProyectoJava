@@ -12,11 +12,17 @@ public record EvaluadorEjeCupoDTO(
     int pendientesDictamen) {
 
   public static EvaluadorEjeCupoDTO from(EvaluadorEjeCapacidad c, int pendientesDictamen) {
+    return from(c, pendientesDictamen, c.getRestantes());
+  }
+
+  /** Vista reconciliada sin persistir (seguro en GET de listados). */
+  public static EvaluadorEjeCupoDTO from(
+      EvaluadorEjeCapacidad c, int pendientesDictamen, int restantesVista) {
     return new EvaluadorEjeCupoDTO(
         c.getId(),
         c.getEjeTematico(),
         c.getCapacidadMax(),
-        c.getRestantes(),
+        Math.max(0, restantesVista),
         c.isActivo(),
         Math.max(0, pendientesDictamen));
   }

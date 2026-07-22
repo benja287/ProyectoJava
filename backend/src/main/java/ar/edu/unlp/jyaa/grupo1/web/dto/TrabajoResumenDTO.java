@@ -72,7 +72,7 @@ public record TrabajoResumenDTO(
         t.getDocumentoUrl(),
         t.getDocumentoDocxUrl(),
         t.getFechaCreacion(),
-        t.getCoautores(),
+        t.getCoautores() != null ? List.copyOf(t.getCoautores()) : List.of(),
         autor != null ? autor.getId() : null,
         autor != null ? autor.getNombre() : null,
         autor != null ? autor.getApellido() : null,

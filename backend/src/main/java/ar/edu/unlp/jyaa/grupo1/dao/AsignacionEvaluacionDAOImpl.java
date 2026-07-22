@@ -10,6 +10,8 @@ import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,6 +152,38 @@ public class AsignacionEvaluacionDAOImpl extends AbstractJpaDAO<AsignacionEvalua
               AsignacionEvaluacion.class)
           .setParameter("id", trabajoId)
           .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
+  public Map<Long, List<AsignacionEvaluacion>> listarAgrupadasPorTrabajos(
+      Collection<Long> trabajoIds) {
+    if (trabajoIds == null || trabajoIds.isEmpty()) {
+      return Map.of();
+    }
+    EntityManager em = emConsulta();
+    try {
+      List<AsignacionEvaluacion> list =
+          em.createQuery(
+                  "SELECT a FROM AsignacionEvaluacion a"
+                      + " JOIN FETCH a.trabajo"
+                      + " JOIN FETCH a.evaluador"
+                      + " LEFT JOIN FETCH a.evaluacion"
+                      + " WHERE a.trabajo.id IN :ids",
+                  AsignacionEvaluacion.class)
+              .setParameter("ids", trabajoIds)
+              .getResultList();
+      Map<Long, List<AsignacionEvaluacion>> out = new HashMap<>();
+      for (AsignacionEvaluacion a : list) {
+        Long tid = a.getTrabajo() != null ? a.getTrabajo().getId() : null;
+        if (tid == null) {
+          continue;
+        }
+        out.computeIfAbsent(tid, k -> new ArrayList<>()).add(a);
+      }
+      return out;
     } finally {
       closeLegacy(em);
     }

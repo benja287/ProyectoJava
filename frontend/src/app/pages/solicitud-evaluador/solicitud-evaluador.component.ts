@@ -246,6 +246,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
 export class SolicitudEvaluadorComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(SolicitudEvaluadorService);
+  private readonly catalogos = inject(CatalogosCongresoService);
   readonly loginService = inject(LoginService);
 
   tiposId = [...TIPOS_IDENTIFICACION];
@@ -295,8 +296,11 @@ export class SolicitudEvaluadorComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    inject(CatalogosCongresoService).ejesActivos().subscribe({
-      next: (ejes) => (this.ejes = ejes.map((e) => e.codigo)),
+    this.catalogos.ejesActivos().subscribe({
+      next: (ejes) => {
+        this.ejes = ejes.map((e) => e.codigo);
+        this.capacidades = this.ejes.map(() => 0);
+      },
     });
 
     const u = this.loginService.getUser();

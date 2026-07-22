@@ -1,7 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Subscription, finalize, timeout } from 'rxjs';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import {
   FilterBarComponent,
@@ -540,11 +541,13 @@ interface PrecheckChecks {
     </div>
   `,
 })
-export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
+export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
+  private catalogos = inject(CatalogosCongresoService);
   readonly Math = Math;
   ejesTematicos: string[] = [];
   readonly modalidadLabels = MODALIDAD_LABELS;
+  private cargaTrabajosSub?: Subscription;
 
   readonly filterFields: FilterFieldConfig[] = [
     { key: 'titulo', label: 'Título', placeholder: 'Buscar por título' },
@@ -599,12 +602,17 @@ export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
   }
 
   override ngOnInit(): void {
-    inject(CatalogosCongresoService).ejesActivos().subscribe({
+    this.catalogos.ejesActivos().subscribe({
       next: (ejes) => (this.ejesTematicos = ejes.map((e) => e.codigo)),
     });
 
     super.ngOnInit();
     this.cargarUsuarios();
+  }
+
+  override ngOnDestroy(): void {
+    this.cargaTrabajosSub?.unsubscribe();
+    super.ngOnDestroy();
   }
 
   get evaluadoresDelEje(): Usuario[] {
@@ -858,30 +866,59 @@ export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
 
   protected override cargarPagina(): void {
     this.iniciarCarga();
-    this.trabajoService.listarComitePagina(this.page, this.pageSize, this.filtros).subscribe({
-      next: (pagina) => {
-        this.trabajos = pagina.items;
-        this.aplicarPagina(pagina);
-        if (this.seleccionado?.id) {
-          this.seleccionado =
-            this.trabajos.find((t) => t.id === this.seleccionado!.id) ?? this.seleccionado;
-        }
-      },
-      error: (err) => {
-        this.trabajos = [];
-        this.marcarError(mensajeErrorApi(err, 'No se pudieron cargar trabajos.'));
-      },
-    });
+    this.cargaTrabajosSub?.unsubscribe();
+    this.cargaTrabajosSub = this.trabajoService
+      .listarComitePagina(this.page, this.pageSize, this.filtros)
+      .pipe(
+        timeout({ first: 45_000 }),
+        finalize(() => {
+          this.cargando = false;
+        })
+      )
+      .subscribe({
+        next: (pagina) => {
+          try {
+            this.trabajos = pagina?.items ?? [];
+            this.aplicarPagina({
+              items: this.trabajos,
+              page: pagina?.page ?? this.page,
+              size: pagina?.size ?? this.pageSize,
+              total: pagina?.total ?? 0,
+              totalPages: pagina?.totalPages ?? 0,
+            });
+            if (this.seleccionado?.id) {
+              this.seleccionado =
+                this.trabajos.find((t) => t.id === this.seleccionado!.id) ?? this.seleccionado;
+            }
+          } catch (e) {
+            this.trabajos = [];
+            this.marcarError('No se pudo interpretar el listado de trabajos.');
+            console.error(e);
+          }
+        },
+        error: (err) => {
+          this.trabajos = [];
+          const msg =
+            err?.name === 'TimeoutError'
+              ? 'La carga de trabajos tardó demasiado. Probá de nuevo o avisá si sigue fallando.'
+              : mensajeErrorApi(err, 'No se pudieron cargar trabajos.');
+          this.marcarError(msg);
+        },
+      });
   }
 
   private cargarUsuarios(): void {
-    this.usuarioService.listar(1, 500).subscribe({
+    // Solo evaluadores: el listado completo + reconciliación de cupos era muy pesado al abrir comité.
+    this.usuarioService.listar(1, 200, { esEvaluador: 'true' }).subscribe({
       next: (items) => {
         this.usuarios = items.filter((u) => u.activo !== false);
       },
       error: (err) => {
         this.usuarios = [];
-        this.error = mensajeErrorApi(err, 'No se pudieron cargar los usuarios para asignar evaluadores.');
+        this.error = mensajeErrorApi(
+          err,
+          'No se pudieron cargar los usuarios para asignar evaluadores.'
+        );
       },
     });
   }

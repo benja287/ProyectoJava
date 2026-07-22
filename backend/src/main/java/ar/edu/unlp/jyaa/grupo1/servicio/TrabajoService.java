@@ -106,9 +106,16 @@ public class TrabajoService {
                 base.autorId(),
                 excluirAutorId);
     long total = trabajoDAO.contarFiltradoComite(effective);
+    List<Trabajo> trabajos = trabajoDAO.listarFiltradoComite(effective, offset, safeSize);
+    Map<Long, List<AsignacionEvaluacion>> porTrabajo =
+        asignacionEvaluacionDAO.listarAgrupadasPorTrabajos(
+            trabajos.stream().map(Trabajo::getId).filter(id -> id != null).toList());
     List<TrabajoResumenDTO> items =
-        trabajoDAO.listarFiltradoComite(effective, offset, safeSize).stream()
-            .map(this::toResumenConAsignaciones)
+        trabajos.stream()
+            .map(
+                t ->
+                    TrabajoResumenDTO.from(
+                        t, porTrabajo.getOrDefault(t.getId(), List.of())))
             .toList();
     int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / safeSize);
     return new PaginaTrabajosDTO(items, safePage, safeSize, total, totalPages);

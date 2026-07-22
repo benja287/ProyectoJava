@@ -537,7 +537,6 @@ public class CongresoService {
   private CongresoConfigDTO leerConfigDesdeEm(EntityManager em) {
     Congreso congreso = resolverCongresoPrincipal(em);
     catalogoCongresoService.asegurarCatalogos(congreso);
-    em.flush();
     return CongresoConfigDTO.from(congreso);
   }
 

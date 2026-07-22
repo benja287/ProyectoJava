@@ -245,12 +245,9 @@ public class EvaluadorEjeService {
             asignacionEvaluacionDAO.contarPendientesDictamenPorEvaluadorYEje(
                 usuarioId, c.getEjeTematico());
     int consumidosEsperados = Math.min(c.getCapacidadMax(), pendientes);
-    int restantesEsperados = c.getCapacidadMax() - consumidosEsperados;
-    if (c.getRestantes() != restantesEsperados) {
-      c.setRestantes(Math.max(0, restantesEsperados));
-      capacidadDAO.modificar(c);
-    }
-    return EvaluadorEjeCupoDTO.from(c, pendientes);
+    int restantesEsperados = Math.max(0, c.getCapacidadMax() - consumidosEsperados);
+    // No persistir en GET: evita locks/lentitud al abrir el panel del comité.
+    return EvaluadorEjeCupoDTO.from(c, pendientes, restantesEsperados);
   }
 
   private void upsertCupo(Usuario usuario, String eje, int capacidadMax, boolean activo) {

@@ -155,7 +155,14 @@ public class TrabajoDAOImpl extends AbstractJpaDAO<Trabajo> implements TrabajoDA
       jpql += " ORDER BY t.fechaCreacion DESC";
       TypedQuery<Trabajo> q = em.createQuery(jpql, Trabajo.class);
       params.forEach(q::setParameter);
-      return q.setFirstResult(offset).setMaxResults(limit).getResultList();
+      List<Trabajo> list = q.setFirstResult(offset).setMaxResults(limit).getResultList();
+      // Evita LazyInitializationException al armar DTOs si el EM se cierra después.
+      for (Trabajo t : list) {
+        if (t.getCoautores() != null) {
+          t.getCoautores().size();
+        }
+      }
+      return list;
     } finally {
       closeLegacy(em);
     }

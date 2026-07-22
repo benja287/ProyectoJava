@@ -2,7 +2,9 @@ package ar.edu.unlp.jyaa.grupo1.dao;
 
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.AsignacionEvaluadorFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface AsignacionEvaluacionDAO extends GenericDAO<AsignacionEvaluacion> {
@@ -24,6 +26,9 @@ public interface AsignacionEvaluacionDAO extends GenericDAO<AsignacionEvaluacion
   long contarAprobadasPorEvaluador(Long evaluadorId);
 
   List<AsignacionEvaluacion> listarPorTrabajo(Long trabajoId);
+
+  /** Agrupa asignaciones por id de trabajo (una sola query; evita N+1 en listados). */
+  Map<Long, List<AsignacionEvaluacion>> listarAgrupadasPorTrabajos(Collection<Long> trabajoIds);
 
   Optional<AsignacionEvaluacion> buscarActiva(Long trabajoId, Long evaluadorId);
 
