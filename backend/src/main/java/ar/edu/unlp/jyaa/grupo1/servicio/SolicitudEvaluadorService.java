@@ -2,7 +2,6 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.dao.SolicitudEvaluadorDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
-import ar.edu.unlp.jyaa.grupo1.modelo.EjesTematicos;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoSolicitudEvaluador;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.SolicitudEvaluador;
@@ -52,6 +51,7 @@ public class SolicitudEvaluadorService {
 
   @Inject private SolicitudEvaluadorDAO solicitudDAO;
   @Inject private UsuarioDAO usuarioDAO;
+   private CatalogoCongresoService catalogoCongresoService;
   @Inject private EvaluadorEjeService evaluadorEjeService;
   @Inject private NotificacionService notificacionService;
 
@@ -108,7 +108,7 @@ public class SolicitudEvaluadorService {
       if (c == null || c.capacidad() <= 0) {
         continue;
       }
-      if (!EjesTematicos.esValido(c.ejeTematico())) {
+      if (!catalogoCongresoService.esEjeActivo(c.ejeTematico())) {
         throw new NegocioException("Eje temático inválido: " + c.ejeTematico());
       }
       SolicitudEvaluadorCapacidad cap = new SolicitudEvaluadorCapacidad();
@@ -179,7 +179,7 @@ public class SolicitudEvaluadorService {
       Map<String, Integer> caps = new LinkedHashMap<>();
       if (s.getCapacidades() != null) {
         for (var c : s.getCapacidades()) {
-          if (c.getCapacidad() > 0 && EjesTematicos.esValido(c.getEjeTematico())) {
+          if (c.getCapacidad() > 0 && catalogoCongresoService.esEjeActivo(c.getEjeTematico())) {
             caps.put(c.getEjeTematico().trim(), c.getCapacidad());
           }
         }

@@ -1,8 +1,6 @@
 package ar.edu.unlp.jyaa.grupo1.dao.filtro;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
-import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
-import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 
 /** Filtros opcionales para listado de trabajos. */
 public record TrabajoFiltro(
@@ -10,8 +8,8 @@ public record TrabajoFiltro(
     String resumen,
     String ejeTematico,
     EstadoTrabajo estado,
-    ModalidadPresentacion modalidad,
-    TipoTrabajo tipo,
+    String modalidad,
+    String tipo,
     Long autorId,
     Long excluirAutorId) {
 
@@ -21,8 +19,8 @@ public record TrabajoFiltro(
       String resumen,
       String ejeTematico,
       EstadoTrabajo estado,
-      ModalidadPresentacion modalidad,
-      TipoTrabajo tipo,
+      String modalidad,
+      String tipo,
       Long autorId) {
     this(titulo, resumen, ejeTematico, estado, modalidad, tipo, autorId, null);
   }

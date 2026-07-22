@@ -12,7 +12,8 @@ export type CongresoConfigGrupo =
   | 'EVALUACION'
   | 'DATOS'
   | 'JORNADA'
-  | 'CUPOS';
+  | 'CUPOS'
+  | 'CATALOGOS';
 
 export type CongresoConfigUpdate = Partial<{
   programaPublicado: boolean;
@@ -40,6 +41,9 @@ export type CongresoConfigUpdate = Partial<{
   jornadaFinDia2: string | null;
   jornadaInicioDia3: string | null;
   jornadaFinDia3: string | null;
+  ejesTematicos: import('../models/congreso-config.model').CatalogoItem[] | null;
+  modalidadesPresentacion: import('../models/congreso-config.model').CatalogoItem[] | null;
+  tiposEnvio: import('../models/congreso-config.model').CatalogoItem[] | null;
 }>;
 
 @Injectable({ providedIn: 'root' })

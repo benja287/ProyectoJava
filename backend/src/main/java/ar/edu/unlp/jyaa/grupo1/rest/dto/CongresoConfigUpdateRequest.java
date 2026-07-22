@@ -31,6 +31,9 @@ public class CongresoConfigUpdateRequest {
   public String jornadaFinDia2;
   public String jornadaInicioDia3;
   public String jornadaFinDia3;
+  public java.util.List<ar.edu.unlp.jyaa.grupo1.web.dto.CatalogoItemDTO> ejesTematicos;
+  public java.util.List<ar.edu.unlp.jyaa.grupo1.web.dto.CatalogoItemDTO> modalidadesPresentacion;
+  public java.util.List<ar.edu.unlp.jyaa.grupo1.web.dto.CatalogoItemDTO> tiposEnvio;
 
   public Boolean programaPublicado() {
     return programaPublicado;
@@ -130,5 +133,17 @@ public class CongresoConfigUpdateRequest {
 
   public String jornadaFinDia3() {
     return jornadaFinDia3;
+  }
+
+  public java.util.List<ar.edu.unlp.jyaa.grupo1.web.dto.CatalogoItemDTO> ejesTematicos() {
+    return ejesTematicos;
+  }
+
+  public java.util.List<ar.edu.unlp.jyaa.grupo1.web.dto.CatalogoItemDTO> modalidadesPresentacion() {
+    return modalidadesPresentacion;
+  }
+
+  public java.util.List<ar.edu.unlp.jyaa.grupo1.web.dto.CatalogoItemDTO> tiposEnvio() {
+    return tiposEnvio;
   }
 }

@@ -36,8 +36,10 @@ public class CongresoService {
   public static final String GRUPO_DATOS = "DATOS";
   public static final String GRUPO_JORNADA = "JORNADA";
   public static final String GRUPO_CUPOS = "CUPOS";
+  public static final String GRUPO_CATALOGOS = "CATALOGOS";
 
   @Inject private NotificacionService notificacionService;
+  @Inject private CatalogoCongresoService catalogoCongresoService;
 
   public CongresoConfigDTO obtenerConfig() {
     return JpaUtil.ejecutarEnTransaccionReturning(this::leerConfigDesdeEm);
@@ -63,7 +65,8 @@ public class CongresoService {
               } else {
                 if (!GRUPO_DATOS.equals(grupo)
                     && !GRUPO_JORNADA.equals(grupo)
-                    && !GRUPO_CUPOS.equals(grupo)) {
+                    && !GRUPO_CUPOS.equals(grupo)
+                    && !GRUPO_CATALOGOS.equals(grupo)) {
                   exigirMotivo(request.motivo());
                 }
                 switch (grupo) {
@@ -84,9 +87,17 @@ public class CongresoService {
                   case GRUPO_ENVIO -> aplicarEnvio(congreso, request);
                   case GRUPO_EVALUACION -> aplicarEvaluacion(congreso, request);
                   case GRUPO_CUPOS -> aplicarCuposEnvio(congreso, request);
+                  case GRUPO_CATALOGOS -> {
+                    catalogoCongresoService.asegurarCatalogos(congreso);
+                    catalogoCongresoService.aplicarCatalogos(
+                        congreso,
+                        request.ejesTematicos(),
+                        request.modalidadesPresentacion(),
+                        request.tiposEnvio());
+                  }
                   default -> throw new NegocioException(
                       "grupo inválido (use CONGRESO, INSCRIPCIONES, ENVIO, EVALUACION, DATOS,"
-                          + " JORNADA o CUPOS)");
+                          + " JORNADA, CUPOS o CATALOGOS)");
                 }
               }
 
@@ -98,7 +109,8 @@ public class CongresoService {
     if (grupo != null
         && !GRUPO_DATOS.equals(grupo)
         && !GRUPO_JORNADA.equals(grupo)
-        && !GRUPO_CUPOS.equals(grupo)) {
+        && !GRUPO_CUPOS.equals(grupo)
+        && !GRUPO_CATALOGOS.equals(grupo)) {
       notificarSoloGrupo(grupo, antes, dto, request.motivo().trim(), actividadesRemapeadas[0]);
     } else if (grupo == null
         && request.envioTrabajosHasta() != null
@@ -523,7 +535,10 @@ public class CongresoService {
   }
 
   private CongresoConfigDTO leerConfigDesdeEm(EntityManager em) {
-    return CongresoConfigDTO.from(resolverCongresoPrincipal(em));
+    Congreso congreso = resolverCongresoPrincipal(em);
+    catalogoCongresoService.asegurarCatalogos(congreso);
+    em.flush();
+    return CongresoConfigDTO.from(congreso);
   }
 
   private Congreso resolverCongresoPrincipal(EntityManager em) {

@@ -6,10 +6,8 @@ import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.AsignacionEvaluadorFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
-import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
-import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import ar.edu.unlp.jyaa.grupo1.web.dto.AsignacionEvaluacionDTO;
@@ -253,22 +251,9 @@ public class AsignacionEvaluacionService {
 
   public static AsignacionEvaluadorFiltro parseFiltro(
       String tipo, String modalidad, String ejeTematico, String estado) {
-    TipoTrabajo tipoEnum = null;
-    if (tipo != null && !tipo.isBlank()) {
-      try {
-        tipoEnum = TipoTrabajo.valueOf(tipo.trim().toUpperCase());
-      } catch (IllegalArgumentException ignored) {
-        // filtro inválido → se ignora
-      }
-    }
-    ModalidadPresentacion modalidadEnum = null;
-    if (modalidad != null && !modalidad.isBlank()) {
-      try {
-        modalidadEnum = ModalidadPresentacion.valueOf(modalidad.trim().toUpperCase());
-      } catch (IllegalArgumentException ignored) {
-        // filtro inválido → se ignora
-      }
-    }
+    String tipoNorm = tipo != null && !tipo.isBlank() ? tipo.trim().toUpperCase() : null;
+    String modalidadNorm =
+        modalidad != null && !modalidad.isBlank() ? modalidad.trim().toUpperCase() : null;
     EstadoTrabajo estadoEnum = null;
     if (estado != null && !estado.isBlank()) {
       try {
@@ -278,7 +263,7 @@ public class AsignacionEvaluacionService {
       }
     }
     String eje = ejeTematico != null && !ejeTematico.isBlank() ? ejeTematico.trim() : null;
-    return new AsignacionEvaluadorFiltro(tipoEnum, modalidadEnum, eje, estadoEnum);
+    return new AsignacionEvaluadorFiltro(tipoNorm, modalidadNorm, eje, estadoEnum);
   }
 
   public List<AsignacionEvaluacion> listarPorTrabajo(Long trabajoId) {

@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { EJES_TEMATICOS } from '../../constants/ejes-tematicos';
+import { CatalogosCongresoService } from '../../servicios/catalogos-congreso.service';
 import { LoginService } from '../../auth/login.service';
 import {
   AREAS_CONOCIMIENTO,
@@ -253,7 +253,7 @@ export class SolicitudEvaluadorComponent implements OnInit {
   areas = [...AREAS_CONOCIMIENTO];
   subagro = [...SUBAREAS_AGRO];
   subanimal = [...SUBAREAS_ANIMAL];
-  ejes = [...EJES_TEMATICOS];
+  ejes: string[] = [];
   capacidades: number[] = this.ejes.map(() => 0);
   areasSel = new Set<string>();
   subareasSel = new Set<string>();
@@ -295,6 +295,10 @@ export class SolicitudEvaluadorComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    inject(CatalogosCongresoService).ejesActivos().subscribe({
+      next: (ejes) => (this.ejes = ejes.map((e) => e.codigo)),
+    });
+
     const u = this.loginService.getUser();
     if (u) {
       this.form.patchValue({

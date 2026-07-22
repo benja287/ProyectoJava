@@ -2,19 +2,15 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { DevolucionEvaluacionComponent } from '../../../components/devolucion-evaluacion/devolucion-evaluacion.component';
 import { LoginService } from '../../../auth/login.service';
-import { TIPOS_TRABAJO } from '../../../models/enums';
-import {
-  EJES_TEMATICOS,
-  MODALIDADES_PRESENTACION,
-  MODALIDAD_LABELS,
-} from '../../../constants/ejes-tematicos';
+import { CatalogoItem } from '../../../models/congreso-config.model';
 import { Trabajo, TrabajoEnvioResumen } from '../../../models/trabajo.model';
 import { etiquetaEstadoTrabajo } from '../../../models/trabajo-estado-labels';
+import { CatalogosCongresoService } from '../../../servicios/catalogos-congreso.service';
 import { TrabajoService } from '../../../servicios/trabajo.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 import { feedbackTextoTrabajo, etiquetaRolEnvio } from '../../../utils/trabajo-rol.util';
@@ -119,16 +115,16 @@ import { feedbackTextoTrabajo, etiquetaRolEnvio } from '../../../utils/trabajo-r
             Eje temático
             <select formControlName="ejeTematico">
               <option value="">Seleccionar eje...</option>
-              @for (eje of ejesTematicos; track eje) {
-                <option [value]="eje">{{ eje }}</option>
+              @for (eje of ejesTematicos; track eje.codigo) {
+                <option [value]="eje.codigo">{{ eje.etiqueta }}</option>
               }
             </select>
           </label>
           <label>
-            Modalidad de presentación (Oral o Póster)
+            Modalidad de presentación
             <select formControlName="modalidad">
-              @for (m of modalidades; track m) {
-                <option [value]="m">{{ modalidadLabels[m] }}</option>
+              @for (m of modalidades; track m.codigo) {
+                <option [value]="m.codigo">{{ m.etiqueta }}</option>
               }
             </select>
             <span class="form-hint">La decisión final la toma la comisión académica.</span>
@@ -136,8 +132,8 @@ import { feedbackTextoTrabajo, etiquetaRolEnvio } from '../../../utils/trabajo-r
           <label>
             Tipo de envío
             <select formControlName="tipo">
-              @for (t of tiposFormulario; track t) {
-                <option [value]="t">{{ etiquetaTipo(t) }}</option>
+              @for (t of tiposFormulario; track t.codigo) {
+                <option [value]="t.codigo">{{ t.etiqueta }}</option>
               }
             </select>
           </label>
@@ -347,14 +343,13 @@ import { feedbackTextoTrabajo, etiquetaRolEnvio } from '../../../utils/trabajo-r
 })
 export class TrabajosAutorComponent implements OnInit {
   private fb = inject(FormBuilder);
+  private catalogos = inject(CatalogosCongresoService);
   readonly Math = Math;
 
   trabajos: Trabajo[] = [];
-  tipos = [...TIPOS_TRABAJO];
-  tiposAsistente = TIPOS_TRABAJO.filter((t) => t !== 'PROPUESTA_TALLER');
-  ejesTematicos = [...EJES_TEMATICOS];
-  modalidades = [...MODALIDADES_PRESENTACION];
-  modalidadLabels = MODALIDAD_LABELS;
+  tipos: CatalogoItem[] = [];
+  ejesTematicos: CatalogoItem[] = [];
+  modalidades: CatalogoItem[] = [];
   coautores: string[] = [''];
   pdfNuevo?: File;
   docxNuevo?: File;
@@ -378,7 +373,7 @@ export class TrabajosAutorComponent implements OnInit {
     resumen: ['', Validators.required],
     ejeTematico: ['', Validators.required],
     modalidad: ['ORAL', Validators.required],
-    tipo: [this.tipos[0], Validators.required],
+    tipo: ['TRABAJO_CIENTIFICO', Validators.required],
   });
 
   constructor(
@@ -393,7 +388,6 @@ export class TrabajosAutorComponent implements OnInit {
     this.perfilAsistente = perfil === 'asistente' || perfil === 'participante';
     this.menuVolver = this.perfilAsistente ? '/asistente' : '/autor';
     this.etiquetaVolver = this.perfilAsistente ? 'Panel asistente' : 'Panel autor';
-    this.form.patchValue({ tipo: this.tiposFormulario[0] as (typeof TIPOS_TRABAJO)[number] });
 
     this.autorId = this.loginService.getUser()?.id;
     if (!this.autorId) {
@@ -402,6 +396,26 @@ export class TrabajosAutorComponent implements OnInit {
       return;
     }
 
+    forkJoin({
+      ejes: this.catalogos.ejesActivos(),
+      modalidades: this.catalogos.modalidadesActivas(),
+      tipos: this.catalogos.tiposEnvioPaperActivos(),
+    }).subscribe({
+      next: ({ ejes, modalidades, tipos }) => {
+        this.ejesTematicos = ejes;
+        this.modalidades = modalidades;
+        this.tipos = tipos;
+        this.form.patchValue({
+          tipo: this.tiposFormulario[0]?.codigo || 'TRABAJO_CIENTIFICO',
+          modalidad: this.modalidades[0]?.codigo || 'ORAL',
+        });
+        this.continuarInit();
+      },
+      error: () => this.continuarInit(),
+    });
+  }
+
+  private continuarInit(): void {
     this.route.queryParamMap.subscribe((params) => {
       const resubmitId = Number(params.get('resubmit'));
       const editarId = Number(params.get('editar'));
@@ -435,13 +449,13 @@ export class TrabajosAutorComponent implements OnInit {
     });
 
     const rolEnvio = this.perfilAsistente ? 'ASISTENTE' : 'AUTOR';
-    this.trabajoService.resumenEnvio(this.autorId, rolEnvio).subscribe({
+    this.trabajoService.resumenEnvio(this.autorId!, rolEnvio).subscribe({
       next: (r) => (this.resumen = r),
     });
   }
 
-  get tiposFormulario(): string[] {
-    return this.perfilAsistente ? this.tiposAsistente : this.tipos;
+  get tiposFormulario(): CatalogoItem[] {
+    return this.tipos;
   }
 
   get etiquetaPerfil(): string {
@@ -472,8 +486,8 @@ export class TrabajosAutorComponent implements OnInit {
       titulo: t.titulo,
       resumen: t.resumen || '',
       ejeTematico: t.ejeTematico || '',
-      modalidad: (t.modalidad || 'ORAL') as 'ORAL' | 'POSTER',
-      tipo: t.tipo as (typeof TIPOS_TRABAJO)[number],
+      modalidad: t.modalidad || 'ORAL',
+      tipo: t.tipo || 'TRABAJO_CIENTIFICO',
     });
     this.coautores = t.coautores?.length ? [...t.coautores] : [''];
     this.documentoUrlActual = t.documentoUrl;
@@ -659,6 +673,8 @@ export class TrabajosAutorComponent implements OnInit {
   }
 
   etiquetaTipo(tipo?: string): string {
+    const found = this.tipos.find((t) => t.codigo === tipo);
+    if (found) return found.etiqueta;
     const map: Record<string, string> = {
       TRABAJO_CIENTIFICO: 'Trabajo científico',
       RELATO_DE_EXPERIENCIA: 'Relato de experiencia',
@@ -698,9 +714,10 @@ export class TrabajosAutorComponent implements OnInit {
   }
 
   etiquetaModalidad(modalidad?: string): string {
-    if (modalidad === 'ORAL' || modalidad === 'POSTER') {
-      return this.modalidadLabels[modalidad];
-    }
+    const found = this.modalidades.find((m) => m.codigo === modalidad);
+    if (found) return found.etiqueta;
+    if (modalidad === 'ORAL') return 'Oral';
+    if (modalidad === 'POSTER') return 'Póster';
     return modalidad || '—';
   }
 

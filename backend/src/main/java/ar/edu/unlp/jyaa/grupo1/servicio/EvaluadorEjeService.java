@@ -3,7 +3,6 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 import ar.edu.unlp.jyaa.grupo1.dao.AsignacionEvaluacionDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.EvaluadorEjeCapacidadDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
-import ar.edu.unlp.jyaa.grupo1.modelo.EjesTematicos;
 import ar.edu.unlp.jyaa.grupo1.modelo.EvaluadorEjeCapacidad;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
@@ -27,15 +26,14 @@ public class EvaluadorEjeService {
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private EvaluadorEjeCapacidadDAO capacidadDAO;
   @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
+  @Inject private CatalogoCongresoService catalogoCongresoService;
 
   public Usuario asignarEvaluadorAEje(Long usuarioId, String ejeTematico) {
     return asignarEvaluadorAEje(usuarioId, ejeTematico, CAPACIDAD_MANUAL_DEFAULT);
   }
 
   public Usuario asignarEvaluadorAEje(Long usuarioId, String ejeTematico, Integer capacidadMax) {
-    if (!EjesTematicos.esValido(ejeTematico)) {
-      throw new NegocioException("Eje temático inválido");
-    }
+    catalogoCongresoService.exigirEjeValido(ejeTematico);
     int cap =
         capacidadMax != null && capacidadMax > 0 ? capacidadMax : CAPACIDAD_MANUAL_DEFAULT;
     Usuario usuario = requireUsuario(usuarioId);
@@ -59,7 +57,7 @@ public class EvaluadorEjeService {
     for (Map.Entry<String, Integer> e : capacidadesPorEje.entrySet()) {
       String eje = e.getKey() != null ? e.getKey().trim() : "";
       Integer cap = e.getValue();
-      if (cap == null || cap <= 0 || !EjesTematicos.esValido(eje)) {
+      if (cap == null || cap <= 0 || !catalogoCongresoService.esEjeActivo(eje)) {
         continue;
       }
       upsertCupo(usuario, eje, cap, true);
@@ -109,7 +107,7 @@ public class EvaluadorEjeService {
     if (ejeTematico == null || ejeTematico.isBlank()) {
       return quitarEvaluadorDeEje(usuarioId);
     }
-    if (!EjesTematicos.esValido(ejeTematico)) {
+    if (!catalogoCongresoService.esEjeActivo(ejeTematico)) {
       throw new NegocioException("Eje temático inválido");
     }
     Usuario usuario = requireUsuario(usuarioId);
@@ -126,7 +124,7 @@ public class EvaluadorEjeService {
 
   /** Restaura restantes = capacidadMax para ese eje (solo si el cupo está activo). */
   public Usuario reiniciarCupo(Long usuarioId, String ejeTematico) {
-    if (!EjesTematicos.esValido(ejeTematico)) {
+    if (!catalogoCongresoService.esEjeActivo(ejeTematico)) {
       throw new NegocioException("Eje temático inválido");
     }
     Usuario usuario = requireUsuario(usuarioId);

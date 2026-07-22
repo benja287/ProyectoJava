@@ -1,7 +1,5 @@
 package ar.edu.unlp.jyaa.grupo1.web.dto;
 
-import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
-import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 
@@ -9,8 +7,8 @@ public record TrabajoCronogramaItemDTO(
     Long id,
     String titulo,
     String ejeTematico,
-    TipoTrabajo tipo,
-    ModalidadPresentacion modalidad,
+    String tipo,
+    String modalidad,
     Long autorId,
     String autorNombre,
     String autorApellido) {

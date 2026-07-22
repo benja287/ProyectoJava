@@ -1,8 +1,10 @@
 package ar.edu.unlp.jyaa.grupo1.web.dto;
 
+import ar.edu.unlp.jyaa.grupo1.modelo.CatalogoItem;
 import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 public record CongresoConfigDTO(
     String nombre,
@@ -27,7 +29,10 @@ public record CongresoConfigDTO(
     String jornadaInicioDia2,
     String jornadaFinDia2,
     String jornadaInicioDia3,
-    String jornadaFinDia3) {
+    String jornadaFinDia3,
+    List<CatalogoItemDTO> ejesTematicos,
+    List<CatalogoItemDTO> modalidadesPresentacion,
+    List<CatalogoItemDTO> tiposEnvio) {
 
   public static CongresoConfigDTO from(Congreso congreso) {
     return new CongresoConfigDTO(
@@ -53,7 +58,17 @@ public record CongresoConfigDTO(
         formatearHora(congreso.getJornadaInicioDia2()),
         formatearHora(congreso.getJornadaFinDia2()),
         formatearHora(congreso.getJornadaInicioDia3()),
-        formatearHora(congreso.getJornadaFinDia3()));
+        formatearHora(congreso.getJornadaFinDia3()),
+        mapCatalogo(congreso.getEjesTematicos()),
+        mapCatalogo(congreso.getModalidadesPresentacion()),
+        mapCatalogo(congreso.getTiposEnvio()));
+  }
+
+  private static List<CatalogoItemDTO> mapCatalogo(List<CatalogoItem> items) {
+    if (items == null || items.isEmpty()) {
+      return List.of();
+    }
+    return items.stream().map(CatalogoItemDTO::from).toList();
   }
 
   private static String formatearHora(LocalTime t) {

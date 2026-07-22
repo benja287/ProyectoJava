@@ -23,6 +23,31 @@ export interface CongresoConfig {
   jornadaFinDia2?: string | null;
   jornadaInicioDia3?: string | null;
   jornadaFinDia3?: string | null;
+  ejesTematicos?: CatalogoItem[] | null;
+  modalidadesPresentacion?: CatalogoItem[] | null;
+  tiposEnvio?: CatalogoItem[] | null;
+}
+
+export interface CatalogoItem {
+  codigo: string;
+  etiqueta: string;
+  activo: boolean;
+  orden: number;
+  grupoAgenda?: string | null;
+  sistema?: boolean;
+}
+
+export function catalogoActivos(items?: CatalogoItem[] | null): CatalogoItem[] {
+  return (items ?? []).filter((i) => i.activo).sort((a, b) => a.orden - b.orden);
+}
+
+export function etiquetaCatalogo(
+  items: CatalogoItem[] | null | undefined,
+  codigo?: string | null
+): string {
+  if (!codigo) return '—';
+  const found = (items ?? []).find((i) => i.codigo === codigo);
+  return found?.etiqueta || codigo;
 }
 
 /**

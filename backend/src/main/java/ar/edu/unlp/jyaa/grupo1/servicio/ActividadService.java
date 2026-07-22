@@ -138,7 +138,8 @@ public class ActividadService {
 
   public Actividad crearMesaTematica(CrearMesaTematicaRequest request) {
     validarRequestMesa(request);
-    List<Trabajo> trabajos = cargarTrabajosParaProgramacion(request.trabajoIds(), ModalidadPresentacion.ORAL);
+    List<Trabajo> trabajos =
+        cargarTrabajosParaProgramacion(request.trabajoIds(), ModalidadPresentacion.ORAL.name());
     validarMismoEje(trabajos);
 
     LocalDateTime[] horario =
@@ -162,7 +163,7 @@ public class ActividadService {
   public Actividad crearSesionPosters(CrearSesionPostersRequest request) {
     validarRequestPosters(request);
     List<Trabajo> trabajos =
-        cargarTrabajosParaProgramacion(request.trabajoIds(), ModalidadPresentacion.POSTER);
+        cargarTrabajosParaProgramacion(request.trabajoIds(), ModalidadPresentacion.POSTER.name());
     validarMismoEje(trabajos);
 
     LocalDateTime[] horario =
@@ -235,7 +236,7 @@ public class ActividadService {
       if (propuesta == null) {
         throw new NegocioException("Propuesta de taller no encontrada");
       }
-      if (propuesta.getTipo() != TipoTrabajo.PROPUESTA_TALLER) {
+      if (!TipoTrabajo.esPropuestaTaller(propuesta.getTipo())) {
         throw new NegocioException("El trabajo indicado no es una propuesta de taller");
       }
       if (propuesta.getEstado() != EstadoTrabajo.APROBADO) {
@@ -391,7 +392,7 @@ public class ActividadService {
   }
 
   private List<Trabajo> cargarTrabajosParaProgramacion(
-      List<Long> trabajoIds, ModalidadPresentacion modalidadEsperada) {
+      List<Long> trabajoIds, String modalidadEsperada) {
     if (trabajoIds == null || trabajoIds.isEmpty()) {
       throw new NegocioException("Debe seleccionar al menos un trabajo aprobado");
     }
@@ -404,7 +405,8 @@ public class ActividadService {
       if (t.getEstado() != EstadoTrabajo.APROBADO) {
         throw new NegocioException("El trabajo #" + id + " no está aprobado");
       }
-      if (t.getModalidad() != modalidadEsperada) {
+      if (t.getModalidad() == null
+          || !t.getModalidad().equalsIgnoreCase(modalidadEsperada)) {
         throw new NegocioException(
             "El trabajo #" + id + " no corresponde a modalidad " + modalidadEsperada);
       }

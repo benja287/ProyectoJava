@@ -37,6 +37,7 @@ import { ComiteOcComponent } from './pages/organizador/comite/comite-oc.componen
 import { PanelOrganizadorComponent } from './pages/organizador/panel-organizador/panel-organizador.component';
 import { PlazoEnvioOcComponent } from './pages/organizador/plazo-envio/plazo-envio-oc.component';
 import { ExcepcionesCupoOcComponent } from './pages/organizador/excepciones-cupo/excepciones-cupo-oc.component';
+import { CatalogosEnvioOcComponent } from './pages/organizador/catalogos-envio/catalogos-envio-oc.component';
 import { EvaluadoresEjeOcComponent } from './pages/organizador/evaluadores-eje/evaluadores-eje-oc.component';
 import { ProponerTallerAsistenteComponent } from './pages/asistente/proponer-taller/proponer-taller-asistente.component';
 import { CertificadoAsistenteComponent } from './pages/asistente/certificado-asistente.component';
@@ -242,6 +243,11 @@ export const routes: Routes = [
   {
     path: 'organizador/excepciones-cupo',
     component: ExcepcionesCupoOcComponent,
+    canActivate: [organizador],
+  },
+  {
+    path: 'organizador/catalogos-envio',
+    component: CatalogosEnvioOcComponent,
     canActivate: [organizador],
   },
   {

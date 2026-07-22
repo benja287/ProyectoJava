@@ -146,7 +146,7 @@ public final class PersistenciaAbmTests {
       t.setTitulo("Trabajo test " + stamp);
       t.setResumen("Resumen");
       t.setEjeTematico("Eje 1");
-      t.setTipo(TipoTrabajo.TRABAJO_CIENTIFICO);
+      t.setTipo(TipoTrabajo.TRABAJO_CIENTIFICO.name());
       t.setEstado(EstadoTrabajo.ENVIADO);
       t.setFechaCreacion(LocalDate.now());
       t.setAutor(uDao.recuperarPorId(autor.getId()));
@@ -270,7 +270,7 @@ public final class PersistenciaAbmTests {
       Usuario autor = uDao.alta(crearUsuarioPrueba("act-autor"));
       Trabajo trabajo = new Trabajo();
       trabajo.setTitulo("Para mesa " + stamp);
-      trabajo.setTipo(TipoTrabajo.TRABAJO_CIENTIFICO);
+      trabajo.setTipo(TipoTrabajo.TRABAJO_CIENTIFICO.name());
       trabajo.setEstado(EstadoTrabajo.APROBADO);
       trabajo.setFechaCreacion(LocalDate.now());
       trabajo.setAutor(uDao.recuperarPorId(autor.getId()));
@@ -367,7 +367,7 @@ public final class PersistenciaAbmTests {
       trabajo.setTitulo("Trabajo demo evaluacion " + stamp);
       trabajo.setResumen("Resumen demo persistido en BD");
       trabajo.setEjeTematico("Agroecologia");
-      trabajo.setTipo(TipoTrabajo.TRABAJO_CIENTIFICO);
+      trabajo.setTipo(TipoTrabajo.TRABAJO_CIENTIFICO.name());
       trabajo.setEstado(EstadoTrabajo.ENVIADO);
       trabajo.setFechaCreacion(LocalDate.now());
       trabajo.setAutor(uDao.recuperarPorId(autor.getId()));

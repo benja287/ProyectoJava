@@ -107,6 +107,25 @@ public class Congreso implements Serializable {
   @Column(name = "aranceles_publicados", nullable = false)
   private boolean arancelesPublicados = false;
 
+  @ElementCollection
+  @CollectionTable(name = "congreso_catalogo_ejes", joinColumns = @JoinColumn(name = "congreso_id"))
+  @OrderBy("orden ASC")
+  private List<CatalogoItem> ejesTematicos = new ArrayList<>();
+
+  @ElementCollection
+  @CollectionTable(
+      name = "congreso_catalogo_modalidades",
+      joinColumns = @JoinColumn(name = "congreso_id"))
+  @OrderBy("orden ASC")
+  private List<CatalogoItem> modalidadesPresentacion = new ArrayList<>();
+
+  @ElementCollection
+  @CollectionTable(
+      name = "congreso_catalogo_tipos_envio",
+      joinColumns = @JoinColumn(name = "congreso_id"))
+  @OrderBy("orden ASC")
+  private List<CatalogoItem> tiposEnvio = new ArrayList<>();
+
   public Congreso() {}
 
   public Long getId() {
@@ -339,6 +358,31 @@ public class Congreso implements Serializable {
 
   public void setArancelesPublicados(boolean arancelesPublicados) {
     this.arancelesPublicados = arancelesPublicados;
+  }
+
+  public List<CatalogoItem> getEjesTematicos() {
+    return ejesTematicos;
+  }
+
+  public void setEjesTematicos(List<CatalogoItem> ejesTematicos) {
+    this.ejesTematicos = ejesTematicos != null ? ejesTematicos : new ArrayList<>();
+  }
+
+  public List<CatalogoItem> getModalidadesPresentacion() {
+    return modalidadesPresentacion;
+  }
+
+  public void setModalidadesPresentacion(List<CatalogoItem> modalidadesPresentacion) {
+    this.modalidadesPresentacion =
+        modalidadesPresentacion != null ? modalidadesPresentacion : new ArrayList<>();
+  }
+
+  public List<CatalogoItem> getTiposEnvio() {
+    return tiposEnvio;
+  }
+
+  public void setTiposEnvio(List<CatalogoItem> tiposEnvio) {
+    this.tiposEnvio = tiposEnvio != null ? tiposEnvio : new ArrayList<>();
   }
 
   /** Inicio efectivo de la jornada para el día lógico 1..3. */

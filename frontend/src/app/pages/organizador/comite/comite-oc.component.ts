@@ -8,7 +8,8 @@ import {
   FilterFieldConfig,
 } from '../../../components/filter-bar/filter-bar.component';
 import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
-import { EJES_TEMATICOS, MODALIDAD_LABELS } from '../../../constants/ejes-tematicos';
+import { MODALIDAD_LABELS } from '../../../constants/ejes-tematicos';
+import { CatalogosCongresoService } from '../../../servicios/catalogos-congreso.service';
 import { AsignacionEvaluacion } from '../../../models/asignacion.model';
 import { Trabajo } from '../../../models/trabajo.model';
 import { Usuario } from '../../../models/usuario.model';
@@ -542,7 +543,7 @@ interface PrecheckChecks {
 export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
   private fb = inject(FormBuilder);
   readonly Math = Math;
-  readonly ejesTematicos = [...EJES_TEMATICOS];
+  ejesTematicos: string[] = [];
   readonly modalidadLabels = MODALIDAD_LABELS;
 
   readonly filterFields: FilterFieldConfig[] = [
@@ -598,6 +599,10 @@ export class ComiteOcComponent extends ListadoPaginadoBase implements OnInit {
   }
 
   override ngOnInit(): void {
+    inject(CatalogosCongresoService).ejesActivos().subscribe({
+      next: (ejes) => (this.ejesTematicos = ejes.map((e) => e.codigo)),
+    });
+
     super.ngOnInit();
     this.cargarUsuarios();
   }

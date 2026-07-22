@@ -18,7 +18,6 @@ import ar.edu.unlp.jyaa.grupo1.modelo.EstadoPago;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.MetodoPago;
-import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Pago;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
@@ -67,7 +66,7 @@ public class AdminStatsService {
                 null,
                 EstadoTrabajo.ENVIADO,
                 null,
-                TipoTrabajo.PROPUESTA_TALLER,
+                TipoTrabajo.PROPUESTA_TALLER.name(),
                 null));
     return new AdminStatsDTO(
         usuarioDAO.contar(),
@@ -121,8 +120,8 @@ public class AdminStatsService {
             trabajosEnEvaluacion,
             trabajosPendientesPrecheck);
 
-    Map<TipoTrabajo, Long> porTipo = new EnumMap<>(TipoTrabajo.class);
-    Map<ModalidadPresentacion, Long> porModalidad = new EnumMap<>(ModalidadPresentacion.class);
+    Map<String, Long> porTipo = new HashMap<>();
+    Map<String, Long> porModalidad = new HashMap<>();
     Map<EstadoTrabajo, Long> porEstado = new EnumMap<>(EstadoTrabajo.class);
     Map<String, Long> porEje = new HashMap<>();
     for (Trabajo t : trabajos) {
@@ -190,7 +189,7 @@ public class AdminStatsService {
     return new AdminReportDTO(
         Instant.now().toString(),
         kpi,
-        toConteoEnumTipo(porTipo),
+        toConteoTipo(porTipo),
         toConteoModalidad(porModalidad),
         toConteoEstado(porEstado),
         toConteoString(porEje),
@@ -236,20 +235,17 @@ public class AdminStatsService {
         .count();
   }
 
-  private List<ConteoLabelDTO> toConteoEnumTipo(Map<TipoTrabajo, Long> map) {
+  private List<ConteoLabelDTO> toConteoTipo(Map<String, Long> map) {
     return map.entrySet().stream()
-        .sorted(Map.Entry.<TipoTrabajo, Long>comparingByValue().reversed())
+        .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
         .map(e -> new ConteoLabelDTO(etiquetaTipo(e.getKey()), e.getValue()))
         .toList();
   }
 
-  private List<ConteoLabelDTO> toConteoModalidad(Map<ModalidadPresentacion, Long> map) {
+  private List<ConteoLabelDTO> toConteoModalidad(Map<String, Long> map) {
     return map.entrySet().stream()
-        .sorted(Map.Entry.<ModalidadPresentacion, Long>comparingByValue().reversed())
-        .map(
-            e ->
-                new ConteoLabelDTO(
-                    e.getKey() == ModalidadPresentacion.ORAL ? "Oral" : "Póster", e.getValue()))
+        .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+        .map(e -> new ConteoLabelDTO(etiquetaModalidad(e.getKey()), e.getValue()))
         .toList();
   }
 
@@ -275,11 +271,26 @@ public class AdminStatsService {
         .toList();
   }
 
-  private static String etiquetaTipo(TipoTrabajo tipo) {
+  private static String etiquetaTipo(String tipo) {
+    if (tipo == null) {
+      return "—";
+    }
     return switch (tipo) {
-      case TRABAJO_CIENTIFICO -> "Trabajo científico";
-      case RELATO_DE_EXPERIENCIA -> "Relato de experiencia";
-      case PROPUESTA_TALLER -> "Propuesta de taller";
+      case "TRABAJO_CIENTIFICO" -> "Trabajo científico";
+      case "RELATO_DE_EXPERIENCIA" -> "Relato de experiencia";
+      case "PROPUESTA_TALLER" -> "Propuesta de taller";
+      default -> tipo.replace('_', ' ');
+    };
+  }
+
+  private static String etiquetaModalidad(String modalidad) {
+    if (modalidad == null) {
+      return "—";
+    }
+    return switch (modalidad) {
+      case "ORAL" -> "Oral";
+      case "POSTER" -> "Póster";
+      default -> modalidad.replace('_', ' ');
     };
   }
 

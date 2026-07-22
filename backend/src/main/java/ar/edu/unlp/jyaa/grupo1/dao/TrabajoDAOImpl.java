@@ -203,7 +203,7 @@ public class TrabajoDAOImpl extends AbstractJpaDAO<Trabajo> implements TrabajoDA
     }
     if (alcanceComite) {
       jpql.append(" AND t.tipo <> :tipoExcluidoComite");
-      params.put("tipoExcluidoComite", TipoTrabajo.PROPUESTA_TALLER);
+      params.put("tipoExcluidoComite", TipoTrabajo.PROPUESTA_TALLER.name());
       if (filtro.estado() == null) {
         jpql.append(" AND t.estado NOT IN :estadosExcluidosComite");
         params.put(

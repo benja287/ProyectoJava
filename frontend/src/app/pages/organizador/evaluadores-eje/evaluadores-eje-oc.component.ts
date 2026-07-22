@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import {
@@ -6,7 +6,7 @@ import {
   FilterFieldConfig,
 } from '../../../components/filter-bar/filter-bar.component';
 import { AppPaginatorComponent } from '../../../components/paginator/app-paginator.component';
-import { EJES_TEMATICOS } from '../../../constants/ejes-tematicos';
+import { CatalogosCongresoService } from '../../../servicios/catalogos-congreso.service';
 import { etiquetaCategoria } from '../../../models/inscripcion.model';
 import { EvaluadorEjeCupo, Usuario } from '../../../models/usuario.model';
 import { UsuarioService } from '../../../servicios/usuario.service';
@@ -274,10 +274,11 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
     `,
   ],
 })
-export class EvaluadoresEjeOcComponent extends ListadoPaginadoBase {
-  readonly ejesTematicos = [...EJES_TEMATICOS];
+export class EvaluadoresEjeOcComponent extends ListadoPaginadoBase implements OnInit {
+  private catalogos = inject(CatalogosCongresoService);
+  ejesTematicos: string[] = [];
 
-  readonly filterFields: FilterFieldConfig[] = [
+  filterFields: FilterFieldConfig[] = [
     { key: 'email', label: 'Email', placeholder: 'Buscar por email' },
     {
       key: 'esEvaluador',
@@ -292,7 +293,7 @@ export class EvaluadoresEjeOcComponent extends ListadoPaginadoBase {
       key: 'ejeTematico',
       label: 'Eje temático',
       type: 'select',
-      options: EJES_TEMATICOS.map((e) => ({ value: e, label: e })),
+      options: [],
     },
   ];
   readonly filterKeys = ['email', 'esEvaluador', 'ejeTematico'] as const;
@@ -308,6 +309,20 @@ export class EvaluadoresEjeOcComponent extends ListadoPaginadoBase {
   constructor(private usuarioService: UsuarioService) {
     super();
   }
+
+  override ngOnInit(): void {
+    this.catalogos.ejesActivos().subscribe({
+      next: (ejes) => {
+        this.ejesTematicos = ejes.map((e) => e.codigo);
+        const campo = this.filterFields.find((f) => f.key === 'ejeTematico');
+        if (campo) {
+          campo.options = this.ejesTematicos.map((e) => ({ value: e, label: e }));
+        }
+      },
+    });
+    super.ngOnInit();
+  }
+
 
   esEvaluadorConEje(u: Usuario): boolean {
     return this.cuposActivos(u).length > 0 || !!u.ejeTematicoEvaluador?.trim();

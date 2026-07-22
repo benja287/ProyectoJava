@@ -26,13 +26,13 @@ public class Trabajo implements Serializable {
   @Column(name = "eje_tematico", length = 300)
   private String ejeTematico;
 
-  @Enumerated(EnumType.STRING)
-  @Column(length = 20)
-  private ModalidadPresentacion modalidad;
+  /** Código de modalidad (catálogo configurable). Ej.: ORAL, POSTER. */
+  @Column(name = "modalidad", length = 40)
+  private String modalidad;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private TipoTrabajo tipo;
+  /** Código de tipo de envío (catálogo configurable). */
+  @Column(name = "tipo", nullable = false, length = 40)
+  private String tipo;
 
   @Column(name = "precheck_intentos", nullable = false)
   private int precheckIntentos = 0;
@@ -123,11 +123,11 @@ public class Trabajo implements Serializable {
     this.ejeTematico = ejeTematico;
   }
 
-  public ModalidadPresentacion getModalidad() {
+  public String getModalidad() {
     return modalidad;
   }
 
-  public void setModalidad(ModalidadPresentacion modalidad) {
+  public void setModalidad(String modalidad) {
     this.modalidad = modalidad;
   }
 
@@ -171,11 +171,11 @@ public class Trabajo implements Serializable {
     this.rolEnvio = rolEnvio;
   }
 
-  public TipoTrabajo getTipo() {
+  public String getTipo() {
     return tipo;
   }
 
-  public void setTipo(TipoTrabajo tipo) {
+  public void setTipo(String tipo) {
     this.tipo = tipo;
   }
 

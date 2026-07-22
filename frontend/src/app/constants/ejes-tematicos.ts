@@ -15,7 +15,7 @@ export const MODALIDADES_PRESENTACION = ['ORAL', 'POSTER'] as const;
 
 export type ModalidadPresentacion = (typeof MODALIDADES_PRESENTACION)[number];
 
-export const MODALIDAD_LABELS: Record<ModalidadPresentacion, string> = {
+export const MODALIDAD_LABELS: Record<string, string> = {
   ORAL: 'Oral',
   POSTER: 'Póster',
 };

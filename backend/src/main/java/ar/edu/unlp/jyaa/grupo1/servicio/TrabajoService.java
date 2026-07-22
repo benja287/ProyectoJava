@@ -9,7 +9,6 @@ import ar.edu.unlp.jyaa.grupo1.dao.filtro.TrabajoFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
-import ar.edu.unlp.jyaa.grupo1.modelo.EjesTematicos;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
@@ -52,6 +51,7 @@ public class TrabajoService {
   @Inject private DocumentStorageService documentStorageService;
   @Inject private NotificacionService notificacionService;
   @Inject private UsuarioService usuarioService;
+  @Inject private CatalogoCongresoService catalogoCongresoService;
 
   private static final int PAGE_DEFAULT = 1;
   private static final int SIZE_DEFAULT = 20;
@@ -134,7 +134,7 @@ public class TrabajoService {
         trabajoDAO
             .listarFiltrado(new TrabajoFiltro(null, null, null, null, null, null, null), 0, 500)
             .stream()
-            .filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER)
+            .filter(t -> !TipoTrabajo.esPropuestaTaller(t.getTipo()))
             .filter(t -> t.getEstado() == EstadoTrabajo.APROBADO)
             .toList();
 
@@ -164,19 +164,19 @@ public class TrabajoService {
 
   /** Trabajos en estado APROBADO listos para mesas temáticas o sesiones de pósters. */
   public List<TrabajoResumenDTO> listarAprobadosParaProgramacion(String modalidadRaw) {
-    ModalidadPresentacion modalidad;
     if (modalidadRaw == null || modalidadRaw.isBlank()) {
       throw new NegocioException("Debe indicar la modalidad (ORAL o POSTER)");
     }
-    try {
-      modalidad = ModalidadPresentacion.valueOf(modalidadRaw.trim().toUpperCase());
-    } catch (IllegalArgumentException e) {
+    String modalidad = modalidadRaw.trim().toUpperCase();
+    if (!catalogoCongresoService.esModalidadActiva(modalidad)
+        && !ModalidadPresentacion.esOral(modalidad)
+        && !ModalidadPresentacion.esPoster(modalidad)) {
       throw new NegocioException("Modalidad inválida: " + modalidadRaw);
     }
     TrabajoFiltro filtro =
         new TrabajoFiltro(null, null, null, EstadoTrabajo.APROBADO, modalidad, null, null);
     return trabajoDAO.listarFiltrado(filtro, 0, 500).stream()
-        .filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER)
+        .filter(t -> !TipoTrabajo.esPropuestaTaller(t.getTipo()))
         .map(this::toResumenConAsignaciones)
         .toList();
   }
@@ -240,24 +240,16 @@ public class TrabajoService {
         throw new NegocioException("Estado de trabajo inválido: " + estado);
       }
     }
-    ModalidadPresentacion modalidadEnum = null;
+    String modalidadNorm = null;
     if (modalidad != null && !modalidad.isBlank()) {
-      try {
-        modalidadEnum = ModalidadPresentacion.valueOf(modalidad.trim().toUpperCase());
-      } catch (IllegalArgumentException e) {
-        throw new NegocioException("Modalidad inválida: " + modalidad);
-      }
+      modalidadNorm = modalidad.trim().toUpperCase();
     }
-    TipoTrabajo tipoEnum = null;
+    String tipoNorm = null;
     if (tipo != null && !tipo.isBlank()) {
-      try {
-        tipoEnum = TipoTrabajo.valueOf(tipo.trim().toUpperCase());
-      } catch (IllegalArgumentException e) {
-        throw new NegocioException("Tipo de trabajo inválido: " + tipo);
-      }
+      tipoNorm = tipo.trim().toUpperCase();
     }
     return new TrabajoFiltro(
-        titulo, resumen, ejeTematico, estadoEnum, modalidadEnum, tipoEnum, autorId);
+        titulo, resumen, ejeTematico, estadoEnum, modalidadNorm, tipoNorm, autorId);
   }
 
   private TrabajoFiltro aplicarAlcance(TrabajoFiltro filtro, AuthenticatedUser auth) {
@@ -335,7 +327,7 @@ public class TrabajoService {
       throw new NegocioException("Autor no encontrado: " + autorId);
     }
     validarDatosPostulacion(trabajo);
-    if (trabajo.getTipo() == TipoTrabajo.PROPUESTA_TALLER) {
+    if (TipoTrabajo.esPropuestaTaller(trabajo.getTipo())) {
       validarPropuestaTallerUnica(autorId);
     }
     trabajo.setAutor(autor);
@@ -363,18 +355,14 @@ public class TrabajoService {
       trabajo.setEjeTematico(request.ejeTematico());
     }
     if (request.modalidad() != null && !request.modalidad().isBlank()) {
-      try {
-        trabajo.setModalidad(ModalidadPresentacion.valueOf(request.modalidad().trim().toUpperCase()));
-      } catch (IllegalArgumentException e) {
-        throw new NegocioException("Modalidad inválida");
-      }
+      String modalidad = request.modalidad().trim().toUpperCase();
+      catalogoCongresoService.exigirModalidadValida(modalidad);
+      trabajo.setModalidad(modalidad);
     }
     if (request.tipo() != null && !request.tipo().isBlank()) {
-      try {
-        trabajo.setTipo(TipoTrabajo.valueOf(request.tipo().trim().toUpperCase()));
-      } catch (IllegalArgumentException e) {
-        throw new NegocioException("Tipo de trabajo inválido");
-      }
+      String tipo = request.tipo().trim().toUpperCase();
+      catalogoCongresoService.exigirTipoEnvioValido(tipo);
+      trabajo.setTipo(tipo);
     }
     if (request.coautores() != null) {
       trabajo.setCoautores(new ArrayList<>(request.coautores()));
@@ -456,7 +444,7 @@ public class TrabajoService {
         trabajoDAO.listarFiltrado(
             new TrabajoFiltro(null, null, null, null, null, null, autorId), 0, 200);
     List<Trabajo> cientificos =
-        todos.stream().filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER).toList();
+        todos.stream().filter(t -> !TipoTrabajo.esPropuestaTaller(t.getTipo())).toList();
 
     List<Trabajo> delRol = filtrarPorRolEnvio(cientificos, rolEnvio, tieneAutor, tieneAsistente);
     int totalHistorico = delRol.size();
@@ -775,7 +763,7 @@ public class TrabajoService {
         trabajoDAO.listarFiltrado(
             new TrabajoFiltro(null, null, null, null, null, null, autor.getId()), 0, 200);
     List<Trabajo> cientificos =
-        todos.stream().filter(t -> t.getTipo() != TipoTrabajo.PROPUESTA_TALLER).toList();
+        todos.stream().filter(t -> !TipoTrabajo.esPropuestaTaller(t.getTipo())).toList();
     List<Trabajo> delRol = filtrarPorRolEnvio(cientificos, rolEnvio, tieneAutor, tieneAsistente);
     long activos = delRol.stream().filter(this::esTrabajoActivoParaCupo).count();
     int limite = limiteActivos(autor, rolEnvio);
@@ -889,7 +877,7 @@ public class TrabajoService {
   }
 
   private void validarDatosPostulacion(Trabajo trabajo) {
-    if (trabajo.getTipo() == TipoTrabajo.PROPUESTA_TALLER) {
+    if (TipoTrabajo.esPropuestaTaller(trabajo.getTipo())) {
       if (trabajo.getTitulo() == null || trabajo.getTitulo().isBlank()) {
         throw new NegocioException("Debe indicar el título del taller");
       }
@@ -901,17 +889,25 @@ public class TrabajoService {
       }
       return;
     }
-    if (trabajo.getModalidad() == null) {
+    if (trabajo.getTipo() != null && !trabajo.getTipo().isBlank()) {
+      String tipo = trabajo.getTipo().trim().toUpperCase();
+      catalogoCongresoService.exigirTipoEnvioValido(tipo);
+      trabajo.setTipo(tipo);
+    } else {
+      throw new NegocioException("Debe indicar el tipo de trabajo");
+    }
+    if (trabajo.getModalidad() == null || trabajo.getModalidad().isBlank()) {
       throw new NegocioException("Debe indicar la modalidad de presentación (Oral o Póster)");
     }
-    if (!EjesTematicos.esValido(trabajo.getEjeTematico())) {
-      throw new NegocioException("Debe seleccionar un eje temático válido");
-    }
+    String modalidad = trabajo.getModalidad().trim().toUpperCase();
+    catalogoCongresoService.exigirModalidadValida(modalidad);
+    trabajo.setModalidad(modalidad);
+    catalogoCongresoService.exigirEjeValido(trabajo.getEjeTematico());
   }
 
   private void validarPropuestaTallerUnica(Long autorId) {
     TrabajoFiltro filtro =
-        new TrabajoFiltro(null, null, null, null, null, TipoTrabajo.PROPUESTA_TALLER, autorId);
+        new TrabajoFiltro(null, null, null, null, null, TipoTrabajo.PROPUESTA_TALLER.name(), autorId);
     List<Trabajo> existentes = trabajoDAO.listarFiltrado(filtro, 0, 50);
     boolean tieneActiva =
         existentes.stream().anyMatch(t -> t.getEstado() != EstadoTrabajo.RECHAZADO);
@@ -928,7 +924,7 @@ public class TrabajoService {
     }
     TrabajoFiltro filtro =
         new TrabajoFiltro(
-            null, null, null, EstadoTrabajo.ENVIADO, null, TipoTrabajo.PROPUESTA_TALLER, null);
+            null, null, null, EstadoTrabajo.ENVIADO, null, TipoTrabajo.PROPUESTA_TALLER.name(), null);
     return trabajoDAO.listarFiltrado(filtro, 0, 200).stream()
         .filter(t -> t.getAutor() == null || !evaluadorId.equals(t.getAutor().getId()))
         .map(TrabajoResumenDTO::from)
@@ -942,7 +938,7 @@ public class TrabajoService {
       throw new NegocioException("Solo evaluadores pueden evaluar propuestas de taller");
     }
     Trabajo trabajo = buscar(id);
-    if (trabajo.getTipo() != TipoTrabajo.PROPUESTA_TALLER) {
+    if (!TipoTrabajo.esPropuestaTaller(trabajo.getTipo())) {
       throw new NegocioException("El trabajo no es una propuesta de taller");
     }
     if (trabajo.getEstado() != EstadoTrabajo.ENVIADO) {

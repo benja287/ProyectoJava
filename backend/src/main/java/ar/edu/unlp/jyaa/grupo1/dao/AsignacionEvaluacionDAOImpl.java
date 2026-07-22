@@ -112,7 +112,7 @@ public class AsignacionEvaluacionDAOImpl extends AbstractJpaDAO<AsignacionEvalua
                   + " AND a.evaluacion IS NOT NULL",
               Long.class)
           .setParameter("id", evaluadorId)
-          .setParameter("tipoTaller", TipoTrabajo.PROPUESTA_TALLER)
+          .setParameter("tipoTaller", TipoTrabajo.PROPUESTA_TALLER.name())
           .getSingleResult();
     } finally {
       closeLegacy(em);
@@ -129,7 +129,7 @@ public class AsignacionEvaluacionDAOImpl extends AbstractJpaDAO<AsignacionEvalua
                   + " AND a.evaluacion.recomendacion IN :recs",
               Long.class)
           .setParameter("id", evaluadorId)
-          .setParameter("tipoTaller", TipoTrabajo.PROPUESTA_TALLER)
+          .setParameter("tipoTaller", TipoTrabajo.PROPUESTA_TALLER.name())
           .setParameter(
               "recs",
               List.of(
@@ -242,7 +242,7 @@ public class AsignacionEvaluacionDAOImpl extends AbstractJpaDAO<AsignacionEvalua
   private static void bindBaseParams(
       TypedQuery<?> q, Long evaluadorId, boolean soloPendientes, Map<String, Object> params) {
     q.setParameter("id", evaluadorId);
-    q.setParameter("tipoTaller", TipoTrabajo.PROPUESTA_TALLER);
+    q.setParameter("tipoTaller", TipoTrabajo.PROPUESTA_TALLER.name());
     if (soloPendientes) {
       q.setParameter(
           "estadosCerrados",

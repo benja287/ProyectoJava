@@ -2,10 +2,8 @@ package ar.edu.unlp.jyaa.grupo1.web.dto;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
-import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadRecomendadaEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
-import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import java.time.LocalDate;
@@ -20,8 +18,8 @@ public record AsignacionEvaluacionDTO(
     String trabajoEjeTematico,
     String trabajoDocumentoUrl,
     String trabajoDocumentoDocxUrl,
-    TipoTrabajo trabajoTipo,
-    ModalidadPresentacion trabajoModalidad,
+    String trabajoTipo,
+    String trabajoModalidad,
     String trabajoResumen,
     String trabajoMetodologia,
     Long evaluadorId,

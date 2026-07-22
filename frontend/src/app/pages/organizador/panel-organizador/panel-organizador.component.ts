@@ -75,6 +75,13 @@ import {
             <p>Aumentar el límite de trabajos a usuarios concretos</p>
           </div>
         </a>
+        <a routerLink="/organizador/catalogos-envio" class="accion-card">
+          <span class="accion-icono accion-icono--violeta" aria-hidden="true">📚</span>
+          <div>
+            <h3>Catálogos de envío</h3>
+            <p>Ejes temáticos, modalidades y tipos de trabajo</p>
+          </div>
+        </a>
         <a routerLink="/organizador/estadisticas" class="accion-card">
           <span class="accion-icono accion-icono--verde" aria-hidden="true">📊</span>
           <div>

@@ -1,6 +1,5 @@
 package ar.edu.unlp.jyaa.grupo1.web.dto;
 
-import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoActividad;
 import java.time.LocalDateTime;
 
@@ -9,7 +8,7 @@ public record PresentacionAutorDTO(
     Long trabajoId,
     String trabajoTitulo,
     String ejeTematico,
-    ModalidadPresentacion modalidad,
+    String modalidad,
     Long actividadId,
     String actividadTitulo,
     String actividadCodigo,
