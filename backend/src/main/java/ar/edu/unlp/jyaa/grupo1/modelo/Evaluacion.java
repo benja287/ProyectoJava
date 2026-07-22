@@ -24,9 +24,9 @@ public class Evaluacion implements Serializable {
   @Column(name = "comentario_comite", columnDefinition = "TEXT")
   private String comentarioComite;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "modalidad_recomendada", length = 30)
-  private ModalidadRecomendadaEvaluacion modalidadRecomendada;
+  /** Código de modalidad recomendada (catálogo o {@code INDECISO}). */
+  @Column(name = "modalidad_recomendada", length = 40)
+  private String modalidadRecomendada;
 
   /** Rúbrica Sí/No + sugerencias (JSON). */
   @Column(name = "rubrica_json", columnDefinition = "TEXT")
@@ -78,11 +78,11 @@ public class Evaluacion implements Serializable {
     this.comentarioComite = comentarioComite;
   }
 
-  public ModalidadRecomendadaEvaluacion getModalidadRecomendada() {
+  public String getModalidadRecomendada() {
     return modalidadRecomendada;
   }
 
-  public void setModalidadRecomendada(ModalidadRecomendadaEvaluacion modalidadRecomendada) {
+  public void setModalidadRecomendada(String modalidadRecomendada) {
     this.modalidadRecomendada = modalidadRecomendada;
   }
 

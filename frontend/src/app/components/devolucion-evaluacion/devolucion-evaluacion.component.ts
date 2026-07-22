@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ArchivoLinkComponent } from '../archivo-link/archivo-link.component';
 import {
   etiquetaDecisionEvaluacion,
+  esTipoCientificoRubrica as tipoEsCientifico,
   RubricaEvaluacion,
 } from '../../models/evaluacion.model';
 import { DevolucionEvaluacionAutor } from '../../models/trabajo.model';
@@ -68,7 +69,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
                     <li>
                       Citas ↔ referencias: {{ rub.bibliografia?.coherenciaCitas?.valor || '—' }}
                     </li>
-                    @if (rub.tipoSegunEvaluador === 'CIENTIFICO') {
+                    @if (esTipoCientifico(rub.tipoSegunEvaluador)) {
                       <li>
                         Contenido — intro: {{ rub.contenidoCientifico?.introduccion?.valor || '—' }},
                         objetivos: {{ rub.contenidoCientifico?.objetivos?.valor || '—' }},
@@ -138,6 +139,10 @@ export class DevolucionEvaluacionComponent implements OnChanges {
 
   etiquetaDecision(codigo?: string | null): string {
     return etiquetaDecisionEvaluacion(codigo);
+  }
+
+  esTipoCientifico(codigo?: string | null): boolean {
+    return tipoEsCientifico(codigo);
   }
 
   resumenRubrica(json?: string | null): RubricaEvaluacion | null {

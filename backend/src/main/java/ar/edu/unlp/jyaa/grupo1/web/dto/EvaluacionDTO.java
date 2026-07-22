@@ -1,7 +1,6 @@
 package ar.edu.unlp.jyaa.grupo1.web.dto;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.Evaluacion;
-import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadRecomendadaEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
 import java.time.LocalDate;
 
@@ -11,7 +10,7 @@ public record EvaluacionDTO(
     RecomendacionEvaluacion recomendacion,
     String comentario,
     String comentarioComite,
-    ModalidadRecomendadaEvaluacion modalidadRecomendada,
+    String modalidadRecomendada,
     String rubricaJson,
     String archivoCorreccionUrl,
     String archivoCorreccionNombre,

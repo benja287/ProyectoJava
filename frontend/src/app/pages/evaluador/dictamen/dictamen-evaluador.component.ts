@@ -5,16 +5,20 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ArchivoLinkComponent } from '../../../components/archivo-link/archivo-link.component';
 import { LoginService } from '../../../auth/login.service';
 import { AsignacionEvaluacion } from '../../../models/asignacion.model';
+import { CatalogoItem } from '../../../models/congreso-config.model';
 import {
   DECISIONES_EVALUACION,
-  MODALIDADES_RECOMENDADAS,
+  MODALIDAD_INDECISO,
   RubricaEvaluacion,
+  esTipoCientificoRubrica,
   permiteArchivoCorreccionEvaluacion,
   rubricaVacia,
 } from '../../../models/evaluacion.model';
 import { AsignacionService } from '../../../servicios/asignacion.service';
+import { CatalogosCongresoService } from '../../../servicios/catalogos-congreso.service';
 import { EvaluacionService } from '../../../servicios/evaluacion.service';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-dictamen-evaluador',
@@ -177,20 +181,26 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
               </fieldset>
               <label>
                 Tipo de trabajo según el/la evaluador/a
+                <span class="form-hint">
+                  El envío del participante:
+                  {{ etiquetaTipoEnvio(asignacion.trabajoTipo) }}.
+                  Podés confirmarlo o corregirlo.
+                </span>
                 <select formControlName="tipoSegunEvaluador">
                   <option value="">Seleccioná...</option>
-                  <option value="CIENTIFICO">Trabajo científico</option>
-                  <option value="RELATO">Relato de experiencia</option>
+                  @for (t of tiposEnvio; track t.codigo) {
+                    <option [value]="t.codigo">{{ t.etiqueta }}</option>
+                  }
                 </select>
               </label>
             }
 
             @if (paso === 3) {
               <h2>4. Contenido científico</h2>
-              @if (form.value.tipoSegunEvaluador !== 'CIENTIFICO') {
+              @if (!esContenidoCientifico) {
                 <p class="muted">
-                  Marcaste el trabajo como relato (o aún no elegiste tipo). Podés omitir esta
-                  sección o volver al paso anterior si es científico.
+                  Marcaste un tipo que no es trabajo científico (o aún no elegiste tipo). Podés
+                  omitir esta sección o volver al paso anterior si corresponde contenido científico.
                 </p>
               } @else {
                 @for (c of criteriosCientificos; track c.key) {
@@ -226,6 +236,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
               </label>
               <label>
                 Modalidad recomendada para el congreso
+                <span class="form-hint">
+                  Modalidad del envío:
+                  {{ etiquetaModalidadEnvio(asignacion.trabajoModalidad) }}.
+                  Podés confirmarla o sugerir otra.
+                </span>
                 <select formControlName="modalidadRecomendada">
                   <option value="">Seleccioná...</option>
                   @for (m of modalidades; track m.value) {
@@ -396,9 +411,11 @@ export class DictamenEvaluadorComponent implements OnInit {
   private readonly login = inject(LoginService);
   private readonly asignacionService = inject(AsignacionService);
   private readonly evaluacionService = inject(EvaluacionService);
+  private readonly catalogos = inject(CatalogosCongresoService);
 
   readonly decisiones = DECISIONES_EVALUACION;
-  readonly modalidades = MODALIDADES_RECOMENDADAS;
+  tiposEnvio: CatalogoItem[] = [];
+  modalidades: { value: string; label: string }[] = [];
   readonly pasos = [
     { id: 'general', label: 'General' },
     { id: 'forma', label: 'Forma' },
@@ -476,6 +493,10 @@ export class DictamenEvaluadorComponent implements OnInit {
     return permiteArchivoCorreccionEvaluacion(this.form.value.recomendacion);
   }
 
+  get esContenidoCientifico(): boolean {
+    return esTipoCientificoRubrica(this.form.value.tipoSegunEvaluador);
+  }
+
   ngOnInit(): void {
     this.form.controls.recomendacion.valueChanges.subscribe((rec) => {
       if (!permiteArchivoCorreccionEvaluacion(rec)) {
@@ -489,9 +510,15 @@ export class DictamenEvaluadorComponent implements OnInit {
       this.cargando = false;
       return;
     }
-    this.asignacionService.listarPorEvaluador(uid, 1, 200, false).subscribe({
-      next: (items) => {
-        this.asignacion = items.find((a) => a.id === id);
+    forkJoin({
+      tipos: this.catalogos.tiposEnvioPaperActivos(),
+      modalidades: this.catalogos.modalidadesActivas(),
+      asignaciones: this.asignacionService.listarPorEvaluador(uid, 1, 200, false),
+    }).subscribe({
+      next: ({ tipos, modalidades, asignaciones }) => {
+        this.asignacion = asignaciones.find((a) => a.id === id);
+        this.tiposEnvio = this.asegurarOpcionTipo(tipos, this.asignacion?.trabajoTipo);
+        this.modalidades = this.armarModalidades(modalidades, this.asignacion?.trabajoModalidad);
         this.cargando = false;
         if (!this.asignacion) {
           this.error = 'No se encontró la asignación.';
@@ -503,13 +530,84 @@ export class DictamenEvaluadorComponent implements OnInit {
         }
         if (this.asignacion.evaluacionRecomendacion) {
           this.error = 'Ya registraste un dictamen para este trabajo.';
+          return;
         }
+        this.preseleccionarDesdeEnvio(this.asignacion);
       },
       error: (err) => {
         this.error = mensajeErrorApi(err, 'No se pudo cargar la asignación.');
         this.cargando = false;
       },
     });
+  }
+
+  etiquetaTipoEnvio(codigo?: string | null): string {
+    if (!codigo) return '—';
+    const found = this.tiposEnvio.find((t) => t.codigo === codigo);
+    return found?.etiqueta ?? codigo.replaceAll('_', ' ');
+  }
+
+  etiquetaModalidadEnvio(codigo?: string | null): string {
+    if (!codigo) return '—';
+    const found = this.modalidades.find((m) => m.value === codigo);
+    return found?.label ?? this.catalogos.etiquetaModalidad(codigo);
+  }
+
+  private preseleccionarDesdeEnvio(a: AsignacionEvaluacion): void {
+    const tipo = this.mapTipoRubrica(a.trabajoTipo);
+    const tipoItem = this.tiposEnvio.find((t) => t.codigo.toUpperCase() === tipo);
+    if (tipoItem) {
+      this.form.controls.tipoSegunEvaluador.setValue(tipoItem.codigo);
+    }
+    const modalidad = a.trabajoModalidad?.trim().toUpperCase() || '';
+    if (modalidad && this.modalidades.some((m) => m.value === modalidad)) {
+      this.form.controls.modalidadRecomendada.setValue(modalidad);
+    }
+  }
+
+  /** Códigos de catálogo; acepta legado CIENTIFICO/RELATO de rúbricas viejas. */
+  private mapTipoRubrica(trabajoTipo?: string | null): string {
+    if (!trabajoTipo) return '';
+    const t = trabajoTipo.trim().toUpperCase();
+    if (t === 'CIENTIFICO') return 'TRABAJO_CIENTIFICO';
+    if (t === 'RELATO') return 'RELATO_DE_EXPERIENCIA';
+    return t;
+  }
+
+  private asegurarOpcionTipo(tipos: CatalogoItem[], trabajoTipo?: string | null): CatalogoItem[] {
+    const out = [...tipos];
+    const codigo = this.mapTipoRubrica(trabajoTipo);
+    if (codigo && !out.some((t) => t.codigo.toUpperCase() === codigo)) {
+      out.push({
+        codigo,
+        etiqueta: codigo.replaceAll('_', ' '),
+        activo: true,
+        orden: out.length + 1,
+        sistema: false,
+      });
+    }
+    return out;
+  }
+
+  private armarModalidades(
+    items: CatalogoItem[],
+    trabajoModalidad?: string | null
+  ): { value: string; label: string }[] {
+    const out = items.map((m) => ({
+      value: m.codigo.toUpperCase(),
+      label: m.etiqueta || m.codigo,
+    }));
+    const codigo = trabajoModalidad?.trim().toUpperCase() || '';
+    if (codigo && !out.some((m) => m.value === codigo)) {
+      out.push({
+        value: codigo,
+        label: this.catalogos.etiquetaModalidad(codigo),
+      });
+    }
+    if (!out.some((m) => m.value === MODALIDAD_INDECISO.value)) {
+      out.push({ value: MODALIDAD_INDECISO.value, label: MODALIDAD_INDECISO.label });
+    }
+    return out;
   }
 
   irAPaso(i: number): void {

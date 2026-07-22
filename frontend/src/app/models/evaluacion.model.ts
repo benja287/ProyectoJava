@@ -22,6 +22,12 @@ export const MODALIDADES_RECOMENDADAS = [
   { value: 'INDECISO', label: 'Indecisx / sin preferencia' },
 ] as const;
 
+/** Opción fija del dictamen (no viene del catálogo de envío). */
+export const MODALIDAD_INDECISO = {
+  value: 'INDECISO',
+  label: 'Indecisx / sin preferencia',
+} as const;
+
 export type SiNo = 'SI' | 'NO';
 export type SiNoNa = 'SI' | 'NO' | 'RELATO_SIN_BIBLIOGRAFIA';
 export type Pertinencia = 'SI' | 'SI_CORRECCIONES' | 'NO';
@@ -49,7 +55,8 @@ export interface RubricaEvaluacion {
     formatoApa: CriterioRubrica;
     coherenciaCitas: CriterioRubrica;
   };
-  tipoSegunEvaluador: 'CIENTIFICO' | 'RELATO' | '';
+  /** Código de tipo (catálogo) o legado CIENTIFICO / RELATO. */
+  tipoSegunEvaluador: string;
   contenidoCientifico: {
     introduccion: CriterioRubrica;
     objetivos: CriterioRubrica;
@@ -124,7 +131,23 @@ export function permiteArchivoCorreccionEvaluacion(recomendacion?: string | null
 export function etiquetaModalidadRecomendada(codigo?: string | null): string {
   if (!codigo) return '—';
   const found = MODALIDADES_RECOMENDADAS.find((m) => m.value === codigo);
-  return found?.label ?? codigo;
+  if (found) return found.label;
+  if (codigo === 'INDECISO') return MODALIDAD_INDECISO.label;
+  return codigo.replaceAll('_', ' ');
+}
+
+/** Contenido científico de la rúbrica: científico (catálogo o legado). */
+export function esTipoCientificoRubrica(codigo?: string | null): boolean {
+  if (!codigo) return false;
+  const c = codigo.trim().toUpperCase();
+  return c === 'CIENTIFICO' || c === 'TRABAJO_CIENTIFICO';
+}
+
+/** Relato (catálogo o legado) — se omite la sección de contenido científico. */
+export function esTipoRelatoRubrica(codigo?: string | null): boolean {
+  if (!codigo) return false;
+  const c = codigo.trim().toUpperCase();
+  return c === 'RELATO' || c === 'RELATO_DE_EXPERIENCIA';
 }
 
 export type AsignacionConDictamen = AsignacionEvaluacion & {

@@ -2,7 +2,6 @@ package ar.edu.unlp.jyaa.grupo1.web.dto;
 
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
-import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadRecomendadaEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
@@ -30,7 +29,7 @@ public record AsignacionEvaluacionDTO(
     RecomendacionEvaluacion evaluacionRecomendacion,
     String evaluacionComentario,
     String evaluacionComentarioComite,
-    ModalidadRecomendadaEvaluacion evaluacionModalidadRecomendada,
+    String evaluacionModalidadRecomendada,
     String evaluacionRubricaJson,
     String evaluacionArchivoCorreccionUrl,
     String evaluacionArchivoCorreccionNombre) {

@@ -1,6 +1,5 @@
 package ar.edu.unlp.jyaa.grupo1.rest.dto;
 
-import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadRecomendadaEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
 
 /**
@@ -8,11 +7,12 @@ import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
  *
  * <p>{@code comentario} = visible a autorxs; {@code comentarioComite} = interno.
  * {@code rubricaJson} = criterios Sí/No + sugerencias en JSON.
+ * {@code modalidadRecomendada} = código del catálogo (ORAL, POSTER, VIRTUAL, …) o INDECISO.
  */
 public record EvaluacionRequest(
     Long asignacionId,
     RecomendacionEvaluacion recomendacion,
     String comentario,
     String comentarioComite,
-    ModalidadRecomendadaEvaluacion modalidadRecomendada,
+    String modalidadRecomendada,
     String rubricaJson) {}

@@ -7,6 +7,7 @@ import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Evaluacion;
+import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadRecomendadaEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.EvaluacionRequest;
@@ -25,6 +26,7 @@ public class EvaluacionService {
   @Inject private TrabajoService trabajoService;
   @Inject private DocumentStorageService documentStorageService;
   @Inject private EvaluadorEjeService evaluadorEjeService;
+  @Inject private CatalogoCongresoService catalogoCongresoService;
 
   public Evaluacion registrar(EvaluacionRequest request) {
     if (request == null || request.asignacionId() == null) {
@@ -53,7 +55,7 @@ public class EvaluacionService {
       RecomendacionEvaluacion recomendacion,
       String comentarioAutor,
       String comentarioComite,
-      ModalidadRecomendadaEvaluacion modalidadRecomendada,
+      String modalidadRecomendada,
       String rubricaJson) {
     AsignacionEvaluacion asignacion =
         asignacionEvaluacionDAO
@@ -74,13 +76,14 @@ public class EvaluacionService {
       throw new NegocioException("No podés evaluar tu propio trabajo");
     }
     validarVentanaEvaluacion();
+    String modalidadNorm = normalizarModalidadRecomendada(modalidadRecomendada);
 
     Evaluacion evaluacion = new Evaluacion();
     evaluacion.setAsignacion(asignacion);
     evaluacion.setRecomendacion(recomendacion);
     evaluacion.setComentario(blankToNull(comentarioAutor));
     evaluacion.setComentarioComite(blankToNull(comentarioComite));
-    evaluacion.setModalidadRecomendada(modalidadRecomendada);
+    evaluacion.setModalidadRecomendada(modalidadNorm);
     evaluacion.setRubricaJson(blankToNull(rubricaJson));
     evaluacion.setFecha(LocalDate.now());
     asignacion.setEvaluacion(evaluacion);
@@ -144,6 +147,25 @@ public class EvaluacionService {
       throw new NegocioException(
           "El período de evaluación cerró el " + hasta + ". Ya no se pueden registrar dictámenes.");
     }
+  }
+
+  /**
+   * Acepta modalidades del catálogo activo, ORAL/POSTER por compatibilidad, o INDECISO.
+   */
+  private String normalizarModalidadRecomendada(String raw) {
+    if (raw == null || raw.isBlank()) {
+      throw new NegocioException("Debe indicar la modalidad recomendada");
+    }
+    String codigo = ModalidadRecomendadaEvaluacion.normalizar(raw);
+    if (ModalidadRecomendadaEvaluacion.esIndeciso(codigo)) {
+      return ModalidadRecomendadaEvaluacion.INDECISO;
+    }
+    if (catalogoCongresoService.esModalidadActiva(codigo)
+        || ModalidadPresentacion.esOral(codigo)
+        || ModalidadPresentacion.esPoster(codigo)) {
+      return codigo;
+    }
+    throw new NegocioException("Modalidad recomendada inválida: " + raw);
   }
 
   private static String blankToNull(String value) {
