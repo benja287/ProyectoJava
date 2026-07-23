@@ -18,6 +18,10 @@ import { AulaService } from '../../../servicios/aula.service';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { FranjaHorariaService } from '../../../servicios/franja-horaria.service';
 import { TrabajoService } from '../../../servicios/trabajo.service';
+import {
+  aplicarDefaultsAlta,
+  guardarUltimaAlta,
+} from '../../../utils/actividad-alta-defaults.util';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
@@ -28,6 +32,9 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
     <section class="card panel-card form-page">
       <h1>Crear Taller (programa oficial)</h1>
       <p class="muted">Fechas permitidas: {{ fechasPermitidas }}. Elegí día y franja horaria.</p>
+      @if (hintDefaults) {
+        <p class="muted small">{{ hintDefaults }}</p>
+      }
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -124,6 +131,8 @@ export class CrearTallerAdminComponent implements OnInit {
   franjasDelDia: FranjaHoraria[] = [];
   guardando = false;
   error = '';
+  hintDefaults = '';
+  private defaultsListos = false;
 
   form = this.fb.group({
     titulo: ['', Validators.required],
@@ -152,16 +161,21 @@ export class CrearTallerAdminComponent implements OnInit {
         this.fechasPermitidas = this.fechasOrdenadas.join(', ');
         this.form.patchValue({ fecha: this.fechasOrdenadas[0] });
         this.filtrarFranjas();
+        this.intentarAplicarDefaults();
       },
     });
     this.aulaService.listarActivas().subscribe({
-      next: (items) => (this.aulas = items),
+      next: (items) => {
+        this.aulas = items;
+        this.intentarAplicarDefaults();
+      },
       error: () => (this.aulas = []),
     });
     this.franjaService.listarActivas().subscribe({
       next: (items) => {
         this.franjas = items;
         this.filtrarFranjas();
+        this.intentarAplicarDefaults();
       },
       error: () => (this.franjas = []),
     });
@@ -176,6 +190,9 @@ export class CrearTallerAdminComponent implements OnInit {
   onFechaChange(): void {
     this.form.patchValue({ franjaId: null });
     this.filtrarFranjas();
+    if (this.franjasDelDia[0]?.id != null) {
+      this.form.patchValue({ franjaId: this.franjasDelDia[0].id });
+    }
   }
 
   filtrarFranjas(): void {
@@ -195,10 +212,15 @@ export class CrearTallerAdminComponent implements OnInit {
     const p = this.propuestasAprobadas.find((x) => x.id === id);
     if (!p) return;
     const partes = [p.resumen, p.metodologia].filter(Boolean);
-    this.form.patchValue({
-      titulo: p.titulo || this.form.getRawValue().titulo,
-      descripcion: partes.join('\n\n') || this.form.getRawValue().descripcion,
-    });
+    const autor = [p.autorNombre, p.autorApellido].filter(Boolean).join(' ').trim();
+    const patch: { titulo?: string; descripcion?: string; responsables?: string } = {
+      titulo: p.titulo || this.form.getRawValue().titulo || undefined,
+      descripcion: partes.join('\n\n') || this.form.getRawValue().descripcion || undefined,
+    };
+    if (autor && !this.form.getRawValue().responsables?.trim()) {
+      patch.responsables = autor;
+    }
+    this.form.patchValue(patch);
   }
 
   guardar(): void {
@@ -218,12 +240,50 @@ export class CrearTallerAdminComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.router.navigate(['/admin'], { state: { mensaje: 'El taller quedó cargado en el cronograma.' } });
+          guardarUltimaAlta({
+            tipo: 'TALLER',
+            aulaId: Number(raw.aulaId),
+            fecha: raw.fecha,
+            franjaId: Number(raw.franjaId),
+          });
+          this.router.navigate(['/admin/congreso/programa'], {
+            state: { mensaje: 'El taller quedó cargado en el cronograma.' },
+          });
         },
         error: (err) => {
           this.error = mensajeErrorApi(err, 'No se pudo guardar el taller.');
           this.guardando = false;
         },
       });
+  }
+
+  private intentarAplicarDefaults(): void {
+    if (this.defaultsListos) return;
+    if (!this.fechasOrdenadas.length || !this.franjas.length) return;
+    const defs = aplicarDefaultsAlta('TALLER', {
+      fechas: this.fechasOrdenadas,
+      aulaIds: this.aulas.map((a) => a.id!).filter((id) => id != null),
+      franjaIdsDelDia: (fecha) => {
+        const dia = diaCongresoDeFecha(fecha, this.fechasOrdenadas);
+        return this.franjas
+          .filter((f) => f.diaCongreso === dia && f.activa !== false && f.id != null)
+          .map((f) => f.id!);
+      },
+    });
+    this.filtrarFranjas();
+    const patch: { fecha?: string; aulaId?: number | null; franjaId?: number | null } = {};
+    if (defs.fecha) patch.fecha = defs.fecha;
+    if (defs.aulaId != null) patch.aulaId = defs.aulaId;
+    this.form.patchValue(patch);
+    this.filtrarFranjas();
+    if (defs.franjaId != null) {
+      this.form.patchValue({ franjaId: defs.franjaId });
+    } else if (this.franjasDelDia[0]?.id != null) {
+      this.form.patchValue({ franjaId: this.franjasDelDia[0].id });
+    }
+    if (defs.aulaId != null || defs.franjaId != null) {
+      this.hintDefaults = 'Se precargó aula/horario del último taller que creaste.';
+    }
+    this.defaultsListos = true;
   }
 }

@@ -16,6 +16,10 @@ import { ActividadService } from '../../../servicios/actividad.service';
 import { AulaService } from '../../../servicios/aula.service';
 import { CongresoConfigService } from '../../../servicios/congreso-config.service';
 import { FranjaHorariaService } from '../../../servicios/franja-horaria.service';
+import {
+  aplicarDefaultsAlta,
+  guardarUltimaAlta,
+} from '../../../utils/actividad-alta-defaults.util';
 import { mensajeErrorApi } from '../../../utils/api-error.util';
 
 @Component({
@@ -26,6 +30,9 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
     <section class="card panel-card form-page">
       <h1>Crear Conferencia (programa oficial)</h1>
       <p class="muted">Fechas permitidas: {{ fechasPermitidas }}. Elegí día y franja horaria.</p>
+      @if (hintDefaults) {
+        <p class="muted small">{{ hintDefaults }}</p>
+      }
 
       @if (error) {
         <p class="error">{{ error }}</p>
@@ -118,6 +125,8 @@ export class CrearConferenciaAdminComponent implements OnInit {
   franjasDelDia: FranjaHoraria[] = [];
   guardando = false;
   error = '';
+  hintDefaults = '';
+  private defaultsListos = false;
 
   form = this.fb.group({
     titulo: ['', Validators.required],
@@ -145,16 +154,21 @@ export class CrearConferenciaAdminComponent implements OnInit {
         this.fechasPermitidas = this.fechasOrdenadas.join(', ');
         this.form.patchValue({ fecha: this.fechasOrdenadas[0] });
         this.filtrarFranjas();
+        this.intentarAplicarDefaults();
       },
     });
     this.aulaService.listarActivas().subscribe({
-      next: (items) => (this.aulas = items),
+      next: (items) => {
+        this.aulas = items;
+        this.intentarAplicarDefaults();
+      },
       error: () => (this.aulas = []),
     });
     this.franjaService.listarActivas().subscribe({
       next: (items) => {
         this.franjas = items;
         this.filtrarFranjas();
+        this.intentarAplicarDefaults();
       },
       error: () => (this.franjas = []),
     });
@@ -163,6 +177,9 @@ export class CrearConferenciaAdminComponent implements OnInit {
   onFechaChange(): void {
     this.form.patchValue({ franjaId: null });
     this.filtrarFranjas();
+    if (this.franjasDelDia[0]?.id != null) {
+      this.form.patchValue({ franjaId: this.franjasDelDia[0].id });
+    }
   }
 
   filtrarFranjas(): void {
@@ -193,7 +210,13 @@ export class CrearConferenciaAdminComponent implements OnInit {
       })
       .subscribe({
         next: () => {
-          this.router.navigate(['/admin'], {
+          guardarUltimaAlta({
+            tipo: 'CONFERENCIA',
+            aulaId: Number(raw.aulaId),
+            fecha: raw.fecha,
+            franjaId: Number(raw.franjaId),
+          });
+          this.router.navigate(['/admin/congreso/programa'], {
             state: { mensaje: 'La conferencia quedó cargada en el cronograma.' },
           });
         },
@@ -202,5 +225,35 @@ export class CrearConferenciaAdminComponent implements OnInit {
           this.guardando = false;
         },
       });
+  }
+
+  private intentarAplicarDefaults(): void {
+    if (this.defaultsListos) return;
+    if (!this.fechasOrdenadas.length || !this.franjas.length) return;
+    const defs = aplicarDefaultsAlta('CONFERENCIA', {
+      fechas: this.fechasOrdenadas,
+      aulaIds: this.aulas.map((a) => a.id!).filter((id) => id != null),
+      franjaIdsDelDia: (fecha) => {
+        const dia = diaCongresoDeFecha(fecha, this.fechasOrdenadas);
+        return this.franjas
+          .filter((f) => f.diaCongreso === dia && f.activa !== false && f.id != null)
+          .map((f) => f.id!);
+      },
+    });
+    this.filtrarFranjas();
+    const patch: { fecha?: string; aulaId?: number | null; franjaId?: number | null } = {};
+    if (defs.fecha) patch.fecha = defs.fecha;
+    if (defs.aulaId != null) patch.aulaId = defs.aulaId;
+    this.form.patchValue(patch);
+    this.filtrarFranjas();
+    if (defs.franjaId != null) {
+      this.form.patchValue({ franjaId: defs.franjaId });
+    } else if (this.franjasDelDia[0]?.id != null) {
+      this.form.patchValue({ franjaId: this.franjasDelDia[0].id });
+    }
+    if (defs.aulaId != null || defs.franjaId != null) {
+      this.hintDefaults = 'Se precargó aula/horario de la última conferencia que creaste.';
+    }
+    this.defaultsListos = true;
   }
 }
