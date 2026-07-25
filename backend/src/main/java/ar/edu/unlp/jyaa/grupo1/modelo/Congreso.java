@@ -41,6 +41,13 @@ public class Congreso implements Serializable {
   @Column(name = "certificados_disponibles_desde")
   private LocalDate certificadosDisponiblesDesde;
 
+  /**
+   * True cuando ya se envió la campaña de “certificados disponibles” (manual o auto). Evita
+   * re-notificar si se vuelve a llamar finalizar.
+   */
+  @Column(name = "certificados_emision_notificada", nullable = false)
+  private boolean certificadosEmisionNotificada = false;
+
   @Column(name = "envio_trabajos_hasta")
   private LocalDate envioTrabajosHasta;
 
@@ -198,6 +205,14 @@ public class Congreso implements Serializable {
 
   public void setCertificadosDisponiblesDesde(LocalDate certificadosDisponiblesDesde) {
     this.certificadosDisponiblesDesde = certificadosDisponiblesDesde;
+  }
+
+  public boolean isCertificadosEmisionNotificada() {
+    return certificadosEmisionNotificada;
+  }
+
+  public void setCertificadosEmisionNotificada(boolean certificadosEmisionNotificada) {
+    this.certificadosEmisionNotificada = certificadosEmisionNotificada;
   }
 
   public LocalDate getEnvioTrabajosHasta() {

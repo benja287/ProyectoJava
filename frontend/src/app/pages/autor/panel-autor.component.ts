@@ -63,6 +63,14 @@ import { formatFechaActividad } from '../../utils/fecha.util';
             </div>
           </a>
 
+          <a routerLink="/mis-certificados" class="accion-card">
+            <span class="accion-icono accion-icono--azul" aria-hidden="true">📜</span>
+            <div>
+              <h3>Mis certificados</h3>
+              <p>Imprimí o guardá los certificados disponibles para tu participación</p>
+            </div>
+          </a>
+
           <a routerLink="/solicitud-evaluador" class="accion-card">
             <span class="accion-icono accion-icono--indigo" aria-hidden="true">🧑‍🔬</span>
             <div>

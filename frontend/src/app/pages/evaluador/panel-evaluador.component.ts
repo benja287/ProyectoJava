@@ -303,9 +303,7 @@ const TIPOS_CIENTIFICOS = [
         }
 
         <p class="evaluador-certificado">
-          <a routerLink="/evaluador/certificado" class="btn-certificado"
-            >Generar Certificado de Asistencia</a
-          >
+          <a routerLink="/mis-certificados" class="btn-certificado">Mis certificados</a>
         </p>
       </section>
     </div>

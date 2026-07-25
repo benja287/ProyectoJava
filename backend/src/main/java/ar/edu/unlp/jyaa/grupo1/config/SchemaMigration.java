@@ -54,6 +54,8 @@ public final class SchemaMigration {
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCuposEnvioTrabajos);
     // APPEND — empate 1/1 en evaluación (3er evaluador)
     JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarEmpateEvaluacionTrabajo);
+    // APPEND — hub Mis certificados + auto por congresoHasta (Alcides)
+    JpaUtil.ejecutarEnTransaccion(SchemaMigration::migrarCertificadosHubYAuto);
   }
 
   private static void migrarDatosCertificadoUsuario(EntityManager em) {
@@ -1254,6 +1256,67 @@ public final class SchemaMigration {
         "max_trabajos_asistente_override",
         "ALTER TABLE usuarios ADD COLUMN max_trabajos_asistente_override INT NULL");
     log.info("Cupos de envío de trabajos (global + override) verificados");
+  }
+
+  /**
+   * APPEND — flag de emisión notificada + plantilla apuntando a /mis-certificados.
+   * Aviso Alcides: no pisar migraciones previas; solo append.
+   */
+  private static void migrarCertificadosHubYAuto(EntityManager em) {
+    boolean columnaNueva =
+        leerTipoColumna(em, "congresos", "certificados_emision_notificada") == null;
+    agregarColumnaSiFalta(
+        em,
+        "congresos",
+        "certificados_emision_notificada",
+        "ALTER TABLE congresos ADD COLUMN certificados_emision_notificada TINYINT(1) NOT NULL DEFAULT 0");
+    if (columnaNueva) {
+      // Si ya había fecha de certificados, asumir que la campaña vieja corrió (no re-spamear).
+      em.createNativeQuery(
+              "UPDATE congresos SET certificados_emision_notificada = 1"
+                  + " WHERE certificados_disponibles_desde IS NOT NULL"
+                  + " AND certificados_disponibles_desde <= CURDATE()"
+                  + " AND certificados_emision_notificada = 0")
+          .executeUpdate();
+    }
+
+    String asunto = "[CERTIFICADOS] Gracias por ser parte — ya podés descargarlos";
+    String cuerpo =
+        """
+            Hola {{nombre}},
+
+            Gracias por ser parte de este congreso como {{rol_texto}}.
+
+            Qué pasó: el congreso finalizó y ya están disponibles tus certificados.
+
+            Próximo paso: {{proximo_paso}}
+
+            Mis certificados:
+            {{url_accion}}
+
+            Sistema de gestión del congreso""";
+    Long existentes =
+        em.createQuery(
+                "SELECT COUNT(p) FROM PlantillaEmail p WHERE p.nombre = :nombre", Long.class)
+            .setParameter("nombre", "CERTIFICADOS_DISPONIBLES")
+            .getSingleResult();
+    if (existentes == null || existentes == 0) {
+      insertarPlantillaSiFalta(em, "CERTIFICADOS_DISPONIBLES", asunto, cuerpo);
+      return;
+    }
+    List<PlantillaEmail> plantillas =
+        em.createQuery(
+                "SELECT p FROM PlantillaEmail p WHERE p.nombre = :nombre", PlantillaEmail.class)
+            .setParameter("nombre", "CERTIFICADOS_DISPONIBLES")
+            .getResultList();
+    for (PlantillaEmail p : plantillas) {
+      String actual = p.getCuerpo() != null ? p.getCuerpo() : "";
+      if (!actual.contains("mis-certificados") && !actual.contains("Mis certificados")) {
+        p.setAsunto(asunto);
+        p.setCuerpo(cuerpo);
+        log.info("Plantilla CERTIFICADOS_DISPONIBLES actualizada (hub Mis certificados)");
+      }
+    }
   }
 
   private static void migrarEmpateEvaluacionTrabajo(EntityManager em) {

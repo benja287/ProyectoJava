@@ -31,6 +31,7 @@ import { InscripcionParticipanteComponent } from './pages/participante/inscripci
 import { PagoParticipanteComponent } from './pages/participante/pago/pago-participante.component';
 import { InscripcionesAdminComponent } from './pages/admin/inscripciones/inscripciones-admin.component';
 import { PanelAsistenteComponent } from './pages/asistente/panel-asistente.component';
+import { MisCertificadosComponent } from './pages/certificados/mis-certificados.component';
 import { MesasTematicasAdminComponent } from './pages/admin/mesas-tematicas/mesas-tematicas-admin.component';
 import { SesionPostersAdminComponent } from './pages/admin/sesion-posters/sesion-posters-admin.component';
 import { ComiteOcComponent } from './pages/organizador/comite/comite-oc.component';
@@ -40,7 +41,6 @@ import { ExcepcionesCupoOcComponent } from './pages/organizador/excepciones-cupo
 import { CatalogosEnvioOcComponent } from './pages/organizador/catalogos-envio/catalogos-envio-oc.component';
 import { EvaluadoresEjeOcComponent } from './pages/organizador/evaluadores-eje/evaluadores-eje-oc.component';
 import { ProponerTallerAsistenteComponent } from './pages/asistente/proponer-taller/proponer-taller-asistente.component';
-import { CertificadoAsistenteComponent } from './pages/asistente/certificado-asistente.component';
 import { MiInscripcionAsistenteComponent } from './pages/asistente/mi-inscripcion-asistente.component';
 import { PanelAdminComponent } from './pages/admin/panel-admin/panel-admin.component';
 import { NotificacionesComponent } from './pages/notificaciones/notificaciones.component';
@@ -120,8 +120,8 @@ export const routes: Routes = [
   },
   {
     path: 'asistente/certificado',
-    component: CertificadoAsistenteComponent,
-    canActivate: [asistenteGuard],
+    redirectTo: 'mis-certificados',
+    pathMatch: 'full',
   },
   {
     path: 'asistente/inscripcion',
@@ -137,6 +137,12 @@ export const routes: Routes = [
   { path: 'participante/pago', redirectTo: 'inscripcion', pathMatch: 'full' },
 
   { path: 'notificaciones', component: NotificacionesComponent, canActivate: [authGuard] },
+
+  {
+    path: 'mis-certificados',
+    component: MisCertificadosComponent,
+    canActivate: [authGuard],
+  },
 
   // --- Perfil Administrador ---
   {
@@ -285,8 +291,8 @@ export const routes: Routes = [
   },
   {
     path: 'evaluador/certificado',
-    component: CertificadoAsistenteComponent,
-    canActivate: [evaluador],
+    redirectTo: 'mis-certificados',
+    pathMatch: 'full',
   },
 
   // --- Perfil Autor ---

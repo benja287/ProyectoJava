@@ -78,11 +78,11 @@ import { feedbackTextoTrabajo } from '../../utils/trabajo-rol.util';
             </div>
           </a>
 
-          <a routerLink="/asistente/certificado" class="accion-card">
+          <a routerLink="/mis-certificados" class="accion-card">
             <span class="accion-icono accion-icono--azul" aria-hidden="true">✓</span>
             <div>
-              <h3>Generar Certificado de Asistencia</h3>
-              <p>Generá un certificado de asistencia al congreso para tu rol activo</p>
+              <h3>Mis certificados</h3>
+              <p>Imprimí o guardá los certificados disponibles para tu participación</p>
             </div>
           </a>
 

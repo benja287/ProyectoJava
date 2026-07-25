@@ -75,8 +75,14 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <p class="muted">
             Al finalizar: habilita la descarga (hoy, si no había fecha o estaba en el futuro), crea
             un registro de certificado para cada inscripción <strong>aprobada</strong> y para
-            evaluadores, y avisa por notificación/email. El PDF lo siguen generando las personas
-            desde su pantalla imprimible (no se genera en el servidor).
+            evaluadores, y avisa por notificación/email con link a
+            <strong>Mis certificados</strong>. El PDF lo siguen generando las personas desde esa
+            pantalla (no se genera en el servidor).
+          </p>
+          <p class="muted small">
+            Automático: si no apretás este botón, al pasar el último día del congreso
+            (<code>congresoHasta</code>) el sistema habilita solo la próxima vez que se consulte la
+            configuración.
           </p>
           <div class="inline-form-row">
             <button

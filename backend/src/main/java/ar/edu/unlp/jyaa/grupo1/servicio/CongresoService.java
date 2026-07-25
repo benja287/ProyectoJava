@@ -40,8 +40,14 @@ public class CongresoService {
 
   @Inject private NotificacionService notificacionService;
   @Inject private CatalogoCongresoService catalogoCongresoService;
+  @Inject private CertificadoService certificadoService;
 
   public CongresoConfigDTO obtenerConfig() {
+    try {
+      certificadoService.intentarAutoFinalizarSiCorresponde();
+    } catch (RuntimeException e) {
+      // No bloquear la config pública si el auto-job falla.
+    }
     return JpaUtil.ejecutarEnTransaccionReturning(this::leerConfigDesdeEm);
   }
 
