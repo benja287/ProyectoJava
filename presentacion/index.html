@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grupo 1 — Sistema de gestión del V Congreso Argentino de Agroecología</title>
+<style>
+:root{
+  --verde:#1b5e20;
+  --verde-claro:#2e7d32;
+  --verde-suave:#e8f2e9;
+  --tierra:#8d6e2f;
+  --texto:#101510;
+  --gris:#5a6360;
+  --linea:#d7ded9;
+  --acento:#c62828;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:#fff;color:var(--texto);
+  font-family:"Segoe UI",Roboto,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  overflow:hidden;
+}
+
+/* ---------- marco de la diapositiva ---------- */
+#deck{position:relative;width:100vw;height:100vh}
+.slide{
+  position:absolute;inset:0;
+  display:none;
+  flex-direction:column;
+  padding:4.2vh 6vw 8vh;
+  background:#fff;
+}
+.slide.on{display:flex}
+
+/* ---------- tipografía ---------- */
+h1{font-size:3.5vw;line-height:1.12;letter-spacing:-.5px}
+h2{font-size:2.5vw;line-height:1.15;color:var(--verde);letter-spacing:-.4px}
+h3{font-size:1.5vw;line-height:1.2}
+p,li{font-size:1.35vw;line-height:1.5}
+.lead{font-size:1.6vw;color:var(--gris);line-height:1.45}
+.small{font-size:1.05vw;color:var(--gris);line-height:1.45}
+.mono{font-family:"JetBrains Mono","Fira Code",Consolas,monospace}
+
+/* ---------- encabezado de slide ---------- */
+.head{border-bottom:3px solid var(--verde);padding-bottom:1.4vh;margin-bottom:3vh;
+      display:flex;align-items:flex-end;justify-content:space-between;gap:2vw}
+.kicker{font-size:.95vw;text-transform:uppercase;letter-spacing:.18em;
+        color:var(--verde-claro);font-weight:700;margin-bottom:.6vh}
+.tag{font-size:.9vw;font-weight:700;color:#fff;background:var(--verde);
+     padding:.5vh 1vw;border-radius:99px;white-space:nowrap;letter-spacing:.06em}
+.tag.alt{background:var(--tierra)}
+.tag.ghost{background:#fff;color:var(--verde);border:2px solid var(--verde)}
+
+/* ---------- cuerpo ---------- */
+.body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+.body.top{justify-content:flex-start}
+
+/* ---------- grillas ---------- */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:3vw}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.6vw}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2vw}
+.g2-60{display:grid;grid-template-columns:1.35fr 1fr;gap:3vw}
+.gap-sm{gap:1vw}
+
+/* ---------- tarjetas ---------- */
+.card{border:2px solid var(--linea);border-radius:14px;padding:2vh 1.5vw;background:#fff}
+.card.fill{background:var(--verde-suave);border-color:#bcd4bf}
+.card.warn{background:#fdf3f2;border-color:#f0c4c0}
+.card h3{color:var(--verde);margin-bottom:.9vh}
+.card .n{font-size:2.6vw;font-weight:800;color:var(--verde);line-height:1}
+.card .u{font-size:.95vw;color:var(--gris);text-transform:uppercase;letter-spacing:.1em;margin-top:.5vh}
+
+/* ---------- listas ---------- */
+ul{list-style:none}
+ul li{position:relative;padding-left:1.5vw;margin-bottom:1.1vh}
+ul li::before{content:"";position:absolute;left:0;top:.62em;
+  width:.55vw;height:.55vw;background:var(--verde-claro);border-radius:50%}
+ul.tight li{margin-bottom:.6vh}
+ul.dash li::before{content:"";width:.8vw;height:2px;border-radius:0;top:.75em;background:var(--gris)}
+
+/* ---------- código / chips ---------- */
+code{font-family:"JetBrains Mono",Consolas,monospace;background:#f2f5f2;
+     border:1px solid var(--linea);border-radius:5px;padding:.1em .4em;font-size:.92em}
+.chips{display:flex;flex-wrap:wrap;gap:.6vw}
+.chip{font-family:"JetBrains Mono",Consolas,monospace;font-size:.95vw;
+      border:1.5px solid var(--verde);color:var(--verde);border-radius:99px;
+      padding:.5vh .9vw;background:#fff;white-space:nowrap}
+.chip.solid{background:var(--verde);color:#fff}
+.chip.gray{border-color:var(--linea);color:var(--gris)}
+
+/* ---------- tabla ---------- */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:1vw;text-transform:uppercase;letter-spacing:.1em;
+   color:var(--verde);border-bottom:2px solid var(--verde);padding:.9vh .6vw}
+td{font-size:1.12vw;padding:.85vh .6vw;border-bottom:1px solid var(--linea);vertical-align:top}
+td.mono{font-family:"JetBrains Mono",Consolas,monospace;font-size:1vw;color:var(--gris)}
+
+/* ---------- placeholder de captura ---------- */
+.shot{border:2.5px dashed #b9c6bc;border-radius:14px;background:#fafcfa;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      text-align:center;padding:2vh 1.5vw;min-height:34vh;flex:1}
+.shot .ico{font-size:2.6vw;line-height:1;margin-bottom:1vh;color:#9db0a2}
+.shot b{font-size:1.15vw;color:var(--verde)}
+.shot span{font-size:.95vw;color:var(--gris);margin-top:.6vh;max-width:34vw}
+.shot img{max-width:100%;max-height:60vh;object-fit:contain;border-radius:8px}
+figure{display:flex;flex-direction:column;flex:1;min-height:0}
+figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
+
+/* ---------- portada ---------- */
+.cover{justify-content:center;padding:0 8vw;
+  background:linear-gradient(120deg,#fff 0%,#fff 58%,var(--verde-suave) 100%)}
+.cover .rule{width:9vw;height:6px;background:var(--verde);margin:2.6vh 0}
+.cover h1{font-size:4.1vw;max-width:62vw}
+.cover .sub{font-size:1.7vw;color:var(--gris);margin-top:1.6vh;max-width:52vw}
+.cover .meta{margin-top:4vh;display:flex;gap:2.5vw;flex-wrap:wrap;align-items:center}
+.cover .who{font-size:1.15vw;color:var(--texto)}
+.cover .who b{color:var(--verde)}
+
+/* ---------- separador de bloque ---------- */
+.divider{background:var(--verde);color:#fff;justify-content:center;padding:0 8vw}
+.divider h1{color:#fff;font-size:4vw}
+.divider .num{font-size:8vw;font-weight:800;color:rgba(255,255,255,.22);line-height:.9;margin-bottom:1vh}
+.divider p{color:rgba(255,255,255,.9);font-size:1.5vw;margin-top:1.8vh;max-width:52vw}
+.divider .tag{background:#fff;color:var(--verde)}
+
+/* ---------- timeline entregas ---------- */
+.tl{display:grid;grid-template-columns:repeat(6,1fr);gap:.9vw;align-items:stretch}
+.tl .st{border:2px solid var(--linea);border-radius:12px;padding:1.6vh 1vw;
+        display:flex;flex-direction:column;gap:.7vh}
+.tl .st .b{width:2.4vw;height:2.4vw;border-radius:50%;background:var(--verde);color:#fff;
+           display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.2vw}
+.tl .st h3{font-size:1.05vw;line-height:1.2}
+.tl .st .d{font-size:.85vw;color:var(--gris);font-family:"JetBrains Mono",monospace}
+.tl .st.hi{border-color:var(--verde);background:var(--verde-suave)}
+
+/* ---------- diagrama de arquitectura ---------- */
+.arch{display:flex;flex-direction:column;gap:1.1vh;align-items:stretch}
+.layer{border:2px solid var(--verde);border-radius:12px;padding:1.4vh 1.4vw;
+       display:flex;align-items:center;gap:1.4vw}
+.layer .lbl{font-weight:800;color:var(--verde);font-size:1.15vw;min-width:11vw}
+.layer .cnt{font-size:1.05vw;color:var(--texto);font-family:"JetBrains Mono",monospace}
+.layer.soft{border-color:var(--linea)}
+.layer.soft .lbl{color:var(--gris)}
+.arrow{text-align:center;color:var(--verde);font-size:1.4vw;line-height:1}
+
+/* ---------- modelo / relaciones ---------- */
+.rel{display:flex;align-items:center;gap:.7vw;flex-wrap:wrap;font-size:1.15vw}
+.ent{border:2px solid var(--verde);border-radius:8px;padding:.5vh .8vw;
+     font-family:"JetBrains Mono",monospace;font-size:1.02vw;background:#fff;white-space:nowrap}
+.ent.hub{background:var(--verde);color:#fff}
+.card-rel{border-left:5px solid var(--verde);background:#fafcfa;border-radius:0 10px 10px 0;
+          padding:1.3vh 1.2vw;margin-bottom:1.1vh}
+.card-rel b{color:var(--verde);font-size:1.1vw}
+
+/* ---------- pie ---------- */
+.foot{position:absolute;left:6vw;right:6vw;bottom:2.4vh;
+      display:flex;justify-content:space-between;align-items:center;
+      font-size:.85vw;color:#9aa5a0;border-top:1px solid var(--linea);padding-top:1vh}
+.divider .foot{color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.25)}
+.cover .foot{border:none}
+#bar{position:fixed;left:0;bottom:0;height:5px;background:var(--verde);
+     transition:width .18s ease;z-index:50}
+.speaker{font-weight:700;color:var(--verde)}
+.divider .speaker{color:#fff}
+
+/* ---------- ayuda ---------- */
+#help{position:fixed;inset:0;background:rgba(16,21,16,.93);color:#fff;z-index:100;
+      display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.6vh}
+#help.on{display:flex}
+#help h2{color:#fff}
+#help kbd{background:#fff;color:#101510;border-radius:5px;padding:.2em .6em;
+          font-family:monospace;font-weight:700}
+#help p{font-size:1.2vw}
+
+/* ---------- impresión / exportar a PDF ---------- */
+@media print{
+  @page{size:1600px 900px;margin:0}
+  html,body{overflow:visible;height:auto}
+  #bar,#help{display:none!important}
+  #deck{position:static;width:auto;height:auto}
+  .slide{display:flex!important;position:relative;inset:auto;
+         width:1600px;height:900px;page-break-after:always;break-after:page;
+         padding:60px 96px 96px}
+  h1{font-size:56px}h2{font-size:40px}h3{font-size:24px}
+  p,li{font-size:21px}.lead{font-size:26px}.small{font-size:17px}
+  .kicker,.tag,.small,.chip,td.mono,.tl .st .d{font-size:15px}
+  td{font-size:18px}th{font-size:16px}
+  .cover h1{font-size:66px}.cover .sub{font-size:27px}
+  .divider h1{font-size:64px}.divider .num{font-size:128px}
+  .card .n{font-size:42px}
+  .foot{font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<div id="bar"></div>
+
+<div id="deck">
+
+<!-- ═══════════════ 1 · PORTADA ═══════════════ -->
+<section class="slide cover">
+  <div class="kicker">Java y Aplicaciones Avanzadas sobre Internet · UNLP · 2026</div>
+  <h1>Sistema de gestión del<br>V Congreso Argentino<br>de Agroecología</h1>
+  <div class="rule"></div>
+  <p class="sub">Trabajo Final Integrador — <b>Grupo 1</b><br>
+     De la maqueta al sistema desplegado: seis entregas, una aplicación en producción.</p>
+  <div class="meta">
+    <div class="who"><b>Integrantes:</b> Benjamín Rodríguez Mantilla · Alcides Castro · Lucas Budnik</div>
+  </div>
+  <div class="meta" style="margin-top:2vh">
+    <span class="chip solid">Jakarta EE 11</span>
+    <span class="chip">Jersey 3.1</span>
+    <span class="chip">Hibernate 7 · MySQL</span>
+    <span class="chip">Angular 19</span>
+    <span class="chip">Docker + GitLab CI</span>
+  </div>
+  <div class="foot"><span>grupo1.jyaa-ci.linti.unlp.edu.ar</span><span>20 minutos</span></div>
+</section>
+
+<!-- ═══════════════ 2 · INTEGRANTES ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Quiénes somos</div><h2>El equipo y cómo nos repartimos hoy</h2></div>
+    <span class="tag">1–2 min</span>
+  </div>
+  <div class="body">
+    <div class="g3">
+      <div class="card">
+        <h3>Benjamín Rodríguez Mantilla</h3>
+        <p class="small">Modelo de datos, persistencia y servicios REST · Inscripciones, pagos y usuarios</p>
+        <p class="small" style="margin-top:1vh"><b>Hoy presenta:</b> apertura, entregas 2 a 4 y balance técnico</p>
+      </div>
+      <div class="card">
+        <h3>Alcides Castro</h3>
+        <p class="small">Flujo académico y frontend Angular · Evaluación, agenda y programa</p>
+        <p class="small" style="margin-top:1vh"><b>Hoy presenta:</b> entregas 1, 5 y 6, y la demo en vivo</p>
+      </div>
+      <div class="card">
+        <h3>Lucas Budnik</h3>
+        <p class="small">Autenticación y roles, certificados y despliegue · CI/CD y pruebas</p>
+        <p class="small" style="margin-top:1vh"><b>Hoy presenta:</b> el problema, la arquitectura, la organización y el cierre</p>
+      </div>
+    </div>
+    <div class="g4" style="margin-top:3.5vh">
+      <div class="card fill"><div class="n">6</div><div class="u">entregas</div></div>
+      <div class="card fill"><div class="n">208</div><div class="u">commits</div></div>
+      <div class="card fill"><div class="n">~54k</div><div class="u">líneas de código</div></div>
+      <div class="card fill"><div class="n">3</div><div class="u">meses de trabajo</div></div>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Grupo 1 · JYAA 2026</span></div>
+</section>
+
+<!-- ═══════════════ 3 · BLOQUE 1 ═══════════════ -->
+<section class="slide divider">
+  <div class="num">01</div>
+  <h1>El problema</h1>
+  <p>Qué congreso hay que gestionar, cómo nos acercamos y para quién construimos.</p>
+  <div class="foot"><span class="speaker">Habla: Lucas · 2:30</span><span>Bloque 1 de 4</span></div>
+</section>
+
+<!-- ═══════════════ 4 · EL PROBLEMA ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 1 · Contexto real</div><h2>Un congreso no es un formulario: son cinco procesos en paralelo</h2></div>
+    <span class="tag">2 min</span>
+  </div>
+  <div class="body">
+    <p class="lead" style="margin-bottom:2.5vh">El <b>V Congreso Argentino de Agroecología</b> (FCAyF–UNLP) reúne durante varios días a
+      cientos de personas: docentes, productores, estudiantes y organizaciones. Hoy eso se coordina con planillas, mails y formularios sueltos.</p>
+    <div class="g3">
+      <div class="card"><h3>Inscribirse y pagar</h3>
+        <p class="small">Categorías con aranceles distintos, transferencia o efectivo, comprobantes, recibos y facturas.</p></div>
+      <div class="card"><h3>Enviar y evaluar trabajos</h3>
+        <p class="small">Resúmenes por eje temático, revisión por pares a ciegas, dictámenes, desempates y devoluciones.</p></div>
+      <div class="card"><h3>Armar el programa</h3>
+        <p class="small">Mesas, pósters, talleres y conferencias en aulas con cupo y franjas horarias que no pueden solaparse.</p></div>
+      <div class="card"><h3>Comunicar</h3>
+        <p class="small">Circulares, avisos por etapa y recordatorios: hoy, listas de correo copiadas a mano.</p></div>
+      <div class="card"><h3>Certificar</h3>
+        <p class="small">Asistencia, presentación y evaluación. Al cierre, cada persona debe poder descargar lo suyo.</p></div>
+      <div class="card warn"><h3>El costo de no tenerlo</h3>
+        <p class="small">Datos duplicados, plazos que se pasan, trabajos sin evaluador y certificados armados uno por uno.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Lucas</span><span>El problema</span></div>
+</section>
+
+<!-- ═══════════════ 5 · CÓMO NOS ACERCAMOS ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 1 · Método</div><h2>Cómo nos acercamos al problema</h2></div>
+    <span class="tag ghost">Entrega 1</span>
+  </div>
+  <div class="body">
+    <div class="g2-60">
+      <div>
+        <ul>
+          <li><b>Leímos el congreso real, no el enunciado.</b> Revisamos las circulares y las ediciones anteriores del Congreso Argentino de Agroecología para entender ejes temáticos, modalidades y plazos.</li>
+          <li><b>Modelamos el proceso como etapas con fechas.</b> Descubrimos que casi toda regla del sistema es en realidad “¿en qué etapa estamos?”: envío, evaluación, inscripción, certificación.</li>
+          <li><b>Escribimos historias de usuario por rol</b> antes de escribir una línea de Java. Cada historia dijo qué pantalla hacía falta.</li>
+          <li><b>Bocetamos y validamos las pantallas</b> con un prototipo navegable, sin backend. Nos permitió discutir el flujo con el grupo antes de comprometer el modelo.</li>
+        </ul>
+      </div>
+      <div class="card fill">
+        <h3>La decisión que ordenó todo</h3>
+        <p class="small" style="margin-top:1vh">No hay “estados mágicos”: el congreso tiene <b>etapas configurables</b> (<code>EtapaProceso</code> + <code>RangoFechas</code>)
+          y el administrador las define. El sistema habilita o bloquea acciones según la fecha, en lugar de tener reglas escritas a mano en el código.</p>
+        <p class="small" style="margin-top:1.5vh">Lo mismo con los <b>catálogos</b>: ejes, modalidades y tipos de envío los configura el comité, no el programador.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Lucas</span><span>El problema</span></div>
+</section>
+
+<!-- ═══════════════ 6 · USUARIOS Y ADOPTANTES ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 1 · Para quién</div><h2>Usuarios y adoptantes de la solución</h2></div>
+    <span class="tag">6 roles</span>
+  </div>
+  <div class="body">
+    <table>
+      <tr><th style="width:20%">Rol</th><th style="width:44%">Qué hace en el sistema</th><th>Por qué le importa</th></tr>
+      <tr><td><b>Asistente</b></td><td>Se registra, se inscribe, paga, arma su cronograma personal y descarga certificados.</td><td>Deja de mandar mails para saber si su pago fue aprobado.</td></tr>
+      <tr><td><b>Autor</b></td><td>Carga trabajos con coautores, sube PDF/DOCX, envía y recibe la devolución.</td><td>Ve el estado real de su trabajo y el dictamen sin intermediarios.</td></tr>
+      <tr><td><b>Evaluador</b></td><td>Acepta asignaciones dentro de su cupo por eje y emite dictamen.</td><td>Recibe sólo trabajos de su especialidad y nunca el propio.</td></tr>
+      <tr><td><b>Comité académico</b><br><span class="small">(organizador científico)</span></td><td>Precheck, asignación de evaluadores, desempates, catálogos y plazos.</td><td>Es el <b>adoptante principal</b>: hoy hace todo esto a mano.</td></tr>
+      <tr><td><b>Administración</b></td><td>Usuarios, aranceles, pagos y arqueo, aulas y programa, circulares, cierre del congreso.</td><td>Concentra la operación y la trazabilidad del dinero.</td></tr>
+      <tr><td><b>Público</b></td><td>Consulta programa, circulares e historia sin iniciar sesión.</td><td>Es la cara visible del congreso.</td></tr>
+    </table>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Lucas</span><span>El problema</span></div>
+</section>
+
+<!-- ═══════════════ 7 · BLOQUE 2 ═══════════════ -->
+<section class="slide divider">
+  <div class="num">02</div>
+  <h1>Las seis entregas</h1>
+  <p>Qué objetivo tuvo cada etapa, qué conceptos de la cátedra aplicamos, con qué nos peleamos y qué quedó funcionando.</p>
+  <div class="foot"><span class="speaker">Hablan: los tres · 7:40</span><span>Bloque 2 de 4</span></div>
+</section>
+
+<!-- ═══════════════ 8 · LÍNEA DE TIEMPO ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 2 · Panorama</div><h2>El camino: de la maqueta al sistema desplegado</h2></div>
+    <span class="tag alt">abril → julio 2026</span>
+  </div>
+  <div class="body">
+    <div class="tl">
+      <div class="st"><div class="b">1</div><h3>Análisis, diseño y maquetado</h3><div class="d">abril</div><p class="small">Historias de usuario + prototipo navegable</p></div>
+      <div class="st"><div class="b">2</div><h3>Objetos del modelo</h3><div class="d">mayo</div><p class="small">Diagrama de clases + POJOs del dominio</p></div>
+      <div class="st"><div class="b">3</div><h3>Capa de persistencia</h3><div class="d">may · 25</div><p class="small">JPA + DAO + MySQL de cátedra</p></div>
+      <div class="st"><div class="b">4</div><h3>Servicios REST</h3><div class="d">jun · 13</div><p class="small">Jersey + CDI + JWT + Swagger</p></div>
+      <div class="st"><div class="b">5</div><h3>Vista e integración</h3><div class="d">jun · 29</div><p class="small">SPA Angular 19 contra la API</p></div>
+      <div class="st hi"><div class="b">6</div><h3>Sistema completo</h3><div class="d">julio</div><p class="small">Deploy continuo y flujo end-to-end</p></div>
+    </div>
+    <div class="g2" style="margin-top:4vh;align-items:center">
+      <div>
+        <h3 style="color:var(--verde)">Una regla que nos salvó</h3>
+        <p class="small" style="margin-top:1vh">Cada entrega vivió en su propia rama (<code>entrega-3</code>, <code>entrega-4</code>, <code>entrega-5</code>) y se
+          integró a <code>main</code> sólo con el pipeline en verde. Nunca perdimos una entrega ya aprobada por trabajar sobre la siguiente.</p>
+      </div>
+      <div class="chips">
+        <span class="chip gray">208 commits</span>
+        <span class="chip gray">9 ramas</span>
+        <span class="chip gray">278 clases Java</span>
+        <span class="chip gray">82 componentes Angular</span>
+        <span class="chip gray">23 entidades JPA</span>
+        <span class="chip gray">26 recursos REST</span>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Las seis entregas</span></div>
+</section>
+
+<!-- ═══════════════ 9 · ENTREGA 1 ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 1</div><h2>Análisis, diseño y maquetado</h2></div>
+    <span class="tag">Producto: historias de usuario + prototipo navegable</span>
+  </div>
+  <div class="body top">
+    <div class="g2-60">
+      <div>
+        <div class="card-rel"><b>Objetivo</b><p class="small">Entender el dominio y acordar <i>qué</i> íbamos a construir, con pantallas discutibles en lugar de descripciones verbales.</p></div>
+        <div class="card-rel"><b>Qué aplicamos</b><p class="small">Relevamiento por rol, historias de usuario, arquitectura cliente–servidor y separación en capas (teoría de Inyección de Dependencias, lámina de capas).</p></div>
+        <div class="card-rel"><b>Herramientas</b><p class="small">Figma Make para el bocetado; un prototipo <b>React + Vite</b> con datos en <code>localStorage</code>, sin backend.</p></div>
+        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultad</b>
+          <p class="small">Al maquetar aparecieron reglas que no estaban en el enunciado: ¿qué pasa si dos evaluadores empatan?, ¿puede un evaluador revisar su propio trabajo? <b>Cómo la resolvimos:</b> las anotamos como reglas de negocio explícitas y las llevamos al modelo de la Entrega 2 en lugar de improvisarlas después.</p></div>
+      </div>
+      <figure>
+        <div class="shot">
+          <div class="ico">◱</div>
+          <b>CAPTURA 1 — Bocetado / historias de usuario</b>
+          <span>Una pantalla del prototipo React junto al tablero de historias de usuario por rol.
+                Guardar como <code>img/e1-maqueta.png</code>.</span>
+        </div>
+        <figcaption>El prototipo de la Entrega 1 sigue en el repositorio: fue la referencia visual de todo lo que vino después.</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Alcides</span><span>Entrega 1 de 6</span></div>
+</section>
+
+<!-- ═══════════════ 10 · ENTREGA 2 ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 2</div><h2>Definición de los objetos del modelo</h2></div>
+    <span class="tag">Producto: diagrama de clases + dominio en Java</span>
+  </div>
+  <div class="body top">
+    <div class="g2-60">
+      <div>
+        <div class="card-rel"><b>Objetivo</b><p class="small">Traducir las historias a un modelo de objetos: entidades, enums y relaciones, sin pensar todavía en la base de datos.</p></div>
+        <div class="card-rel"><b>Qué aplicamos</b><p class="small">Diseño OO, POJOs, enumerados para estados, y el principio de <b>responsabilidad única</b>: la lógica del congreso no vive en las entidades sino en <code>SistemaGestionCongresoService</code>.</p></div>
+        <div class="card-rel"><b>Herramientas</b><p class="small">UML + Maven para estructurar el proyecto Java (<code>pom.xml</code>, empaquetado <code>war</code>, Java 21).</p></div>
+        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultad</b>
+          <p class="small">Modelar la evaluación por pares. Una asignación no es una simple relación entre trabajo y evaluador: tiene aceptación, rechazo, dictamen y desempate.
+            <b>Cómo la resolvimos:</b> la convertimos en entidad propia, <code>AsignacionEvaluacion</code>, con su <code>Evaluacion</code> asociada. Esa decisión sostuvo todas las entregas siguientes.</p></div>
+      </div>
+      <figure>
+        <div class="shot">
+          <div class="ico">◇</div>
+          <b>CAPTURA 2 — Fragmento del diagrama de clases</b>
+          <span>Recortar el núcleo <code>Usuario · Trabajo · AsignacionEvaluacion · Evaluacion</code> del
+                <code>Diagrama de Clases_Grupo01.pdf</code>. Guardar como <code>img/e2-diagrama.png</code>.</span>
+        </div>
+        <figcaption>Elegimos el fragmento más denso del diagrama: el que muestra la evaluación por pares.</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Entrega 2 de 6</span></div>
+</section>
+
+<!-- ═══════════════ 11 · MODELO — RELACIONES ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 2 · El corazón del modelo</div><h2>Las relaciones que hacen complejo al dominio</h2></div>
+    <span class="tag">23 entidades</span>
+  </div>
+  <div class="body">
+    <div class="card-rel">
+      <b>1 · Evaluación por pares</b>
+      <div class="rel" style="margin-top:1vh">
+        <span class="ent hub">Usuario</span><span>1—∗</span>
+        <span class="ent">Trabajo</span><span>1—∗</span>
+        <span class="ent">AsignacionEvaluacion</span><span>∗—1</span>
+        <span class="ent hub">Usuario (evaluador)</span><span>+</span>
+        <span class="ent">Evaluacion</span><span>1—1</span>
+      </div>
+      <p class="small" style="margin-top:.9vh">Con <code>EvaluadorEjeCapacidad</code> limitando cuántos trabajos por eje puede tomar cada evaluador.</p>
+    </div>
+    <div class="card-rel">
+      <b>2 · Agenda del congreso</b>
+      <div class="rel" style="margin-top:1vh">
+        <span class="ent">CronogramaPersonal</span><span>∗—∗</span>
+        <span class="ent">Actividad</span><span>∗—∗</span>
+        <span class="ent">Trabajo</span><span>&nbsp;·&nbsp;</span>
+        <span class="ent">Actividad</span><span>∗—1</span>
+        <span class="ent">Aula</span>
+      </div>
+      <p class="small" style="margin-top:.9vh">Dos <code>@ManyToMany</code> encadenadas: por eso el chequeo de solapamiento y de cupo del aula fue la validación más difícil.</p>
+    </div>
+    <div class="card-rel">
+      <b>3 · Inscripción y dinero</b>
+      <div class="rel" style="margin-top:1vh">
+        <span class="ent hub">Usuario</span><span>1—∗</span>
+        <span class="ent">InscripcionCongreso</span><span>1—1</span>
+        <span class="ent">Pago</span><span>∗—1</span>
+        <span class="ent hub">Usuario (quien validó)</span>
+      </div>
+      <p class="small" style="margin-top:.9vh">El pago guarda <b>quién</b> lo validó: es lo que hace auditable el arqueo de caja.</p>
+    </div>
+    <div class="card-rel">
+      <b>4 · Configuración del congreso</b>
+      <p class="small" style="margin-top:.6vh"><code>Congreso</code> usa <code>@ElementCollection</code> de embeddables anidados:
+        <code>EtapaCongreso</code> → <code>RangoFechas</code>, más los catálogos de ejes, modalidades y tipos de envío (<code>CatalogoItem</code>).</p>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Entrega 2 de 6</span></div>
+</section>
+
+<!-- ═══════════════ 12 · ENTREGA 3 ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 3</div><h2>Capa de persistencia</h2></div>
+    <span class="tag">Producto: 23 entidades JPA + DAOs + ABM verificable</span>
+  </div>
+  <div class="body top">
+    <div class="g2-60">
+      <div>
+        <div class="card-rel"><b>Objetivo</b><p class="small">Que el modelo sobreviva al reinicio del servidor, sobre la base MySQL de la cátedra (<code>jyaa2026_bd1</code>).</p></div>
+        <div class="card-rel"><b>Qué aplicamos <span class="small">(JPA · DAO · Listeners)</span></b>
+          <p class="small"><code>@Entity</code>, <code>@OneToMany</code>/<code>@ManyToMany</code>, <code>@Embeddable</code>, <code>@ElementCollection</code>, <code>EntityManager</code>, JPQL con paginado
+            (<code>setFirstResult</code>/<code>setMaxResults</code>) y el <b>patrón DAO</b>: <code>GenericDAO&lt;T&gt;</code> → <code>AbstractJpaDAO&lt;T&gt;</code> → un DAO por entidad.</p></div>
+        <div class="card-rel"><b>Librerías y herramientas</b>
+          <p class="small">Hibernate 7.0, <code>mysql-connector-j</code> 9.2, Maven, Eclipse + Tomcat 10, phpMyAdmin de la cátedra.
+            El arranque lo hace un <code>ServletContextListener</code> (<code>JpaBootstrapListener</code>) que crea el <code>EntityManagerFactory</code> y carga datos iniciales.</p></div>
+        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultades reales</b>
+          <p class="small">① El WAR desplegaba pero no encontraba las entidades: hubo que <b>listarlas explícitamente en <code>persistence.xml</code></b>, porque Tomcat no hace el escaneo automático de un servidor Jakarta EE completo.<br>
+            ② Los PDF de trabajos no entraban en la columna: pasamos el <code>@Lob</code> a <b><code>LONGBLOB</code></b>.<br>
+            ③ <code>hbm2ddl.auto=update</code> nunca achica ni renombra columnas, así que escribimos una clase <code>SchemaMigration</code> con SQL propio que corre al arrancar.</p></div>
+      </div>
+      <figure>
+        <div class="shot">
+          <div class="ico">▤</div>
+          <b>CAPTURA 3 — ABM funcionando</b>
+          <span>El servlet <code>/test-persistencia</code> con los casos de alta/baja/modificación en verde,
+                o las tablas creadas en phpMyAdmin. Guardar como <code>img/e3-persistencia.png</code>.</span>
+        </div>
+        <figcaption>Servlet de pruebas: la forma más rápida de demostrar que el ABM sobre JPA realmente escribe en MySQL.</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Entrega 3 de 6</span></div>
+</section>
+
+<!-- ═══════════════ 13 · ENTREGA 4 ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 4</div><h2>Capa de servicios REST</h2></div>
+    <span class="tag">Producto: API documentada en OpenAPI + JWT</span>
+  </div>
+  <div class="body top">
+    <div class="g2-60">
+      <div>
+        <div class="card-rel"><b>Objetivo</b><p class="small">Exponer el dominio como una API HTTP consumible por cualquier cliente, con autenticación y errores de negocio legibles.</p></div>
+        <div class="card-rel"><b>Qué aplicamos <span class="small">(REST · CDI · Filtros · CORS)</span></b>
+          <p class="small"><b>JAX-RS con Jersey</b>: <code>@Path</code>, verbos HTTP, códigos de estado, <code>@QueryParam</code>/<code>@PathParam</code>, multipart para archivos y <b>DTOs</b> separados de las entidades.<br>
+            <b>CDI con Weld</b> sobre Tomcat: <code>@Inject</code>, <code>@RequestScoped</code>, y un <code>@Produces</code>/<code>@Disposes</code> de <code>EntityManager</code> que abre y commitea la transacción por request.<br>
+            <b>Filtros JAX-RS</b>: <code>JwtAuthFilter</code>, <code>CorsRequestFilter</code> (<code>@PreMatching</code>, preflight <code>OPTIONS</code>) y <code>CorsResponseFilter</code>.<br>
+            <b>ExceptionMappers</b> que convierten <code>NegocioException</code> en un JSON con mensaje para el usuario.</p></div>
+        <div class="card-rel"><b>Librerías</b>
+          <p class="small">Jersey 3.1.9 (+ <code>jersey-cdi1x-servlet</code>, <code>media-json-jackson</code>, <code>media-multipart</code>), Weld 6.0.4, JJWT 0.12.6, <code>swagger-jaxrs2-jakarta</code> 2.2.28, Angus Mail.</p></div>
+        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultad</b>
+          <p class="small">Hacer convivir <b>Jersey + CDI en Tomcat</b>: sin el puente <code>jersey-cdi1x-servlet</code> y un <code>beans.xml</code> con <code>bean-discovery-mode="annotated"</code>, las inyecciones en los recursos llegaban en <code>null</code>.
+            <b>Cómo la resolvimos:</b> siguiendo la teoría de Inyección de Dependencias, movimos el <code>EntityManager</code> a un <i>producer</i> con scope de request.</p></div>
+      </div>
+      <figure>
+        <div class="shot">
+          <div class="ico">⌘</div>
+          <b>CAPTURA 4 — Swagger UI</b>
+          <span>La lista de recursos desplegada y un <code>POST /api/login</code> ejecutado con su respuesta.
+                Guardar como <code>img/e4-swagger.png</code>.</span>
+        </div>
+        <figcaption>26 recursos REST documentados con <code>@Tag</code> y <code>@Operation</code>, publicados como OpenAPI.</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Entrega 4 de 6</span></div>
+</section>
+
+<!-- ═══════════════ 14 · SEGURIDAD ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 4 · Decisión de diseño</div><h2>Sesión con JWT: por qué no usamos <code>HttpSession</code></h2></div>
+    <span class="tag ghost">Teoría: Sesiones · Filtros</span>
+  </div>
+  <div class="body">
+    <div class="g2">
+      <div>
+        <h3 style="color:var(--verde);margin-bottom:1.4vh">Cómo funciona</h3>
+        <ul class="tight">
+          <li><code>POST /api/login</code> devuelve un <b>JWT firmado con HS256</b>, válido 4 horas.</li>
+          <li>El cliente lo manda en <code>Authorization: Bearer …</code> en cada pedido.</li>
+          <li><code>JwtAuthFilter</code> lo valida y arma un <code>AuthenticatedUser</code> para el recurso.</li>
+          <li>Rutas públicas declaradas: login, registro, <code>health</code>, programa, circulares y OpenAPI.</li>
+          <li>En el cliente: <code>sessionStorage</code> + cierre por inactividad a los 30 minutos.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="card fill">
+          <h3>El detalle que aprendimos peleándonos</h3>
+          <p class="small" style="margin-top:1vh">Un token es una foto del momento en que se emitió. Si el administrador te quita un rol o te inhabilita la cuenta,
+            el token viejo <b>seguiría siendo válido</b> durante horas.</p>
+          <p class="small" style="margin-top:1.4vh"><b>Nuestra solución:</b> el filtro valida la firma del token, pero vuelve a leer <b>roles y estado activo desde la base</b> en cada request.
+            Así, inhabilitar una cuenta la expulsa al instante, sin esperar el vencimiento.</p>
+        </div>
+        <p class="small" style="margin-top:2vh"><b>Por qué JWT y no <code>HttpSession</code>:</b> la API tiene que poder servir a un cliente Angular alojado en otro origen y a
+          un backend replicado en contenedores. Sin estado en el servidor, el escalado y el CORS se simplifican.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Lucas</span><span>Entrega 4 de 6</span></div>
+</section>
+
+<!-- ═══════════════ 15 · ENTREGA 5 ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 5</div><h2>Capa de presentación e integración</h2></div>
+    <span class="tag">Producto: SPA Angular 19 contra la API real</span>
+  </div>
+  <div class="body top">
+    <div class="g2-60">
+      <div>
+        <div class="card-rel"><b>Objetivo</b><p class="small">Reemplazar el prototipo con datos falsos por un cliente real que consuma el REST y respete los permisos de cada rol.</p></div>
+        <div class="card-rel"><b>Qué aplicamos <span class="small">(Angular 1, 2 y 3)</span></b>
+          <p class="small"><b>Componentes standalone</b> y <code>bootstrapApplication</code>; ruteo con <code>app.routes.ts</code>; <b>guards</b> de sesión y de rol; un
+            <b>interceptor funcional</b> que agrega el <code>Bearer</code> y desloguea ante un 401; <code>HttpClient</code> con genéricos tipados;
+            <b>formularios reactivos</b> y la nueva sintaxis de control de flujo <code>@if</code> / <code>@for</code>.</p></div>
+        <div class="card-rel"><b>Librerías y herramientas</b>
+          <p class="small">Angular 19 + Angular CLI, RxJS, Angular Material (diálogos), <b>Leaflet</b> para el mapa de sede y aulas, <code>jwt-decode</code>.
+            En desarrollo, <code>proxy.conf.json</code> apunta <code>/api</code> al servidor de la cátedra: se programa sin Tomcat local.</p></div>
+        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultades reales</b>
+          <p class="small">① <b>CORS</b> en desarrollo: el navegador bloqueaba las llamadas. Dos caminos, y usamos los dos — proxy de Angular para el día a día, filtros CORS en el backend para probar contra el servidor desplegado.<br>
+            ② <b>NG0203</b>: llamar a <code>inject()</code> dentro de <code>ngOnInit</code> rompe la app; hubo que moverlo al campo de la clase.<br>
+            ③ El <b>bundle superaba el presupuesto</b> de producción y el build fallaba en el pipeline: ajustamos los budgets y depuramos importaciones.<br>
+            ④ Leaflet se recreaba en cada ciclo de detección de cambios y el mapa parpadeaba.</p></div>
+      </div>
+      <figure>
+        <div class="shot">
+          <div class="ico">▣</div>
+          <b>CAPTURA 5 — La SPA y la red</b>
+          <span>Un panel de la app con el DevTools abierto en Network mostrando la llamada
+                <code>/api/...</code> con su header <code>Authorization</code>. Guardar como <code>img/e5-angular.png</code>.</span>
+        </div>
+        <figcaption>La captura muestra las dos capas a la vez: la pantalla y el REST que la alimenta.</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Alcides</span><span>Entrega 5 de 6</span></div>
+</section>
+
+<!-- ═══════════════ 16 · ENTREGA 6 ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 6</div><h2>Sistema completo</h2></div>
+    <span class="tag">Producto: aplicación en producción, ciclo de vida completo del congreso</span>
+  </div>
+  <div class="body top">
+    <div class="g2-60">
+      <div>
+        <div class="card-rel"><b>Objetivo</b><p class="small">Cerrar el ciclo completo — de la inscripción al certificado — y dejarlo desplegado y usable por los organizadores.</p></div>
+        <div class="card-rel"><b>Qué sumamos en esta etapa</b>
+          <p class="small">Aranceles configurables por categoría con QR · recibo de caja correlativo y arqueo diario · factura al participante ·
+            cupos de evaluador por eje con liberación automática · desempate 1–1 que dispara un tercer evaluador · catálogos editables por el comité ·
+            programa con aulas georreferenciadas y control de cupo · circulares y notificaciones por plantilla (in-app + email) ·
+            checklist pre-congreso · cierre del congreso que emite los certificados.</p></div>
+        <div class="card-rel"><b>Integración final</b>
+          <p class="small">Un <b>Dockerfile multi-stage</b> compila Angular, lo copia dentro de <code>src/main/webapp</code>, empaqueta el WAR con Maven y lo despliega en Tomcat 10 / JDK 21.
+            Frontend y API terminan en el <b>mismo origen</b>: en producción ya no hace falta CORS.</p></div>
+        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultad</b>
+          <p class="small">El contenedor a veces se desplegaba con un frontend viejo por la caché de Docker.
+            <b>Cómo la resolvimos:</b> build con <code>--no-cache --pull</code> y, sobre todo, <b>pasos de verificación dentro del propio Dockerfile</b>: si el WAR no contiene el
+            <code>main-*.js</code> y los estilos esperados, la imagen no se construye. El error se detecta en el pipeline, no en la demo.</p></div>
+      </div>
+      <figure>
+        <div class="shot">
+          <div class="ico">◆</div>
+          <b>CAPTURA 6 — Sistema en producción</b>
+          <span>Home pública en <code>grupo1.jyaa-ci.linti.unlp.edu.ar</code> o el programa del congreso con el mapa de aulas.
+                Guardar como <code>img/e6-produccion.png</code>.</span>
+        </div>
+        <figcaption>Desplegado y accesible: cada push a <code>main</code> lo reconstruye.</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Alcides</span><span>Entrega 6 de 6</span></div>
+</section>
+
+<!-- ═══════════════ 17 · ARQUITECTURA ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 2 · Cierre</div><h2>La arquitectura que resultó de las seis entregas</h2></div>
+    <span class="tag alt">Un solo WAR</span>
+  </div>
+  <div class="body">
+    <div class="arch">
+      <div class="layer"><span class="lbl">Navegador</span><span class="cnt">Angular 19 · standalone components · guards · interceptor JWT · Leaflet</span></div>
+      <div class="arrow">▼ &nbsp; HTTPS · <span class="mono">Authorization: Bearer &lt;jwt&gt;</span></div>
+      <div class="layer"><span class="lbl">Filtros</span><span class="cnt">CorsRequestFilter · CorsResponseFilter · JwtAuthFilter · StaticCacheFilter</span></div>
+      <div class="arrow">▼</div>
+      <div class="layer"><span class="lbl">REST</span><span class="cnt">Jersey / JAX-RS · 26 recursos <span class="mono">@Path</span> · DTOs · ExceptionMappers · OpenAPI</span></div>
+      <div class="arrow">▼ &nbsp; <span class="mono">@Inject</span> (CDI / Weld)</div>
+      <div class="layer"><span class="lbl">Servicios</span><span class="cnt">Reglas del congreso · etapas y plazos · NegocioException · email y notificaciones</span></div>
+      <div class="arrow">▼</div>
+      <div class="layer"><span class="lbl">Persistencia</span><span class="cnt">GenericDAO → AbstractJpaDAO → 23 DAOs · EntityManager por request · JPQL</span></div>
+      <div class="arrow">▼</div>
+      <div class="layer soft"><span class="lbl">Infraestructura</span><span class="cnt">Hibernate 7 · MySQL <span class="mono">jyaa2026_bd1</span> · Tomcat 10 / JDK 21 · Docker · SMTP</span></div>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Lucas</span><span>Arquitectura</span></div>
+</section>
+
+<!-- ═══════════════ 18 · TEORÍA APLICADA ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 2 · Trazabilidad</div><h2>Cada tema de la cátedra, en un archivo concreto del proyecto</h2></div>
+    <span class="tag ghost">14 clases teóricas</span>
+  </div>
+  <div class="body">
+    <div class="g2 gap-sm">
+      <table>
+        <tr><th style="width:47%">Teoría</th><th>Dónde vive en el proyecto</th></tr>
+        <tr><td>Arquitectura server-side y Servlets</td><td class="mono">PersistenciaTestServlet · web.xml · WAR en Tomcat</td></tr>
+        <tr><td>Sesiones</td><td class="mono">JWT 4 h + idle 30 min (en vez de HttpSession)</td></tr>
+        <tr><td>ServletContext y Listeners</td><td class="mono">JpaBootstrapListener → EMF + datos iniciales</td></tr>
+        <tr><td>Filtros</td><td class="mono">JwtAuthFilter · StaticCacheFilter · filtros CORS</td></tr>
+        <tr><td>Maven</td><td class="mono">pom.xml · packaging war · build multi-stage</td></tr>
+        <tr><td>JDBC, Datasource y patrón DAO</td><td class="mono">GenericDAO → AbstractJpaDAO → 23 DAOs</td></tr>
+        <tr><td>JPA</td><td class="mono">23 @Entity · @ElementCollection · JPQL paginado</td></tr>
+      </table>
+      <table>
+        <tr><th style="width:47%">Teoría</th><th>Dónde vive en el proyecto</th></tr>
+        <tr><td>Inyección de dependencias (CDI/Weld)</td><td class="mono">EntityManagerProducer · @Inject · beans.xml</td></tr>
+        <tr><td>REST</td><td class="mono">JaxRsApplication · @Path · verbos · ExceptionMappers</td></tr>
+        <tr><td>Swagger / OpenAPI</td><td class="mono">OpenApiResource · @Tag · @Operation</td></tr>
+        <tr><td>CORS</td><td class="mono">CorsRequestFilter @PreMatching (preflight OPTIONS)</td></tr>
+        <tr><td>Angular — parte 1</td><td class="mono">standalone components · app.routes.ts · servicios</td></tr>
+        <tr><td>Angular — parte 2</td><td class="mono">HttpClient tipado · formularios reactivos · RxJS</td></tr>
+        <tr><td>Angular — parte 3</td><td class="mono">guards de rol · interceptor JWT · build de producción</td></tr>
+      </table>
+    </div>
+    <p class="small" style="margin-top:2.2vh;text-align:center">No quedó ningún tema de la cursada sin usar: el trabajo final los integró a todos en un mismo despliegue.</p>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Lucas</span><span>Teoría aplicada</span></div>
+</section>
+
+<!-- ═══════════════ 19 · BLOQUE 3 ═══════════════ -->
+<section class="slide divider">
+  <div class="num">03</div>
+  <h1>Cómo trabajamos</h1>
+  <p>La organización interna del grupo y las herramientas que la sostuvieron.</p>
+  <div class="foot"><span class="speaker">Habla: Lucas · 2:00</span><span>Bloque 3 de 4</span></div>
+</section>
+
+<!-- ═══════════════ 20 · ORGANIZACIÓN ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 3 · Equipo</div><h2>Nos repartimos por flujo del congreso, no por capa</h2></div>
+    <span class="tag">3 integrantes</span>
+  </div>
+  <div class="body">
+    <p class="lead" style="margin-bottom:2.5vh">Al principio dividimos por capas —uno el backend, otro el front— y chocábamos todo el tiempo en los mismos archivos.
+      A partir de la Entrega 3 cambiamos: <b>cada uno se hizo dueño de un flujo completo</b>, de la entidad JPA a la pantalla Angular.</p>
+    <div class="g3">
+      <div class="card"><h3>Benjamín</h3>
+        <p class="small">Inscripciones, pagos, aranceles, arqueo y facturación · gestión de usuarios · el grueso del modelo JPA y los recursos REST.</p>
+        <p class="small" style="margin-top:1vh"><b>157 commits</b></p></div>
+      <div class="card"><h3>Alcides</h3>
+        <p class="small">Flujo académico: envío de trabajos, comité, asignaciones, dictámenes y desempates · programa, aulas, cronogramas y mapas.</p>
+        <p class="small" style="margin-top:1vh"><b>42 commits</b></p></div>
+      <div class="card"><h3>Lucas</h3>
+        <p class="small">Autenticación y roles · certificados automáticos · circulares y notificaciones · despliegue, pipeline y pruebas de integración.</p>
+        <p class="small" style="margin-top:1vh"><b>8 commits</b></p></div>
+    </div>
+    <div class="g2" style="margin-top:3vh">
+      <div class="card fill"><h3>Lo que funcionó</h3>
+        <p class="small">Ser dueño de un flujo de punta a punta bajó los conflictos de merge casi a cero y hizo que cada uno tuviera que aprender <b>todas</b> las capas.</p></div>
+      <div class="card warn"><h3>Lo que nos costó</h3>
+        <p class="small">Los cambios en <code>Usuario</code> y en la configuración del congreso tocan a los tres. Los coordinamos antes de codear y los integramos primero.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Lucas</span><span>Organización</span></div>
+</section>
+
+<!-- ═══════════════ 21 · HERRAMIENTAS Y CI ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 3 · Herramientas</div><h2>Git, GitLab, Docker y despliegue continuo</h2></div>
+    <span class="tag alt">push a main → app actualizada</span>
+  </div>
+  <div class="body">
+    <div class="g2-60">
+      <div>
+        <ul class="tight">
+          <li><b>Git con dos remotos:</b> GitHub para el trabajo diario del grupo y <b>GitLab de la cátedra</b> como remoto de entrega y despliegue.</li>
+          <li><b>Una rama por entrega</b> (<code>entrega-3</code>…<code>entrega-5</code>) más ramas de feature por persona; <code>main</code> siempre desplegable.</li>
+          <li><b>Docker multi-stage:</b> etapa Node que compila Angular, etapa Maven que arma el WAR, imagen final Tomcat 10 / JDK 21.</li>
+          <li><b>GitLab CI</b> con runner <code>jyaa</code>: construye, detiene y elimina el contenedor anterior y levanta el nuevo detrás de Traefik con TLS automático.</li>
+          <li><b>Verificación en el build:</b> el Dockerfile comprueba el contenido del WAR antes de publicar la imagen.</li>
+        </ul>
+        <div class="chips" style="margin-top:2.5vh">
+          <span class="chip solid">Git</span><span class="chip">GitLab CI</span><span class="chip">Docker</span>
+          <span class="chip">Traefik + TLS</span><span class="chip">Maven</span><span class="chip">Eclipse / VS Code</span>
+          <span class="chip">phpMyAdmin</span><span class="chip">Swagger UI</span><span class="chip">Postman / DevTools</span>
+        </div>
+      </div>
+      <div>
+        <div class="card fill">
+          <h3>El pipeline, en cuatro pasos</h3>
+          <ul class="tight" style="margin-top:1.2vh">
+            <li><b>build</b> — <code>docker buildx build --no-cache</code>: Angular + WAR frescos y verificados</li>
+            <li><b>test</b> — se detiene el contenedor <code>grupo1</code> anterior</li>
+            <li><b>test</b> — se elimina el contenedor viejo</li>
+            <li><b>deploy</b> — <code>docker run</code> con las etiquetas de Traefik para <code>grupo1.jyaa-ci.linti.unlp.edu.ar</code></li>
+          </ul>
+        </div>
+        <div class="shot" style="min-height:20vh;margin-top:2vh">
+          <div class="ico">⚙</div>
+          <b>CAPTURA 7 — Pipeline en verde</b>
+          <span>Los cuatro jobs de GitLab CI completados. Guardar como <code>img/ci-pipeline.png</code>.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Lucas</span><span>Organización</span></div>
+</section>
+
+<!-- ═══════════════ 22 · BLOQUE 4 ═══════════════ -->
+<section class="slide divider">
+  <div class="num">04</div>
+  <h1>Demo y reflexión</h1>
+  <p>El sistema funcionando de punta a punta, y qué nos llevamos del proceso.</p>
+  <div class="foot"><span class="speaker">Alcides (demo) · Benjamín y Lucas (cierre) · 6:20</span><span>Bloque 4 de 4</span></div>
+</section>
+
+<!-- ═══════════════ 23 · DEMO ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 4 · En vivo</div><h2>Un trabajo, de principio a fin</h2></div>
+    <span class="tag">6 min · grupo1.jyaa-ci.linti.unlp.edu.ar</span>
+  </div>
+  <div class="body">
+    <div class="g2">
+      <div>
+        <ul class="tight">
+          <li><b>1 · Público</b> — home, programa del congreso con el mapa de aulas y circulares, sin iniciar sesión.</li>
+          <li><b>2 · Asistente</b> — registro, inscripción por pasos, pago por transferencia con comprobante.</li>
+          <li><b>3 · Administración</b> — aprueba el pago, se emite el recibo correlativo y llega la notificación.</li>
+          <li><b>4 · Autor</b> — carga un trabajo con coautores, sube el PDF y lo envía.</li>
+          <li><b>5 · Comité</b> — precheck, asigna dos evaluadores respetando el cupo del eje.</li>
+          <li><b>6 · Evaluador</b> — acepta la asignación y emite el dictamen.</li>
+          <li><b>7 · Autor</b> — ve la devolución en su panel.</li>
+          <li><b>8 · Administración</b> — cierra el congreso y se habilitan los certificados.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="card fill">
+          <h3>Lo que queremos que se vea</h3>
+          <p class="small" style="margin-top:1vh">No las pantallas sueltas, sino que <b>una acción de un rol cambia lo que ve otro rol</b>, en la misma base de datos y en tiempo real.</p>
+        </div>
+        <div class="card" style="margin-top:2vh">
+          <h3>Plan B</h3>
+          <p class="small" style="margin-top:1vh">Si la red falla: video de respaldo del recorrido completo en <code>img/demo-respaldo.mp4</code> y capturas de cada paso.</p>
+        </div>
+        <div class="card" style="margin-top:2vh">
+          <h3>Preparado de antemano</h3>
+          <p class="small" style="margin-top:1vh">Sesiones abiertas en pestañas separadas por rol, congreso con etapas vigentes y un trabajo listo para enviar.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Conduce: Alcides</span><span>Demo en vivo</span></div>
+</section>
+
+<!-- ═══════════════ 24 · DIFICULTADES ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 4 · Balance técnico</div><h2>Las cinco dificultades que más nos enseñaron</h2></div>
+    <span class="tag ghost">y cómo las resolvimos</span>
+  </div>
+  <div class="body">
+    <table>
+      <tr><th style="width:24%">Dificultad</th><th style="width:38%">Qué pasaba</th><th>Cómo la resolvimos</th></tr>
+      <tr><td><b>CDI en Tomcat</b></td><td>Las inyecciones en los recursos Jersey llegaban en <code>null</code>: Tomcat no trae CDI.</td><td>Weld + <code>jersey-cdi1x-servlet</code> + <code>beans.xml</code>, y el <code>EntityManager</code> como <i>producer</i> con scope de request.</td></tr>
+      <tr><td><b>CORS</b></td><td>El navegador bloqueaba las llamadas del Angular local al backend desplegado.</td><td>Proxy de Angular para desarrollo y filtros CORS con preflight para el resto. En producción, mismo origen: el problema desaparece.</td></tr>
+      <tr><td><b>Esquema de base</b></td><td><code>hbm2ddl.auto=update</code> agrega columnas pero nunca las corrige; los PDF no entraban y un campo quedó corto.</td><td>Clase <code>SchemaMigration</code> con SQL propio que corre al arrancar la aplicación, más <code>LONGBLOB</code> para los documentos.</td></tr>
+      <tr><td><b>Deploy con front viejo</b></td><td>La caché de Docker publicaba un WAR con un Angular desactualizado.</td><td><code>--no-cache --pull</code> y verificaciones del contenido del WAR dentro del Dockerfile: el pipeline falla antes de desplegar.</td></tr>
+      <tr><td><b>Trabajo en paralelo</b></td><td>Conflictos constantes al dividirnos por capas, y <code>node_modules</code> versionado por error.</td><td>Reparto por flujo funcional, <code>.gitignore</code> saneado y una rama por entrega que sólo se integra con el pipeline en verde.</td></tr>
+    </table>
+  </div>
+  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Balance</span></div>
+</section>
+
+<!-- ═══════════════ 25 · APRENDIZAJES ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 4 · Reflexión</div><h2>Qué nos llevamos</h2></div>
+    <span class="tag">2 min</span>
+  </div>
+  <div class="body">
+    <div class="g2">
+      <div>
+        <div class="card-rel"><b>Las capas no son burocracia</b>
+          <p class="small">Cuando cambiamos el frontend entero de React a Angular, el backend no se tocó. Ese día entendimos para qué sirve separar en capas.</p></div>
+        <div class="card-rel"><b>El modelo de datos es la decisión más cara</b>
+          <p class="small">Convertir la asignación de evaluadores en una entidad propia costó una tarde en la Entrega 2 y nos ahorró semanas en la 4 y la 6.</p></div>
+        <div class="card-rel"><b>Configurable le gana a hardcodeado</b>
+          <p class="small">Etapas, catálogos, aranceles y cupos los define el organizador. Si estuvieran en el código, cada edición del congreso pediría un despliegue.</p></div>
+      </div>
+      <div>
+        <div class="card-rel"><b>Desplegar temprano y seguido</b>
+          <p class="small">Tener CI desde la Entrega 3 convirtió “anda en mi máquina” en un problema de cinco minutos en vez de una crisis la noche anterior a entregar.</p></div>
+        <div class="card-rel"><b>Programar en equipo es coordinar, no repartir</b>
+          <p class="small">Git resuelve los archivos; las decisiones sobre el dominio compartido hay que conversarlas antes de escribirlas.</p></div>
+        <div class="card fill" style="margin-top:1.5vh">
+          <h3>Si tuviéramos una entrega más</h3>
+          <p class="small" style="margin-top:.8vh">Hash de contraseñas con BCrypt, autorización declarativa con <code>@RolesAllowed</code>, Bean Validation en los DTOs y pruebas automatizadas dentro del pipeline.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="speaker">Hablan: los tres</span><span>Reflexión</span></div>
+</section>
+
+<!-- ═══════════════ 26 · CIERRE ═══════════════ -->
+<section class="slide cover">
+  <div class="kicker">Grupo 1 · JYAA 2026 · Facultad de Informática — UNLP</div>
+  <h1>Gracias.<br>¿Preguntas?</h1>
+  <div class="rule"></div>
+  <p class="sub">Sistema de gestión del V Congreso Argentino de Agroecología</p>
+  <div class="meta" style="margin-top:3vh">
+    <div class="who"><b>Aplicación:</b> grupo1.jyaa-ci.linti.unlp.edu.ar</div>
+    <div class="who"><b>API:</b> /api/health &nbsp;·&nbsp; <b>OpenAPI:</b> /api/openapi.json</div>
+  </div>
+  <div class="meta" style="margin-top:1vh">
+    <div class="who"><b>Repositorio:</b> GitLab de la cátedra — grupo 1</div>
+  </div>
+  <div class="foot"><span>Benjamín Rodríguez Mantilla · Alcides Castro · Lucas Budnik</span><span>2026</span></div>
+</section>
+
+</div>
+
+<div id="help">
+  <h2>Atajos</h2>
+  <p><kbd>→</kbd> <kbd>Espacio</kbd> siguiente &nbsp;·&nbsp; <kbd>←</kbd> anterior &nbsp;·&nbsp; <kbd>Inicio</kbd>/<kbd>Fin</kbd> primera/última</p>
+  <p><kbd>F</kbd> pantalla completa &nbsp;·&nbsp; <kbd>Ctrl</kbd>+<kbd>P</kbd> exportar a PDF &nbsp;·&nbsp; <kbd>?</kbd> cerrar esta ayuda</p>
+</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var bar = document.getElementById('bar');
+  var help = document.getElementById('help');
+  var i = 0;
+
+  slides.forEach(function(s, n){
+    var f = s.querySelector('.foot');
+    if(f && !f.dataset.numbered){
+      var sp = document.createElement('span');
+      sp.textContent = (n + 1) + ' / ' + slides.length;
+      f.appendChild(sp);
+      f.dataset.numbered = '1';
+    }
+  });
+
+  function show(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('on', k === i); });
+    bar.style.width = ((i + 1) / slides.length * 100) + '%';
+    if(location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === '?' ){ help.classList.toggle('on'); return; }
+    if(help.classList.contains('on')){ help.classList.remove('on'); return; }
+    switch(e.key){
+      case 'ArrowRight': case ' ': case 'PageDown': case 'n': show(i+1); e.preventDefault(); break;
+      case 'ArrowLeft':  case 'PageUp': case 'p':            show(i-1); e.preventDefault(); break;
+      case 'Home': show(0); break;
+      case 'End':  show(slides.length-1); break;
+      case 'f': case 'F':
+        if(document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+        break;
+    }
+  });
+
+  document.addEventListener('click', function(e){
+    if(help.classList.contains('on')){ help.classList.remove('on'); return; }
+    show(e.clientX < window.innerWidth * 0.25 ? i - 1 : i + 1);
+  });
+
+  var x0 = null;
+  document.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    if(x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0;
+    if(Math.abs(dx) > 50) show(dx < 0 ? i + 1 : i - 1);
+    x0 = null;
+  }, {passive:true});
+
+  var start = parseInt((location.hash || '#1').slice(1), 10);
+  show(isNaN(start) ? 0 : start - 1);
+})();
+</script>
+</body>
+</html>
