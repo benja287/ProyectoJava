@@ -217,44 +217,10 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
     <span class="chip">Angular 19</span>
     <span class="chip">Docker + GitLab CI</span>
   </div>
-  <div class="foot"><span>grupo1.jyaa-ci.linti.unlp.edu.ar</span><span>20 minutos</span></div>
+  <div class="foot"><span class="speaker">Habla: Benjamín · 0:40</span><span>grupo1.jyaa-ci.linti.unlp.edu.ar · 20 minutos</span></div>
 </section>
 
-<!-- ═══════════════ 2 · INTEGRANTES ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Quiénes somos</div><h2>El equipo y cómo nos repartimos hoy</h2></div>
-    <span class="tag">1–2 min</span>
-  </div>
-  <div class="body">
-    <div class="g3">
-      <div class="card">
-        <h3>Benjamín Rodríguez Mantilla</h3>
-        <p class="small">Modelo de datos, persistencia y servicios REST · Inscripciones, pagos y usuarios</p>
-        <p class="small" style="margin-top:1vh"><b>Hoy presenta:</b> apertura, entregas 2 a 4 y balance técnico</p>
-      </div>
-      <div class="card">
-        <h3>Alcides Castro</h3>
-        <p class="small">Flujo académico y frontend Angular · Evaluación, agenda y programa</p>
-        <p class="small" style="margin-top:1vh"><b>Hoy presenta:</b> entregas 1, 5 y 6, y la demo en vivo</p>
-      </div>
-      <div class="card">
-        <h3>Lucas Budnik</h3>
-        <p class="small">Autenticación y roles, certificados y despliegue · CI/CD y pruebas</p>
-        <p class="small" style="margin-top:1vh"><b>Hoy presenta:</b> el problema, la arquitectura, la organización y el cierre</p>
-      </div>
-    </div>
-    <div class="g4" style="margin-top:3.5vh">
-      <div class="card fill"><div class="n">6</div><div class="u">entregas</div></div>
-      <div class="card fill"><div class="n">208</div><div class="u">commits</div></div>
-      <div class="card fill"><div class="n">~54k</div><div class="u">líneas de código</div></div>
-      <div class="card fill"><div class="n">3</div><div class="u">meses de trabajo</div></div>
-    </div>
-  </div>
-  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Grupo 1 · JYAA 2026</span></div>
-</section>
-
-<!-- ═══════════════ 3 · BLOQUE 1 ═══════════════ -->
+<!-- ═══════════════ 2 · BLOQUE 1 ═══════════════ -->
 <section class="slide divider">
   <div class="num">01</div>
   <h1>El problema</h1>
@@ -296,22 +262,11 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
     <span class="tag ghost">Entrega 1</span>
   </div>
   <div class="body">
-    <div class="g2-60">
-      <div>
-        <ul>
-          <li><b>Leímos el congreso real, no el enunciado.</b> Revisamos las circulares y las ediciones anteriores del Congreso Argentino de Agroecología para entender ejes temáticos, modalidades y plazos.</li>
-          <li><b>Modelamos el proceso como etapas con fechas.</b> Descubrimos que casi toda regla del sistema es en realidad “¿en qué etapa estamos?”: envío, evaluación, inscripción, certificación.</li>
-          <li><b>Escribimos historias de usuario por rol</b> antes de escribir una línea de Java. Cada historia dijo qué pantalla hacía falta.</li>
-          <li><b>Bocetamos y validamos las pantallas</b> con un prototipo navegable, sin backend. Nos permitió discutir el flujo con el grupo antes de comprometer el modelo.</li>
-        </ul>
-      </div>
-      <div class="card fill">
-        <h3>La decisión que ordenó todo</h3>
-        <p class="small" style="margin-top:1vh">No hay “estados mágicos”: el congreso tiene <b>etapas configurables</b> (<code>EtapaProceso</code> + <code>RangoFechas</code>)
-          y el administrador las define. El sistema habilita o bloquea acciones según la fecha, en lugar de tener reglas escritas a mano en el código.</p>
-        <p class="small" style="margin-top:1.5vh">Lo mismo con los <b>catálogos</b>: ejes, modalidades y tipos de envío los configura el comité, no el programador.</p>
-      </div>
-    </div>
+    <ul>
+      <li><b>Partimos del congreso real.</b> Del primer encuentro sobre el V Congreso Argentino de Agroecología 2027 y de lo documentado en ediciones anteriores, para entender cómo se organiza un evento de esta escala y qué necesitaba realmente el sistema.</li>
+      <li><b>Primero un evento fijo; después plazos del comité.</b> Modelamos un congreso de tres días. Ahí vimos que casi todo lo que el sistema permite o bloquea depende del momento: inscripción, envío, evaluación, certificados. Pensando en otras ediciones, esos plazos los hicimos configurables: que dependan de la gestión del comité organizador, no de fechas fijas en el código.</li>
+      <li><b>Historias de usuario y prototipo.</b> Antes de programar, armamos historias por rol: qué hace cada persona y qué pantallas necesita. Después las probamos en un prototipo navegable, solo de interfaz, para acordar el flujo entre nosotros antes de construir la solución.</li>
+    </ul>
   </div>
   <div class="foot"><span class="speaker">Habla: Lucas</span><span>El problema</span></div>
 </section>
