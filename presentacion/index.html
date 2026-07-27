@@ -225,7 +225,36 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   .divider h1{font-size:64px}.divider .num{font-size:128px}
   .card .n{font-size:42px}
   .foot{font-size:14px}
+
+  /* Diagrama: en pantalla sigue el zoom interactivo; en PDF se imprime
+     la imagen hi-res a página completa (después se puede acercar en el lector). */
+  .zoom-toolbar{display:none!important}
+  #slide-diagrama{padding:40px 48px 72px}
+  #slide-diagrama .zoom-wrap{gap:8px}
+  #slide-diagrama .zoom-stage{
+    overflow:hidden!important;cursor:default!important;
+    height:720px!important;min-height:720px!important;
+    background:#fff!important;
+  }
+  #slide-diagrama .zoom-world{
+    position:static!important;transform:none!important;
+    width:100%;height:100%;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #slide-diagrama .zoom-stage img{
+    width:100%!important;height:100%!important;
+    max-width:100%!important;max-height:100%!important;
+    object-fit:contain!important;
+  }
+  #slide-diagrama .diag-hint{
+    font-size:14px!important;
+  }
+  .screen-only{display:none!important}
+  p.print-only, .diag-hint.print-only{display:block!important}
 }
+.screen-only{}
+.print-only{display:none!important}
+
 </style>
 </head>
 <body>
@@ -568,7 +597,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   </div>
   <div class="body top">
     <div class="zoom-wrap" data-no-nav>
-      <div class="zoom-toolbar" data-no-nav>
+      <div class="zoom-toolbar screen-only" data-no-nav>
         <button type="button" id="z-out" title="Alejar">−</button>
         <span class="zoom-pct" id="z-pct">100%</span>
         <button type="button" id="z-in" title="Acercar">+</button>
@@ -581,7 +610,8 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
           <img id="z-img" src="img/e2/hi-full.png" alt="Diagrama de clases completo Grupo 1" width="5263" height="3719">
         </div>
       </div>
-      <p class="diag-hint"><b>Rueda</b> = zoom · <b>arrastrar</b> = mover · cada caja de acá, en E3, tiene (casi) su DAO.</p>
+      <p class="diag-hint screen-only"><b>Rueda</b> = zoom · <b>arrastrar</b> = mover · cada caja de acá, en E3, tiene (casi) su DAO.</p>
+      <p class="diag-hint print-only">En el PDF: acercá esta página con el zoom del lector para leer clases, atributos y relaciones.</p>
     </div>
   </div>
   <div class="foot"><span>Entrega 2 · diagrama completo con zoom</span></div>

@@ -19,7 +19,7 @@ Dejando el `<figure>` y el `<figcaption>` como están.
 | # | Archivo | Qué capturar | Dónde conseguirla |
 |---|---------|--------------|-------------------|
 | 1 | `img/e1/*.png` | Ya incluidas: registro, inscripción, admin valida, envío, evaluador, programa (extraídas de `archivo_maquetado.pdf`) | Entrega 1 |
-| 2 | `img/e2-diagrama.png` | **Fragmento** del diagrama de clases: `Usuario · Trabajo · AsignacionEvaluacion · Evaluacion` | Recorte de `Diagrama de Clases_Grupo01.pdf` (Entrega 2) |
+| 2 | `img/e2/hi-full.png` | Diagrama de clases completo (alta resolución). En el HTML: zoom interactivo. En el PDF: página completa; acercar con el zoom del lector | Ya incluido (render 450 DPI del PDF de clases) |
 | 3 | `img/e3-persistencia.png` | El servlet `/test-persistencia` con los ABM en verde, o las tablas en phpMyAdmin | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/test-persistencia` o `https://dbadmin.jyaa-ci.linti.unlp.edu.ar/` → `jyaa2026_bd1` |
 | 4 | `img/e4-swagger.png` | Swagger UI con los recursos desplegados y un `POST /api/login` ejecutado | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/` |
 | 5 | `img/e5-angular.png` | Un panel de la SPA con DevTools → Network mostrando la llamada `/api/...` y el header `Authorization` | La app corriendo + F12 |
@@ -54,5 +54,8 @@ Abrir `index.html` en Chrome o Edge → `Ctrl+P`:
 - Márgenes: **Ninguno**
 - Activar **Gráficos de fondo**
 
-Salen las 26 diapositivas, una por página. Ese PDF es el que se sube al aula virtual
-y al repositorio de GitLab de la cátedra.
+El archivo generado en el repo es `JYAA-Grupo1-Presentacion-TF.pdf` (~29 páginas).
+
+**Diagrama de clases:** en el navegador el zoom es interactivo (rueda / arrastrar).
+En el PDF esa página lleva la imagen hi-res a pantalla completa: para leer clases y
+relaciones, acercá esa página con el zoom del lector de PDF (no hace falta tocar el HTML).
