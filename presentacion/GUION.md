@@ -22,10 +22,11 @@ Los tres hablan prácticamente lo mismo: **~6:35 / 6:45 / 6:40**.
 | 6 | Separador — Bloque 2 | Benjamín | 0:05 | 3:20 |
 | 7 | Línea de tiempo | **Benjamín** | 0:35 | 3:55 |
 | 8 | Entrega 1 — Maquetado | Alcides | 0:45 | 4:40 |
-| 9 | Entrega 2 — Modelo | **Benjamín** | 0:45 | 5:25 |
-| 10 | Relaciones del modelo | **Benjamín** | 0:40 | 6:05 |
-| 11 | Entrega 3 — Persistencia | **Benjamín** | 0:50 | 6:55 |
-| 12 | Entrega 4 — REST | **Benjamín** | 0:55 | 7:50 |
+| 9 | E2 — Qué diseño / decisiones | **Benjamín** | 0:50 | 5:30 |
+| 10 | Diagrama completo (zoom) | **Benjamín** | 0:45 | 6:15 |
+| 11 | E2 — Factory / SOLID (mapa) | **Benjamín** | 0:40 | 6:55 |
+| 12 | Entrega 3 — Persistencia | **Benjamín** | 0:45 | 7:40 |
+| 13 | Entrega 4 — REST + CDI | **Benjamín** | 0:50 | 8:30 |
 | 13 | Sesión con JWT | Lucas | 0:40 | 8:30 |
 | 14 | Entrega 5 — Angular | Alcides | 0:50 | 9:20 |
 | 15 | Entrega 6 — Sistema completo | Alcides | 0:45 | 10:05 |
@@ -58,7 +59,7 @@ ensayo completo. El 90 % de los grupos se pasa de tiempo en el Bloque 2, que es 
 
 **Diapositiva 1 — Portada**
 
-Presentar al grupo en una frase y pasar al problema:
+Nombres ya están en pantalla. Presentar al grupo en una frase y pasar al problema:
 
 > Buenas tardes. Somos el Grupo 1 — Benjamín, Alcides y Lucas — y vamos a contarles cómo
 > construimos el sistema de gestión del V Congreso Argentino de Agroecología. No es una
@@ -66,35 +67,73 @@ Presentar al grupo en una frase y pasar al problema:
 
 ---
 
-## Bloque 1 — El problema (Lucas, ~2:30)
+## Bloque 1 — El problema (Lucas, ~2:30) · diapositivas 2 a 5
 
-**Diapositiva 2 — Separador.** Sólo leerla y avanzar.
+> **Acordado hasta acá con el grupo.** Las diapositivas 1–5 ya están cerradas en contenido;
+> el resto se sigue ajustando.
 
-**Diapositiva 3 — El problema real.**
+**Diapositiva 2 — Separador (“El problema”).**  
+Leer el título y la línea de abajo (“qué congreso…, cómo nos acercamos y para quién”) y avanzar.
 
-Hablarle al equipo organizador del congreso, que está en la sala:
+**Diapositiva 3 — El problema real**  
+(“Un congreso no es un formulario: son cinco procesos en paralelo”)
 
-> El congreso no es un formulario de inscripción. Son cinco procesos que corren en
-> paralelo durante meses: inscripción y cobro, envío y evaluación de trabajos, armado
-> del programa, comunicación y certificación. Hoy eso se coordina con planillas y
-> listas de correo, y el costo es concreto: datos duplicados, plazos que se pasan y
-> trabajos que se quedan sin evaluador.
+Hablarle al equipo organizador del congreso, si está en la sala. No leer las seis tarjetas:
+señalar que son procesos en paralelo y cerrar con el costo.
 
-**Diapositiva 4 — Cómo nos acercamos.**
+> El congreso no es un formulario de inscripción. Son cinco procesos que corren juntos:
+> inscripción y cobro, envío y evaluación de trabajos, armado del programa, comunicación
+> y certificación. Hoy eso se coordina con planillas y mails, y el costo es concreto:
+> datos duplicados, plazos que se pasan y trabajos sin evaluador.
 
-Contar el método, no la lista. El punto fuerte es la tarjeta verde:
+**Diapositiva 4 — Cómo nos acercamos al problema**  
+(Entrega 1 · tres puntos · referencia: *Análisis del Problema Sobre el V Congreso*)
 
-> La decisión que ordenó todo el proyecto fue no escribir las reglas del congreso en el
-> código. El congreso tiene etapas con fechas y catálogos de ejes y modalidades, y todo
-> eso lo configura el organizador. El sistema no sabe cuándo cierra el envío de trabajos:
-> lo pregunta.
+Contar el recorrido en orden:
 
-**Diapositiva 5 — Usuarios y adoptantes.**
+1. **Congreso real** — primer encuentro 2027 + ediciones anteriores (crecimiento,
+   problemas con mails/planillas).  
+2. **Primero fijo, después configurable** — tres días; plazos del momento; después
+   plazos del comité.  
+3. **Tareas a mano → roles → épicas (módulos) → HU → prototipo**  
+   Primero: hoy distintas personas hacen tareas a mano.  
+   Después: roles concretos.  
+   Después: solución por **épicas** (= grandes módulos del sistema) e **historias de
+   usuario** (= qué quiere hacer cada rol y para qué).  
+   Después: prototipo solo de interfaz. **Conecta con la diapositiva 5.**
 
-No leer la tabla entera. Señalar los seis roles y detenerse en uno:
+> Decir “épicas” está bien (quien conoce el término lo reconoce). Siempre traducir en
+> la misma frase: “épicas, o sea módulos” / “historias de usuario: qué quiere hacer
+> cada rol”. Así sirve para los dos públicos.
 
-> El adoptante principal es el comité académico. Es quien hoy hace a mano la asignación
-> de evaluadores, y es el que más gana con el sistema.
+Frase oral sugerida:
+
+> Hoy esas tareas se hacen a mano: inscribir, cobrar, enviar trabajos, evaluar, armar
+> el programa. Eso nos mostró que no hay un usuario genérico, sino roles. Con esa base
+> armamos la solución por épicas —grandes módulos del sistema— y dentro de cada una
+> escribimos historias de usuario. Antes de codear las recorrimos en un prototipo.
+
+**Diapositiva 5 — Usuarios y adoptantes**  
+(tabla de 6 roles · “qué hace” detallado + “por qué le importa”)
+
+No leer toda la columna del medio. Entrada:
+
+> Los roles salieron de las tareas que hoy se hacen a mano. Armamos la solución por
+> épicas e historias de usuario.
+
+Después:
+
+1. Recorrer los seis roles **nombrando 2 o 3 acciones clave** de cada uno (el resto
+   queda en pantalla). Si alguien de la organización está en la sala, en Admin explicar:
+   *aranceles = cuánto paga cada categoría* y *arqueo = control de lo cobrado en el día*.
+   En Comité decir **prevalidación de trabajos**, no “precheck”.  
+2. En cada uno, rematar con la columna **por qué le importa**.  
+3. Detenerse un segundo más en el **comité académico** (adoptante principal).
+
+Frase de cierre:
+
+> El adoptante principal es el comité: hoy hace a mano precheck, asignaciones y
+> desempates. Al resto de roles el sistema les da un lugar claro en el mismo flujo.
 
 ---
 
@@ -102,69 +141,87 @@ No leer la tabla entera. Señalar los seis roles y detenerse en uno:
 
 **Diapositiva 6 — Separador** (Benjamín).
 
-**Diapositiva 7 — Línea de tiempo** (Benjamín, 0:35).
+**Diapositiva 7 — Línea de tiempo**
 
-> Cada entrega vivió en su propia rama y se integró a `main` sólo con el pipeline en
-> verde. Nunca perdimos una entrega ya aprobada por estar trabajando en la siguiente.
+| # | En criollo |
+|---|------------|
+| 1 | Informe de análisis + PDF de maquetado (prototipo React) |
+| 2 | **POJO** = clase Java simple del dominio + diagrama |
+| 3 | Rama `entrega-3`: **JPA** + **DAO** + **MySQL** (motor BD). Primer REST con Jersey aún **mezclando capas** (recursos → DAOs a mano) |
+| 4 | Rama `entrega-4`: API con capas limpias — Jersey + **CDI** + JWT + Swagger |
+| 5 | Rama `entrega-5`: **SPA Angular** habla con esa API |
+| 6 | Todo junto y desplegado |
 
-**Diapositiva 8 — Entrega 1** (Alcides, 0:45).
-Objetivo → herramientas → **la dificultad**. Rematar con:
+> Cada entrega en su rama; a `main` solo con el pipeline en verde.
 
-> Maquetar nos hizo descubrir reglas que no estaban en el enunciado: qué pasa si dos
-> evaluadores empatan, o si a un evaluador le toca su propio trabajo. Las anotamos y
-> las llevamos al modelo en lugar de improvisarlas tres entregas después.
+**Diapositiva 8 — Entrega 1 (HU)**
 
-**Diapositiva 9 — Entrega 2** (Benjamín, 0:45).
-El punto central es la entidad `AsignacionEvaluacion`:
+Productos: informe de análisis + maquetado. Nombrar las HU clave (no todas):
 
-> Una asignación no es una simple relación entre trabajo y evaluador. Tiene aceptación,
-> rechazo, dictamen y desempate. Convertirla en entidad propia fue la decisión que
-> sostuvo todo lo que vino después.
+> HU de entrada (registro/login), inscripción y validación de pago, envío de trabajo,
+> dictamen del evaluador, programa del admin y agenda personal. Salen del análisis.
 
-**Diapositiva 10 — Relaciones del modelo** (Benjamín, 0:40).
-Recorrer las cuatro cajas rápido; detenerse en la agenda:
+Cerrar con la dificultad (empate / trabajo propio → anotadas y al modelo E2).
 
-> Dos `@ManyToMany` encadenadas. Por eso validar que una actividad no se solape y que
-> no supere el cupo del aula fue lo más difícil de toda la persistencia.
+**Diapositiva 8b — Maquetado 1/2** (HU-01, HU-06, HU-07)  
+Tres capturas grandes: registro, inscripción+comprobante, admin aprueba/rechaza.
 
-**Diapositiva 11 — Entrega 3** (Benjamín, 0:50).
-Contar las tres dificultades reales, son las que muestran proceso:
+**Diapositiva 8c — Maquetado 2/2** (HU-11, HU-12, HU-13/14)  
+Tres capturas grandes: envío de trabajo, dictamen evaluador, programa.
 
-> Listar las entidades a mano en `persistence.xml` porque Tomcat no escanea como un
-> servidor Jakarta EE completo; pasar el `@Lob` a `LONGBLOB` porque los PDF no entraban;
-> y escribir nuestras propias migraciones SQL porque `hbm2ddl` en modo `update` agrega
-> columnas pero nunca las corrige.
+**Diapositiva — ¿Cuál es nuestro diseño?**
 
-**Diapositiva 12 — Entrega 4** (Benjamín, 0:55).
-Es la diapositiva más densa: nombrar los grupos, no cada anotación.
+> Diseño = modelo de objetos del dominio (POJOs). Ejemplo: Trabajo,
+> AsignacionEvaluacion, Evaluacion. Todavía no hay MySQL.
+> Problema: al apagar el server se pierde. ¿Quién guarda? → el DAO.
 
-> Jersey para los recursos, CDI con Weld para inyectar los servicios, filtros para
-> autenticación y CORS, y ExceptionMappers para que un error de negocio llegue al
-> usuario como un mensaje y no como un stack trace.
+**Diapositiva — Por qué DAOs**
 
-**Diapositiva 13 — JWT** (Lucas, 0:40).
-El gancho es la limitación del token:
+> DAO es un patrón, no magia de JPA. En el código: interfaz + impl
+> (`UsuarioDAO` / `UsuarioDAOImpl`) cuya única responsabilidad es
+> guardar/buscar/actualizar/borrar UNA entidad. JPA es la herramienta
+> que usa el DAO. Evitamos SQL dentro de Usuario/servlet.
+> Cadena conceptual: HU → clase → entidad JPA →
+> tabla → DAO → Factory → CDI en E4.
 
-> Un token es una foto del momento en que se emitió. Si el administrador te inhabilita
-> la cuenta, el token viejo seguiría siendo válido cuatro horas. Por eso el filtro valida
-> la firma pero vuelve a leer los roles y el estado desde la base en cada request.
+**Diapositiva — Diagrama (zoom)** — igual que les gustó.
+> Al hacer zoom: cada caja con id ≈ un DAO en E3.
 
-**Diapositiva 14 — Entrega 5** (Alcides, 0:50).
-Las cuatro dificultades son muy concretas; contarlas como anécdotas cortas.
+**Diapositiva — Una caja → un DAO**
 
-**Diapositiva 15 — Entrega 6** (Alcides, 0:45).
-Enumerar lo que se sumó sin leer todo, y rematar con la verificación del WAR:
+> Tabla Usuario/Trabajo/Pago → sus DAOs. GenericDAO = CRUD común.
+> Factory = único lugar que crea los DAOs (no new Impl en cada pantalla).
+> Cierre: JPA convierte objeto↔fila; DAO pide guardar/buscar; Factory centraliza la creación.
 
-> Nos pasó que el contenedor se desplegaba con un frontend viejo por la caché de Docker.
-> Ahora el Dockerfile abre el WAR y verifica que adentro esté el frontend correcto. Si no
-> está, la imagen no se construye. El error aparece en el pipeline, no en una demo.
+**Diapositiva — Entrega 3** (`entrega-3`)
 
-**Diapositiva 16 — Arquitectura** (Lucas, 0:25). Recorrerla de arriba abajo, en una frase.
+> Persistimos el modelo E2. Factory + DAO + JPA. REST aún con new/factory
+> (capas mezcladas) → se limpia en E4.
 
-**Diapositiva 17 — Teoría aplicada** (Lucas, 0:25). No leerla. Decir:
+**Diapositiva — Entrega 4** (`entrega-4`)
 
-> Cada tema de la cursada terminó en un archivo concreto del proyecto. No quedó ninguno
-> afuera; el trabajo final los integró a todos en un mismo despliegue.
+> Acá entra SOLID DIP: Resource → Service → DAO con CDI/@Inject.
+> Ya no DAOFactory desde el REST. Jersey + JWT + Swagger.
+
+**Diapositiva 13 — JWT**
+
+> El token es una foto: el filtro relee roles y estado desde la base en cada request.
+
+**Diapositiva 14 — Entrega 5** (`entrega-5`)
+
+> El prototipo React de la E1 se reemplazó por Angular contra la API real de la E4.
+
+**Diapositiva 15 — Entrega 6**
+
+> Dockerfile verifica el WAR; pipeline en verde = app actualizada.
+
+**Diapositiva 16 — Arquitectura**
+
+> Contar el arco: primero capas mezcladas (E3), después CDI (E4), hoy el diagrama.
+
+**Diapositiva 17 — Teoría aplicada**
+
+> Cada tema de la cursada quedó en un archivo concreto; CDI aparece en la Entrega 4.
 
 ---
 

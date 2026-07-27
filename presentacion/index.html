@@ -57,6 +57,40 @@ p,li{font-size:1.35vw;line-height:1.5}
 .body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
 .body.top{justify-content:flex-start}
 
+/* ---------- visor diagrama completo (rueda = zoom, arrastrar = pan) ---------- */
+.zoom-wrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:1vh}
+.zoom-toolbar{
+  display:flex;align-items:center;justify-content:center;gap:.8vw;flex-wrap:wrap;
+}
+.zoom-toolbar button{
+  font:inherit;font-size:1vw;font-weight:700;color:var(--verde);
+  background:#fff;border:2px solid var(--verde);border-radius:8px;
+  padding:.45vh 1vw;cursor:pointer;min-width:2.6vw;
+}
+.zoom-toolbar button:hover{background:var(--verde-suave)}
+.zoom-toolbar .zoom-pct{
+  font-family:"JetBrains Mono",Consolas,monospace;font-size:1vw;
+  color:var(--gris);min-width:4.5vw;text-align:center;
+}
+.zoom-toolbar a{
+  font-size:.95vw;font-weight:700;color:var(--verde);
+  text-decoration:none;border-bottom:1.5px solid var(--verde);
+}
+.zoom-stage{
+  flex:1;min-height:58vh;position:relative;
+  background:#f7faf7;border:2px solid var(--linea);border-radius:12px;
+  overflow:hidden;cursor:grab;touch-action:none;user-select:none;
+}
+.zoom-stage.dragging{cursor:grabbing}
+.zoom-stage .zoom-world{
+  position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform;
+}
+.zoom-stage img{
+  display:block;max-width:none;width:auto;height:auto;
+  pointer-events:none;-webkit-user-drag:none;
+}
+.diag-hint{font-size:.95vw;color:var(--gris);margin-top:.2vh;text-align:center}
+
 /* ---------- grillas ---------- */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:3vw}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.6vw}
@@ -217,7 +251,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
     <span class="chip">Angular 19</span>
     <span class="chip">Docker + GitLab CI</span>
   </div>
-  <div class="foot"><span class="speaker">Habla: Benjamín · 0:40</span><span>grupo1.jyaa-ci.linti.unlp.edu.ar · 20 minutos</span></div>
+  <div class="foot"><span>grupo1.jyaa-ci.linti.unlp.edu.ar · 20 minutos</span></div>
 </section>
 
 <!-- ═══════════════ 2 · BLOQUE 1 ═══════════════ -->
@@ -225,7 +259,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   <div class="num">01</div>
   <h1>El problema</h1>
   <p>Qué congreso hay que gestionar, cómo nos acercamos y para quién construimos.</p>
-  <div class="foot"><span class="speaker">Habla: Lucas · 2:30</span><span>Bloque 1 de 4</span></div>
+  <div class="foot"><span>Bloque 1 de 4</span></div>
 </section>
 
 <!-- ═══════════════ 4 · EL PROBLEMA ═══════════════ -->
@@ -252,7 +286,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
         <p class="small">Datos duplicados, plazos que se pasan, trabajos sin evaluador y certificados armados uno por uno.</p></div>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Lucas</span><span>El problema</span></div>
+  <div class="foot"><span>El problema</span></div>
 </section>
 
 <!-- ═══════════════ 5 · CÓMO NOS ACERCAMOS ═══════════════ -->
@@ -263,12 +297,12 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   </div>
   <div class="body">
     <ul>
-      <li><b>Partimos del congreso real.</b> Del primer encuentro sobre el V Congreso Argentino de Agroecología 2027 y de lo documentado en ediciones anteriores, para entender cómo se organiza un evento de esta escala y qué necesitaba realmente el sistema.</li>
+      <li><b>Partimos del congreso real.</b> Del primer encuentro sobre el V Congreso Argentino de Agroecología 2027 y de lo documentado en ediciones anteriores (crecimiento de asistentes y trabajos, problemas con mails y planillas), para entender qué necesitaba realmente el sistema.</li>
       <li><b>Primero un evento fijo; después plazos del comité.</b> Modelamos un congreso de tres días. Ahí vimos que casi todo lo que el sistema permite o bloquea depende del momento: inscripción, envío, evaluación, certificados. Pensando en otras ediciones, esos plazos los hicimos configurables: que dependan de la gestión del comité organizador, no de fechas fijas en el código.</li>
-      <li><b>Historias de usuario y prototipo.</b> Antes de programar, armamos historias por rol: qué hace cada persona y qué pantallas necesita. Después las probamos en un prototipo navegable, solo de interfaz, para acordar el flujo entre nosotros antes de construir la solución.</li>
+      <li><b>De la organización real a roles, épicas e historias.</b> Vimos que el congreso necesitaba mejor organización porque hoy distintas personas hacen <b>tareas a mano</b> (inscribir y cobrar, enviar y evaluar trabajos, armar el programa, comunicar). Eso definió <b>roles concretos</b>, no un usuario genérico. Con esa base armamos la solución por <b>épicas</b> —es decir, grandes módulos del sistema: usuarios, inscripción, trabajos, cronograma, comunicación— y, dentro de cada una, <b>historias de usuario</b> (qué quiere hacer cada rol y para qué). Antes de programar las probamos en un prototipo navegable, solo de interfaz.</li>
     </ul>
   </div>
-  <div class="foot"><span class="speaker">Habla: Lucas</span><span>El problema</span></div>
+  <div class="foot"><span>El problema</span></div>
 </section>
 
 <!-- ═══════════════ 6 · USUARIOS Y ADOPTANTES ═══════════════ -->
@@ -278,17 +312,42 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
     <span class="tag">6 roles</span>
   </div>
   <div class="body">
+    <p class="lead" style="margin-bottom:1.4vh">Salieron de las tareas que hoy se hacen a mano: de ahí definimos roles y armamos la solución por épicas (módulos) e historias de usuario.</p>
     <table>
-      <tr><th style="width:20%">Rol</th><th style="width:44%">Qué hace en el sistema</th><th>Por qué le importa</th></tr>
-      <tr><td><b>Asistente</b></td><td>Se registra, se inscribe, paga, arma su cronograma personal y descarga certificados.</td><td>Deja de mandar mails para saber si su pago fue aprobado.</td></tr>
-      <tr><td><b>Autor</b></td><td>Carga trabajos con coautores, sube PDF/DOCX, envía y recibe la devolución.</td><td>Ve el estado real de su trabajo y el dictamen sin intermediarios.</td></tr>
-      <tr><td><b>Evaluador</b></td><td>Acepta asignaciones dentro de su cupo por eje y emite dictamen.</td><td>Recibe sólo trabajos de su especialidad y nunca el propio.</td></tr>
-      <tr><td><b>Comité académico</b><br><span class="small">(organizador científico)</span></td><td>Precheck, asignación de evaluadores, desempates, catálogos y plazos.</td><td>Es el <b>adoptante principal</b>: hoy hace todo esto a mano.</td></tr>
-      <tr><td><b>Administración</b></td><td>Usuarios, aranceles, pagos y arqueo, aulas y programa, circulares, cierre del congreso.</td><td>Concentra la operación y la trazabilidad del dinero.</td></tr>
-      <tr><td><b>Público</b></td><td>Consulta programa, circulares e historia sin iniciar sesión.</td><td>Es la cara visible del congreso.</td></tr>
+      <tr><th style="width:18%">Rol</th><th style="width:52%">Qué hace en el sistema</th><th>Por qué le importa</th></tr>
+      <tr>
+        <td><b>Asistente</b></td>
+        <td class="small">Se crea una cuenta e inicia sesión · se inscribe al congreso y completa sus datos · paga la inscripción (transferencia o efectivo) y sube el comprobante · consulta si su pago fue aprobado · arma su agenda personal del congreso sin chocar horarios · puede proponer un taller · descarga su certificado cuando el congreso termina.</td>
+        <td>Sabe en todo momento si su inscripción está bien, sin mandar mails para preguntar.</td>
+      </tr>
+      <tr>
+        <td><b>Autor</b></td>
+        <td class="small">Además de lo del asistente: carga un trabajo (artículo o relato) con coautores y eje temático · sube el PDF · lo guarda como borrador o lo envía a evaluación · ve en qué estado está y lee la devolución · cuando lo aceptan, ve cuándo y dónde presenta.</td>
+        <td>Sigue su trabajo de punta a punta y recibe la devolución sin intermediarios.</td>
+      </tr>
+      <tr>
+        <td><b>Evaluador</b></td>
+        <td class="small">Recibe trabajos de su eje temático · acepta o rechaza la asignación · lee el PDF · da su dictamen (aceptar, rechazar u observaciones) · puede adjuntar una corrección · no evalúa trabajos propios.</td>
+        <td>Solo recibe trabajos de su especialidad, con un cupo claro y sin conflicto de interés.</td>
+      </tr>
+      <tr>
+        <td><b>Comité académico</b><br><span class="small">(organizador científico)</span></td>
+        <td class="small">Hace la <b>prevalidación de los trabajos</b> (revisión inicial antes de asignar evaluadores) · asigna evaluadores por eje temático respetando cupos · resuelve empates y reenvíos · aprueba solicitudes de nuevos evaluadores · configura ejes, modalidades y plazos de envío · consulta estadísticas del proceso académico.</td>
+        <td>Es el <b>adoptante principal</b>: hoy hace todo esto a mano.</td>
+      </tr>
+      <tr>
+        <td><b>Administración</b></td>
+        <td class="small">Da de alta y gestiona usuarios · define <b>aranceles</b> (cuánto paga cada categoría de inscripción) · valida pagos, emite recibos/facturas y hace el <b>arqueo de caja</b> (control de lo cobrado en el día) · carga aulas, horarios y el programa del congreso · publica circulares y avisos · cierra el congreso y habilita certificados · ve reportes y pendientes de organización.</td>
+        <td>Centraliza la operación del evento y el control del dinero.</td>
+      </tr>
+      <tr>
+        <td><b>Público</b></td>
+        <td class="small">Sin cuenta puede ver la información general, el programa publicado, las circulares, la historia del congreso y el mapa/sede · desde ahí puede registrarse o iniciar sesión.</td>
+        <td>Es la cara visible del congreso: informarse sin barreras.</td>
+      </tr>
     </table>
   </div>
-  <div class="foot"><span class="speaker">Habla: Lucas</span><span>El problema</span></div>
+  <div class="foot"><span>El problema</span></div>
 </section>
 
 <!-- ═══════════════ 7 · BLOQUE 2 ═══════════════ -->
@@ -296,7 +355,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   <div class="num">02</div>
   <h1>Las seis entregas</h1>
   <p>Qué objetivo tuvo cada etapa, qué conceptos de la cátedra aplicamos, con qué nos peleamos y qué quedó funcionando.</p>
-  <div class="foot"><span class="speaker">Hablan: los tres · 7:40</span><span>Bloque 2 de 4</span></div>
+  <div class="foot"><span>Bloque 2 de 4</span></div>
 </section>
 
 <!-- ═══════════════ 8 · LÍNEA DE TIEMPO ═══════════════ -->
@@ -307,207 +366,331 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   </div>
   <div class="body">
     <div class="tl">
-      <div class="st"><div class="b">1</div><h3>Análisis, diseño y maquetado</h3><div class="d">abril</div><p class="small">Historias de usuario + prototipo navegable</p></div>
-      <div class="st"><div class="b">2</div><h3>Objetos del modelo</h3><div class="d">mayo</div><p class="small">Diagrama de clases + POJOs del dominio</p></div>
-      <div class="st"><div class="b">3</div><h3>Capa de persistencia</h3><div class="d">may · 25</div><p class="small">JPA + DAO + MySQL de cátedra</p></div>
-      <div class="st"><div class="b">4</div><h3>Servicios REST</h3><div class="d">jun · 13</div><p class="small">Jersey + CDI + JWT + Swagger</p></div>
-      <div class="st"><div class="b">5</div><h3>Vista e integración</h3><div class="d">jun · 29</div><p class="small">SPA Angular 19 contra la API</p></div>
-      <div class="st hi"><div class="b">6</div><h3>Sistema completo</h3><div class="d">julio</div><p class="small">Deploy continuo y flujo end-to-end</p></div>
+      <div class="st"><div class="b">1</div><h3>Análisis, diseño y maquetado</h3><div class="d">abril</div><p class="small">Informe de análisis + PDF de maquetado (prototipo React)</p></div>
+      <div class="st"><div class="b">2</div><h3>Objetos del modelo</h3><div class="d">mayo</div><p class="small">Diagrama de clases + <b>POJOs</b>: clases Java simples del dominio (Usuario, Trabajo…)</p></div>
+      <div class="st"><div class="b">3</div><h3>Capa de persistencia</h3><div class="d">rama <code>entrega-3</code></div><p class="small"><b>JPA</b> + <b>DAO</b> + <b>MySQL</b> (motor de BD). Primer REST con Jersey aún mezclando capas</p></div>
+      <div class="st"><div class="b">4</div><h3>Servicios REST</h3><div class="d">rama <code>entrega-4</code></div><p class="small">API con capas limpias: Jersey + <b>CDI</b> + JWT + Swagger</p></div>
+      <div class="st"><div class="b">5</div><h3>Vista e integración</h3><div class="d">rama <code>entrega-5</code></div><p class="small"><b>SPA Angular</b>: pantallas que hablan con esa API</p></div>
+      <div class="st hi"><div class="b">6</div><h3>Sistema completo</h3><div class="d">julio</div><p class="small">Todo junto, desplegado y usable de punta a punta</p></div>
     </div>
-    <div class="g2" style="margin-top:4vh;align-items:center">
-      <div>
-        <h3 style="color:var(--verde)">Una regla que nos salvó</h3>
-        <p class="small" style="margin-top:1vh">Cada entrega vivió en su propia rama (<code>entrega-3</code>, <code>entrega-4</code>, <code>entrega-5</code>) y se
-          integró a <code>main</code> sólo con el pipeline en verde. Nunca perdimos una entrega ya aprobada por trabajar sobre la siguiente.</p>
-      </div>
-      <div class="chips">
-        <span class="chip gray">208 commits</span>
-        <span class="chip gray">9 ramas</span>
-        <span class="chip gray">278 clases Java</span>
-        <span class="chip gray">82 componentes Angular</span>
-        <span class="chip gray">23 entidades JPA</span>
-        <span class="chip gray">26 recursos REST</span>
-      </div>
+    <div class="card fill" style="margin-top:3vh">
+      <h3>Una regla que nos salvó</h3>
+      <p class="small" style="margin-top:1vh">Cada entrega vivió en su propia rama (<code>entrega-3</code>, <code>entrega-4</code>, <code>entrega-5</code>) y se
+        integró a <code>main</code> sólo con el pipeline en verde. Nunca perdimos una entrega ya aprobada por trabajar sobre la siguiente.</p>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Las seis entregas</span></div>
+  <div class="foot"><span>Las seis entregas</span></div>
 </section>
 
 <!-- ═══════════════ 9 · ENTREGA 1 ═══════════════ -->
 <section class="slide">
   <div class="head">
     <div><div class="kicker">Entrega 1</div><h2>Análisis, diseño y maquetado</h2></div>
-    <span class="tag">Producto: historias de usuario + prototipo navegable</span>
+    <span class="tag">Producto: informe + PDF de maquetado</span>
   </div>
   <div class="body top">
-    <div class="g2-60">
-      <div>
-        <div class="card-rel"><b>Objetivo</b><p class="small">Entender el dominio y acordar <i>qué</i> íbamos a construir, con pantallas discutibles en lugar de descripciones verbales.</p></div>
-        <div class="card-rel"><b>Qué aplicamos</b><p class="small">Relevamiento por rol, historias de usuario, arquitectura cliente–servidor y separación en capas (teoría de Inyección de Dependencias, lámina de capas).</p></div>
-        <div class="card-rel"><b>Herramientas</b><p class="small">Figma Make para el bocetado; un prototipo <b>React + Vite</b> con datos en <code>localStorage</code>, sin backend.</p></div>
-        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultad</b>
-          <p class="small">Al maquetar aparecieron reglas que no estaban en el enunciado: ¿qué pasa si dos evaluadores empatan?, ¿puede un evaluador revisar su propio trabajo? <b>Cómo la resolvimos:</b> las anotamos como reglas de negocio explícitas y las llevamos al modelo de la Entrega 2 en lugar de improvisarlas después.</p></div>
+    <div class="card-rel"><b>Objetivo</b><p class="small">Entender el dominio del V Congreso y acordar <i>qué</i> construir, con pantallas discutibles. Relevamiento → roles → <b>iniciativa → épicas → HU</b> → prototipo cliente–servidor (aún sin CDI).</p></div>
+    <div class="g2" style="margin-top:1.6vh;align-items:start">
+      <div class="card-rel">
+        <b>① Análisis — HU más importantes para el congreso</b>
+        <ul class="tight" style="margin-top:1vh">
+          <li class="small"><b>HU-01 / HU-02</b> — Registrarse e iniciar sesión (entrada al sistema).</li>
+          <li class="small"><b>HU-06</b> — Solicitar inscripción y adjuntar comprobante de pago.</li>
+          <li class="small"><b>HU-07</b> — Admin valida pagos (aprobar/rechazar) y habilita al asistente.</li>
+          <li class="small"><b>HU-11</b> — Enviar un trabajo (PDF, eje, oral/póster) a evaluación.</li>
+          <li class="small"><b>HU-12</b> — Evaluador dictamina (aprobar/rechazar + devolución opcional).</li>
+          <li class="small"><b>HU-13 / HU-14</b> — Admin crea actividades y publica el programa.</li>
+          <li class="small"><b>HU-17</b> — Asistente arma su agenda personal sin solapar horarios.</li>
+        </ul>
+        <p class="small" style="margin-top:1vh;color:var(--gris)">Salen del informe <i>Análisis del Problema Sobre el V Congreso</i> (épicas 1–5).</p>
       </div>
-      <figure>
-        <div class="shot">
-          <div class="ico">◱</div>
-          <b>CAPTURA 1 — Bocetado / historias de usuario</b>
-          <span>Una pantalla del prototipo React junto al tablero de historias de usuario por rol.
-                Guardar como <code>img/e1-maqueta.png</code>.</span>
+      <div class="card-rel warn" style="border-left-color:var(--acento)">
+        <b>Dificultad</b>
+        <p class="small" style="margin-top:1vh">Al maquetar aparecieron reglas que no estaban escritas: ¿qué pasa si dos evaluadores empatan?, ¿puede un evaluador revisar su propio trabajo?</p>
+        <p class="small" style="margin-top:1vh"><b>Cómo la resolvimos:</b> las anotamos en el análisis / HU y las llevamos al modelo de la Entrega 2.</p>
+      </div>
+    </div>
+    <p class="small" style="margin-top:2vh"><b>② Maquetado:</b> <code>archivo_maquetado.pdf</code> — capturas del prototipo <b>React + Vite</b> (<code>localStorage</code>, sin backend). Siguiente diapositiva: pantallas ligadas a esas HU.</p>
+  </div>
+  <div class="foot"><span>Entrega 1 de 6</span></div>
+</section>
+
+<!-- ═══════════════ 9b · ENTREGA 1 · CAPTURAS A ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 1 · Maquetado (1/2)</div><h2>Entrada al congreso: registro, inscripción y validación</h2></div>
+    <span class="tag ghost">archivo_maquetado.pdf</span>
+  </div>
+  <div class="body top">
+    <div class="g3" style="gap:1.4vw;align-items:stretch">
+      <figure style="margin:0;display:flex;flex-direction:column">
+        <div style="flex:1;min-height:48vh;background:#f7faf7;border:2px solid var(--linea);border-radius:12px;overflow:hidden;display:flex;align-items:flex-start;justify-content:center">
+          <img src="img/e1/hu01-registro.png" alt="Registro" style="width:100%;height:100%;object-fit:contain;object-position:top">
         </div>
-        <figcaption>El prototipo de la Entrega 1 sigue en el repositorio: fue la referencia visual de todo lo que vino después.</figcaption>
+        <figcaption style="margin-top:1vh"><b>HU-01</b> Registro — crear cuenta para entrar al sistema</figcaption>
+      </figure>
+      <figure style="margin:0;display:flex;flex-direction:column">
+        <div style="flex:1;min-height:48vh;background:#f7faf7;border:2px solid var(--linea);border-radius:12px;overflow:hidden;display:flex;align-items:flex-start;justify-content:center">
+          <img src="img/e1/hu06-inscripcion.png" alt="Inscripción" style="width:100%;height:100%;object-fit:contain;object-position:top">
+        </div>
+        <figcaption style="margin-top:1vh"><b>HU-06</b> Inscripción — datos + subir comprobante de pago</figcaption>
+      </figure>
+      <figure style="margin:0;display:flex;flex-direction:column">
+        <div style="flex:1;min-height:48vh;background:#f7faf7;border:2px solid var(--linea);border-radius:12px;overflow:hidden;display:flex;align-items:flex-start;justify-content:center">
+          <img src="img/e1/hu07-admin.png" alt="Admin valida" style="width:100%;height:100%;object-fit:contain;object-position:top">
+        </div>
+        <figcaption style="margin-top:1vh"><b>HU-07</b> Admin — ver comprobante, <b>Aprobar / Rechazar</b></figcaption>
       </figure>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Alcides</span><span>Entrega 1 de 6</span></div>
+  <div class="foot"><span>Entrega 1 · capturas 1/2</span></div>
 </section>
 
-<!-- ═══════════════ 10 · ENTREGA 2 ═══════════════ -->
+<!-- ═══════════════ 9c · ENTREGA 1 · CAPTURAS B ═══════════════ -->
 <section class="slide">
   <div class="head">
-    <div><div class="kicker">Entrega 2</div><h2>Definición de los objetos del modelo</h2></div>
-    <span class="tag">Producto: diagrama de clases + dominio en Java</span>
+    <div><div class="kicker">Entrega 1 · Maquetado (2/2)</div><h2>Trabajos, evaluación y programa</h2></div>
+    <span class="tag ghost">archivo_maquetado.pdf</span>
   </div>
   <div class="body top">
-    <div class="g2-60">
-      <div>
-        <div class="card-rel"><b>Objetivo</b><p class="small">Traducir las historias a un modelo de objetos: entidades, enums y relaciones, sin pensar todavía en la base de datos.</p></div>
-        <div class="card-rel"><b>Qué aplicamos</b><p class="small">Diseño OO, POJOs, enumerados para estados, y el principio de <b>responsabilidad única</b>: la lógica del congreso no vive en las entidades sino en <code>SistemaGestionCongresoService</code>.</p></div>
-        <div class="card-rel"><b>Herramientas</b><p class="small">UML + Maven para estructurar el proyecto Java (<code>pom.xml</code>, empaquetado <code>war</code>, Java 21).</p></div>
-        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultad</b>
-          <p class="small">Modelar la evaluación por pares. Una asignación no es una simple relación entre trabajo y evaluador: tiene aceptación, rechazo, dictamen y desempate.
-            <b>Cómo la resolvimos:</b> la convertimos en entidad propia, <code>AsignacionEvaluacion</code>, con su <code>Evaluacion</code> asociada. Esa decisión sostuvo todas las entregas siguientes.</p></div>
-      </div>
-      <figure>
-        <div class="shot">
-          <div class="ico">◇</div>
-          <b>CAPTURA 2 — Fragmento del diagrama de clases</b>
-          <span>Recortar el núcleo <code>Usuario · Trabajo · AsignacionEvaluacion · Evaluacion</code> del
-                <code>Diagrama de Clases_Grupo01.pdf</code>. Guardar como <code>img/e2-diagrama.png</code>.</span>
+    <div class="g3" style="gap:1.4vw;align-items:stretch">
+      <figure style="margin:0;display:flex;flex-direction:column">
+        <div style="flex:1;min-height:48vh;background:#f7faf7;border:2px solid var(--linea);border-radius:12px;overflow:hidden;display:flex;align-items:flex-start;justify-content:center">
+          <img src="img/e1/hu11-envio.png" alt="Envío trabajo" style="width:100%;height:100%;object-fit:contain;object-position:top">
         </div>
-        <figcaption>Elegimos el fragmento más denso del diagrama: el que muestra la evaluación por pares.</figcaption>
+        <figcaption style="margin-top:1vh"><b>HU-11</b> Envío — título, eje, oral/póster, PDF, Enviar</figcaption>
+      </figure>
+      <figure style="margin:0;display:flex;flex-direction:column">
+        <div style="flex:1;min-height:48vh;background:#f7faf7;border:2px solid var(--linea);border-radius:12px;overflow:hidden;display:flex;align-items:flex-start;justify-content:center">
+          <img src="img/e1/hu12-evaluador.png" alt="Evaluador" style="width:100%;height:100%;object-fit:contain;object-position:top">
+        </div>
+        <figcaption style="margin-top:1vh"><b>HU-12</b> Evaluador — PDF, comentario, <b>Aprobar / Rechazar</b></figcaption>
+      </figure>
+      <figure style="margin:0;display:flex;flex-direction:column">
+        <div style="flex:1;min-height:48vh;background:#f7faf7;border:2px solid var(--linea);border-radius:12px;overflow:hidden;display:flex;align-items:flex-start;justify-content:center">
+          <img src="img/e1/hu13-programa.png" alt="Programa" style="width:100%;height:100%;object-fit:contain;object-position:top">
+        </div>
+        <figcaption style="margin-top:1vh"><b>HU-13/14</b> Programa — calendario de actividades</figcaption>
       </figure>
     </div>
+    <p class="small" style="margin-top:1.4vh;text-align:center">Prototipo sin backend: validar el flujo de las HU antes de modelar en Java.</p>
   </div>
-  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Entrega 2 de 6</span></div>
+  <div class="foot"><span>Entrega 1 · capturas 2/2</span></div>
 </section>
 
-<!-- ═══════════════ 11 · MODELO — RELACIONES ═══════════════ -->
+<!-- ═══════════════ 10 · E2 · CUÁL ES EL DISEÑO ═══════════════ -->
 <section class="slide">
   <div class="head">
-    <div><div class="kicker">Entrega 2 · El corazón del modelo</div><h2>Las relaciones que hacen complejo al dominio</h2></div>
-    <span class="tag">23 entidades</span>
+    <div><div class="kicker">Entrega 2 · La pregunta clave</div><h2>¿Cuál es nuestro diseño?</h2></div>
+    <span class="tag">modelo de objetos del dominio</span>
   </div>
   <div class="body">
-    <div class="card-rel">
-      <b>1 · Evaluación por pares</b>
-      <div class="rel" style="margin-top:1vh">
-        <span class="ent hub">Usuario</span><span>1—∗</span>
-        <span class="ent">Trabajo</span><span>1—∗</span>
-        <span class="ent">AsignacionEvaluacion</span><span>∗—1</span>
-        <span class="ent hub">Usuario (evaluador)</span><span>+</span>
-        <span class="ent">Evaluacion</span><span>1—1</span>
-      </div>
-      <p class="small" style="margin-top:.9vh">Con <code>EvaluadorEjeCapacidad</code> limitando cuántos trabajos por eje puede tomar cada evaluador.</p>
+    <div class="card fill" style="margin-bottom:2vh">
+      <p class="lead" style="color:var(--texto)">Diseñamos el congreso como <b>objetos Java del negocio</b>
+        (POJOs): cada cosa importante es una clase con datos, estado y relaciones.
+        Ese diseño <b>no guarda nada en MySQL todavía</b> — solo dice <i>qué</i> existe.</p>
     </div>
-    <div class="card-rel">
-      <b>2 · Agenda del congreso</b>
-      <div class="rel" style="margin-top:1vh">
-        <span class="ent">CronogramaPersonal</span><span>∗—∗</span>
-        <span class="ent">Actividad</span><span>∗—∗</span>
-        <span class="ent">Trabajo</span><span>&nbsp;·&nbsp;</span>
-        <span class="ent">Actividad</span><span>∗—1</span>
-        <span class="ent">Aula</span>
+    <div class="g2" style="gap:2vw">
+      <div>
+        <h3 style="color:var(--verde);margin-bottom:1.2vh">Ejemplo concreto</h3>
+        <div class="card-rel"><b><code>Trabajo</code></b>
+          <p class="small">titulo, resumen, estado, PDF… métodos como <code>enviar()</code>.</p></div>
+        <div class="card-rel"><b><code>AsignacionEvaluacion</code></b>
+          <p class="small">¿este evaluador aceptó revisar este trabajo?</p></div>
+        <div class="card-rel"><b><code>Evaluacion</code></b>
+          <p class="small">el dictamen: aprobar / rechazar + comentario.</p></div>
+        <p class="small" style="margin-top:1.2vh;color:var(--gris)">Lo mismo para <code>Usuario</code>, <code>Pago</code>, <code>InscripcionCongreso</code>, <code>Actividad</code>…
+          Más adelante mostramos ese diseño en el diagrama completo.</p>
       </div>
-      <p class="small" style="margin-top:.9vh">Dos <code>@ManyToMany</code> encadenadas: por eso el chequeo de solapamiento y de cupo del aula fue la validación más difícil.</p>
-    </div>
-    <div class="card-rel">
-      <b>3 · Inscripción y dinero</b>
-      <div class="rel" style="margin-top:1vh">
-        <span class="ent hub">Usuario</span><span>1—∗</span>
-        <span class="ent">InscripcionCongreso</span><span>1—1</span>
-        <span class="ent">Pago</span><span>∗—1</span>
-        <span class="ent hub">Usuario (quien validó)</span>
+      <div class="card">
+        <h3 style="margin-bottom:1.2vh">Qué problema deja planteado</h3>
+        <p class="small">Cuando el servidor se apaga, esos objetos en memoria <b>se pierden</b>.</p>
+        <p class="small" style="margin-top:1.2vh">Hace falta <b>persistencia</b>: copiar cada objeto a una fila de MySQL y volver a armarlo después.</p>
+        <p class="small" style="margin-top:1.2vh"><b>Pregunta de diseño:</b> ¿quién se ocupa de guardar y buscar?
+          Si lo metemos en <code>Trabajo</code> o en el servlet, mezclamos el negocio con MySQL.</p>
+        <p class="small" style="margin-top:1.6vh;color:var(--verde)"><b>Por eso elegimos el patrón DAO:</b> una responsabilidad aparte (acceso a datos de una entidad). Siguiente: por qué ese camino.</p>
       </div>
-      <p class="small" style="margin-top:.9vh">El pago guarda <b>quién</b> lo validó: es lo que hace auditable el arqueo de caja.</p>
-    </div>
-    <div class="card-rel">
-      <b>4 · Configuración del congreso</b>
-      <p class="small" style="margin-top:.6vh"><code>Congreso</code> usa <code>@ElementCollection</code> de embeddables anidados:
-        <code>EtapaCongreso</code> → <code>RangoFechas</code>, más los catálogos de ejes, modalidades y tipos de envío (<code>CatalogoItem</code>).</p>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Entrega 2 de 6</span></div>
+  <div class="foot"><span>Entrega 2 · qué es el modelo</span></div>
+</section>
+
+<!-- ═══════════════ 10a · E2 · POR QUÉ DAOs ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 2 → 3 · El camino</div><h2>Por qué fuimos por DAOs</h2></div>
+    <span class="tag">separar “el negocio” de “la base”</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:1.8vh">El modelo de objetos ya estaba partido en entidades claras (<code>Usuario</code>, <code>Trabajo</code>…).
+      Eso nos empujó a un camino simple: <b>una entidad del diagrama → una tabla → un DAO</b>.</p>
+    <div class="g2" style="gap:2vw;align-items:stretch">
+      <div class="card warn">
+        <h3 style="color:var(--acento)">Camino que evitamos</h3>
+        <p class="small" style="margin-top:1.2vh">Meter SQL / <code>EntityManager</code> <b>adentro</b> de <code>Usuario</code> o del servlet:</p>
+        <ul class="tight" style="margin-top:1vh">
+          <li class="small"><code>Usuario</code> sabría de MySQL → si cambia la BD, tocás el negocio.</li>
+          <li class="small">El mismo <code>persist</code> / <code>find</code> se copia en 10 pantallas.</li>
+          <li class="small">No se puede testear el dominio sin levantar la base.</li>
+        </ul>
+        <p class="small" style="margin-top:1.4vh"><b>Mezcla dos trabajos:</b> “reglas del congreso” + “hablar con MySQL”.</p>
+      </div>
+      <div class="card fill">
+        <h3>Camino que elegimos: DAO</h3>
+        <p class="small" style="margin-top:1.2vh"><b>DAO</b> = Data Access Object: es un <b>patrón de diseño</b> (no “magia de JPA”).
+          En el código es una clase —o interfaz + implementación— cuya <b>única</b> responsabilidad es
+          el acceso a datos de <b>una</b> entidad: guardar / buscar / actualizar / borrar.</p>
+        <ul class="tight" style="margin-top:1vh">
+          <li class="small"><code>Usuario</code> = datos y reglas del usuario (modelo E2).</li>
+          <li class="small"><code>UsuarioDAO</code> + <code>UsuarioDAOImpl</code> = cómo entra y sale de MySQL (E3).</li>
+          <li class="small"><b>JPA</b> (<code>@Entity</code>, <code>EntityManager</code>) = la herramienta que usa el DAO para mapear objeto ↔ fila.</li>
+        </ul>
+        <p class="small" style="margin-top:1.4vh"><b>Por eso el modelo nos llevó a DAOs:</b> ya teníamos objetos bien cortados;
+          el DAO es el “portero” de cada uno hacia la base, sin ensuciar el diagrama de negocio.</p>
+      </div>
+    </div>
+    <div class="card-rel" style="margin-top:1.8vh">
+      <b>Camino del diseño</b>
+      <p class="small" style="margin-top:.8vh">
+        HU → clase del diagrama → POJO → entidad JPA → tabla MySQL → DAO (CRUD de esa entidad) →
+        Factory (un solo lugar crea el DAO) → en E4, CDI inyecta esas dependencias.
+      </p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 2 · por qué DAOs</span></div>
+</section>
+
+<!-- ═══════════════ 10b · DIAGRAMA (igual) ═══════════════ -->
+<section class="slide" id="slide-diagrama">
+  <div class="head">
+    <div><div class="kicker">Entrega 2 · Diagrama de clases</div><h2>Vista completa del dominio</h2></div>
+    <span class="tag ghost">Diagrama de Clases_Grupo01.pdf</span>
+  </div>
+  <div class="body top">
+    <div class="zoom-wrap" data-no-nav>
+      <div class="zoom-toolbar" data-no-nav>
+        <button type="button" id="z-out" title="Alejar">−</button>
+        <span class="zoom-pct" id="z-pct">100%</span>
+        <button type="button" id="z-in" title="Acercar">+</button>
+        <button type="button" id="z-fit" title="Ver todo">Ajustar</button>
+        <button type="button" id="z-100" title="Tamaño real">1:1</button>
+        <a href="img/e2/Diagrama_de_Clases_Grupo01.pdf" target="_blank" rel="noopener">Abrir PDF</a>
+      </div>
+      <div class="zoom-stage" id="z-stage" data-no-nav>
+        <div class="zoom-world" id="z-world">
+          <img id="z-img" src="img/e2/hi-full.png" alt="Diagrama de clases completo Grupo 1" width="5263" height="3719">
+        </div>
+      </div>
+      <p class="diag-hint"><b>Rueda</b> = zoom · <b>arrastrar</b> = mover · cada caja de acá, en E3, tiene (casi) su DAO.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 2 · diagrama completo con zoom</span></div>
+</section>
+
+<!-- ═══════════════ 10c · UNA CAJA → UN DAO ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 2 · Cierre</div><h2>Del diagrama a la persistencia (idea fija)</h2></div>
+    <span class="tag">una caja → un DAO</span>
+  </div>
+  <div class="body">
+    <p class="lead" style="margin-bottom:2vh">Cuando hagan zoom en el diagrama, piensen esto: <b>cada clase con <code>id</code> es candidata a tabla y a DAO</b>.</p>
+    <table>
+      <thead><tr><th>En el modelo (E2)</th><th>En la persistencia (E3)</th><th>Quién lo hace</th></tr></thead>
+      <tbody>
+        <tr><td><code>Usuario</code></td><td>tabla <code>usuario</code></td><td class="mono"><code>UsuarioDAO</code></td></tr>
+        <tr><td><code>Trabajo</code></td><td>tabla <code>trabajo</code></td><td class="mono"><code>TrabajoDAO</code></td></tr>
+        <tr><td><code>Pago</code></td><td>tabla <code>pago</code></td><td class="mono"><code>PagoDAO</code></td></tr>
+        <tr><td><code>AsignacionEvaluacion</code></td><td>su tabla</td><td class="mono"><code>AsignacionEvaluacionDAO</code></td></tr>
+        <tr><td><code>Evaluacion</code></td><td>su tabla</td><td class="mono"><code>EvaluacionDAO</code></td></tr>
+        <tr><td>CRUD repetido (save/find/delete)</td><td>código compartido</td><td class="mono"><code>GenericDAO</code> / <code>AbstractJpaDAO</code></td></tr>
+        <tr><td>“¿quién me da el DAO?”</td><td>un solo lugar de creación</td><td class="mono"><code>DAOFactory</code> (Factory)</td></tr>
+      </tbody>
+    </table>
+    <div class="card fill" style="margin-top:2vh">
+      <p class="small">Nuestro diseño de objetos partió el dominio en entidades.
+        Eso hizo natural el patrón <b>DAO</b>: cada entidad se persiste por su cuenta, sin meter MySQL dentro de las clases del negocio.
+        <b>JPA</b> convierte el objeto en una fila de la tabla (y al revés).
+        El <b>DAO</b> es quien pide ese guardar/buscar.
+        El <b>Factory</b> es el único lugar que crea los DAOs: el resto del sistema no tiene que hacer <code>new UsuarioDAOImpl()</code> en cada pantalla.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 2 · modelo → DAO</span></div>
 </section>
 
 <!-- ═══════════════ 12 · ENTREGA 3 ═══════════════ -->
 <section class="slide">
   <div class="head">
-    <div><div class="kicker">Entrega 3</div><h2>Capa de persistencia</h2></div>
-    <span class="tag">Producto: 23 entidades JPA + DAOs + ABM verificable</span>
+    <div><div class="kicker">Entrega 3 · rama <code>entrega-3</code></div><h2>Capa de persistencia (+ primer REST)</h2></div>
+    <span class="tag">Producto: JPA + DAO + Factory · MySQL</span>
   </div>
   <div class="body top">
     <div class="g2-60">
       <div>
-        <div class="card-rel"><b>Objetivo</b><p class="small">Que el modelo sobreviva al reinicio del servidor, sobre la base MySQL de la cátedra (<code>jyaa2026_bd1</code>).</p></div>
-        <div class="card-rel"><b>Qué aplicamos <span class="small">(JPA · DAO · Listeners)</span></b>
-          <p class="small"><code>@Entity</code>, <code>@OneToMany</code>/<code>@ManyToMany</code>, <code>@Embeddable</code>, <code>@ElementCollection</code>, <code>EntityManager</code>, JPQL con paginado
-            (<code>setFirstResult</code>/<code>setMaxResults</code>) y el <b>patrón DAO</b>: <code>GenericDAO&lt;T&gt;</code> → <code>AbstractJpaDAO&lt;T&gt;</code> → un DAO por entidad.</p></div>
-        <div class="card-rel"><b>Librerías y herramientas</b>
-          <p class="small">Hibernate 7.0, <code>mysql-connector-j</code> 9.2, Maven, Eclipse + Tomcat 10, phpMyAdmin de la cátedra.
-            El arranque lo hace un <code>ServletContextListener</code> (<code>JpaBootstrapListener</code>) que crea el <code>EntityManagerFactory</code> y carga datos iniciales.</p></div>
-        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultades reales</b>
-          <p class="small">① El WAR desplegaba pero no encontraba las entidades: hubo que <b>listarlas explícitamente en <code>persistence.xml</code></b>, porque Tomcat no hace el escaneo automático de un servidor Jakarta EE completo.<br>
-            ② Los PDF de trabajos no entraban en la columna: pasamos el <code>@Lob</code> a <b><code>LONGBLOB</code></b>.<br>
-            ③ <code>hbm2ddl.auto=update</code> nunca achica ni renombra columnas, así que escribimos una clase <code>SchemaMigration</code> con SQL propio que corre al arrancar.</p></div>
+        <div class="card-rel"><b>Objetivo</b><p class="small">Tomar el modelo de la Entrega 2 y hacer que <b>sobreviva al reinicio</b> en MySQL (<code>jyaa2026_bd1</code>): mismas clases → tablas; mismas relaciones → FK.</p></div>
+        <div class="card-rel"><b>Qué aplicamos (directo del diseño E2)</b>
+          <p class="small"><b>JPA/Hibernate</b>: cada POJO con <code>id</code> → <code>@Entity</code>.
+            <b>Patrón DAO</b>: un DAO por entidad (<code>UsuarioDAO</code>, <code>TrabajoDAO</code>…) sobre
+            <code>GenericDAO</code> → <code>AbstractJpaDAO</code>.
+            <b><code>DAOFactory</code></b>: punto único para pedir DAOs (aún sin CDI).
+            Arranque con <code>ServletContextListener</code>. ABM en <code>/test-persistencia</code>.</p></div>
+        <div class="card-rel"><b>Cómo estaba armado el REST al principio</b>
+          <p class="small">Empezamos a exponer una API con <b>JAX-RS / Jersey</b>, pero los recursos <b>instanciaban los DAOs a mano</b>
+            (<code>DAOFactory</code> / <code>new</code>). Eso <b>mezclaba capas</b>: la capa web hablaba directo con la persistencia, sin servicios ni CDI.</p></div>
+        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultades</b>
+          <p class="small">① Listar entidades a mano en <code>persistence.xml</code> (Tomcat no escanea como un servidor Jakarta EE completo).<br>
+            ② PDFs: pasar el <code>@Lob</code> a <b>LONGBLOB</b>.<br>
+            ③ Migraciones propias (<code>SchemaMigration</code>) porque <code>hbm2ddl</code> no alcanza.<br>
+            ④ La mezcla de capas funcionaba, pero no escalaba: era el problema que resolvimos en la Entrega 4.</p></div>
       </div>
       <figure>
         <div class="shot">
           <div class="ico">▤</div>
-          <b>CAPTURA 3 — ABM funcionando</b>
-          <span>El servlet <code>/test-persistencia</code> con los casos de alta/baja/modificación en verde,
-                o las tablas creadas en phpMyAdmin. Guardar como <code>img/e3-persistencia.png</code>.</span>
+          <b>CAPTURA 3 — Persistencia</b>
+          <span><code>/test-persistencia</code> o tablas en phpMyAdmin.
+                Guardar como <code>img/e3-persistencia.png</code>.</span>
         </div>
-        <figcaption>Servlet de pruebas: la forma más rápida de demostrar que el ABM sobre JPA realmente escribe en MySQL.</figcaption>
+        <figcaption>Rama <code>entrega-3</code>: la base queda en MySQL; el REST todavía sin capas limpias.</figcaption>
       </figure>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Entrega 3 de 6</span></div>
+  <div class="foot"><span>Entrega 3 de 6</span></div>
 </section>
 
 <!-- ═══════════════ 13 · ENTREGA 4 ═══════════════ -->
 <section class="slide">
   <div class="head">
-    <div><div class="kicker">Entrega 4</div><h2>Capa de servicios REST</h2></div>
-    <span class="tag">Producto: API documentada en OpenAPI + JWT</span>
+    <div><div class="kicker">Entrega 4 · rama <code>entrega-4</code></div><h2>Servicios REST con separación en capas (CDI)</h2></div>
+    <span class="tag">Producto: API + CDI + JWT + Swagger</span>
   </div>
   <div class="body top">
     <div class="g2-60">
       <div>
-        <div class="card-rel"><b>Objetivo</b><p class="small">Exponer el dominio como una API HTTP consumible por cualquier cliente, con autenticación y errores de negocio legibles.</p></div>
-        <div class="card-rel"><b>Qué aplicamos <span class="small">(REST · CDI · Filtros · CORS)</span></b>
-          <p class="small"><b>JAX-RS con Jersey</b>: <code>@Path</code>, verbos HTTP, códigos de estado, <code>@QueryParam</code>/<code>@PathParam</code>, multipart para archivos y <b>DTOs</b> separados de las entidades.<br>
-            <b>CDI con Weld</b> sobre Tomcat: <code>@Inject</code>, <code>@RequestScoped</code>, y un <code>@Produces</code>/<code>@Disposes</code> de <code>EntityManager</code> que abre y commitea la transacción por request.<br>
-            <b>Filtros JAX-RS</b>: <code>JwtAuthFilter</code>, <code>CorsRequestFilter</code> (<code>@PreMatching</code>, preflight <code>OPTIONS</code>) y <code>CorsResponseFilter</code>.<br>
-            <b>ExceptionMappers</b> que convierten <code>NegocioException</code> en un JSON con mensaje para el usuario.</p></div>
-        <div class="card-rel"><b>Librerías</b>
-          <p class="small">Jersey 3.1.9 (+ <code>jersey-cdi1x-servlet</code>, <code>media-json-jackson</code>, <code>media-multipart</code>), Weld 6.0.4, JJWT 0.12.6, <code>swagger-jaxrs2-jakarta</code> 2.2.28, Angus Mail.</p></div>
+        <div class="card-rel"><b>Objetivo</b><p class="small">Aplicar <b>SOLID</b>, sobre todo el <b>DIP</b>: el alto nivel depende de abstracciones. Eso se concreta con <b>CDI</b> (<code>@Inject</code>): dejamos de crear DAOs a mano y separamos Resource → Service → DAO.</p></div>
+        <div class="card-rel"><b>Qué cambió respecto de la Entrega 3</b>
+          <p class="small">En E3 el patrón creacional era <code>DAOFactory</code>. Acá el contenedor <b>CDI / Weld</b> reemplaza ese <code>new</code>:
+            <b>Resource → Service → DAO</b>, con <code>EntityManagerProducer</code> (<code>@Produces</code> / <code>@Disposes</code>) por request.
+            SRP: el Resource no hace SQL; el DAO no arma JSON.</p></div>
+        <div class="card-rel"><b>Qué más sumamos</b>
+          <p class="small"><b>Jersey</b> arma las URLs de la API · <b>DTOs</b> (no devolvemos entidades JPA crudas) ·
+            <b>JWT</b> para el login · filtros CORS · <b>Swagger/OpenAPI</b> para documentar y probar · ExceptionMappers.</p></div>
         <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultad</b>
-          <p class="small">Hacer convivir <b>Jersey + CDI en Tomcat</b>: sin el puente <code>jersey-cdi1x-servlet</code> y un <code>beans.xml</code> con <code>bean-discovery-mode="annotated"</code>, las inyecciones en los recursos llegaban en <code>null</code>.
-            <b>Cómo la resolvimos:</b> siguiendo la teoría de Inyección de Dependencias, movimos el <code>EntityManager</code> a un <i>producer</i> con scope de request.</p></div>
+          <p class="small">Hacer convivir <b>Jersey + CDI en Tomcat</b>: sin <code>jersey-cdi1x-servlet</code> / <code>jersey-hk2</code> y <code>beans.xml</code>,
+            las inyecciones llegaban en <code>null</code>.
+            <b>Cómo lo resolvimos:</b> el contenedor CDI crea e inyecta; nosotros dejamos de instanciar a mano.</p></div>
       </div>
       <figure>
         <div class="shot">
           <div class="ico">⌘</div>
           <b>CAPTURA 4 — Swagger UI</b>
-          <span>La lista de recursos desplegada y un <code>POST /api/login</code> ejecutado con su respuesta.
+          <span>Recursos y un <code>POST /api/login</code>.
                 Guardar como <code>img/e4-swagger.png</code>.</span>
         </div>
-        <figcaption>26 recursos REST documentados con <code>@Tag</code> y <code>@Operation</code>, publicados como OpenAPI.</figcaption>
+        <figcaption>Rama <code>entrega-4</code>: la API queda en capas, documentada y usable por el front.</figcaption>
       </figure>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Entrega 4 de 6</span></div>
+  <div class="foot"><span>Entrega 4 de 6</span></div>
 </section>
 
 <!-- ═══════════════ 14 · SEGURIDAD ═══════════════ -->
@@ -541,44 +724,42 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
       </div>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Lucas</span><span>Entrega 4 de 6</span></div>
+  <div class="foot"><span>Entrega 4 de 6</span></div>
 </section>
 
 <!-- ═══════════════ 15 · ENTREGA 5 ═══════════════ -->
 <section class="slide">
   <div class="head">
-    <div><div class="kicker">Entrega 5</div><h2>Capa de presentación e integración</h2></div>
+    <div><div class="kicker">Entrega 5 · rama <code>entrega-5</code></div><h2>Capa de presentación e integración</h2></div>
     <span class="tag">Producto: SPA Angular 19 contra la API real</span>
   </div>
   <div class="body top">
     <div class="g2-60">
       <div>
-        <div class="card-rel"><b>Objetivo</b><p class="small">Reemplazar el prototipo con datos falsos por un cliente real que consuma el REST y respete los permisos de cada rol.</p></div>
-        <div class="card-rel"><b>Qué aplicamos <span class="small">(Angular 1, 2 y 3)</span></b>
-          <p class="small"><b>Componentes standalone</b> y <code>bootstrapApplication</code>; ruteo con <code>app.routes.ts</code>; <b>guards</b> de sesión y de rol; un
-            <b>interceptor funcional</b> que agrega el <code>Bearer</code> y desloguea ante un 401; <code>HttpClient</code> con genéricos tipados;
-            <b>formularios reactivos</b> y la nueva sintaxis de control de flujo <code>@if</code> / <code>@for</code>.</p></div>
-        <div class="card-rel"><b>Librerías y herramientas</b>
-          <p class="small">Angular 19 + Angular CLI, RxJS, Angular Material (diálogos), <b>Leaflet</b> para el mapa de sede y aulas, <code>jwt-decode</code>.
-            En desarrollo, <code>proxy.conf.json</code> apunta <code>/api</code> al servidor de la cátedra: se programa sin Tomcat local.</p></div>
-        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultades reales</b>
-          <p class="small">① <b>CORS</b> en desarrollo: el navegador bloqueaba las llamadas. Dos caminos, y usamos los dos — proxy de Angular para el día a día, filtros CORS en el backend para probar contra el servidor desplegado.<br>
-            ② <b>NG0203</b>: llamar a <code>inject()</code> dentro de <code>ngOnInit</code> rompe la app; hubo que moverlo al campo de la clase.<br>
-            ③ El <b>bundle superaba el presupuesto</b> de producción y el build fallaba en el pipeline: ajustamos los budgets y depuramos importaciones.<br>
-            ④ Leaflet se recreaba en cada ciclo de detección de cambios y el mapa parpadeaba.</p></div>
+        <div class="card-rel"><b>Objetivo</b><p class="small">Reemplazar el prototipo de la Entrega 1 (datos en el navegador) por un cliente real que consuma la API de la Entrega 4 y respete los permisos de cada rol.</p></div>
+        <div class="card-rel"><b>Qué aplicamos</b>
+          <p class="small"><b>SPA Angular</b> = pantallas en el navegador que piden datos al servidor por la API.
+            Componentes standalone, rutas, <b>guards</b> por rol, interceptor JWT, formularios reactivos, <code>HttpClient</code>.</p></div>
+        <div class="card-rel"><b>Herramientas</b>
+          <p class="small">Angular 19, RxJS, Leaflet (mapa), proxy de desarrollo hacia el servidor de la cátedra.</p></div>
+        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultades</b>
+          <p class="small">① <b>CORS</b> (proxy + filtros en el backend).<br>
+            ② <code>inject()</code> mal usado en <code>ngOnInit</code> (NG0203).<br>
+            ③ Bundle que superaba el presupuesto del build.<br>
+            ④ Mapa Leaflet que parpadeaba al recrearse.</p></div>
       </div>
       <figure>
         <div class="shot">
           <div class="ico">▣</div>
-          <b>CAPTURA 5 — La SPA y la red</b>
-          <span>Un panel de la app con el DevTools abierto en Network mostrando la llamada
-                <code>/api/...</code> con su header <code>Authorization</code>. Guardar como <code>img/e5-angular.png</code>.</span>
+          <b>CAPTURA 5 — Angular + Network</b>
+          <span>Panel con DevTools → <code>/api/...</code> + <code>Authorization</code>.
+                Guardar como <code>img/e5-angular.png</code>.</span>
         </div>
-        <figcaption>La captura muestra las dos capas a la vez: la pantalla y el REST que la alimenta.</figcaption>
+        <figcaption>Rama <code>entrega-5</code>: la vista habla con la API en capas de la Entrega 4.</figcaption>
       </figure>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Alcides</span><span>Entrega 5 de 6</span></div>
+  <div class="foot"><span>Entrega 5 de 6</span></div>
 </section>
 
 <!-- ═══════════════ 16 · ENTREGA 6 ═══════════════ -->
@@ -615,7 +796,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
       </figure>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Alcides</span><span>Entrega 6 de 6</span></div>
+  <div class="foot"><span>Entrega 6 de 6</span></div>
 </section>
 
 <!-- ═══════════════ 17 · ARQUITECTURA ═══════════════ -->
@@ -625,21 +806,22 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
     <span class="tag alt">Un solo WAR</span>
   </div>
   <div class="body">
+    <p class="lead" style="margin-bottom:2vh">Primero persistimos y hablamos a los DAOs desde el REST (capas mezcladas). En la Entrega 4 separamos con CDI. Hoy quedó así:</p>
     <div class="arch">
-      <div class="layer"><span class="lbl">Navegador</span><span class="cnt">Angular 19 · standalone components · guards · interceptor JWT · Leaflet</span></div>
+      <div class="layer"><span class="lbl">Navegador</span><span class="cnt">Angular 19 · guards · interceptor JWT · Leaflet</span></div>
       <div class="arrow">▼ &nbsp; HTTPS · <span class="mono">Authorization: Bearer &lt;jwt&gt;</span></div>
-      <div class="layer"><span class="lbl">Filtros</span><span class="cnt">CorsRequestFilter · CorsResponseFilter · JwtAuthFilter · StaticCacheFilter</span></div>
+      <div class="layer"><span class="lbl">Filtros</span><span class="cnt">CORS · JwtAuthFilter · StaticCacheFilter</span></div>
       <div class="arrow">▼</div>
-      <div class="layer"><span class="lbl">REST</span><span class="cnt">Jersey / JAX-RS · 26 recursos <span class="mono">@Path</span> · DTOs · ExceptionMappers · OpenAPI</span></div>
-      <div class="arrow">▼ &nbsp; <span class="mono">@Inject</span> (CDI / Weld)</div>
-      <div class="layer"><span class="lbl">Servicios</span><span class="cnt">Reglas del congreso · etapas y plazos · NegocioException · email y notificaciones</span></div>
+      <div class="layer"><span class="lbl">REST</span><span class="cnt">Jersey / JAX-RS · recursos <span class="mono">@Path</span> · DTOs · OpenAPI</span></div>
+      <div class="arrow">▼ &nbsp; <span class="mono">@Inject</span> (CDI / Weld) — ya no <code>new</code> DAO</div>
+      <div class="layer"><span class="lbl">Servicios</span><span class="cnt">Reglas del congreso · plazos · NegocioException · email / notificaciones</span></div>
       <div class="arrow">▼</div>
-      <div class="layer"><span class="lbl">Persistencia</span><span class="cnt">GenericDAO → AbstractJpaDAO → 23 DAOs · EntityManager por request · JPQL</span></div>
+      <div class="layer"><span class="lbl">Persistencia</span><span class="cnt">GenericDAO → AbstractJpaDAO → DAOs · EntityManager por request</span></div>
       <div class="arrow">▼</div>
-      <div class="layer soft"><span class="lbl">Infraestructura</span><span class="cnt">Hibernate 7 · MySQL <span class="mono">jyaa2026_bd1</span> · Tomcat 10 / JDK 21 · Docker · SMTP</span></div>
+      <div class="layer soft"><span class="lbl">Infraestructura</span><span class="cnt">Hibernate · MySQL (motor BD cátedra) · Tomcat 10 · Docker</span></div>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Lucas</span><span>Arquitectura</span></div>
+  <div class="foot"><span>Arquitectura</span></div>
 </section>
 
 <!-- ═══════════════ 18 · TEORÍA APLICADA ═══════════════ -->
@@ -662,7 +844,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
       </table>
       <table>
         <tr><th style="width:47%">Teoría</th><th>Dónde vive en el proyecto</th></tr>
-        <tr><td>Inyección de dependencias (CDI/Weld)</td><td class="mono">EntityManagerProducer · @Inject · beans.xml</td></tr>
+        <tr><td>Inyección de dependencias (CDI/Weld)</td><td class="mono">Entrega 4: Resource → Service → DAO · EntityManagerProducer · beans.xml (en E3 aún se instanciaban DAOs a mano)</td></tr>
         <tr><td>REST</td><td class="mono">JaxRsApplication · @Path · verbos · ExceptionMappers</td></tr>
         <tr><td>Swagger / OpenAPI</td><td class="mono">OpenApiResource · @Tag · @Operation</td></tr>
         <tr><td>CORS</td><td class="mono">CorsRequestFilter @PreMatching (preflight OPTIONS)</td></tr>
@@ -673,7 +855,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
     </div>
     <p class="small" style="margin-top:2.2vh;text-align:center">No quedó ningún tema de la cursada sin usar: el trabajo final los integró a todos en un mismo despliegue.</p>
   </div>
-  <div class="foot"><span class="speaker">Habla: Lucas</span><span>Teoría aplicada</span></div>
+  <div class="foot"><span>Teoría aplicada</span></div>
 </section>
 
 <!-- ═══════════════ 19 · BLOQUE 3 ═══════════════ -->
@@ -681,7 +863,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   <div class="num">03</div>
   <h1>Cómo trabajamos</h1>
   <p>La organización interna del grupo y las herramientas que la sostuvieron.</p>
-  <div class="foot"><span class="speaker">Habla: Lucas · 2:00</span><span>Bloque 3 de 4</span></div>
+  <div class="foot"><span>Bloque 3 de 4</span></div>
 </section>
 
 <!-- ═══════════════ 20 · ORGANIZACIÓN ═══════════════ -->
@@ -711,7 +893,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
         <p class="small">Los cambios en <code>Usuario</code> y en la configuración del congreso tocan a los tres. Los coordinamos antes de codear y los integramos primero.</p></div>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Lucas</span><span>Organización</span></div>
+  <div class="foot"><span>Organización</span></div>
 </section>
 
 <!-- ═══════════════ 21 · HERRAMIENTAS Y CI ═══════════════ -->
@@ -754,7 +936,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
       </div>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Habla: Lucas</span><span>Organización</span></div>
+  <div class="foot"><span>Organización</span></div>
 </section>
 
 <!-- ═══════════════ 22 · BLOQUE 4 ═══════════════ -->
@@ -762,7 +944,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   <div class="num">04</div>
   <h1>Demo y reflexión</h1>
   <p>El sistema funcionando de punta a punta, y qué nos llevamos del proceso.</p>
-  <div class="foot"><span class="speaker">Alcides (demo) · Benjamín y Lucas (cierre) · 6:20</span><span>Bloque 4 de 4</span></div>
+  <div class="foot"><span>Bloque 4 de 4</span></div>
 </section>
 
 <!-- ═══════════════ 23 · DEMO ═══════════════ -->
@@ -801,7 +983,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
       </div>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Conduce: Alcides</span><span>Demo en vivo</span></div>
+  <div class="foot"><span>Demo en vivo</span></div>
 </section>
 
 <!-- ═══════════════ 24 · DIFICULTADES ═══════════════ -->
@@ -813,14 +995,14 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   <div class="body">
     <table>
       <tr><th style="width:24%">Dificultad</th><th style="width:38%">Qué pasaba</th><th>Cómo la resolvimos</th></tr>
-      <tr><td><b>CDI en Tomcat</b></td><td>Las inyecciones en los recursos Jersey llegaban en <code>null</code>: Tomcat no trae CDI.</td><td>Weld + <code>jersey-cdi1x-servlet</code> + <code>beans.xml</code>, y el <code>EntityManager</code> como <i>producer</i> con scope de request.</td></tr>
+      <tr><td><b>Capas mezcladas → CDI</b></td><td>En la Entrega 3 el REST instanciaba DAOs a mano (<code>DAOFactory</code> / <code>new</code>). En la 4, al meter CDI en Tomcat, las inyecciones llegaban en <code>null</code>.</td><td>Weld + puentes Jersey–CDI + <code>beans.xml</code>; Resource → Service → DAO con <code>@Inject</code> y <code>EntityManagerProducer</code>.</td></tr>
       <tr><td><b>CORS</b></td><td>El navegador bloqueaba las llamadas del Angular local al backend desplegado.</td><td>Proxy de Angular para desarrollo y filtros CORS con preflight para el resto. En producción, mismo origen: el problema desaparece.</td></tr>
       <tr><td><b>Esquema de base</b></td><td><code>hbm2ddl.auto=update</code> agrega columnas pero nunca las corrige; los PDF no entraban y un campo quedó corto.</td><td>Clase <code>SchemaMigration</code> con SQL propio que corre al arrancar la aplicación, más <code>LONGBLOB</code> para los documentos.</td></tr>
       <tr><td><b>Deploy con front viejo</b></td><td>La caché de Docker publicaba un WAR con un Angular desactualizado.</td><td><code>--no-cache --pull</code> y verificaciones del contenido del WAR dentro del Dockerfile: el pipeline falla antes de desplegar.</td></tr>
       <tr><td><b>Trabajo en paralelo</b></td><td>Conflictos constantes al dividirnos por capas, y <code>node_modules</code> versionado por error.</td><td>Reparto por flujo funcional, <code>.gitignore</code> saneado y una rama por entrega que sólo se integra con el pipeline en verde.</td></tr>
     </table>
   </div>
-  <div class="foot"><span class="speaker">Habla: Benjamín</span><span>Balance</span></div>
+  <div class="foot"><span>Balance</span></div>
 </section>
 
 <!-- ═══════════════ 25 · APRENDIZAJES ═══════════════ -->
@@ -851,7 +1033,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
       </div>
     </div>
   </div>
-  <div class="foot"><span class="speaker">Hablan: los tres</span><span>Reflexión</span></div>
+  <div class="foot"><span>Reflexión</span></div>
 </section>
 
 <!-- ═══════════════ 26 · CIERRE ═══════════════ -->
@@ -876,6 +1058,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   <h2>Atajos</h2>
   <p><kbd>→</kbd> <kbd>Espacio</kbd> siguiente &nbsp;·&nbsp; <kbd>←</kbd> anterior &nbsp;·&nbsp; <kbd>Inicio</kbd>/<kbd>Fin</kbd> primera/última</p>
   <p><kbd>F</kbd> pantalla completa &nbsp;·&nbsp; <kbd>Ctrl</kbd>+<kbd>P</kbd> exportar a PDF &nbsp;·&nbsp; <kbd>?</kbd> cerrar esta ayuda</p>
+  <p style="margin-top:1.2vh">En el diagrama: <kbd>rueda</kbd> zoom · arrastrar · <kbd>+</kbd>/<kbd>−</kbd> · <kbd>0</kbd> ajustar</p>
 </div>
 
 <script>
@@ -900,11 +1083,109 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
     slides.forEach(function(s, k){ s.classList.toggle('on', k === i); });
     bar.style.width = ((i + 1) / slides.length * 100) + '%';
     if(location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+    if(slides[i] && slides[i].id === 'slide-diagrama') fitDiagram();
+  }
+
+  /* ---- Visor zoom del diagrama de clases ---- */
+  var stage = document.getElementById('z-stage');
+  var world = document.getElementById('z-world');
+  var img = document.getElementById('z-img');
+  var pctEl = document.getElementById('z-pct');
+  var scale = 1, tx = 0, ty = 0;
+  var dragging = false, lx = 0, ly = 0, fitted = false;
+
+  function apply(){
+    if(!world) return;
+    world.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+    if(pctEl) pctEl.textContent = Math.round(scale * 100) + '%';
+  }
+
+  function fitDiagram(){
+    if(!stage || !img) return;
+    var sw = stage.clientWidth, sh = stage.clientHeight;
+    var iw = img.naturalWidth || 5263, ih = img.naturalHeight || 3719;
+    if(!sw || !sh || !iw) return;
+    scale = Math.min(sw / iw, sh / ih) * 0.98;
+    tx = (sw - iw * scale) / 2;
+    ty = (sh - ih * scale) / 2;
+    fitted = true;
+    apply();
+  }
+
+  function zoomAt(factor, cx, cy){
+    if(!stage) return;
+    var rect = stage.getBoundingClientRect();
+    var mx = (cx != null ? cx : rect.left + rect.width/2) - rect.left;
+    var my = (cy != null ? cy : rect.top + rect.height/2) - rect.top;
+    var nx = (mx - tx) / scale;
+    var ny = (my - ty) / scale;
+    scale = Math.max(0.15, Math.min(6, scale * factor));
+    tx = mx - nx * scale;
+    ty = my - ny * scale;
+    apply();
+  }
+
+  if(stage && world && img){
+    img.addEventListener('load', fitDiagram);
+    if(img.complete) fitDiagram();
+    window.addEventListener('resize', function(){
+      if(slides[i] && slides[i].id === 'slide-diagrama') fitDiagram();
+    });
+
+    stage.addEventListener('wheel', function(e){
+      e.preventDefault();
+      zoomAt(e.deltaY < 0 ? 1.15 : 1/1.15, e.clientX, e.clientY);
+    }, {passive:false});
+
+    stage.addEventListener('pointerdown', function(e){
+      if(e.button !== 0) return;
+      dragging = true;
+      stage.classList.add('dragging');
+      lx = e.clientX; ly = e.clientY;
+      stage.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    stage.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      tx += e.clientX - lx;
+      ty += e.clientY - ly;
+      lx = e.clientX; ly = e.clientY;
+      apply();
+    });
+    function endDrag(e){
+      dragging = false;
+      stage.classList.remove('dragging');
+    }
+    stage.addEventListener('pointerup', endDrag);
+    stage.addEventListener('pointercancel', endDrag);
+
+    document.getElementById('z-in').addEventListener('click', function(e){
+      e.stopPropagation(); zoomAt(1.25);
+    });
+    document.getElementById('z-out').addEventListener('click', function(e){
+      e.stopPropagation(); zoomAt(1/1.25);
+    });
+    document.getElementById('z-fit').addEventListener('click', function(e){
+      e.stopPropagation(); fitDiagram();
+    });
+    document.getElementById('z-100').addEventListener('click', function(e){
+      e.stopPropagation();
+      var rect = stage.getBoundingClientRect();
+      var cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+      var factor = 1 / scale;
+      zoomAt(factor, cx, cy);
+    });
   }
 
   document.addEventListener('keydown', function(e){
     if(e.key === '?' ){ help.classList.toggle('on'); return; }
     if(help.classList.contains('on')){ help.classList.remove('on'); return; }
+    /* en el diagrama: + / - también hacen zoom */
+    if(slides[i] && slides[i].id === 'slide-diagrama'){
+      if(e.key === '+' || e.key === '='){ zoomAt(1.25); e.preventDefault(); return; }
+      if(e.key === '-' || e.key === '_'){ zoomAt(1/1.25); e.preventDefault(); return; }
+      if(e.key === '0'){ fitDiagram(); e.preventDefault(); return; }
+    }
     switch(e.key){
       case 'ArrowRight': case ' ': case 'PageDown': case 'n': show(i+1); e.preventDefault(); break;
       case 'ArrowLeft':  case 'PageUp': case 'p':            show(i-1); e.preventDefault(); break;
@@ -919,11 +1200,15 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 
   document.addEventListener('click', function(e){
     if(help.classList.contains('on')){ help.classList.remove('on'); return; }
+    if(e.target.closest && e.target.closest('[data-no-nav]')) return;
     show(e.clientX < window.innerWidth * 0.25 ? i - 1 : i + 1);
   });
 
   var x0 = null;
-  document.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchstart', function(e){
+    if(e.target.closest && e.target.closest('[data-no-nav]')){ x0 = null; return; }
+    x0 = e.touches[0].clientX;
+  }, {passive:true});
   document.addEventListener('touchend', function(e){
     if(x0 === null) return;
     var dx = e.changedTouches[0].clientX - x0;

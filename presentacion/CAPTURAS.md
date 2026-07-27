@@ -18,7 +18,7 @@ Dejando el `<figure>` y el `<figcaption>` como están.
 
 | # | Archivo | Qué capturar | Dónde conseguirla |
 |---|---------|--------------|-------------------|
-| 1 | `img/e1-maqueta.png` | Una pantalla del prototipo React junto al tablero de historias de usuario por rol | `npm run dev` en la raíz del repo (prototipo de la Entrega 1) + el documento de historias |
+| 1 | `img/e1/*.png` | Ya incluidas: registro, inscripción, admin valida, envío, evaluador, programa (extraídas de `archivo_maquetado.pdf`) | Entrega 1 |
 | 2 | `img/e2-diagrama.png` | **Fragmento** del diagrama de clases: `Usuario · Trabajo · AsignacionEvaluacion · Evaluacion` | Recorte de `Diagrama de Clases_Grupo01.pdf` (Entrega 2) |
 | 3 | `img/e3-persistencia.png` | El servlet `/test-persistencia` con los ABM en verde, o las tablas en phpMyAdmin | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/test-persistencia` o `https://dbadmin.jyaa-ci.linti.unlp.edu.ar/` → `jyaa2026_bd1` |
 | 4 | `img/e4-swagger.png` | Swagger UI con los recursos desplegados y un `POST /api/login` ejecutado | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/` |
