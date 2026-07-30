@@ -20,8 +20,8 @@ Dejando el `<figure>` y el `<figcaption>` como están.
 |---|---------|--------------|-------------------|
 | 1 | `img/e1/*.png` | Ya incluidas: registro, inscripción, admin valida, envío, evaluador, programa (extraídas de `archivo_maquetado.pdf`) | Entrega 1 |
 | 2 | `img/e2/hi-full.png` | Diagrama de clases completo (alta resolución). En el HTML: zoom interactivo. En el PDF: página completa; acercar con el zoom del lector | Ya incluido (render 450 DPI del PDF de clases) |
-| 3 | `img/e3-persistencia.png` | El servlet `/test-persistencia` con los ABM en verde, o las tablas en phpMyAdmin | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/test-persistencia` o `https://dbadmin.jyaa-ci.linti.unlp.edu.ar/` → `jyaa2026_bd1` |
-| 4 | `img/e4-swagger.png` | Swagger UI con los recursos desplegados y un `POST /api/login` ejecutado | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/` |
+| 3 | `img/e3-persistencia.png` | Fuente de la evidencia. En la diapositiva E3 · 7/7 el resultado se muestra como texto grande (misma salida del servlet) para que se lea en proyector | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/test-persistencia` |
+| 4 | `img/e4-swagger.png` + `img/e4-swagger-login.png` | **Incluidas (capturas reales).** Tag Usuarios expandido + tag Login en `/swagger-ui/` | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/` |
 | 5 | `img/e5-angular.png` | Un panel de la SPA con DevTools → Network mostrando la llamada `/api/...` y el header `Authorization` | La app corriendo + F12 |
 | 6 | `img/e6-produccion.png` | La home pública o el programa del congreso con el mapa de aulas | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/` |
 | 7 | `img/ci-pipeline.png` | Los cuatro jobs del pipeline en verde | GitLab de la cátedra → CI/CD → Pipelines |

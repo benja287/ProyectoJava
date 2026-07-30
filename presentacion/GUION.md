@@ -25,11 +25,11 @@ Los tres hablan prácticamente lo mismo: **~6:35 / 6:45 / 6:40**.
 | 9 | E2 — Qué diseño / decisiones | **Benjamín** | 0:50 | 5:30 |
 | 10 | Diagrama completo (zoom) | **Benjamín** | 0:45 | 6:15 |
 | 11 | E2 — Factory / SOLID (mapa) | **Benjamín** | 0:40 | 6:55 |
-| 12 | Entrega 3 — Persistencia | **Benjamín** | 0:45 | 7:40 |
-| 13 | Entrega 4 — REST + CDI | **Benjamín** | 0:50 | 8:30 |
-| 13 | Sesión con JWT | Lucas | 0:40 | 8:30 |
-| 14 | Entrega 5 — Angular | Alcides | 0:50 | 9:20 |
-| 15 | Entrega 6 — Sistema completo | Alcides | 0:45 | 10:05 |
+| 12 | E3 — Objetivo + conceptos + herramientas | **Benjamín** | 0:55 | 7:50 |
+| 13 | E3 — JPA + DAO + dificultades | **Benjamín** | 0:55 | 8:45 |
+| 14 | Entrega 4 — REST + CDI | **Benjamín** | 0:45 | 9:30 |
+| 15 | Entrega 5 — Angular | Alcides | 0:50 | 10:20 |
+| 16 | Entrega 6 — Sistema completo | Alcides | 0:45 | 11:05 |
 | 16 | Arquitectura | Lucas | 0:25 | 10:30 |
 | 17 | Teoría aplicada | Lucas | 0:25 | 10:55 |
 | 18 | Separador — Bloque 3 | Lucas | 0:05 | 11:00 |
@@ -148,7 +148,7 @@ Frase de cierre:
 | 1 | Informe de análisis + PDF de maquetado (prototipo React) |
 | 2 | **POJO** = clase Java simple del dominio + diagrama |
 | 3 | Rama `entrega-3`: **JPA** + **DAO** + **MySQL** (motor BD). Primer REST con Jersey aún **mezclando capas** (recursos → DAOs a mano) |
-| 4 | Rama `entrega-4`: API con capas limpias — Jersey + **CDI** + JWT + Swagger |
+| 4 | Rama `entrega-4`: API con capas limpias — Jersey + **CDI** + Swagger |
 | 5 | Rama `entrega-5`: **SPA Angular** habla con esa API |
 | 6 | Todo junto y desplegado |
 
@@ -193,21 +193,105 @@ Tres capturas grandes: envío de trabajo, dictamen evaluador, programa.
 > Factory = único lugar que crea los DAOs (no new Impl en cada pantalla).
 > Cierre: JPA convierte objeto↔fila; DAO pide guardar/buscar; Factory centraliza la creación.
 
-**Diapositiva — Entrega 3** (`entrega-3`)
+**Diapositiva — E3 · 1/7 Objetivo**
 
-> Persistimos el modelo E2. Factory + DAO + JPA. REST aún con new/factory
-> (capas mezcladas) → se limpia en E4.
+> Modelo E2 → datos que no se pierden. Roadmap de 6 slides. CDI = E4.
 
-**Diapositiva — Entrega 4** (`entrega-4`)
+**Diapositiva — E3 · 2/7 Conceptos**
 
-> Acá entra SOLID DIP: Resource → Service → DAO con CDI/@Inject.
-> Ya no DAOFactory desde el REST. Jersey + JWT + Swagger.
+> Sin código ni nombres de clases. WAR/Tomcat/Jakarta = empaquetar y ejecutar.
+> Ciclo de vida = arranque (conectar BD + datos iniciales) y apagado limpio.
+> Servlet = responsable por URL. Cliente–servidor + JSON vs página para humanos.
+> Persistencia OO = objetos + capa que traduce a tablas.
 
-**Diapositiva 13 — JWT**
+**Diapositiva — E3 · 3/7 Herramientas (flujo A→D)**
 
-> El token es una foto: el filtro relee roles y estado desde la base en cada request.
+> A Maven arma WAR · B Hibernate+MySQL · C Gson+Logback · D Docker/CI/Traefik.
+> No es lista: es cómo las usamos en cadena.
 
-**Diapositiva 14 — Entrega 5** (`entrega-5`)
+**Diapositiva — E3 · 4/7 JPA**
+
+> Entidad = ficha/tabla. Relaciones del diagrama. persistence.xml.
+> EMF una vez; EM por operación; transacción commit/rollback.
+
+**Diapositiva — E3 · 5/7 DAO + Factory**
+
+> Por qué no SQL en el Servlet. GenericDAO→AbstractJpaDAO→Impl.
+> Factory un solo lugar. Ejemplo POST /api/trabajos paso a paso + /test-persistencia.
+
+**Diapositiva — E3 · 6/7 Dificultades → E4**
+
+> Unknown entity; lazy; capas mezcladas → E4:
+> Resource (puerta HTTP) · Service (aplicación) · DAO (infraestructura) + dominio limpio.
+> Remate: la captura de la siguiente diapositiva muestra el FALLO real.
+
+**Diapositiva — E3 · 7/7 Evidencia `/test-persistencia`**
+
+> Salida legible del servlet (misma info que la captura): 13 OK + 1 FALLO en Actividad.trabajos (lazy).
+> Honestidad académica: la batería detectó el hueco; no todo salió perfecto.
+
+**Diapositiva — E4 · 1/13 Puente Práctica 6**
+
+> Mismo flujo POST → Tomcat → Jersey → Jackson → DAO → Hibernate.
+> Problema: Resource dependía de UsuarioDAOImpl concreta.
+
+**Diapositiva — E4 · 2/13 Arquitectura en capas**
+
+> Presentación / Servicio / Dominio / Infraestructura.
+> Qué sí y qué no sabe UsuarioResource. DTOs (qué son, entrada/salida, protegen el contrato API).
+
+**Diapositiva — E4 · 3/13 DIP**
+
+> Alto nivel (Resource, Service) y bajo nivel (DAOImpl). Interfaz UsuarioDAO en el medio.
+
+**Diapositiva — E4 · 4/13 DI**
+
+> Constructor, field, setter. Cómo Weld elige el bean. Field injection en esta entrega.
+
+**Diapositiva — E4 · 5/13 IoC**
+
+> Antes: el programador decide cuándo. Ahora: Weld. Inversión = el control pasó al framework.
+> DI = qué pieza; IoC = cuándo crearla/destruirla.
+
+**Diapositiva — E4 · 6/13 CDI y Weld (1/2)**
+
+> Framework concreto: CDI = estándar (solo reglas); Weld = motor.
+> Escaneo de scopes + beans.xml annotated. Resource bean + jersey-cdi1x-servlet.
+
+**Diapositiva — E4 · 7/13 CDI y Weld (2/2)**
+
+> @RequestScoped con ejemplos usuarios/pago. @ApplicationScoped + Producer.
+> Puente: qué bean entrega @Inject.
+
+**Diapositiva — E4 · 8/13 EntityManager**
+
+> @Inject (clase o interfaz). Historia del pago a medias → atomicidad.
+> EntityManagerProducer: commit/rollback de los tres DAOs juntos.
+
+**Diapositiva — E4 · 9/13 Arranque JPA**
+
+> Por qué no @PostConstruct/@PreDestroy. ServletContextListener / JpaBootstrapListener.
+> EMF (una vez) vs EM (por petición).
+
+**Diapositiva — E4 · 10/13 Flujo A–C**
+
+> Historia cotidiana + técnica: formulario → Weld arma el equipo → Service valida.
+
+**Diapositiva — E4 · 11/13 Flujo D–E**
+
+> Guardar en la base. Bifurcación: ¿email ya existía? 400 vs DTO/201.
+
+**Diapositiva — E4 · 12/13 Swagger**
+
+> @Tag / @Operation / @ApiResponse. OpenApiResource → openapi.json → UI en /swagger-ui/.
+> Verificación: GET en la misma pantalla después del POST.
+
+**Diapositiva — E4 · 13/13 Evidencia**
+
+> Qué pedía E4: API REST + CDI en capas + MySQL + Swagger + DTOs + archivos.
+> Capturas reales `/swagger-ui/`: tag Usuarios + tag Login (`img/e4-swagger.png`, `img/e4-swagger-login.png`).
+
+**Diapositiva — Entrega 5** (`entrega-5`)
 
 > El prototipo React de la E1 se reemplazó por Angular contra la API real de la E4.
 
@@ -300,7 +384,7 @@ y tests en el pipeline—. Mostrar el límite propio suma; ocultarlo, no.
 
 | Pregunta | Respuesta corta |
 |----------|-----------------|
-| ¿Por qué JWT y no `HttpSession`? | Para que el backend no guarde estado: simplifica correr en contenedores y servir a un cliente de otro origen. Y como el token no refleja cambios de rol, el filtro relee roles y estado desde la base en cada request. |
+| ¿Por qué JWT y no `HttpSession`? (sistema completo / E6) | Para que el backend no guarde estado: simplifica correr en contenedores y servir a un cliente de otro origen. Y como el token no refleja cambios de rol, el filtro relee roles y estado desde la base en cada request. |
 | ¿Las contraseñas están hasheadas? | No, y lo sabemos. Es lo primero de la lista de pendientes: BCrypt en el alta y en el login. |
 | ¿Por qué DAO propio y no Spring Data? | Porque la cursada trabaja sobre Jakarta EE puro. `GenericDAO` + `AbstractJpaDAO` nos dio el CRUD compartido sin sumar un framework fuera del alcance de la materia. |
 | ¿Cómo evitan que un evaluador revise su propio trabajo? | La recusación está en el servicio: el trabajo propio no aparece en el listado del comité ni puede asignarse, evaluarse ni dictaminarse. |

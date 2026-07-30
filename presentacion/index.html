@@ -112,6 +112,8 @@ ul li{position:relative;padding-left:1.5vw;margin-bottom:1.1vh}
 ul li::before{content:"";position:absolute;left:0;top:.62em;
   width:.55vw;height:.55vw;background:var(--verde-claro);border-radius:50%}
 ul.tight li{margin-bottom:.6vh}
+ol.tight{margin-left:0;padding-left:1.4vw}
+ol.tight li{margin-bottom:.6vh;font-size:1.05vw;color:var(--gris);line-height:1.45}
 ul.dash li::before{content:"";width:.8vw;height:2px;border-radius:0;top:.75em;background:var(--gris)}
 
 /* ---------- código / chips ---------- */
@@ -130,6 +132,9 @@ th{text-align:left;font-size:1vw;text-transform:uppercase;letter-spacing:.1em;
    color:var(--verde);border-bottom:2px solid var(--verde);padding:.9vh .6vw}
 td{font-size:1.12vw;padding:.85vh .6vw;border-bottom:1px solid var(--linea);vertical-align:top}
 td.mono{font-family:"JetBrains Mono",Consolas,monospace;font-size:1vw;color:var(--gris)}
+table.roles th{padding:1.2vh .8vw 1vh}
+table.roles td{padding:1.35vh .8vw;line-height:1.4}
+table.roles td.small{font-size:1.02vw;line-height:1.42}
 
 /* ---------- placeholder de captura ---------- */
 .shot{border:2.5px dashed #b9c6bc;border-radius:14px;background:#fafcfa;
@@ -340,9 +345,9 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
     <div><div class="kicker">Bloque 1 · Para quién</div><h2>Usuarios y adoptantes de la solución</h2></div>
     <span class="tag">6 roles</span>
   </div>
-  <div class="body">
-    <p class="lead" style="margin-bottom:1.4vh">Salieron de las tareas que hoy se hacen a mano: de ahí definimos roles y armamos la solución por épicas (módulos) e historias de usuario.</p>
-    <table>
+  <div class="body top" style="gap:0">
+    <p class="lead" style="margin-bottom:2.8vh;max-width:92%">Salieron de las tareas que hoy se hacen a mano: de ahí definimos roles y armamos la solución por épicas (módulos) e historias de usuario.</p>
+    <table class="roles">
       <tr><th style="width:18%">Rol</th><th style="width:52%">Qué hace en el sistema</th><th>Por qué le importa</th></tr>
       <tr>
         <td><b>Asistente</b></td>
@@ -397,8 +402,8 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
     <div class="tl">
       <div class="st"><div class="b">1</div><h3>Análisis, diseño y maquetado</h3><div class="d">abril</div><p class="small">Informe de análisis + PDF de maquetado (prototipo React)</p></div>
       <div class="st"><div class="b">2</div><h3>Objetos del modelo</h3><div class="d">mayo</div><p class="small">Diagrama de clases + <b>POJOs</b>: clases Java simples del dominio (Usuario, Trabajo…)</p></div>
-      <div class="st"><div class="b">3</div><h3>Capa de persistencia</h3><div class="d">rama <code>entrega-3</code></div><p class="small"><b>JPA</b> + <b>DAO</b> + <b>MySQL</b> (motor de BD). Primer REST con Jersey aún mezclando capas</p></div>
-      <div class="st"><div class="b">4</div><h3>Servicios REST</h3><div class="d">rama <code>entrega-4</code></div><p class="small">API con capas limpias: Jersey + <b>CDI</b> + JWT + Swagger</p></div>
+      <div class="st"><div class="b">3</div><h3>Capa de persistencia</h3><div class="d">rama <code>entrega-3</code></div><p class="small"><b>JPA</b> + <b>DAO</b> + <b>MySQL</b> · WAR en Tomcat · primeras URLs con Servlets</p></div>
+      <div class="st"><div class="b">4</div><h3>Servicios REST</h3><div class="d">rama <code>entrega-4</code></div><p class="small">API con capas limpias: Jersey + <b>CDI</b> + Swagger</p></div>
       <div class="st"><div class="b">5</div><h3>Vista e integración</h3><div class="d">rama <code>entrega-5</code></div><p class="small"><b>SPA Angular</b>: pantallas que hablan con esa API</p></div>
       <div class="st hi"><div class="b">6</div><h3>Sistema completo</h3><div class="d">julio</div><p class="small">Todo junto, desplegado y usable de punta a punta</p></div>
     </div>
@@ -545,42 +550,53 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 </section>
 
 <!-- ═══════════════ 10a · E2 · POR QUÉ DAOs ═══════════════ -->
-<section class="slide">
-  <div class="head">
+<section class="slide" style="padding-bottom:7vh">
+  <div class="head" style="margin-bottom:1.6vh;padding-bottom:1vh">
     <div><div class="kicker">Entrega 2 → 3 · El camino</div><h2>Por qué fuimos por DAOs</h2></div>
     <span class="tag">separar “el negocio” de “la base”</span>
   </div>
   <div class="body top">
-    <p class="lead" style="margin-bottom:1.8vh">El modelo de objetos ya estaba partido en entidades claras (<code>Usuario</code>, <code>Trabajo</code>…).
+    <p class="lead" style="margin-bottom:1.2vh">El modelo de objetos ya estaba partido en entidades claras (<code>Usuario</code>, <code>Trabajo</code>…).
       Eso nos empujó a un camino simple: <b>una entidad del diagrama → una tabla → un DAO</b>.</p>
-    <div class="g2" style="gap:2vw;align-items:stretch">
-      <div class="card warn">
+    <div class="g2" style="gap:1.6vw;align-items:stretch">
+      <div class="card warn" style="padding:1.4vh 1.2vw">
         <h3 style="color:var(--acento)">Camino que evitamos</h3>
-        <p class="small" style="margin-top:1.2vh">Meter SQL / <code>EntityManager</code> <b>adentro</b> de <code>Usuario</code> o del servlet:</p>
-        <ul class="tight" style="margin-top:1vh">
-          <li class="small"><code>Usuario</code> sabría de MySQL → si cambia la BD, tocás el negocio.</li>
-          <li class="small">El mismo <code>persist</code> / <code>find</code> se copia en 10 pantallas.</li>
-          <li class="small">No se puede testear el dominio sin levantar la base.</li>
+        <p class="small" style="margin-top:.8vh">La alternativa era escribir el código que habla con MySQL
+          (<code>EntityManager</code>, consultas) directamente adentro de la clase <code>Usuario</code>
+          o del servlet que atiende el pedido HTTP. Esto genera varios problemas:</p>
+        <ul class="tight" style="margin-top:.7vh">
+          <li class="small"><code>Usuario</code> pasaría a depender de cómo está armada la base de datos:
+            si mañana cambia algo en MySQL, hay que modificar la clase que define las reglas del usuario,
+            aunque esas reglas no tengan nada que ver con la base.</li>
+          <li class="small">Si diez pantallas distintas necesitan guardar o buscar un usuario,
+            la misma lógica de <code>persist</code>/<code>find</code> quedaría copiada diez veces,
+            en vez de estar en un solo lugar.</li>
+          <li class="small">Se vuelve imposible probar que las reglas del negocio funcionan bien
+            sin tener la base de datos levantada y conectada, porque quedan mezcladas en el mismo código.</li>
         </ul>
-        <p class="small" style="margin-top:1.4vh"><b>Mezcla dos trabajos:</b> “reglas del congreso” + “hablar con MySQL”.</p>
+        <p class="small" style="margin-top:.9vh">En resumen, esta alternativa mezcla dos responsabilidades que deberían estar separadas:
+          las reglas propias del congreso y la comunicación con MySQL.</p>
       </div>
-      <div class="card fill">
+      <div class="card fill" style="padding:1.4vh 1.2vw">
         <h3>Camino que elegimos: DAO</h3>
-        <p class="small" style="margin-top:1.2vh"><b>DAO</b> = Data Access Object: es un <b>patrón de diseño</b> (no “magia de JPA”).
+        <p class="small" style="margin-top:.8vh"><b>DAO</b> = Data Access Object: es un <b>patrón de diseño</b> (no “magia de JPA”).
           En el código es una clase —o interfaz + implementación— cuya <b>única</b> responsabilidad es
           el acceso a datos de <b>una</b> entidad: guardar / buscar / actualizar / borrar.</p>
-        <ul class="tight" style="margin-top:1vh">
+        <ul class="tight" style="margin-top:.7vh">
           <li class="small"><code>Usuario</code> = datos y reglas del usuario (modelo E2).</li>
           <li class="small"><code>UsuarioDAO</code> + <code>UsuarioDAOImpl</code> = cómo entra y sale de MySQL (E3).</li>
           <li class="small"><b>JPA</b> (<code>@Entity</code>, <code>EntityManager</code>) = la herramienta que usa el DAO para mapear objeto ↔ fila.</li>
         </ul>
-        <p class="small" style="margin-top:1.4vh"><b>Por eso el modelo nos llevó a DAOs:</b> ya teníamos objetos bien cortados;
+        <p class="small" style="margin-top:.9vh"><b>Por eso el modelo nos llevó a DAOs:</b> ya teníamos objetos bien cortados;
           el DAO es el “portero” de cada uno hacia la base, sin ensuciar el diagrama de negocio.</p>
+        <p class="small" style="margin-top:.8vh">Con el DAO ya separamos dominio e infraestructura.
+          En la E3 el Servlet todavía hace de puerta HTTP y, a la vez, coordina el caso de uso.
+          En la E4 terminamos ese corte: <code>Resource</code> → <code>Service</code> → <code>DAO</code>.</p>
       </div>
     </div>
-    <div class="card-rel" style="margin-top:1.8vh">
+    <div class="card-rel" style="margin-top:1.1vh;padding:1vh 1.2vw">
       <b>Camino del diseño</b>
-      <p class="small" style="margin-top:.8vh">
+      <p class="small" style="margin-top:.4vh">
         HU → clase del diagrama → POJO → entidad JPA → tabla MySQL → DAO (CRUD de esa entidad) →
         Factory (un solo lugar crea el DAO) → en E4, CDI inyecta esas dependencias.
       </p>
@@ -648,113 +664,908 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   <div class="foot"><span>Entrega 2 · modelo → DAO</span></div>
 </section>
 
-<!-- ═══════════════ 12 · ENTREGA 3 ═══════════════ -->
+<!-- ═══════════════ ENTREGA 3 · 1/7 OBJETIVO ═══════════════ -->
 <section class="slide">
   <div class="head">
-    <div><div class="kicker">Entrega 3 · rama <code>entrega-3</code></div><h2>Capa de persistencia (+ primer REST)</h2></div>
-    <span class="tag">Producto: JPA + DAO + Factory · MySQL</span>
-  </div>
-  <div class="body top">
-    <div class="g2-60">
-      <div>
-        <div class="card-rel"><b>Objetivo</b><p class="small">Tomar el modelo de la Entrega 2 y hacer que <b>sobreviva al reinicio</b> en MySQL (<code>jyaa2026_bd1</code>): mismas clases → tablas; mismas relaciones → FK.</p></div>
-        <div class="card-rel"><b>Qué aplicamos (directo del diseño E2)</b>
-          <p class="small"><b>JPA/Hibernate</b>: cada POJO con <code>id</code> → <code>@Entity</code>.
-            <b>Patrón DAO</b>: un DAO por entidad (<code>UsuarioDAO</code>, <code>TrabajoDAO</code>…) sobre
-            <code>GenericDAO</code> → <code>AbstractJpaDAO</code>.
-            <b><code>DAOFactory</code></b>: punto único para pedir DAOs (aún sin CDI).
-            Arranque con <code>ServletContextListener</code>. ABM en <code>/test-persistencia</code>.</p></div>
-        <div class="card-rel"><b>Cómo estaba armado el REST al principio</b>
-          <p class="small">Empezamos a exponer una API con <b>JAX-RS / Jersey</b>, pero los recursos <b>instanciaban los DAOs a mano</b>
-            (<code>DAOFactory</code> / <code>new</code>). Eso <b>mezclaba capas</b>: la capa web hablaba directo con la persistencia, sin servicios ni CDI.</p></div>
-        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultades</b>
-          <p class="small">① Listar entidades a mano en <code>persistence.xml</code> (Tomcat no escanea como un servidor Jakarta EE completo).<br>
-            ② PDFs: pasar el <code>@Lob</code> a <b>LONGBLOB</b>.<br>
-            ③ Migraciones propias (<code>SchemaMigration</code>) porque <code>hbm2ddl</code> no alcanza.<br>
-            ④ La mezcla de capas funcionaba, pero no escalaba: era el problema que resolvimos en la Entrega 4.</p></div>
-      </div>
-      <figure>
-        <div class="shot">
-          <div class="ico">▤</div>
-          <b>CAPTURA 3 — Persistencia</b>
-          <span><code>/test-persistencia</code> o tablas en phpMyAdmin.
-                Guardar como <code>img/e3-persistencia.png</code>.</span>
-        </div>
-        <figcaption>Rama <code>entrega-3</code>: la base queda en MySQL; el REST todavía sin capas limpias.</figcaption>
-      </figure>
-    </div>
-  </div>
-  <div class="foot"><span>Entrega 3 de 6</span></div>
-</section>
-
-<!-- ═══════════════ 13 · ENTREGA 4 ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 4 · rama <code>entrega-4</code></div><h2>Servicios REST con separación en capas (CDI)</h2></div>
-    <span class="tag">Producto: API + CDI + JWT + Swagger</span>
-  </div>
-  <div class="body top">
-    <div class="g2-60">
-      <div>
-        <div class="card-rel"><b>Objetivo</b><p class="small">Aplicar <b>SOLID</b>, sobre todo el <b>DIP</b>: el alto nivel depende de abstracciones. Eso se concreta con <b>CDI</b> (<code>@Inject</code>): dejamos de crear DAOs a mano y separamos Resource → Service → DAO.</p></div>
-        <div class="card-rel"><b>Qué cambió respecto de la Entrega 3</b>
-          <p class="small">En E3 el patrón creacional era <code>DAOFactory</code>. Acá el contenedor <b>CDI / Weld</b> reemplaza ese <code>new</code>:
-            <b>Resource → Service → DAO</b>, con <code>EntityManagerProducer</code> (<code>@Produces</code> / <code>@Disposes</code>) por request.
-            SRP: el Resource no hace SQL; el DAO no arma JSON.</p></div>
-        <div class="card-rel"><b>Qué más sumamos</b>
-          <p class="small"><b>Jersey</b> arma las URLs de la API · <b>DTOs</b> (no devolvemos entidades JPA crudas) ·
-            <b>JWT</b> para el login · filtros CORS · <b>Swagger/OpenAPI</b> para documentar y probar · ExceptionMappers.</p></div>
-        <div class="card-rel warn" style="border-left-color:var(--acento)"><b>Dificultad</b>
-          <p class="small">Hacer convivir <b>Jersey + CDI en Tomcat</b>: sin <code>jersey-cdi1x-servlet</code> / <code>jersey-hk2</code> y <code>beans.xml</code>,
-            las inyecciones llegaban en <code>null</code>.
-            <b>Cómo lo resolvimos:</b> el contenedor CDI crea e inyecta; nosotros dejamos de instanciar a mano.</p></div>
-      </div>
-      <figure>
-        <div class="shot">
-          <div class="ico">⌘</div>
-          <b>CAPTURA 4 — Swagger UI</b>
-          <span>Recursos y un <code>POST /api/login</code>.
-                Guardar como <code>img/e4-swagger.png</code>.</span>
-        </div>
-        <figcaption>Rama <code>entrega-4</code>: la API queda en capas, documentada y usable por el front.</figcaption>
-      </figure>
-    </div>
-  </div>
-  <div class="foot"><span>Entrega 4 de 6</span></div>
-</section>
-
-<!-- ═══════════════ 14 · SEGURIDAD ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 4 · Decisión de diseño</div><h2>Sesión con JWT: por qué no usamos <code>HttpSession</code></h2></div>
-    <span class="tag ghost">Teoría: Sesiones · Filtros</span>
+    <div><div class="kicker">Entrega 3 · 1/7 · Objetivo</div><h2>Del modelo de objetos a datos que no se pierden</h2></div>
+    <span class="tag">rama <code>entrega-3</code></span>
   </div>
   <div class="body">
-    <div class="g2">
-      <div>
-        <h3 style="color:var(--verde);margin-bottom:1.4vh">Cómo funciona</h3>
-        <ul class="tight">
-          <li><code>POST /api/login</code> devuelve un <b>JWT firmado con HS256</b>, válido 4 horas.</li>
-          <li>El cliente lo manda en <code>Authorization: Bearer …</code> en cada pedido.</li>
-          <li><code>JwtAuthFilter</code> lo valida y arma un <code>AuthenticatedUser</code> para el recurso.</li>
-          <li>Rutas públicas declaradas: login, registro, <code>health</code>, programa, circulares y OpenAPI.</li>
-          <li>En el cliente: <code>sessionStorage</code> + cierre por inactividad a los 30 minutos.</li>
+    <p class="lead" style="margin-bottom:2vh">Venimos de la E2: ya teníamos el <b>diseño del dominio</b> (clases y relaciones).
+      El objetivo de la E3 fue <b>persistirlo</b>: que un <code>Usuario</code> o un <code>Trabajo</code> viva en MySQL y sobreviva al reinicio del servidor.</p>
+    <div class="g2" style="gap:2vw;align-items:stretch;margin-bottom:2.2vh">
+      <div class="card" style="padding:2.4vh 1.8vw">
+        <h3>Qué pedía la entrega</h3>
+        <ul class="tight" style="margin-top:1.4vh">
+          <li class="small">Capa de persistencia con <b>JPA</b> sobre MySQL del curso.</li>
+          <li class="small">Patrón <b>DAO</b> con ABM (alta, baja, modificación, recuperación).</li>
+          <li class="small">App web Java desplegable (WAR / Tomcat) y verificable.</li>
         </ul>
       </div>
+      <div class="card-rel" style="margin-bottom:0;padding:2.4vh 1.8vw;display:flex;flex-direction:column;justify-content:center">
+        <b>Hilo</b>
+        <p class="small" style="margin-top:1vh">Antes los datos vivían en el navegador (<code>localStorage</code>). Acá pasan al <b>servidor</b>.
+          Todavía <b>no</b> es la API limpia con CDI (eso es E4). Primero había que demostrar que el modelo se guarda bien.</p>
+      </div>
+    </div>
+    <div class="card fill" style="padding:2.2vh 1.8vw">
+      <p class="small">Para lograr esto necesitamos una <b>app web en Java</b>: un servidor que ejecute la aplicación,
+        herramientas que conecten el modelo con la base, y un patrón que ordene el acceso a los datos.
+        Empecemos por la base: <b>cómo se ejecuta la aplicación</b> (WAR + Tomcat).</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 3 · 1 → conceptos</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 3 · 2/7 CONCEPTOS ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 3 · 2/7 · Conceptos Java web</div><h2>Qué aprendimos a usar</h2></div>
+    <span class="tag">qué hicimos · qué significa</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:1.2vh">En esta entrega no solo “guardamos datos”: aplicamos ideas centrales del desarrollo web en Java. Cada una responde a una pregunta distinta.</p>
+    <div class="g2" style="gap:1.3vw;align-items:stretch">
       <div>
-        <div class="card fill">
-          <h3>El detalle que aprendimos peleándonos</h3>
-          <p class="small" style="margin-top:1vh">Un token es una foto del momento en que se emitió. Si el administrador te quita un rol o te inhabilita la cuenta,
-            el token viejo <b>seguiría siendo válido</b> durante horas.</p>
-          <p class="small" style="margin-top:1.4vh"><b>Nuestra solución:</b> el filtro valida la firma del token, pero vuelve a leer <b>roles y estado activo desde la base</b> en cada request.
-            Así, inhabilitar una cuenta la expulsa al instante, sin esperar el vencimiento.</p>
+        <div class="card-rel"><b>1 · WAR + Tomcat 10 (Jakarta)</b>
+          <p class="small" style="margin-top:.5vh">La aplicación se <b>empaqueta en un solo archivo desplegable</b> (WAR). Un servidor de aplicaciones —Tomcat— es el encargado de ejecutarlo.
+            Usamos la especificación moderna de Java para la web: <b>Jakarta EE</b> (Tomcat 10), que define cómo se escriben y despliegan este tipo de sistemas.</p></div>
+        <div class="card-rel"><b>2 · Ciclo de vida (ServletContextListener)</b>
+          <p class="small" style="margin-top:.5vh">Una app web no “está siempre prendida” de la misma forma: tiene un <b>ciclo de vida</b>.
+            Al <b>arrancar</b>, se conecta a la base de datos y, si hace falta, carga datos iniciales para poder probar.
+            Al <b>apagar</b>, se cierra todo de forma ordenada para no dejar conexiones ni recursos abiertos.</p></div>
+        <div class="card-rel"><b>3 · Servlet</b>
+          <p class="small" style="margin-top:.5vh">Cada funcionalidad importante tiene un <b>responsable</b> que atiende los pedidos que llegan por una dirección concreta (URL)
+            y devuelve una respuesta según lo pedido: listar, crear, probar la persistencia, etc.</p></div>
+      </div>
+      <div>
+        <div class="card-rel"><b>4 · Cliente–servidor + JSON</b>
+          <p class="small" style="margin-top:.5vh">El <b>cliente</b> (navegador u otra herramienta) pide algo; el <b>servidor</b> responde.
+            Esa respuesta puede ser <b>datos estructurados (JSON)</b>, pensados para que otro programa los use,
+            o una <b>página</b> pensada para que la lea una persona (por ejemplo, el resultado de las pruebas de ABM).</p></div>
+        <div class="card-rel"><b>5 · Persistencia orientada a objetos</b>
+          <p class="small" style="margin-top:.5vh">En lugar de escribir a mano instrucciones de base de datos en cada pantalla,
+            trabajamos con <b>objetos del dominio</b> (usuario, trabajo, pago…).
+            Existe una <b>capa intermedia</b> que traduce esos objetos a datos guardados en tablas —y al revés al leerlos.</p></div>
+        <div class="card fill" style="margin-top:1vh">
+          <p class="small"><b>En una frase:</b> empaquetamos y desplegamos la app → al arrancar queda lista la base → cada URL tiene quién la atiende →
+            cliente y servidor se hablan → los objetos del modelo se persisten sin mezclar eso en cada pantalla.</p>
         </div>
-        <p class="small" style="margin-top:2vh"><b>Por qué JWT y no <code>HttpSession</code>:</b> la API tiene que poder servir a un cliente Angular alojado en otro origen y a
-          un backend replicado en contenedores. Sin estado en el servidor, el escalado y el CORS se simplifican.</p>
       </div>
     </div>
   </div>
-  <div class="foot"><span>Entrega 4 de 6</span></div>
+  <div class="foot"><span>Entrega 3 · 2 → herramientas</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 3 · 3/7 HERRAMIENTAS ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 3 · 3/7 · Librerías y herramientas</div><h2>Cómo las usamos, de punta a punta</h2></div>
+    <span class="tag">no solo “cuál” · también “cómo”</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:1.2vh">No es una lista suelta: es la cadena que lleva lo que programamos hasta la app que corre en el servidor del curso.</p>
+    <div class="card-rel"><b>Paso A · Armar el producto (Maven)</b>
+      <p class="small" style="margin-top:.5vh">El código no se puede ejecutar tal cual en un servidor: hay que <b>empaquetarlo</b> en un solo archivo (WAR) con todo lo necesario.
+        <b>Maven</b> arma ese paquete automáticamente: revisa qué librerías necesita la app (Hibernate, MySQL, Gson, Logback…), las descarga, compila y genera el WAR
+        (<code>mvn package</code> → <code>jyaa2026-grupo1.war</code>).</p></div>
+    <div class="card-rel"><b>Paso B · Hablar con la base (Hibernate + MySQL)</b>
+      <p class="small" style="margin-top:.5vh">La app piensa en <b>objetos</b> (usuario, trabajo…); la base guarda <b>tablas</b>.
+        <b>MySQL</b> es el motor que persiste esos datos en disco (<code>jyaa2026_bd1</code>).
+        <b>Hibernate (JPA)</b> es el traductor automático entre ambos mundos: nosotros trabajamos con objetos; él genera el SQL.
+        La configuración vive en <code>persistence.xml</code>.</p></div>
+    <div class="card-rel"><b>Paso C · Responder al cliente (Gson + Logback)</b>
+      <p class="small" style="margin-top:.5vh">El navegador no entiende objetos Java: hace falta un formato universal.
+        <b>Gson</b> los traduce a <b>JSON</b> para que el cliente pueda usarlos.
+        <b>Logback</b> es el “cuaderno de bitácora”: registra qué pasó (incluido el SQL) para detectar errores
+        (<code>logback.xml</code>, consola de Tomcat).</p></div>
+    <div class="card fill" style="margin-top:1vh">
+      <b>Paso D · Llevarlo al servidor (Docker + GitLab CI)</b>
+      <p class="small" style="margin-top:.5vh">En el servidor del curso no se instala cada proyecto a mano: se arma una <b>caja</b> (contenedor Docker) con Tomcat y el WAR listos para correr.
+        <b>GitLab CI</b> automatiza ese proceso en un <b>pipeline</b>: cada vez que subimos código, se construye la imagen, se reemplaza el contenedor y
+        <b>Traefik</b> publica la URL del grupo. Referencia: <code>Dockerfile</code> · dominio del curso.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 3 · 3 → JPA</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 3 · 4/7 JPA ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 3 · 4/7 · JPA / Hibernate</div><h2>Cómo el diagrama de la E2 se vuelve tablas</h2></div>
+    <span class="tag">objeto Java ↔ fila MySQL</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:1vh">En la E2 el modelo vivía en memoria. En la E3 Hibernate se encarga de <b>guardarlo y recuperarlo</b> en MySQL, sin que escribamos el SQL a mano en cada pantalla.</p>
+    <div class="g2" style="gap:1.2vw;align-items:stretch;margin-bottom:1.2vh">
+      <div>
+        <div class="card-rel" style="margin-bottom:.9vh;padding:1.1vh 1.1vw"><b>¿Qué es una entidad?</b>
+          <p class="small" style="margin-top:.4vh">En la E2 diseñamos clases Java que representaban cosas del congreso (<code>Trabajo</code>, <code>Usuario</code>), pero eran solo objetos en memoria.
+            Una <b>entidad</b> es esa misma clase, marcada con <code>@Entity</code>, para decirle a Hibernate que debe guardarse en una tabla.
+            El <code>@Id</code> identifica cada fila de forma única (como un DNI).
+            Por ejemplo, <code>Trabajo</code> se convierte en la tabla de trabajos, y la relación con el autor (<code>@ManyToOne</code>) en una columna con el id de ese usuario (<code>autor_id</code>).</p></div>
+        <div class="card-rel" style="margin-bottom:0;padding:1.1vh 1.1vw"><b>Relaciones = flechas del diagrama</b>
+          <p class="small" style="margin-top:.4vh">El diagrama de la E2 mostraba relaciones (un trabajo tiene muchas evaluaciones, una inscripción un solo pago, etc.).
+            En la base eso son <b>columnas que referencian otra fila</b>. Hibernate necesita el tipo de cada relación:
+            <code>@OneToMany</code> / <code>@ManyToOne</code> (un trabajo, muchas evaluaciones; cada evaluación, un solo trabajo);
+            <code>@OneToOne</code> (una inscripción, un único pago);
+            <code>@ManyToMany</code> (actividad con varios trabajos y viceversa);
+            <code>@ElementCollection</code> (listas simples: roles, coautores);
+            <code>@Enumerated</code> (estados fijos como <code>EstadoTrabajo</code>).</p></div>
+      </div>
+      <div class="card fill" style="padding:1.4vh 1.3vw">
+        <h3>EMF y EntityManager</h3>
+        <p class="small" style="margin-top:.6vh">El <b>EntityManagerFactory (EMF)</b> es la conexión general a la base: se crea <b>una sola vez</b> al arrancar
+          (lo hace <code>JpaUtil</code>) y permanece abierta mientras corre el servidor.</p>
+        <p class="small" style="margin-top:.8vh">El <b>EntityManager (EM)</b> ejecuta cada operación (guardar, buscar, actualizar, borrar):
+          se abre para esa operación y se cierra apenas termina.</p>
+        <p class="small" style="margin-top:.8vh">La <b>transacción</b>: si todo sale bien, <code>commit</code>; si falla a mitad, <code>rollback</code> (nada a medias).</p>
+        <p class="small" style="margin-top:.9vh">Quién abre el EntityManager cada vez: el <b>DAO</b>. Quién lo crea: la <b>Factory</b>.</p>
+      </div>
+    </div>
+    <div class="card-rel" style="margin-bottom:0;padding:1.2vh 1.2vw">
+      <b><code>persistence.xml</code></b>
+      <p class="small" style="margin-top:.4vh">Es el archivo donde le decimos a Hibernate <b>cómo y dónde</b> conectarse: qué base, con qué usuario,
+        y qué clases tratar como entidades. En Tomcat hay que <b>listar a mano</b> las ~15 clases: no las descubre solo.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 3 · 4 → DAO</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 3 · 5/7 DAO + FACTORY ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 3 · 5/7 · DAO + Factory</div><h2>Quién guarda en MySQL (y por qué no el Servlet)</h2></div>
+    <span class="tag">patrón DAO · patrón Factory · ABM</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:1vh">Si el Servlet hiciera SQL, mezclaríamos “atender pedidos HTTP” con “hablar con la base”.
+      Por eso cada entidad tiene su DAO, y el Factory es el único lugar que crea esos DAOs.</p>
+    <div class="g2" style="gap:1.2vw;align-items:stretch">
+      <div>
+        <div class="card-rel" style="margin-bottom:.9vh;padding:1.1vh 1.1vw"><b>DAO = Data Access Object (patrón)</b>
+          <p class="small" style="margin-top:.4vh">El DAO es el “portero” de una sola entidad: el único responsable de guardar, buscar, actualizar o borrar sus datos
+            (por ejemplo, todo lo de un trabajo pasa por <code>TrabajoDAO</code>).
+            No es magia de JPA, sino una <b>decisión de diseño</b>: en código es una interfaz con su implementación
+            (<code>TrabajoDAO</code> / <code>TrabajoDAOImpl</code>).</p></div>
+        <div class="card-rel" style="margin-bottom:.9vh;padding:1.1vh 1.1vw"><b>Cómo lo apilamos</b>
+          <p class="small" style="margin-top:.4vh">Todas las entidades necesitan las mismas operaciones básicas (guardar, buscar, actualizar, borrar).
+            En vez de repetir esa lógica, se define una sola vez:
+            <code>GenericDAO&lt;T&gt;</code> declara el ABM común, y <code>AbstractJpaDAO</code> lo implementa
+            (abre el EntityManager, arranca la transacción, ejecuta <code>persist</code> / <code>merge</code> / <code>remove</code> / <code>find</code>, y cierra).
+            Cada entidad hereda eso y solo agrega consultas propias (por ejemplo, buscar por email).</p></div>
+        <div class="card-rel" style="margin-bottom:0;padding:1.1vh 1.1vw"><b>Factory</b>
+          <p class="small" style="margin-top:.4vh">Si cada Servlet o test creara el DAO con <code>new TrabajoDAOImpl()</code>, esa línea se repetiría en muchos archivos
+            y un cambio de implementación obligaría a tocarlos todos.
+            <code>DAOFactory.getTrabajoDAO()</code> centraliza la creación: es un <b>patrón creacional</b>;
+            todos piden el DAO ahí y no les importa cómo está armado por dentro.</p></div>
+      </div>
+      <div class="card fill" style="padding:1.3vh 1.2vw">
+        <h3>Ejemplo completo: guardar un trabajo</h3>
+        <ol class="tight" style="margin-top:.7vh;padding-left:1.3vw">
+          <li class="small">Llega un pedido <code>POST /api/trabajos</code>: el Servlet lee el JSON del cliente.</li>
+          <li class="small">Pide el DAO al Factory con <code>DAOFactory.getTrabajoDAO()</code> (y el de usuario si hace falta).</li>
+          <li class="small">Arma el objeto <code>Trabajo</code> en memoria: todavía no está en la base.</li>
+          <li class="small">Llama a <code>trabajoDAO.alta(t)</code>: ahí se abre la transacción, se guarda el objeto (<code>persist</code>) y se confirma el cambio (<code>commit</code>).</li>
+          <li class="small">Hibernate genera el <code>INSERT</code> y MySQL asigna el <code>id</code>.</li>
+          <li class="small">Gson arma la respuesta 201 con el trabajo ya persistido.</li>
+        </ol>
+        <p class="small" style="margin-top:1vh"><b>Prueba de la entrega:</b> <code>/test-persistencia</code> ejecuta ~14 ABM
+          (usuario, inscripción y pago, trabajo, asignación y evaluación…) y muestra OK o FALLO.
+          Así respondemos la pregunta de la primera diapositiva: <b>quién guarda y busca</b> es el DAO, no el Servlet ni la clase del negocio.
+          Con eso la E3 demuestra que el modelo ya vive en MySQL; en la siguiente vemos qué nos costó y qué quedó para la E4.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 3 · 5 → dificultades</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 3 · 6/7 DIFICULTADES + PUENTE E4 ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 3 · 6/7 · Dificultades y cierre</div><h2>Qué nos costó y qué quedó para la E4</h2></div>
+    <span class="tag">de la E3 a la E4</span>
+  </div>
+  <div class="body top">
+    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:1.1vh;padding:1.3vh 1.3vw"><b>① “Unknown entity” en Tomcat</b>
+      <p class="small" style="margin-top:.5vh">Hibernate se queja porque no reconoce una clase como entidad, aunque tenga <code>@Entity</code>.
+        A diferencia de otros entornos, Tomcat no escanea el proyecto para descubrirlas solo.
+        Lo resolvimos declarando cada clase a mano con una etiqueta <code>&lt;class&gt;</code> dentro de <code>persistence.xml</code>.</p></div>
+    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:1.1vh;padding:1.3vh 1.3vw"><b>② Lazy loading al listar</b>
+      <p class="small" style="margin-top:.5vh">Por defecto, algunas relaciones no se traen de la base hasta que se usan.
+        Si se accede a esa colección <b>después</b> de cerrar la sesión, Hibernate falla
+        (<i>could not initialize proxy — no Session</i>).
+        <code>/test-persistencia</code> lo dejó en evidencia: ~13 ABM en OK y un FALLO en
+        <code>Actividad.trabajos</code> (siguiente diapositiva). En el resto lo corregimos con <code>JOIN FETCH</code> en los DAOs;
+        este caso pendiente muestra que la batería de pruebas sirve para detectar huecos reales.</p></div>
+    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:1.1vh;padding:1.3vh 1.3vw"><b>③ Capas mezcladas (límite de la E3)</b>
+      <p class="small" style="margin-top:.5vh">El Servlet pedía el DAO al Factory y manejaba el acceso a datos él mismo:
+        mezclaba la puerta HTTP con el caso de uso y el acceso a MySQL.
+        Alcanzó para demostrar el ABM, pero no es una API prolija.
+        En la E4 separamos en tres capas — <code>Resource</code> (puerta HTTP),
+        <code>Service</code> (aplicación / caso de uso) y <code>DAO</code> (infraestructura / MySQL) —
+        dejando el dominio (<code>Usuario</code>, <code>Trabajo</code>…) sin HTTP ni SQL.
+        <b>CDI</b> (<code>@Inject</code>) las conecta y <b>Jersey</b> atiende HTTP.</p></div>
+    <div class="card fill" style="padding:1.4vh 1.4vw">
+      <p class="small"><b>Cierre:</b> en la E3 el modelo <b>se persiste</b> y se despliega; la prueba ABM lo verifica en vivo.
+        En la E4 ordenamos capas con <b>DIP</b>: la web ya no crea DAOs a mano — el contenedor los inyecta.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 3 · puente a Entrega 4</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 3 · 7/7 EVIDENCIA /test-persistencia ═══════════════ -->
+<section class="slide" style="padding:2.4vh 3.5vw 6vh">
+  <div class="head" style="margin-bottom:1.4vh;padding-bottom:.8vh">
+    <div><div class="kicker">Entrega 3 · 7/7 · Evidencia</div>
+      <h2 style="font-size:2vw">Resultado real de <code>/test-persistencia</code></h2></div>
+    <span class="tag">13 OK · 1 FALLO (lazy)</span>
+  </div>
+  <div class="body top" style="min-height:0">
+    <div style="flex:1;min-height:0;border:2px solid var(--linea);border-radius:12px;background:#fff;
+                padding:1.4vh 1.4vw;overflow:hidden;display:flex;flex-direction:column">
+      <div style="font-family:'JetBrains Mono',Consolas,monospace;font-size:1.05vw;line-height:1.35;color:#111;
+                  overflow:auto;flex:1;min-height:0">
+        <div style="font-size:1.35vw;font-weight:800;margin-bottom:.6vh">Pruebas ABM — DAO + JPA/Hibernate</div>
+        <div style="color:var(--acento);font-weight:800;margin-bottom:1vh">HAY TESTS FALLIDOS</div>
+        <div style="color:#555;margin-bottom:.8vh">=== Tests ABM - Capa de persistencia (Grupo 1) ===</div>
+        <div>[Congreso (ABM + colección etapas)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div>[Usuario (ABM + colección roles)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div>[Pago (ABM)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div>[InscripcionCongreso + Pago (ABM)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div>[Trabajo (ABM + coautores)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div style="color:var(--acento)">[Actividad (ABM + M2M trabajos)] <b>FALLO</b> —
+          failed to lazily initialize a collection of role:
+          <code style="font-size:.95em">Actividad.trabajos</code> — could not initialize proxy - no Session</div>
+        <div>[Circular (ABM)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div>[Notificacion (ABM)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div>[EnvioEmail (ABM)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div>[PlantillaEmail (ABM)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div>[Anuncio (ABM)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div>[Certificado (ABM)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div>[CronogramaPersonal (ABM + M2M actividades)] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
+        <div>[AsignacionEvaluacion + Evaluacion (ABM)] <span style="color:#1a7a3a;font-weight:700">OK</span>
+          <span style="color:#666"> → Datos DEMO guardados en BD (no se borran)</span></div>
+        <div style="margin-top:.9vh;border-top:1px solid var(--linea);padding-top:.7vh">
+          --- Resumen --- &nbsp; <b>OK: 13</b> | <span style="color:var(--acento);font-weight:800">Fallos: 1</span>
+        </div>
+      </div>
+    </div>
+    <p class="small" style="margin-top:1vh;text-align:center;color:var(--gris)">
+      Misma salida que muestra el servlet en el navegador. El FALLO en <code>Actividad.trabajos</code>
+      es el lazy loading del problema ② (sesión ya cerrada).
+    </p>
+  </div>
+  <div class="foot"><span>Entrega 3 · evidencia de persistencia</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 1/13 PUENTE PRÁCTICA 6 ═══════════════ -->
+<section class="slide" style="padding-bottom:7vh">
+  <div class="head" style="margin-bottom:1.2vh;padding-bottom:.8vh">
+    <div><div class="kicker">Entrega 4 · 1/13 · Puente</div><h2>De la Práctica 6 al problema que resolvimos</h2></div>
+    <span class="tag">rama <code>entrega-4</code></span>
+  </div>
+  <div class="body top">
+    <div style="margin-bottom:.7vh"><b style="color:var(--verde);font-size:1.1vw">Lo que ya sabíamos (Práctica 6) — el recorrido</b></div>
+    <div class="g2" style="gap:1vw;margin-bottom:1vh">
+      <div class="card-rel" style="margin:0;padding:1vh 1.1vw">
+        <b>1 · Del cliente a Jersey</b>
+        <p class="small" style="margin-top:.35vh">El cliente manda un <code>POST</code> con JSON a <code>/api/usuarios</code>.
+          Tomcat recibe el pedido y, como la URL empieza con <code>/api/*</code>, se lo pasa al
+          <code>ServletContainer</code> de Jersey (registrado en <code>web.xml</code>).
+          Jersey todavía no persiste nada: solo enruta según <code>@Path("/usuarios")</code>,
+          <code>@POST</code>, <code>@Consumes</code> y <code>@Produces</code>.</p>
+      </div>
+      <div class="card-rel" style="margin:0;padding:1vh 1.1vw">
+        <b>2 · Jackson arma el objeto y se ejecuta <code>alta</code></b>
+        <p class="small" style="margin-top:.35vh">El método pide un parámetro <code>Usuario</code>, no un texto.
+          Jersey busca un <code>MessageBodyReader</code>; encuentra el de <b>Jackson</b>,
+          que parsea el JSON y construye el objeto.
+          Recién ahí se ejecuta <code>UsuarioResource.alta(...)</code> con el usuario ya armado.</p>
+      </div>
+      <div class="card-rel" style="margin:0;padding:1vh 1.1vw">
+        <b>3 · El Resource le pasa el objeto al DAO</b>
+        <p class="small" style="margin-top:.35vh">Desde <code>UsuarioResource</code> se recibe el objeto parseado y se lo entrega al DAO.
+          El Resource no sabe SQL, no arma el JSON a mano y no abre la conexión a MySQL:
+          solo atiende HTTP y delega la persistencia.</p>
+      </div>
+      <div class="card-rel" style="margin:0;padding:1vh 1.1vw">
+        <b>4 · Hibernate traduce el objeto a un <code>INSERT</code></b>
+        <p class="small" style="margin-top:.35vh">Al arrancar, <code>JpaBootstrapListener</code> crea una sola vez la
+          <code>EntityManagerFactory</code>. En cada operación el DAO obtiene un <code>EntityManager</code>
+          y llama a <code>em.persist(usuario)</code>.
+          Hibernate lee <code>@Entity</code> y <code>@Table</code> de la clase y arma el
+          <code>INSERT</code> que ejecuta MySQL.</p>
+      </div>
+    </div>
+    <div class="card-rel" style="margin-bottom:1vh;padding:1vh 1.1vw">
+      <b>5 · La respuesta vuelve en JSON</b>
+      <p class="small" style="margin-top:.35vh">El método hace <code>return</code> del resultado.
+        Jersey lee <code>@Produces</code>, busca un <code>MessageBodyWriter</code> y Jackson convierte
+        el objeto otra vez a JSON. El cliente recibe HTTP 200 (o el código que corresponda) con ese body.
+        La Entrega 4 no tira abajo este recorrido: lo extiende.</p>
+    </div>
+
+    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:.9vh;padding:1.1vh 1.2vw">
+      <b>El problema</b>
+      <p class="small" style="margin-top:.4vh">En la Práctica 6, <code>UsuarioResource</code> dependía de la clase concreta
+        <code>UsuarioDAOImpl</code>. Si cambiábamos cómo se persiste, había que tocar la capa HTTP.
+        Esa capa no debería saber quién fabrica el DAO ni cómo habla con MySQL.</p>
+    </div>
+    <div class="card fill" style="padding:1.1vh 1.2vw">
+      <p class="small"><b>Qué pedía la E4:</b> separar en capas, que el Resource deje de conocer
+        <code>UsuarioDAOImpl</code>, y que <b>CDI / Weld</b> conecte las piezas con <code>@Inject</code>.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · 1 → capas</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 2/13 ARQUITECTURA EN CAPAS ═══════════════ -->
+<section class="slide" style="padding-bottom:6.5vh">
+  <div class="head" style="margin-bottom:1vh;padding-bottom:.7vh">
+    <div><div class="kicker">Entrega 4 · 2/13 · Arquitectura</div><h2>Cuatro capas, una responsabilidad cada una</h2></div>
+    <span class="tag">presentación · servicio · dominio · infraestructura</span>
+  </div>
+  <div class="body top">
+    <div class="g2" style="gap:1vw;margin-bottom:.8vh">
+      <div class="card-rel" style="margin:0;padding:.85vh 1vw"><b>Presentación</b>
+        <p class="small" style="margin-top:.25vh">Recibe el pedido HTTP y arma la respuesta (201, 400, JSON).
+          Ejemplo: <code>UsuarioResource</code>. No sabe SQL ni cómo se abre la conexión a la base.</p></div>
+      <div class="card-rel" style="margin:0;padding:.85vh 1vw"><b>Aplicación / Servicio</b>
+        <p class="small" style="margin-top:.25vh">Coordina el caso de uso: valida reglas y recién ahí pide guardar o buscar.
+          Ejemplo: <code>UsuarioService</code> (email único, rol por defecto).</p></div>
+      <div class="card-rel" style="margin:0;padding:.85vh 1vw"><b>Dominio</b>
+        <p class="small" style="margin-top:.25vh">Qué es cada cosa del negocio: <code>Usuario</code>, <code>Trabajo</code>, estados y roles.
+          Sin HTTP y sin detalles de MySQL.</p></div>
+      <div class="card-rel" style="margin:0;padding:.85vh 1vw"><b>Infraestructura</b>
+        <p class="small" style="margin-top:.25vh">Habla con el mundo técnico: la implementación del DAO, Hibernate, MySQL,
+          y el almacenamiento de archivos PDF en disco.</p></div>
+    </div>
+
+    <div style="margin-top:.5vh;margin-bottom:.4vh"><b style="color:var(--verde);font-size:1.02vw">Qué sí y qué no puede saber <code>UsuarioResource</code></b></div>
+    <p class="small" style="margin-bottom:.55vh">La razón de fondo: cada capa solo conoce a la de al lado, nunca a las de más abajo.
+      El Resource habla con el Service; el Service habla con la interfaz del DAO; la implementación del DAO habla con MySQL.
+      Si el Resource conociera <code>UsuarioDAOImpl</code>, un cambio en cómo se guarda
+      obligaría a tocar la puerta HTTP. Por eso el Resource no “salta” capas.</p>
+    <div class="g2" style="gap:1vw;margin-bottom:.8vh">
+      <div class="card fill" style="padding:.85vh 1vw;margin:0">
+        <p class="small"><b>Sí:</b> que existe <code>UsuarioService</code>, que puede pedirle el alta de un usuario,
+          códigos HTTP, y que el cuerpo del pedido es un usuario o un DTO.</p>
+      </div>
+      <div class="card warn" style="padding:.85vh 1vw;margin:0">
+        <p class="small"><b>No:</b> que la implementación se llama <code>UsuarioDAOImpl</code>,
+          nombres de tablas, ni cómo se abre o cierra la sesión con la base.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:.5vh;margin-bottom:.35vh"><b style="color:var(--verde);font-size:1.02vw">DTOs: entrada y salida</b></div>
+    <p class="small" style="margin-bottom:.45vh">
+      Un <b>DTO</b> (Data Transfer Object) es un objeto pensado solo para viajar por la red:
+      decide exactamente qué datos entran o salen en el mensaje.
+      Si devolvemos la entidad completa del usuario, mandamos de más: la contraseña,
+      y relaciones entre objetos que pueden hacer que la respuesta se enrede en un ciclo infinito.
+      El DTO corta ese problema: controlamos qué viaja en el mensaje.
+    </p>
+    <p class="small" style="margin-bottom:.45vh">
+      En el proyecto hay dos casos concretos de esa idea.
+      <b>Entrada:</b> en el login solo hacen falta el email y la contraseña; no hace falta mandar todo el usuario.
+      <b>Salida:</b> cuando respondemos con los datos de un usuario, el mensaje no incluye la contraseña.
+    </p>
+    <p class="small">
+      A futuro, separar el DTO de la entidad protege el contrato con quien consume la API
+      (Swagger, el frontend, otro cliente).
+      Si el modelo de usuario cambia o crece en próximas entregas, ese cambio queda contenido en el dominio:
+      no se filtra solo al JSON que ya reciben los clientes.
+      Quien decide qué se muestra es el DTO, no la entidad.
+    </p>
+  </div>
+  <div class="foot"><span>Entrega 4 · 2 → DIP</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 3/13 DIP ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 4 · 3/13 · DIP</div><h2>Si el Resource no conoce el DAO concreto, ¿a qué le habla?</h2></div>
+    <span class="tag">la pregunta que quedó abierta</span>
+  </div>
+  <div class="body top">
+    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:1.2vh;padding:1.3vh 1.3vw">
+      <b>La pregunta que quedó de la diapositiva anterior</b>
+      <p class="small" style="margin-top:.5vh">Dijimos que <code>UsuarioResource</code> no puede conocer <code>UsuarioDAOImpl</code>
+        ni saltar capas hacia MySQL.
+        Entonces, cuando el Service necesita guardar o buscar un usuario, ¿a qué le habla?
+        Si no hay nada en el medio, volvemos al problema de la Práctica 6.</p>
+    </div>
+
+    <div class="card fill" style="margin-bottom:1.2vh;padding:1.3vh 1.4vw">
+      <b>La respuesta: una interfaz</b>
+      <p class="small" style="margin-top:.5vh">Le habla a <code>UsuarioDAO</code>: un contrato que dice <i>qué</i> se puede pedir
+        (alta, búsqueda, etc.) sin decir <i>cómo</i> se hace por adentro.
+        <code>UsuarioDAOImpl</code> es quien implementa ese contrato con Hibernate y MySQL.
+        El Service depende del contrato; la implementación concreta queda abajo, reemplazable.</p>
+    </div>
+
+    <div class="card-rel" style="margin-bottom:1.2vh;padding:1.2vh 1.3vw">
+      <b>El nombre técnico de esa solución</b>
+      <p class="small" style="margin-top:.5vh">Eso se llama <b>Principio de Inversión de Dependencias (DIP)</b>:
+        los módulos de alto nivel (quien coordina: Resource y Service) no dependen de los de bajo nivel
+        (<code>UsuarioDAOImpl</code>, Hibernate, MySQL).
+        Ambos miran hacia una abstracción —en nuestro caso, la interfaz <code>UsuarioDAO</code>.</p>
+    </div>
+
+    <div class="g2" style="gap:1.3vw;align-items:stretch;margin-bottom:1.2vh">
+      <div class="card warn" style="padding:1.2vh 1.2vw;margin:0">
+        <h3 style="color:var(--acento);font-size:1.15vw">Antes (Práctica 6)</h3>
+        <p class="small" style="margin-top:.6vh">Alto nivel dependía directo del bajo nivel:
+          <code>UsuarioResource</code> conocía <code>UsuarioDAOImpl</code>.
+          Cambiar la implementación obligaba a tocar la puerta HTTP.</p>
+      </div>
+      <div class="card fill" style="padding:1.2vh 1.2vw;margin:0">
+        <h3 style="font-size:1.15vw">Ahora (Entrega 4)</h3>
+        <p class="small" style="margin-top:.6vh"><code>UsuarioService</code> depende de <code>UsuarioDAO</code>.
+          <code>UsuarioDAOImpl</code> implementa la interfaz.
+          Se puede cambiar cómo se persiste sin tocar Resource ni la regla de capas.</p>
+      </div>
+    </div>
+
+    <div class="card-rel" style="padding:1.2vh 1.3vw;margin:0">
+      <b>Conexión con la diapositiva 2</b>
+      <p class="small" style="margin-top:.5vh">DIP no es un tema nuevo aparte.
+        Es la herramienta concreta que permite cumplir la regla de
+        “qué sí y qué no puede saber cada capa”: el Resource conoce al Service,
+        el Service conoce la interfaz del DAO, y nadie de arriba importa <code>UsuarioDAOImpl</code>.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · 3 → DI</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 4/13 DI ═══════════════ -->
+<section class="slide" style="padding-bottom:7vh">
+  <div class="head" style="margin-bottom:1.2vh;padding-bottom:.8vh">
+    <div><div class="kicker">Entrega 4 · 4/13 · DI</div><h2>Inyección de dependencias: alguien te pasa lo que necesitás</h2></div>
+    <span class="tag">en vez de crear la dependencia adentro</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:1vh">DI es la forma concreta de cumplir DIP: en lugar de que el Resource cree el DAO a mano,
+      alguien desde afuera le entrega la dependencia ya lista.</p>
+
+    <div style="margin-bottom:.55vh"><b style="color:var(--verde);font-size:1.05vw">Tres formas de inyectar</b></div>
+    <div class="card-rel" style="margin-bottom:.7vh;padding:1vh 1.2vw">
+      <b>a) Por constructor</b>
+      <p class="small" style="margin-top:.35vh">Las dependencias se pasan al crear el objeto.
+        Es la más recomendada en general: deja claro qué necesita la clase y facilita los tests.</p>
+    </div>
+    <div class="card-rel" style="margin-bottom:.7vh;padding:1vh 1.2vw">
+      <b>b) Por campo (field injection)</b>
+      <p class="small" style="margin-top:.35vh">La dependencia se declara en un campo y el contenedor la completa.
+        Es la forma más corta de escribir con CDI y Jersey.</p>
+    </div>
+    <div class="card-rel" style="margin-bottom:.9vh;padding:1vh 1.2vw">
+      <b>c) Por setter</b>
+      <p class="small" style="margin-top:.35vh">Se entrega la dependencia con un método de asignación.
+        Sirve sobre todo cuando la dependencia es opcional.</p>
+    </div>
+
+    <div class="card-rel" style="margin-bottom:.9vh;padding:1.1vh 1.2vw">
+      <b>Cómo Weld elige qué entregar</b>
+      <p class="small" style="margin-top:.4vh">Con <code>@Inject</code>, Weld busca un bean compatible con el tipo pedido.
+        Si pedís una clase concreta (por ejemplo el Service), entrega el bean de esa clase.
+        Si pedís una interfaz (por ejemplo el DAO de usuario), busca cuál bean la implementa;
+        si hay una sola, la entrega automáticamente.
+        Eso conecta los dos lados de la idea DIP de la diapositiva anterior:
+        DIP pone la interfaz en el medio; Weld es <b>quién conecta</b> el lado que pide el contrato
+        con el lado que lo implementa, sin que el alto nivel conozca la clase concreta.</p>
+    </div>
+
+    <div class="card fill" style="padding:1.1vh 1.3vw">
+      <p class="small"><b>Por qué elegimos field injection en esta entrega:</b>
+        con CDI y Jersey es la forma más corta de escribirlo, y es lo que pedía el práctico.
+        La inyección por constructor sería más testeable;
+        field injection es lo que aplicamos acá.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · 4 → IoC</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 5/13 IoC ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 4 · 5/13 · IoC</div><h2>Inversión de control: ya no manejamos el ciclo de vida</h2></div>
+    <span class="tag">quién crea, inyecta y destruye</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:1.4vh">En la diapositiva anterior vimos cómo Weld encuentra el bean correcto
+      cuando alguien pide un tipo (clase concreta o interfaz).
+      Eso es solo una parte de lo que hace: además de elegir la pieza correcta,
+      también decide <b>cuándo crearla</b> y <b>cuándo destruirla</b>,
+      cosas que antes hacía el programador a mano.</p>
+
+    <div class="g2" style="gap:2vw;align-items:stretch;margin-bottom:1.4vh">
+      <div class="card warn" style="padding:1.8vh 1.5vw">
+        <h3 style="color:var(--acento)">Antes</h3>
+        <p class="small" style="margin-top:1vh"><b>El programador</b> decidía cuándo y cómo se creaba cada objeto:
+          en qué momento nacería el DAO, con qué clase concreta, y en qué línea del código.</p>
+        <p class="small" style="margin-top:1vh">Esa decisión se repetía en cada lugar donde hacía falta esa pieza
+          (o se centralizaba a mano en un Factory, pero igual la inventaba el programador).</p>
+      </div>
+      <div class="card fill" style="padding:1.8vh 1.5vw">
+        <h3>Ahora</h3>
+        <p class="small" style="margin-top:1vh"><b>Weld</b> es quien toma esa misma decisión:
+          cuándo crear el objeto, cuándo entregárselo a quien lo pidió, y cuándo destruirlo.</p>
+        <p class="small" style="margin-top:1vh">El programador solo declara qué necesita con <code>@Inject</code>,
+          sin decidir el momento: no elige cuándo nace ni cuándo muere la pieza.</p>
+      </div>
+    </div>
+    <div class="card-rel" style="padding:1.3vh 1.4vw">
+      <b>Por qué se llama “inversión”</b>
+      <p class="small" style="margin-top:.55vh">El control que antes estaba del lado del programador ahora está del lado del framework.
+        Con la diapositiva anterior (DI) vimos que Weld sabe <b>qué</b> bean darte
+        (según el tipo pedido: clase o interfaz);
+        acá se ve que Weld también decide <b>cuándo</b> dártela y cuándo destruirla.
+        Son dos preguntas distintas —qué pieza y en qué momento— resueltas por la misma pieza.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · 5 → CDI</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 6/13 CDI Y WELD (1/2) ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 4 · 6/13 · CDI y Weld (1/2)</div><h2>Del “framework” al motor concreto</h2></div>
+    <span class="tag">estándar · implementación · escaneo</span>
+  </div>
+  <div class="body top">
+    <div class="card-rel" style="margin-bottom:1vh;padding:1.15vh 1.25vw">
+      <b>La pregunta que queda de IoC</b>
+      <p class="small" style="margin-top:.45vh">Dijimos que “el framework” decide crear, inyectar y destruir.
+        Eso no es magia abstracta: hace falta un <b>estándar de reglas</b> (qué anotaciones existen y qué significan)
+        y una <b>herramienta concreta</b> que las ejecute al arrancar y en cada petición.</p>
+    </div>
+
+    <div class="g2" style="gap:1.2vw;margin-bottom:1vh">
+      <div class="card-rel" style="margin:0;padding:1.15vh 1.2vw"><b>CDI = el estándar</b>
+        <p class="small" style="margin-top:.4vh">CDI es el contrato de Jakarta para inyección y ciclo de vida.
+          Define anotaciones como <code>@Inject</code>, <code>@RequestScoped</code>, <code>@ApplicationScoped</code>,
+          <code>@Produces</code> y <code>@Disposes</code>.
+          Por sí solo no crea ni destruye nada: solo dice las reglas.</p></div>
+      <div class="card fill" style="margin:0;padding:1.15vh 1.2vw"><b>Weld = quien las cumple</b>
+        <p class="small" style="margin-top:.4vh">Weld es la implementación concreta que usamos.
+          Es quien de verdad lee esas anotaciones, crea los objetos, los inyecta y los destruye.
+          Sin Weld, las anotaciones serían etiquetas sin efecto.</p></div>
+    </div>
+
+    <div class="card-rel" style="margin-bottom:1vh;padding:1.15vh 1.25vw">
+      <b>Cómo se entera Weld de qué clases administrar</b>
+      <p class="small" style="margin-top:.45vh">Al arrancar, Weld recorre las clases del proyecto buscando cuáles tienen anotación de scope
+        (<code>@RequestScoped</code> o <code>@ApplicationScoped</code>).
+        A esas las registra como <b>bean</b>: objetos cuyo ciclo de vida gestiona él.
+        Eso se habilita con <code>beans.xml</code> en modo <code>bean-discovery-mode="annotated"</code>:
+        “escaneá solo lo anotado”. Sin ese archivo, Weld no arranca y <code>@Inject</code> no funciona.</p>
+    </div>
+
+    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:1vh;padding:1.15vh 1.25vw">
+      <b>Por qué el Resource también tiene que ser bean</b>
+      <p class="small" style="margin-top:.45vh">Jersey atiende HTTP, pero no inventa las dependencias solo.
+        Para poder inyectarle el Service al Resource, esa clase tiene que pasar por Weld.
+        El puente entre Jersey y CDI es <code>jersey-cdi1x-servlet</code>.
+        Si el Resource no fuera bean, Jersey lo crearía a mano y lo que debería inyectarse quedaría vacío.</p>
+    </div>
+
+    <div class="card fill" style="padding:1.15vh 1.25vw">
+      <p class="small"><b>Puente a la siguiente diapositiva:</b> ya sabemos quién es el motor y cómo registra beans.
+        Falta ver <b>cuánto dura</b> cada bean (por petición o por toda la app) y cómo una fábrica permanente
+        puede fabricar algo distinto en cada pedido.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · 6 → scopes</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 7/13 CDI Y WELD (2/2) SCOPES ═══════════════ -->
+<section class="slide" style="padding-bottom:7vh">
+  <div class="head" style="margin-bottom:1.1vh;padding-bottom:.75vh">
+    <div><div class="kicker">Entrega 4 · 7/13 · CDI y Weld (2/2)</div><h2>Cuánto dura cada bean (y la fábrica vs lo fabricado)</h2></div>
+    <span class="tag"><code>@RequestScoped</code> · <code>@ApplicationScoped</code> · Producer</span>
+  </div>
+  <div class="body top">
+    <div class="card fill" style="margin-bottom:.9vh;padding:1.1vh 1.2vw">
+      <b>@RequestScoped — una instancia por petición</b>
+      <p class="small" style="margin-top:.4vh">En un <code>POST /api/usuarios</code>, Weld crea para ese pedido un
+        <code>UsuarioResource</code>, un <code>UsuarioService</code>, un <code>UsuarioDAOImpl</code>
+        y el EntityManager de esa petición.
+        En un pago, crea <code>PagoResource</code>, <code>PagoService</code> y los tres DAOs que coordina
+        (<code>PagoDAO</code>, <code>InscripcionCongresoDAO</code>, <code>UsuarioDAO</code>),
+        todos compartiendo el <b>mismo</b> EntityManager de esa petición puntual.
+        Al terminar el pedido, <b>todas esas instancias se destruyen juntas</b>:
+        no queda estado colgado para el próximo cliente.</p>
+    </div>
+
+    <div class="card fill" style="margin-bottom:.9vh;padding:1.1vh 1.2vw">
+      <b>@ApplicationScoped — una sola instancia para toda la app</b>
+      <p class="small" style="margin-top:.4vh">Ejemplos: <code>EntityManagerProducer</code> y <code>DocumentStorageService</code>.
+        Esos dos no necesitan renovarse en cada pedido porque <b>no guardan datos de una petición particular</b>:
+        el Producer solo sabe cómo crear y cerrar EntityManagers; el servicio de documentos solo sabe guardar y leer PDFs en disco.
+        Una instancia permanente alcanza para toda la vida de la aplicación.</p>
+    </div>
+
+    <div class="card-rel" style="margin-bottom:.9vh;padding:1.1vh 1.2vw">
+      <b>¿No es contradictorio? Fábrica permanente, producto por petición</b>
+      <p class="small" style="margin-top:.4vh"><code>EntityManagerProducer</code> es una clase única y permanente (<code>@ApplicationScoped</code>).
+        Adentro tiene un método con <code>@Produces</code> que fabrica un EntityManager <b>distinto por cada petición</b>,
+        y un método con <code>@Disposes</code> que lo destruye cuando esa petición termina.
+        La fábrica es una sola; lo que fabrica es distinto cada vez.
+        Por eso conviven <code>@ApplicationScoped</code> (la fábrica) y scope de request (el EntityManager producido)
+        en el mismo mecanismo, sin contradicción.</p>
+    </div>
+
+    <div class="card fill" style="padding:1.1vh 1.2vw">
+      <p class="small"><b>Puente a la siguiente:</b> ya se vio quién administra (Weld), qué reglas sigue (CDI)
+        y cuánto dura cada bean (<code>@RequestScoped</code> / <code>@ApplicationScoped</code>).
+        Falta ver cómo Weld decide <b>qué bean entregar</b> cuando se pide un tipo con <code>@Inject</code>
+        (una clase concreta o una interfaz).</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · 7 → qué implementación</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 8/13 ENTITYMANAGER ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 4 · 8/13 · EntityManager</div><h2>Qué implementación inyectar, y un EntityManager por petición</h2></div>
+    <span class="tag"><code>@Inject</code> · <code>@Produces</code> · <code>@Disposes</code></span>
+  </div>
+  <div class="body top">
+    <div class="card-rel" style="margin-bottom:.85vh;padding:1vh 1.15vw">
+      <b>La pregunta que quedó abierta</b>
+      <p class="small" style="margin-top:.35vh">Con <code>@Inject</code>, Weld busca un bean compatible con el tipo pedido:
+        clase concreta (ej. <code>UsuarioService</code>) o interfaz (ej. DAO de usuario → <code>UsuarioDAOImpl</code> si es la única).
+        El escaneo de scopes llena ese registro de beans.</p>
+    </div>
+
+    <p class="lead" style="margin-bottom:.85vh;font-size:1.35vw">¿Por qué un solo EntityManager por petición y no uno por DAO?</p>
+
+    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:.85vh;padding:1.1vh 1.15vw">
+      <b>El problema — historia de un pago a medias</b>
+      <p class="small" style="margin-top:.4vh">Imaginá que <code>PagoService</code> coordina tres DAOs y cada uno abre su propio EntityManager y su propia transacción.
+        Primero el DAO de pago guarda el pago: todo bien, confirma y cierra.
+        Después el DAO de inscripción guarda la inscripción: también bien, confirma y cierra.
+        Al final el DAO de usuario falla (por ejemplo, un dato inválido).
+        Los dos primeros <b>ya quedaron confirmados en MySQL</b> y no se pueden deshacer:
+        hay un pago y una inscripción registrados, pero el resto de la operación no terminó.
+        Quedó todo a medias.
+        Lo que se perdió es la <b>atomicidad</b>: la garantía de que o se guarda <b>todo junto</b>, o <b>no se guarda nada</b>.</p>
+    </div>
+
+    <div class="card-rel" style="margin-bottom:.85vh;padding:1.1vh 1.15vw">
+      <b>La solución: <code>EntityManagerProducer</code></b>
+      <p class="small" style="margin-top:.4vh">Con <code>@Produces</code> y scope de request, Weld crea <b>un</b> EntityManager al inicio de la petición
+        y abre la transacción.
+        Los tres DAOs del pago (<code>PagoDAO</code>, <code>InscripcionCongresoDAO</code>, <code>UsuarioDAO</code>) usan ese mismo EntityManager.
+        Al terminar, <code>@Disposes</code> cierra el ciclo: si los tres funcionaron, hace <b>commit de los tres juntos</b>;
+        si cualquiera falló, hace <b>rollback de los tres juntos</b> — y cierra el EntityManager.
+        Así el pago no puede quedar a medias.</p>
+    </div>
+
+    <div class="card fill" style="padding:1vh 1.15vw">
+      <p class="small"><b>Puente:</b> el Producer fabrica un EntityManager por petición, pero ¿quién deja lista la fábrica
+        antes de que llegue el primer pedido? Eso no es un gancho de bean CDI: es el arranque de Tomcat.
+        Siguiente diapositiva.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · 8 → fábrica vs producto</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 9/13 JPA BOOTSTRAP ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Entrega 4 · 9/13 · Arranque JPA</div><h2>Fábrica una vez, EntityManager por petición</h2></div>
+    <span class="tag"><code>JpaBootstrapListener</code> · EMF · EM</span>
+  </div>
+  <div class="body top">
+    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:1.1vh;padding:1.25vh 1.3vw">
+      <b>¿Por qué no <code>@PostConstruct</code> / <code>@PreDestroy</code>?</b>
+      <p class="small" style="margin-top:.5vh">Esos son ganchos de <b>CDI</b>, atados al ciclo de vida de un bean
+        (<code>@RequestScoped</code> o <code>@ApplicationScoped</code>):
+        corren cuando nace o muere <i>ese</i> bean.
+        Acá hace falta algo que exista <b>antes</b> de que arranque cualquier bean
+        y se cierre <b>después</b> de apagar todo el servidor.
+        Tomcat ofrece su propio gancho: <code>ServletContextListener</code>,
+        con <code>contextInitialized</code> al levantar y <code>contextDestroyed</code> al bajar.
+        Eso es lo que usa <code>JpaBootstrapListener</code>, en vez del gancho de CDI.</p>
+    </div>
+
+    <div class="card-rel" style="margin-bottom:1.1vh;padding:1.25vh 1.3vw">
+      <b>EntityManagerFactory y EntityManager: suenan parecido, no son lo mismo</b>
+      <p class="small" style="margin-top:.5vh">La <b>EntityManagerFactory</b> es pesada de armar: lee <code>persistence.xml</code>,
+        prepara la conexión a MySQL, deja listo Hibernate.
+        Se crea <b>una sola vez</b> para toda la vida del servidor: eso lo hace <code>JpaBootstrapListener</code>
+        en <code>contextInitialized</code>, y la cierra en <code>contextDestroyed</code>.</p>
+      <p class="small" style="margin-top:.7vh">El <b>EntityManager</b> es lo que esa fábrica <b>produce</b>:
+        uno nuevo por cada petición HTTP.
+        Eso lo hace <code>EntityManagerProducer</code> (<code>@Produces</code> / <code>@Disposes</code>),
+        usando la fábrica que el listener ya dejó lista.</p>
+    </div>
+
+    <div class="card fill" style="padding:1.3vh 1.4vw">
+      <p class="small"><b>En una frase:</b> <code>JpaBootstrapListener</code> arma la fábrica una sola vez;
+        <code>EntityManagerProducer</code> usa esa fábrica para sacar un producto nuevo en cada petición
+        (y destruirlo al terminar el pedido).</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · 9 → flujo A–C</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 10/13 FLUJO A B C ═══════════════ -->
+<section class="slide" style="padding-bottom:7vh">
+  <div class="head" style="margin-bottom:1.1vh;padding-bottom:.75vh">
+    <div><div class="kicker">Entrega 4 · 10/13 · Flujo (1/2)</div><h2><code>POST /api/usuarios</code>: de la red al Service</h2></div>
+    <span class="tag">Fases A, B y C</span>
+  </div>
+  <div class="body top">
+    <div class="card-rel" style="margin-bottom:.9vh;padding:1.1vh 1.2vw">
+      <b>Fase A · Cliente y Jersey (igual que Práctica 6)</b>
+      <p class="small" style="margin-top:.4vh"><i>Alguien completa el formulario de alta de usuario y lo envía.</i>
+        Llega <code>POST /api/usuarios</code> con JSON.
+        Tomcat lo deriva al <code>ServletContainer</code> de Jersey (<code>web.xml</code>, rutas <code>/api/*</code>).
+        Jersey enruta con <code>@ApplicationPath("/api")</code>, <code>@Path("/usuarios")</code> y <code>@POST</code>.
+        Jackson convierte el JSON en un objeto <code>Usuario</code>.
+        Para llamar a <code>alta(...)</code>, Jersey necesita un bean CDI, no un <code>new</code> a mano.</p>
+    </div>
+    <div class="card-rel" style="margin-bottom:.9vh;padding:1.1vh 1.2vw">
+      <b>Fase B · Weld crea e inyecta (nuevo en E4)</b>
+      <p class="small" style="margin-top:.4vh"><i>El servidor arma el equipo que va a atender este pedido puntual.</i>
+        Gracias a <code>jersey-cdi1x-servlet</code> (el puente Jersey–CDI que ya vimos),
+        <b>Weld</b> (el motor CDI) entrega un <code>UsuarioResource</code>
+        <code>@RequestScoped</code> <i>(una instancia solo para esta petición)</i>.
+        Ve <code>@Inject UsuarioService</code> y crea el Service; ve <code>@Inject UsuarioDAO</code> y crea <code>UsuarioDAOImpl</code>
+        <i>(clase concreta o interfaz: Weld elige el bean compatible, como en DI)</i>.
+        El DAO pide un <code>EntityManager</code>: Weld llama al <code>@Produces</code> de
+        <code>EntityManagerProducer</code> <i>(la fábrica permanente que saca un EM por petición)</i>,
+        abre la transacción, y ese mismo EntityManager lo comparten Resource, Service y DAO.</p>
+    </div>
+    <div class="card-rel" style="margin-bottom:0;padding:1.1vh 1.2vw">
+      <b>Fase C · Presentación delega en Aplicación</b>
+      <p class="small" style="margin-top:.4vh"><i>Antes de guardar, alguien tiene que revisar si el pedido tiene sentido.</i>
+        <code>UsuarioResource.alta(...)</code> no llama al DAO.
+        Llama a <code>usuarioService.alta(usuario)</code>
+        <i>(el Resource solo conoce al Service de al lado, regla de capas)</i>.
+        El Service valida: email no repetido, email en minúsculas, rol <code>PARTICIPANTE</code> por defecto.
+        Si el email ya existe, lanza <code>NegocioException</code>.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · 10 → flujo D–E</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 11/13 FLUJO D E ═══════════════ -->
+<section class="slide" style="padding-bottom:7vh">
+  <div class="head" style="margin-bottom:1.1vh;padding-bottom:.75vh">
+    <div><div class="kicker">Entrega 4 · 11/13 · Flujo (2/2)</div><h2>Del DAO a MySQL: error 400 o éxito 201</h2></div>
+    <span class="tag">Fases D y E</span>
+  </div>
+  <div class="body top">
+    <div class="card-rel" style="margin-bottom:.9vh;padding:1.1vh 1.2vw">
+      <b>Fase D · Aplicación, infraestructura y MySQL</b>
+      <p class="small" style="margin-top:.4vh"><i>Ya se validó que el email es válido; ahora hay que guardarlo de verdad en la base.</i>
+        <code>UsuarioService</code> llama a <code>usuarioDAO.alta(usuario)</code>.
+        En modo CDI, <code>AbstractJpaDAO</code> hace <code>persist</code> sobre el EntityManager inyectado
+        <i>(el mismo de esta petición; no abre otra transacción — atomicidad del Producer)</i>.
+        Hibernate lee <code>@Entity</code> / <code>@Table</code> y arma el <code>INSERT</code>.
+        MySQL asigna el <code>id</code>; el objeto en memoria ya lo tiene.</p>
+    </div>
+
+    <div style="margin-bottom:.5vh"><b style="color:var(--verde);font-size:1.05vw">Fase E · Dos salidas posibles</b></div>
+    <p class="small" style="margin-bottom:.7vh"><i>Acá el sistema se pregunta: ¿el email que mandaron ya existía o no?</i>
+      Según la respuesta, el camino se bifurca.</p>
+    <div class="g2" style="gap:1.2vw;align-items:stretch;margin-bottom:.9vh">
+      <div class="card warn" style="padding:1.15vh 1.15vw;margin:0">
+        <h3 style="color:var(--acento);font-size:1.1vw">Error de negocio</h3>
+        <p class="small" style="margin-top:.5vh"><i>El email ya estaba: se rechaza el alta.</i>
+          <code>NegocioException</code> sube hasta Jersey.
+          <code>NegocioExceptionMapper</code> <i>(ExceptionMapper: convierte la excepción en respuesta HTTP)</i>
+          responde HTTP <b>400</b> con <code>{"error":"..."}</code>.
+          <code>@Disposes</code> hace <b>rollback</b> y cierra el EntityManager: no queda fila a medias.</p>
+      </div>
+      <div class="card fill" style="padding:1.15vh 1.15vw;margin:0">
+        <h3 style="font-size:1.1vw">Éxito</h3>
+        <p class="small" style="margin-top:.5vh"><i>El email era nuevo: se confirma el alta y se avisa al cliente.</i>
+          El Resource convierte el resultado a <code>UsuarioDTO</code>
+          <i>(la versión sin password que vimos en Arquitectura)</i>,
+          responde HTTP <b>201</b> con header <code>Location</code>,
+          Jackson arma el JSON, y <code>@Disposes</code> hace <b>commit</b> y cierra.</p>
+      </div>
+    </div>
+
+    <div class="card-rel" style="padding:1.05vh 1.2vw">
+      <b>Detalle de coloquio</b>
+      <p class="small" style="margin-top:.35vh">El Resource no arma a mano el JSON de error: lanza la excepción correcta
+        y el ExceptionMapper hace el resto. Misma idea para 404 con <code>NotFoundExceptionMapper</code>.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · 11 → Swagger</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 12/13 SWAGGER ═══════════════ -->
+<section class="slide" style="padding-bottom:7vh">
+  <div class="head" style="margin-bottom:1.1vh;padding-bottom:.75vh">
+    <div><div class="kicker">Entrega 4 · 12/13 · Swagger</div><h2>Probar la API sin inventar otro camino</h2></div>
+    <span class="tag">OpenAPI · misma petición real</span>
+  </div>
+  <div class="body top">
+    <div class="card-rel" style="margin-bottom:.8vh;padding:1vh 1.15vw">
+      <b>Qué es</b>
+      <p class="small" style="margin-top:.35vh">Swagger es la interfaz visual para probar los mismos endpoints que curl o Postman.
+        <b>No ejecuta lógica de negocio propia:</b> dispara el flujo HTTP real
+        (Tomcat, Jersey, Weld, Service, DAO, MySQL) y muestra el código de respuesta.
+        La página está en <code>/swagger-ui/</code> (<code>swagger-ui/index.html</code>).</p>
+    </div>
+
+    <div style="margin-bottom:.45vh"><b style="color:var(--verde);font-size:1.02vw">Qué hace cada anotación en la pantalla</b></div>
+    <div class="g3" style="gap:.9vw;margin-bottom:.8vh">
+      <div class="card-rel" style="margin:0;padding:.9vh 1vw"><b><code>@Tag</code></b>
+        <p class="small" style="margin-top:.3vh">Agrupa endpoints bajo un nombre visible
+          (Usuarios, Trabajos, Pagos…).</p></div>
+      <div class="card-rel" style="margin:0;padding:.9vh 1vw"><b><code>@Operation</code></b>
+        <p class="small" style="margin-top:.3vh">Describe qué hace ese endpoint: es el título del formulario “Try it out”.</p></div>
+      <div class="card-rel" style="margin:0;padding:.9vh 1vw"><b><code>@ApiResponse</code></b>
+        <p class="small" style="margin-top:.3vh">Documenta códigos HTTP posibles (201, 400, 404…) antes de probar.</p></div>
+    </div>
+
+    <div class="card-rel" style="margin-bottom:.8vh;padding:1vh 1.15vw">
+      <b>Cómo se arma solo</b>
+      <p class="small" style="margin-top:.35vh"><code>OpenApiResource</code> lee las anotaciones y genera <code>GET /api/openapi.json</code>.
+        Swagger UI lee ese JSON y dibuja los formularios sola.
+        Un endpoint nuevo bien anotado <b>aparece solo</b> en la pantalla.</p>
+    </div>
+
+    <div class="card fill" style="padding:1vh 1.15vw">
+      <b>Cómo comprobamos que persistió</b>
+      <p class="small" style="margin-top:.4vh">En la misma página de Swagger: después del POST (“Try it out” → Execute),
+        un <b>GET</b> del mismo recurso. Si volvió el JSON, persistió.
+        Si fue 400, el GET no muestra esa fila. Sin phpMyAdmin.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · 12 → evidencia</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 4 · 13/13 EVIDENCIA SWAGGER ═══════════════ -->
+<section class="slide" style="padding-bottom:6.5vh">
+  <div class="head" style="margin-bottom:1vh;padding-bottom:.7vh">
+    <div><div class="kicker">Entrega 4 · 13/13 · Evidencia</div><h2>Qué pedía la entrega (y cómo lo mostramos en Swagger)</h2></div>
+    <span class="tag">rama <code>entrega-4</code></span>
+  </div>
+  <div class="body top">
+    <div class="g2" style="gap:1.4vw;align-items:stretch">
+      <div>
+        <div class="card fill" style="padding:1.2vh 1.2vw;margin-bottom:1vh">
+          <b>Lo más importante que pedía la Entrega 4</b>
+          <ul class="tight" style="margin-top:.7vh">
+            <li class="small"><b>API REST</b> con Jersey: endpoints por rol (Admin, OC, Evaluador, Autor, Participante).</li>
+            <li class="small"><b>Capas limpias</b> con CDI: Resource → Service → DAO, sin <code>new</code> a mano.</li>
+            <li class="small"><b>Persistencia</b> real en MySQL del curso (los datos sobreviven al reinicio).</li>
+            <li class="small"><b>Swagger / OpenAPI</b> para documentar y probar la API en vivo.</li>
+            <li class="small"><b>DTOs</b> en la respuesta (sin password ni ciclos de Jackson).</li>
+            <li class="small"><b>Archivos</b> (PDF) asociados a trabajos/pagos: se guarda la URL, no el binario en la entidad.</li>
+          </ul>
+        </div>
+        <div class="card-rel" style="padding:1.1vh 1.2vw;margin:0">
+          <b>Qué se ve en las capturas</b>
+          <p class="small" style="margin-top:.4vh">La UI real en <code>/swagger-ui/</code> de nuestro servidor:
+            el tag <b>Usuarios</b> con GET/POST/PUT/DELETE y sus <code>@Operation</code>
+            (“Alta de usuario”, “Listar usuarios”…), y el tag <b>Login</b>
+            con “Iniciar sesión” y “Refrescar sesión”.
+            Sale solo de las anotaciones: nadie dibujó esa pantalla a mano.</p>
+        </div>
+      </div>
+      <figure style="margin:0;display:flex;flex-direction:column;gap:.7vh;min-height:0">
+        <img src="img/e4-swagger.png" alt="Swagger UI — tag Usuarios"
+             style="width:100%;max-height:42vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:10px;background:#fff">
+        <img src="img/e4-swagger-login.png" alt="Swagger UI — tag Login"
+             style="width:100%;max-height:12vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption style="margin-top:.2vh">Capturas reales de <code>grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/</code>:
+          tags + operaciones documentadas; se prueba con Try it out y se verifica con GET.</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 4 · cierre</span></div>
 </section>
 
 <!-- ═══════════════ 15 · ENTREGA 5 ═══════════════ -->
@@ -1025,7 +1836,7 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
   <div class="body">
     <table>
       <tr><th style="width:24%">Dificultad</th><th style="width:38%">Qué pasaba</th><th>Cómo la resolvimos</th></tr>
-      <tr><td><b>Capas mezcladas → CDI</b></td><td>En la Entrega 3 el REST instanciaba DAOs a mano (<code>DAOFactory</code> / <code>new</code>). En la 4, al meter CDI en Tomcat, las inyecciones llegaban en <code>null</code>.</td><td>Weld + puentes Jersey–CDI + <code>beans.xml</code>; Resource → Service → DAO con <code>@Inject</code> y <code>EntityManagerProducer</code>.</td></tr>
+      <tr><td><b>Capas mezcladas → CDI</b></td><td>En la Entrega 3 los Servlets pedían DAOs a mano (<code>DAOFactory</code> / <code>new</code>). En la 4, al meter CDI en Tomcat, las inyecciones llegaban en <code>null</code>.</td><td>Weld + puentes Jersey–CDI + <code>beans.xml</code>; Resource → Service → DAO con <code>@Inject</code> y <code>EntityManagerProducer</code>.</td></tr>
       <tr><td><b>CORS</b></td><td>El navegador bloqueaba las llamadas del Angular local al backend desplegado.</td><td>Proxy de Angular para desarrollo y filtros CORS con preflight para el resto. En producción, mismo origen: el problema desaparece.</td></tr>
       <tr><td><b>Esquema de base</b></td><td><code>hbm2ddl.auto=update</code> agrega columnas pero nunca las corrige; los PDF no entraban y un campo quedó corto.</td><td>Clase <code>SchemaMigration</code> con SQL propio que corre al arrancar la aplicación, más <code>LONGBLOB</code> para los documentos.</td></tr>
       <tr><td><b>Deploy con front viejo</b></td><td>La caché de Docker publicaba un WAR con un Angular desactualizado.</td><td><code>--no-cache --pull</code> y verificaciones del contenido del WAR dentro del Dockerfile: el pipeline falla antes de desplegar.</td></tr>
