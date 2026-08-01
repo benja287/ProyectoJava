@@ -1362,28 +1362,49 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
     <div class="g2" style="gap:1vw;margin-bottom:.8vh">
       <div class="card" style="padding:1vh 1.1vw;margin:0">
         <h3 style="font-size:1.1vw">Lo que ya teníamos (E4)</h3>
-        <p class="small" style="margin-top:.4vh">WAR en Tomcat con capas (Resources, Services, DAOs).
-          Se probaba con curl/Swagger; aún no había pantalla para un usuario común.</p>
+        <p class="small" style="margin-top:.4vh">Ya teníamos el motor funcionando del lado del servidor: un programa Java
+          corriendo en Tomcat que sabe recibir pedidos, buscar datos en la base y
+          devolver respuestas — organizado en capas (Resources, Services, DAOs) y
+          empaquetado en lo que se llama un WAR. Se podía probar ese motor con
+          herramientas técnicas como curl o Swagger UI, pero todavía no había una
+          pantalla real para que un usuario común lo use.</p>
       </div>
       <div class="card fill" style="padding:1vh 1.1vw;margin:0">
         <h3 style="font-size:1.1vw">Lo que suma la E5</h3>
-        <p class="small" style="margin-top:.4vh">SPA Angular: login, admin, listados contra la API real.
-          Hay que resolver orígenes distintos, desarrollo vs producción, y el camino clic → datos.</p>
+        <p class="small" style="margin-top:.4vh">Una <b>SPA Angular</b>: una sola página que, sin recargar todo el sitio,
+          muestra pantallas (login, admin, listados) y pide datos a nuestra API REST
+          (las rutas que empiezan con <code>/api/...</code>).
+          El prototipo maquetado de la E1 (React + Vite, con datos guardados en el
+          navegador vía <code>localStorage</code>, sin backend real) servía para validar los
+          flujos del congreso antes de tener persistencia. La E5 lo reemplaza por
+          un cliente real en Angular que habla contra la API Java de la E4.</p>
       </div>
+    </div>
+    <div class="card-rel" style="margin-bottom:.7vh;padding:.85vh 1.1vw">
+      <b>Hilo de esta entrega</b>
+      <p class="small" style="margin-top:.35vh">Para que Angular y Java se entiendan hay que resolver un problema de seguridad del navegador
+        (orígenes distintos), elegir cómo se conectan en desarrollo y en producción,
+        y entender el camino de un clic hasta los datos en pantalla.</p>
     </div>
     <p class="lead" style="margin-bottom:.7vh;font-size:1.25vw">CORS no es de Angular ni de Java: es una regla de seguridad del <b>navegador</b>.
       Un <b>origen</b> = protocolo + dominio + puerto.</p>
     <div class="g2" style="gap:1vw;margin-bottom:.7vh">
       <div class="card warn" style="padding:1vh 1.1vw;margin:0">
         <h3 style="color:var(--acento);font-size:1.1vw">Orígenes distintos</h3>
-        <p class="small" style="margin-top:.4vh"><b>A:</b> <code>http://localhost:4200</code> · <b>B:</b> <code>https://grupo1…</code>
-          Si A quiere leer la respuesta de B, B debe autorizar (headers CORS).
+        <p class="small" style="margin-top:.4vh"><b>Origen A (frontend):</b> <code>http://localhost:4200</code><br>
+          <b>Origen B (API):</b> <code>https://grupo1.jyaa-ci.linti.unlp.edu.ar</code></p>
+        <p class="small" style="margin-top:.55vh">No son el mismo origen. Si la página cargada en A quiere <b>leer</b> la respuesta de B,
+          el servidor B tiene que decir explícitamente que A está autorizado
+          (headers como <code>Access-Control-Allow-Origin</code>).
           Si no, el navegador bloquea aunque el servidor haya respondido bien.</p>
       </div>
       <div class="card fill" style="padding:1vh 1.1vw;margin:0">
         <h3 style="font-size:1.1vw">Mismo origen</h3>
-        <p class="small" style="margin-top:.4vh"><code>grupo1…/</code> y <code>grupo1…/api</code> comparten protocolo, dominio y puerto:
-          CORS no aplica. Eso buscamos en producción.</p>
+        <p class="small" style="margin-top:.4vh">Un origen es protocolo + dominio + puerto — no importa la ruta que sigue
+          después. La página en <code>https://grupo1.../</code> y la API en
+          <code>https://grupo1.../api</code> comparten protocolo, dominio y puerto: son el mismo
+          origen, aunque las rutas sean distintas. Ahí CORS no aplica: el navegador
+          no ve un cruce de dominios. Eso es lo que buscamos en producción.</p>
       </div>
     </div>
     <div class="card-rel" style="margin:0;padding:.85vh 1.1vw">
@@ -1670,23 +1691,38 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
         sabe armar esa pantalla. Ese es el “truco del 404”.</p>
     </div>
 
-    <div class="card-rel" style="margin-top:.7vh;padding:.9vh 1.1vw">
-      <b>Herramientas en el flujo (Maven · Docker · GitLab · Traefik)</b>
-      <p class="small" style="margin-top:.35vh"><b>Pedido real:</b> el usuario envía un formulario → HttpClient → Jersey (y filtros CORS si aplica) → JSON de vuelta.
-        <b>Build:</b> Maven compila Java; Docker compila Angular, fusiona con el backend y Maven arma el WAR; Tomcat 10 sirve SPA + API.
-        <b>Deploy:</b> GitLab CI redespliega el contenedor en cada push; Traefik publica HTTPS.
-        En local: <code>npm start</code> / <code>start:cors</code> contra grupo1, sin pasar por el pipeline.</p>
+    <div style="margin:.55vh 0 .4vh"><b style="color:var(--verde);font-size:1.05vw">Herramientas en el flujo</b>
+      <span class="small" style="margin-left:.6vw">no solo nombres · el rol concreto</span></div>
+    <div class="g2" style="gap:1vw;margin-bottom:.55vh;align-items:stretch">
+      <div class="card fill" style="margin:0;padding:.85vh 1vw">
+        <b>Desde el usuario: un pedido real (ej. registrarse)</b>
+        <p class="small" style="margin-top:.35vh">Alguien completa el formulario de registro en Angular y aprieta enviar.
+          Angular arma ese pedido (un POST) y HttpClient es quien lo manda por HTTP
+          hacia el servidor — el intermediario entre la pantalla y la red. Ese
+          pedido llega a Jersey, que lo enruta al método Java correcto (y de paso,
+          si hace falta, pasa antes por los filtros CORS). El backend procesa el
+          registro y la respuesta vuelve como JSON, que Angular usa para actualizar
+          la pantalla.</p>
+      </div>
+      <div class="card fill" style="margin:0;padding:.85vh 1vw">
+        <b>Desde el desarrollo: cómo se llega a que eso funcione</b>
+        <p class="small" style="margin-top:.35vh">Para que ese pedido tenga a dónde llegar, primero hay que empaquetar
+          todo. Maven es quien compila el código Java del backend. Docker se
+          encarga del build: compila Angular, fusiona esos archivos con el backend,
+          y Maven arma el WAR final dentro de una imagen. Tomcat 10 ejecuta ese WAR:
+          sirve SPA (pantallas) y API (datos) en un solo proceso.</p>
+        <p class="small" style="margin-top:.4vh">Ese paquete llega al servidor mediante GitLab CI: cada push construye la
+          imagen y redespliega el contenedor de grupo1. Traefik publica la URL del
+          grupo y enruta el tráfico HTTPS. En local: <code>npm start</code> /
+          <code>start:cors</code> contra grupo1, sin pasar por el pipeline.</p>
+      </div>
     </div>
-    <div class="card fill" style="margin:0;padding:1vh 1.15vw">
+    <div class="card fill" style="margin:0;padding:.85vh 1.05vw">
       <p class="small">Estos tres conceptos no aparecieron de golpe en la E5: son la
         continuación de un mismo camino en Java web. Los Servlets simples de la E3
-        dieron paso a JAX-RS y Jersey como forma más ordenada de mapear URLs a
-        métodos Java. La E4 sumó CDI para que esas clases no armaran sus propias
-        dependencias a mano — la misma idea que Angular aplica con <code>@Injectable</code>,
-        como vimos en la diapositiva anterior. Y ahora, en la E5, ese mismo
-        mecanismo de filtros que ya usaba Jersey se aprovecha para resolver un
-        problema nuevo: dejar pasar (o no) pedidos que vienen de otro origen, sin
-        tocar el código de los Resources.</p>
+        dieron paso a JAX-RS y Jersey. La E4 sumó CDI — la misma idea que Angular
+        aplica con <code>@Injectable</code>. Y en la E5 los filtros de Jersey resuelven
+        CORS sin tocar el código de los Resources.</p>
     </div>
   </div>
   <div class="foot"><span>Entrega 5 · Java + herramientas → dificultades</span></div>
