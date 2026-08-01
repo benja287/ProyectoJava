@@ -22,15 +22,15 @@ Dejando el `<figure>` y el `<figcaption>` como están.
 | 2 | `img/e2/hi-full.png` | Diagrama de clases completo (alta resolución). En el HTML: zoom interactivo. En el PDF: página completa; acercar con el zoom del lector | Ya incluido (render 450 DPI del PDF de clases) |
 | 3 | `img/e3-persistencia.png` | Fuente de la evidencia. En la diapositiva E3 · 7/7 el resultado se muestra como texto grande (misma salida del servlet) para que se lea en proyector | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/test-persistencia` |
 | 4 | `img/e4-swagger.png` + `img/e4-swagger-login.png` | **Incluidas (capturas reales).** Tag Usuarios expandido + tag Login en `/swagger-ui/` | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/` |
-| 5 | `img/e5-angular.png` | Un panel de la SPA con DevTools → Network mostrando la llamada `/api/...` y el header `Authorization` | La app corriendo + F12 |
-| 6 | `img/e6-produccion.png` | La home pública o el programa del congreso con el mapa de aulas | `https://grupo1.jyaa-ci.linti.unlp.edu.ar/` |
-| 7 | `img/ci-pipeline.png` | Los cuatro jobs del pipeline en verde | GitLab de la cátedra → CI/CD → Pipelines |
+| 5 | `img/e5-angular.png` | **Opcional / no priorizar.** La SPA se muestra en vivo en el Bloque 4; solo útil como Plan B o evidencia de Network | La app + F12 |
+| 6 | `img/e6-produccion.png` | **No hace falta en el deck.** La home/programa se ven en la demo en vivo (`grupo1…`). Queda solo como Plan B si se quiere | Demo Bloque 4 |
+| 7 | `img/ci-pipeline.png` | **Incluida.** Lista de pipelines de `main` en Passed (GitLab CI) | GitLab de la cátedra → CI/CD → Pipelines |
 
-Además, opcional pero muy recomendable:
+Además, si más adelante graban un recorrido:
 
 | Archivo | Qué es |
 |---------|--------|
-| `img/demo-respaldo.mp4` | Video del recorrido completo de la demo (4 min), como plan B si falla la red |
+| `img/demo-respaldo.mp4` | Video del recorrido de la demo (opcional; se agrega al deck cuando exista) |
 
 ---
 
@@ -54,7 +54,7 @@ Abrir `index.html` en Chrome o Edge → `Ctrl+P`:
 - Márgenes: **Ninguno**
 - Activar **Gráficos de fondo**
 
-El archivo generado en el repo es `JYAA-Grupo1-Presentacion-TF.pdf` (~29 páginas).
+El archivo generado en el repo es `JYAA-Grupo1-Presentacion-TF.pdf` (57 páginas; una por diapositiva).
 
 **Diagrama de clases:** en el navegador el zoom es interactivo (rueda / arrastrar).
 En el PDF esa página lleva la imagen hi-res a pantalla completa: para leer clases y

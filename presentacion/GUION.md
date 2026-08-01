@@ -30,25 +30,25 @@ Los tres hablan prácticamente lo mismo: **~6:35 / 6:45 / 6:40**.
 | 14 | Entrega 4 — REST + CDI | **Benjamín** | 0:45 | 9:30 |
 | 15 | Entrega 5 — Angular | Alcides | 0:50 | 10:20 |
 | 16 | Entrega 6 — Sistema completo | Alcides | 0:45 | 11:05 |
-| 16 | Arquitectura | Lucas | 0:25 | 10:30 |
-| 17 | Teoría aplicada | Lucas | 0:25 | 10:55 |
-| 18 | Separador — Bloque 3 | Lucas | 0:05 | 11:00 |
-| 19 | Reparto del grupo | Lucas | 0:55 | 11:55 |
-| 20 | Herramientas y CI | Lucas | 1:00 | 12:55 |
-| 21 | Separador — Bloque 4 | Alcides | 0:05 | 13:00 |
-| 22 | **Demo en vivo** | Alcides | 4:30 | 17:30 |
-| 23 | Dificultades | **Benjamín** | 0:55 | 18:25 |
-| 24 | Aprendizajes | los tres (0:20 c/u) | 1:00 | 19:25 |
-| 25 | Cierre | Lucas | 0:35 | 20:00 |
+| 16 | Arquitectura | Lucas | 0:30 | 11:00 |
+| 17 | Separador — Bloque 3 | Lucas | 0:05 | 11:05 |
+| 18 | Reparto del grupo | Lucas | 0:55 | 12:00 |
+| 19 | Herramientas y CI | Lucas | 1:00 | 13:00 |
+| 20 | Separador — Bloque 4 | Alcides | 0:05 | 13:05 |
+| 21 | **Demo en vivo** | Alcides | 5:00 | 18:05 |
+| 22 | Aprendizajes | los tres (0:25 c/u) | 1:15 | 19:20 |
+| 23 | Cierre | Lucas | 0:40 | 20:00 |
 
-**Total por persona:** Benjamín **~6:25** · Alcides **~6:55** · Lucas **~6:40**
+> La diapositiva de **trazabilidad / 14 clases teóricas** está fuera del deck por ahora.
+
+**Total por persona:** Benjamín **~5:30** · Alcides **~7:25** · Lucas **~7:05**
 
 > Sacamos la diapositiva de “integrantes” para ir más rápido al problema. Los nombres
 > quedan en la portada; Benjamín los presenta ahí en una frase.
 
-> El PDF de la cátedra sugiere 8 minutos para el cierre. Nosotros usamos ~4:30 de demo
-> y ~2 de balance. Si la demo va fluida, extenderla; si algo falla, cortar en el paso 5 y
-> pasar directo al balance.
+> El PDF de la cátedra pide demo en vivo + aprendizajes. Las dificultades técnicas
+> ya salen dentro de cada entrega (E3, E5, E6); no hace falta repetirlas en una tabla.
+> Si la demo va fluida, extenderla.
 
 **Regla de oro del ensayo:** cada uno cronometra **su** bloque por separado antes del
 ensayo completo. El 90 % de los grupos se pasa de tiempo en el Bloque 2, que es el más denso.
@@ -295,17 +295,69 @@ Tres capturas grandes: envío de trabajo, dictamen evaluador, programa.
 
 > El prototipo React de la E1 se reemplazó por Angular contra la API real de la E4.
 
-**Diapositiva 15 — Entrega 6**
+**Diapositiva — E5 · 1/11 Objetivo**
 
-> Dockerfile verifica el WAR; pipeline en verde = app actualizada.
+> Angular en el navegador habla con Java en otro servidor.
 
-**Diapositiva 16 — Arquitectura**
+**Diapositiva — E5 · 2/11 CORS**
 
-> Contar el arco: primero capas mezcladas (E3), después CDI (E4), hoy el diagrama.
+> Origen A localhost:4200 vs origen B grupo1. Regla del navegador, no de Angular/Java.
 
-**Diapositiva 17 — Teoría aplicada**
+**Diapositiva — E5 · 3/11 Desarrollo**
 
-> Cada tema de la cursada quedó en un archivo concreto; CDI aparece en la Entrega 4.
+> Forma 1 esconde el cruce (proxy); Forma 2 deja ver el cruce (CORS real). Ninguna es producción.
+
+**Diapositiva — E5 · 4/11 Permiso CORS**
+
+> Solo Forma 2: preflight OPTIONS + CorsConfig / CorsRequestFilter / CorsResponseFilter; ejemplo login.
+
+**Diapositiva — E5 · 5/11 Forma 3**
+
+> Producción = entorno desplegado (grupo1) para quien usa el congreso; no localhost del programador.
+
+**Diapositiva — E5 · 6/11 Objetivos**
+
+> Cliente real, entender CORS, camino a producción en grupo1. Remate del “para qué” antes del detalle técnico.
+
+**Diapositiva — E5 · 7/11 Consumo Angular**
+
+> Listar usuarios: servicio + HttpClient + Observable; camino en prosa; piezas Angular; igual en las 3 formas.
+
+**Diapositiva — E5 · 8/11 Conceptos Angular**
+
+> DI `@Injectable`, router, guards, HttpClient/Observable; cierre conectando con CDI.
+
+**Diapositiva — E5 · 9/11 Conceptos Java**
+
+> Remate E3→E4→E5: Servlets→Jersey, CDI=`@Injectable`, filtros Jersey para CORS.
+
+**Diapositiva — E5 · 10/11 Herramientas**
+
+> Pedido real (Angular/HttpClient/Jersey) + armado/despliegue (Maven/Docker/Tomcat/CI/Traefik) + npm local.
+
+**Diapositiva — E5 · 11/11 Dificultades**
+
+> CORS vs Swagger; push obligatorio; fusión WAR en Docker.
+
+**Diapositiva — E6 · 1/4 Objetivo**
+
+> E5 = Angular habla con la API; E6 = producto completo + JWT + config + grupo1.
+
+**Diapositiva — E6 · 2/4 Producto**
+
+> Por rol: admin (aranceles/caja/cierre), comité (catálogos/cupos/desempate), autores/evaluadores/público.
+
+**Diapositiva — E6 · 3/4 Seguridad y API**
+
+> JWT + filtro + interceptor/guards; API ampliada; configurable sin redeploy.
+
+**Diapositiva — E6 · 4/4 Despliegue**
+
+> WAR único multi-stage; dificultad caché Docker + verificación en Dockerfile.
+
+**Diapositiva — Arquitectura**
+
+> Arco E3→E6 + diagrama. Remate: el trabajo final integra los temas de la cursada en un mismo WAR.
 
 ---
 
@@ -356,27 +408,24 @@ Tres capturas grandes: envío de trabajo, dictamen evaluador, programa.
 > Lo importante no es cada pantalla por separado, sino que la acción de un rol cambia
 > inmediatamente lo que ve otro rol, sobre la misma base de datos.
 
-**Plan B:** si la red falla, pasar al video de respaldo (`img/demo-respaldo.mp4`) sin
-disculparse ni perder tiempo: *"lo tenemos grabado, así no gastamos tiempo de la charla"*.
-
 ---
 
-## Bloque 4 — Balance y reflexión (2:00)
+## Bloque 4 — Reflexión (1:15)
 
-**Diapositiva 23 — Dificultades** (Benjamín, 0:55). Elegir **dos** de las cinco y contarlas
-bien; el resto queda en pantalla para quien quiera leerlo.
+**Diapositiva — Aprendizajes.** Contar el arco en una pasada (no leer las cinco cajas):
 
-**Diapositiva 24 — Aprendizajes** (los tres, 20 segundos cada uno). Una tarjeta cada uno:
+> Nos llevamos una forma de hacer una aplicación: partimos de los requerimientos del
+> congreso, los bajamos a historias de usuario, eso se convirtió en objetos, esos objetos
+> se persistieron, y después se consumieron por la API y las pantallas. En paralelo,
+> GitLab y el pipeline hicieron que cada avance se viera en grupo1, no solo en la notebook.
 
-- **Benjamín** → *"El modelo de datos es la decisión más cara"*.
-- **Alcides** → *"Configurable le gana a hardcodeado"*.
-- **Lucas** → *"Las capas no son burocracia"* (el cambio de React a Angular sin tocar el backend)
-  y *"desplegar temprano y seguido"*.
+Los tres pueden repartirse así si quieren: uno dice 1–2 (requerimientos → HU), otro 3–4
+(objetos → persistir), el tercero 5 + paralelo (consumir + deploy).
 
-Cerrar reconociendo lo que falta —contraseñas hasheadas, `@RolesAllowed`, Bean Validation
-y tests en el pipeline—. Mostrar el límite propio suma; ocultarlo, no.
+Cerrar en una frase con lo pendiente: contraseñas hasheadas, permisos por rol, validar
+datos en la API y tests en el pipeline.
 
-**Diapositiva 25 — Cierre** (Lucas, 0:20). Dejarla en pantalla durante las preguntas: tiene la URL de la app.
+**Diapositiva — Cierre** (Lucas). Dejarla en pantalla durante las preguntas: tiene la URL de la app.
 
 ---
 
@@ -397,9 +446,7 @@ y tests en el pipeline—. Mostrar el límite propio suma; ocultarlo, no.
 
 ## Checklist del día
 
-- [ ] Las 7 capturas colocadas en `presentacion/img/` (ver `CAPTURAS.md`)
 - [ ] Deck exportado a PDF como respaldo (`Ctrl+P` → Guardar como PDF, horizontal, sin márgenes)
-- [ ] Video de respaldo de la demo grabado
 - [ ] Pipeline en verde y la app respondiendo en `grupo1.jyaa-ci.linti.unlp.edu.ar`
 - [ ] Datos de demo cargados y sesiones abiertas por rol
 - [ ] Ensayo completo cronometrado (al menos dos veces)
