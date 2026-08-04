@@ -13,5 +13,7 @@ public interface EvaluadorEjeCapacidadDAO extends GenericDAO<EvaluadorEjeCapacid
 
   List<EvaluadorEjeCapacidad> listarActivosPorUsuario(Long usuarioId);
 
+  List<EvaluadorEjeCapacidad> listarActivos();
+
   List<EvaluadorEjeCapacidad> listarPorUsuarios(Collection<Long> usuarioIds);
 }

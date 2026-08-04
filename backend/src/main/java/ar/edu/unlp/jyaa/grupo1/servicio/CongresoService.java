@@ -2,6 +2,7 @@ package ar.edu.unlp.jyaa.grupo1.servicio;
 
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
 import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
+import ar.edu.unlp.jyaa.grupo1.modelo.CatalogoItem;
 import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.FranjaHoraria;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
@@ -21,6 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @RequestScoped
 public class CongresoService {
@@ -41,6 +43,7 @@ public class CongresoService {
   @Inject private NotificacionService notificacionService;
   @Inject private CatalogoCongresoService catalogoCongresoService;
   @Inject private CertificadoService certificadoService;
+  @Inject private EvaluadorEjeService evaluadorEjeService;
 
   public CongresoConfigDTO obtenerConfig() {
     try {
@@ -100,6 +103,12 @@ public class CongresoService {
                         request.ejesTematicos(),
                         request.modalidadesPresentacion(),
                         request.tiposEnvio());
+                    // Cupos de evaluador que apuntan a un eje ya no activo quedan huérfanos.
+                    evaluadorEjeService.desactivarCuposDeEjesFueraDeCatalogo(
+                        congreso.getEjesTematicos().stream()
+                            .filter(CatalogoItem::isActivo)
+                            .map(CatalogoItem::getCodigo)
+                            .collect(Collectors.toList()));
                   }
                   default -> throw new NegocioException(
                       "grupo inválido (use CONGRESO, INSCRIPCIONES, ENVIO, EVALUACION, DATOS,"

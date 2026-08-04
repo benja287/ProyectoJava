@@ -14,8 +14,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RequestScoped
 public class EvaluadorEjeService {
@@ -107,9 +111,8 @@ public class EvaluadorEjeService {
     if (ejeTematico == null || ejeTematico.isBlank()) {
       return quitarEvaluadorDeEje(usuarioId);
     }
-    if (!catalogoCongresoService.esEjeActivo(ejeTematico)) {
-      throw new NegocioException("Eje temático inválido");
-    }
+    // No exige que el eje siga activo en el catálogo: permite limpiar cupos huérfanos
+    // (ej. eje eliminado de la config pero todavía asignado al usuario).
     Usuario usuario = requireUsuario(usuarioId);
     EvaluadorEjeCapacidad cupo =
         capacidadDAO
@@ -119,7 +122,46 @@ public class EvaluadorEjeService {
     cupo.setRestantes(0);
     capacidadDAO.modificar(cupo);
     sincronizarEjePrincipal(usuario);
+    if (capacidadDAO.listarActivosPorUsuario(usuarioId).isEmpty()) {
+      quitarRolEvaluadorSiCorresponde(usuario);
+    }
     return usuarioDAO.modificar(usuario);
+  }
+
+  /**
+   * Desactiva cupos cuyo eje ya no está en {@code ejesActivosDelCatalogo} (huérfanos tras editar
+   * catálogos). Sincroniza eje principal y rol EVALUADOR en los usuarios afectados.
+   */
+  public void desactivarCuposDeEjesFueraDeCatalogo(Collection<String> ejesActivosDelCatalogo) {
+    Set<String> activos =
+        ejesActivosDelCatalogo == null
+            ? Set.of()
+            : ejesActivosDelCatalogo.stream()
+                .filter(e -> e != null && !e.isBlank())
+                .map(e -> e.trim().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toCollection(HashSet::new));
+    List<EvaluadorEjeCapacidad> cuposActivos = capacidadDAO.listarActivos();
+    Map<Long, Usuario> afectados = new HashMap<>();
+    for (EvaluadorEjeCapacidad cupo : cuposActivos) {
+      String eje = cupo.getEjeTematico() == null ? "" : cupo.getEjeTematico().trim();
+      if (activos.contains(eje.toLowerCase(Locale.ROOT))) {
+        continue;
+      }
+      cupo.setActivo(false);
+      cupo.setRestantes(0);
+      capacidadDAO.modificar(cupo);
+      Usuario u = cupo.getUsuario();
+      if (u != null && u.getId() != null) {
+        afectados.put(u.getId(), u);
+      }
+    }
+    for (Usuario usuario : afectados.values()) {
+      sincronizarEjePrincipal(usuario);
+      if (capacidadDAO.listarActivosPorUsuario(usuario.getId()).isEmpty()) {
+        quitarRolEvaluadorSiCorresponde(usuario);
+      }
+      usuarioDAO.modificar(usuario);
+    }
   }
 
   /** Restaura restantes = capacidadMax para ese eje (solo si el cupo está activo). */
@@ -282,6 +324,18 @@ public class EvaluadorEjeService {
         .max(Comparator.comparingInt(EvaluadorEjeCapacidad::getRestantes))
         .or(() -> activos.stream().max(Comparator.comparingInt(EvaluadorEjeCapacidad::getCapacidadMax)))
         .ifPresent(c -> usuario.setEjeTematicoEvaluador(c.getEjeTematico()));
+  }
+
+  private void quitarRolEvaluadorSiCorresponde(Usuario usuario) {
+    if (usuario.getRoles() != null) {
+      usuario.getRoles().remove(Rol.EVALUADOR);
+    }
+    if (usuario.getRolActual() == Rol.EVALUADOR) {
+      usuario.setRolActual(
+          usuario.getRoles() != null && !usuario.getRoles().isEmpty()
+              ? usuario.getRoles().iterator().next()
+              : null);
+    }
   }
 
   private void asegurarRolEvaluador(Usuario usuario) {

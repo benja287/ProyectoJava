@@ -64,6 +64,19 @@ public class EvaluadorEjeCapacidadDAOImpl extends AbstractJpaDAO<EvaluadorEjeCap
   }
 
   @Override
+  public List<EvaluadorEjeCapacidad> listarActivos() {
+    EntityManager em = emConsulta();
+    try {
+      return em.createQuery(
+              "SELECT e FROM EvaluadorEjeCapacidad e JOIN FETCH e.usuario WHERE e.activo = true ORDER BY e.usuario.id, e.ejeTematico",
+              EvaluadorEjeCapacidad.class)
+          .getResultList();
+    } finally {
+      closeLegacy(em);
+    }
+  }
+
+  @Override
   public List<EvaluadorEjeCapacidad> listarPorUsuarios(Collection<Long> usuarioIds) {
     if (usuarioIds == null || usuarioIds.isEmpty()) {
       return Collections.emptyList();
