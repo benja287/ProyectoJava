@@ -138,7 +138,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         gap: 0.6rem;
         align-items: end;
         padding: 0.65rem 0;
-        border-bottom: 1px solid #e6e2f0;
+        border-bottom: 1px solid rgba(104, 176, 113, 0.28);
       }
       @media (max-width: 720px) {
         .arancel-row {

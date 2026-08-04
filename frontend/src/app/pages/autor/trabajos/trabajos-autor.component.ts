@@ -26,8 +26,25 @@ import { feedbackTextoTrabajo, etiquetaRolEnvio } from '../../../utils/trabajo-r
     ArchivoLinkComponent,
   ],
   template: `
-    <section class="card panel-asistente-detalle">
-      <h1>Mis trabajos</h1>
+    <div class="panel-page asistente-subvista">
+      <div class="panel-hero panel-hero--admin asistente-sub-hero">
+        <span class="panel-hero-icon" aria-hidden="true">📄</span>
+        <div>
+          <h1>Mis trabajos</h1>
+          <p>
+            @if (perfilAsistente) {
+              Envío y seguimiento de trabajos como asistente
+            } @else {
+              Envío y seguimiento de trabajos como autor
+            }
+          </p>
+        </div>
+      </div>
+      <p class="panel-volver">
+        <a [routerLink]="perfilAsistente ? '/asistente' : '/autor'">← Volver al panel</a>
+      </p>
+
+      <section class="panel-card panel-asistente-detalle">
       @if (perfilAsistente) {
         <p>
           Completá los datos del trabajo (como en el instructivo de envío), agregá coautores si
@@ -296,8 +313,8 @@ import { feedbackTextoTrabajo, etiquetaRolEnvio } from '../../../utils/trabajo-r
         }
       }
 
-      <p><a [routerLink]="menuVolver">← {{ etiquetaVolver }}</a></p>
-    </section>
+      </section>
+    </div>
   `,
   styles: [
     `

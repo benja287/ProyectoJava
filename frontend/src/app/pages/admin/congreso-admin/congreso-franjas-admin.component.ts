@@ -253,8 +253,8 @@ interface HuecoLibre {
         margin: 1rem 0;
       }
       .dia-tab {
-        border: 1px solid rgba(15, 23, 42, 0.12);
-        background: #fff;
+        border: 1.5px solid rgba(104, 176, 113, 0.45);
+        background: rgba(255, 255, 255, 0.92);
         border-radius: 10px;
         padding: 0.55rem 0.9rem;
         cursor: pointer;
@@ -264,13 +264,13 @@ interface HuecoLibre {
         gap: 0.15rem;
       }
       .dia-tab--activo {
-        border-color: #4f46e5;
-        background: #eef2ff;
-        box-shadow: 0 0 0 1px #4f46e5 inset;
+        border-color: #2d6a3e;
+        background: #e8f6e4;
+        box-shadow: 0 0 0 1px #2d6a3e inset;
       }
       .dia-tab-meta {
         font-size: 0.75rem;
-        color: #64748b;
+        color: #5c6b62;
       }
       .timeline-wrap {
         display: grid;
@@ -287,12 +287,12 @@ interface HuecoLibre {
         left: 0;
         transform: translateY(-50%);
         font-size: 0.7rem;
-        color: #64748b;
+        color: #5c6b62;
       }
       .timeline-track {
         position: relative;
-        background: linear-gradient(180deg, #f8fafc, #f1f5f9);
-        border: 1px solid rgba(15, 23, 42, 0.1);
+        background: linear-gradient(180deg, #f4faf2, #e4f0df);
+        border: 1.5px solid rgba(104, 176, 113, 0.4);
         border-radius: 12px;
         overflow: hidden;
         cursor: crosshair;

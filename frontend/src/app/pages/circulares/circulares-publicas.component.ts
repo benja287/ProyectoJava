@@ -11,43 +11,47 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
   standalone: true,
   imports: [CommonModule, RouterLink, ArchivoLinkComponent],
   template: `
-    <section class="card">
-      <h1>Circulares del congreso</h1>
-      <p class="muted">Comunicados oficiales de la organización.</p>
+    <section class="circulares-page">
+      <div class="circulares-panel">
+        <header class="circulares-panel-header">
+          <h1>Circulares del congreso</h1>
+          <p class="muted">Comunicados oficiales de la organización.</p>
+        </header>
 
-      @if (error) {
-        <p class="error">{{ error }}</p>
-      }
-      @if (cargando) {
-        <p>Cargando circulares...</p>
-      } @else if (!circulares.length) {
-        <p>Todavía no hay circulares publicadas.</p>
-      } @else {
-        <div class="circular-list">
-          @for (c of circulares; track c.id) {
-            <article class="panel-card circular-item">
-              <h2>{{ c.titulo }}</h2>
-              @if (c.fechaPublicacion) {
-                <p class="muted small">{{ c.fechaPublicacion }}</p>
-              }
-              @if (c.resumen) {
-                <p class="circular-summary">{{ c.resumen }}</p>
-              }
-              <p class="circular-content">{{ c.contenido }}</p>
-              @if (c.documentoUrl) {
-                <p class="circular-pdf-link">
-                  @if (c.documentoNombre) {
-                    <span class="muted small">PDF: {{ c.documentoNombre }} — </span>
-                  }
-                  <app-archivo-link [url]="c.documentoUrl" label="Ver PDF" />
-                </p>
-              }
-            </article>
-          }
-        </div>
-      }
+        @if (error) {
+          <p class="error">{{ error }}</p>
+        }
+        @if (cargando) {
+          <p class="circulares-status">Cargando circulares...</p>
+        } @else if (!circulares.length) {
+          <p class="circulares-status">Todavía no hay circulares publicadas.</p>
+        } @else {
+          <div class="circular-list">
+            @for (c of circulares; track c.id) {
+              <article class="circular-item">
+                <h2>{{ c.titulo }}</h2>
+                @if (c.fechaPublicacion) {
+                  <p class="muted small">{{ c.fechaPublicacion }}</p>
+                }
+                @if (c.resumen) {
+                  <p class="circular-summary">{{ c.resumen }}</p>
+                }
+                <p class="circular-content">{{ c.contenido }}</p>
+                @if (c.documentoUrl) {
+                  <p class="circular-pdf-link">
+                    @if (c.documentoNombre) {
+                      <span class="muted small">PDF: {{ c.documentoNombre }} — </span>
+                    }
+                    <app-archivo-link [url]="c.documentoUrl" label="Ver PDF" />
+                  </p>
+                }
+              </article>
+            }
+          </div>
+        }
 
-      <p><a routerLink="/">← Volver al inicio</a></p>
+        <p class="circulares-back"><a routerLink="/">← Volver al inicio</a></p>
+      </div>
     </section>
   `,
 })

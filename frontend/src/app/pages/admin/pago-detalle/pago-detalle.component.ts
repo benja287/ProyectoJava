@@ -16,14 +16,22 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   standalone: true,
   imports: [CommonModule, RouterLink, ArchivoLinkComponent, ValidacionEfectivoModalComponent],
   template: `
-    <section class="card">
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">💳</span>
+        <div>
+          <h1>Detalle de pago</h1>
+          <p>Datos, comprobante y validación</p>
+        </div>
+      </div>
+
+      <section class="panel-card">
       @if (cargando) {
         <p>Cargando pago...</p>
       } @else if (error && !pago) {
         <p class="error">{{ error }}</p>
-        <a routerLink="/admin/pagos/todos">Volver al listado</a>
       } @else if (pago) {
-        <h1>Detalle de pago #{{ pago.id }}</h1>
+        <h2>Pago #{{ pago.id }}</h2>
 
         @if (error) {
           <p class="error">{{ error }}</p>
@@ -133,14 +141,14 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
             Eliminar pago
           </button>
         </div>
-
-        <p>
-          <a routerLink="/admin/pagos">← Pagos pendientes</a>
-          ·
-          <a routerLink="/admin/pagos/todos">Listado de pagos</a>
-        </p>
       }
-    </section>
+      </section>
+
+      <p class="panel-volver">
+        <a routerLink="/admin/pagos">← Pagos pendientes</a>
+        <a routerLink="/admin/pagos/todos">Listado de pagos</a>
+      </p>
+    </div>
 
     <app-validacion-efectivo-modal
       #modalEfectivo

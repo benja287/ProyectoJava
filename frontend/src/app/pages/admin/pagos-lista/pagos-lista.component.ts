@@ -24,9 +24,17 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
     AppPaginatorComponent,
   ],
   template: `
-    <section class="card">
-      <h1>Listado de pagos</h1>
-      <p>Admin — todos los estados. DELETE <code>/api/pagos/{{ '{' }}id{{ '}' }}</code></p>
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">💳</span>
+        <div>
+          <h1>Listado de pagos</h1>
+          <p>Todos los estados — limpieza y gestión</p>
+        </div>
+      </div>
+
+      <section class="panel-card">
+      <p class="muted">Admin — todos los estados. DELETE <code>/api/pagos/{{ '{' }}id{{ '}' }}</code></p>
 
       <app-filter-bar
         [fields]="filterFields"
@@ -92,12 +100,13 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
         />
       }
 
-      <p>
+      </section>
+
+      <p class="panel-volver">
         <a routerLink="/admin/pagos">Validar pendientes</a>
-        ·
-        <a routerLink="/admin">← Panel admin</a>
+        <a routerLink="/admin">← Volver al panel</a>
       </p>
-    </section>
+    </div>
   `,
 })
 export class PagosListaComponent extends ListadoPaginadoBase {

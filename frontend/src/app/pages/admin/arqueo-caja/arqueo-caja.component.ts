@@ -11,8 +11,16 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <section class="card">
-      <h1>Arqueo de caja</h1>
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">🧾</span>
+        <div>
+          <h1>Arqueo de caja</h1>
+          <p>Contrastá cobros en efectivo con el total del sistema</p>
+        </div>
+      </div>
+
+      <section class="panel-card">
       <p class="muted">
         Pagos en efectivo aprobados con recepción física confirmada. Contá el dinero y contrastá
         con el total del sistema.
@@ -109,12 +117,13 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         }
       }
 
-      <p style="margin-top: 1rem">
+      </section>
+
+      <p class="panel-volver">
         <a routerLink="/admin/pagos">← Pagos pendientes</a>
-        ·
-        <a routerLink="/admin">Panel admin</a>
+        <a routerLink="/admin">← Volver al panel</a>
       </p>
-    </section>
+    </div>
   `,
 })
 export class ArqueoCajaComponent implements OnInit {

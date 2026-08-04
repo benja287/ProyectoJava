@@ -14,14 +14,22 @@ import { etiquetaRolEnvio } from '../../../utils/trabajo-rol.util';
   standalone: true,
   imports: [CommonModule, RouterLink, ArchivoLinkComponent],
   template: `
-    <section class="card">
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">📄</span>
+        <div>
+          <h1>Detalle de trabajo</h1>
+          <p>Datos del envío y acciones de administración</p>
+        </div>
+      </div>
+
+      <section class="panel-card">
       @if (cargando) {
         <p>Cargando trabajo...</p>
       } @else if (error && !trabajo) {
         <p class="error">{{ error }}</p>
-        <a routerLink="/admin/trabajos">Volver al listado</a>
       } @else if (trabajo) {
-        <h1>Detalle de trabajo #{{ trabajo.id }}</h1>
+        <h2>Trabajo #{{ trabajo.id }}</h2>
 
         @if (error) {
           <p class="error">{{ error }}</p>
@@ -96,10 +104,11 @@ import { etiquetaRolEnvio } from '../../../utils/trabajo-rol.util';
             Eliminar trabajo
           </button>
         </div>
-
-        <p><a routerLink="/admin/trabajos">← Volver al listado</a></p>
       }
-    </section>
+      </section>
+
+      <p class="panel-volver"><a routerLink="/admin/trabajos">← Volver al listado</a></p>
+    </div>
   `,
 })
 export class TrabajoDetalleComponent implements OnInit, OnDestroy {

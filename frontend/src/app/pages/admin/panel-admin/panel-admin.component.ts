@@ -38,107 +38,131 @@ import {
         </div>
       }
 
-      <div class="stats-grid">
-        <div class="stat-card stat-card--gris">
-          <span class="stat-label">Usuarios</span>
-          <span class="stat-value">{{ stats?.totalUsuarios ?? '—' }}</span>
+      <div class="admin-stats-grid">
+        <div class="admin-stat admin-stat--usuarios">
+          <span class="admin-stat-label">Usuarios</span>
+          <span class="admin-stat-value">{{ stats?.totalUsuarios ?? '—' }}</span>
         </div>
-        <div class="stat-card stat-card--amarillo">
-          <span class="stat-label">Inscriptos adeudando pago</span>
-          <span class="stat-value">{{ stats?.inscripcionesPendientesPago ?? '—' }}</span>
+        <div class="admin-stat admin-stat--adeuda">
+          <span class="admin-stat-label">Adeudando pago</span>
+          <span class="admin-stat-value">{{ stats?.inscripcionesPendientesPago ?? '—' }}</span>
         </div>
-        <div class="stat-card stat-card--verde">
-          <span class="stat-label">Inscriptos confirmados</span>
-          <span class="stat-value">{{ stats?.inscripcionesConfirmadas ?? '—' }}</span>
+        <div class="admin-stat admin-stat--confirmados">
+          <span class="admin-stat-label">Confirmados</span>
+          <span class="admin-stat-value">{{ stats?.inscripcionesConfirmadas ?? '—' }}</span>
         </div>
-        <div class="stat-card stat-card--violeta">
-          <span class="stat-label">Trabajos presentados</span>
-          <span class="stat-value">{{ stats?.trabajosPresentados ?? '—' }}</span>
+        <div class="admin-stat admin-stat--trabajos">
+          <span class="admin-stat-label">Trabajos</span>
+          <span class="admin-stat-value">{{ stats?.trabajosPresentados ?? '—' }}</span>
         </div>
       </div>
 
-      <div class="panel-asistente-grid">
-        <a routerLink="/admin/congreso" class="accion-card">
-          <span class="accion-icono accion-icono--indigo" aria-hidden="true">📅</span>
-          <div>
+      <div class="panel-asistente-grid admin-accion-grid">
+        <a routerLink="/admin/congreso" class="accion-card accion-card--visual" data-card="congreso">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-congreso.webp" alt="" />
             <h3>Congreso</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Datos, aulas, actividades, programa, certificados y fechas</p>
           </div>
         </a>
-        <a routerLink="/admin/usuarios" class="accion-card">
-          <span class="accion-icono accion-icono--azul" aria-hidden="true">👤</span>
-          <div>
+        <a routerLink="/admin/usuarios" class="accion-card accion-card--visual" data-card="usuarios">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-usuarios.webp" alt="" />
             <h3>Usuarios</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Cuentas, roles y habilitación</p>
           </div>
         </a>
-        <a routerLink="/admin/inscripciones" class="accion-card">
-          <span class="accion-icono accion-icono--verde" aria-hidden="true">✓</span>
-          <div>
+        <a routerLink="/admin/inscripciones" class="accion-card accion-card--visual" data-card="inscripciones">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-inscripciones.webp" alt="" />
             <h3>Inscripciones</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Validar y aprobar inscripciones</p>
           </div>
         </a>
-        <a routerLink="/admin/pagos" class="accion-card">
-          <span class="accion-icono accion-icono--amarillo" aria-hidden="true">$</span>
-          <div>
+        <a routerLink="/admin/pagos" class="accion-card accion-card--visual" data-card="pagos">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-pagos.webp" alt="" />
             <h3>Pagos pendientes</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Revisar transferencias y efectivo</p>
           </div>
         </a>
-        <a routerLink="/admin/pagos/arqueo" class="accion-card">
-          <span class="accion-icono accion-icono--verde" aria-hidden="true">🧮</span>
-          <div>
+        <a routerLink="/admin/pagos/arqueo" class="accion-card accion-card--visual" data-card="arqueo">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-arqueo.webp" alt="" />
             <h3>Arqueo de caja</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Efectivo aprobado vs dinero físico</p>
           </div>
         </a>
-        <a routerLink="/admin/trabajos" class="accion-card">
-          <span class="accion-icono accion-icono--violeta" aria-hidden="true">📄</span>
-          <div>
+        <a routerLink="/admin/trabajos" class="accion-card accion-card--visual" data-card="trabajos">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-trabajos.webp" alt="" />
             <h3>Trabajos</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Listado y seguimiento de trabajos</p>
           </div>
         </a>
-        <a routerLink="/admin/circulares" class="accion-card">
-          <span class="accion-icono accion-icono--teal" aria-hidden="true">📰</span>
-          <div>
+        <a routerLink="/admin/circulares" class="accion-card accion-card--visual" data-card="circulares">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-circulares.webp" alt="" />
             <h3>Circulares</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Publicar y editar circulares</p>
           </div>
         </a>
-        <a routerLink="/admin/limpieza" class="accion-card">
-          <span class="accion-icono accion-icono--naranja" aria-hidden="true">🧹</span>
-          <div>
+        <a routerLink="/admin/limpieza" class="accion-card accion-card--visual" data-card="limpieza">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-limpieza.webp" alt="" />
             <h3>Limpieza de datos</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Eliminar trabajos, pagos y archivos</p>
           </div>
         </a>
-        <a routerLink="/admin/emails" class="accion-card">
-          <span class="accion-icono accion-icono--azul" aria-hidden="true">✉</span>
-          <div>
+        <a routerLink="/admin/emails" class="accion-card accion-card--visual" data-card="emails">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-emails.webp" alt="" />
             <h3>Historial emails</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Registro de correos del sistema</p>
           </div>
         </a>
-        <a routerLink="/admin/notificaciones" class="accion-card">
-          <span class="accion-icono accion-icono--indigo" aria-hidden="true">🔔</span>
-          <div>
+        <a routerLink="/admin/notificaciones" class="accion-card accion-card--visual" data-card="notificaciones">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-notificaciones.webp" alt="" />
             <h3>Notificaciones in-app</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Listado y limpieza de avisos de la campanita</p>
           </div>
         </a>
-        <a routerLink="/admin/estadisticas" class="accion-card">
-          <span class="accion-icono accion-icono--violeta" aria-hidden="true">📊</span>
-          <div>
+        <a routerLink="/admin/estadisticas" class="accion-card accion-card--visual" data-card="estadisticas">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-estadisticas.webp" alt="" />
             <h3>Estadísticas</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Checklist pre-congreso, reportes e interés por actividad</p>
           </div>
         </a>
-        <a routerLink="/admin/notificaciones-broadcast" class="accion-card">
-          <span class="accion-icono accion-icono--indigo" aria-hidden="true">📢</span>
-          <div>
+        <a routerLink="/admin/notificaciones-broadcast" class="accion-card accion-card--visual" data-card="broadcast">
+          <div class="accion-card-cover">
+            <img class="accion-card-media" src="/admin-card-broadcast.webp" alt="" />
             <h3>Enviar notificación</h3>
+          </div>
+          <div class="accion-card-foot">
             <p>Avisar a usuarios o por rol</p>
           </div>
         </a>

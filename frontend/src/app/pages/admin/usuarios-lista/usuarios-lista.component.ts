@@ -27,68 +27,76 @@ import { UsuarioFilaComponent } from './usuario-fila.component';
     AppPaginatorComponent,
   ],
   template: `
-    <section class="card">
-      <h1>Gestión de usuarios — Listado</h1>
-      <p>Perfil administrador — editá usuarios desde el modal sin salir del listado.</p>
-
-      <app-filter-bar
-        [fields]="filterFields"
-        [values]="filtros"
-        (filterApply)="onFiltrosAplicar($event)"
-        (filterClear)="onFiltrosLimpiar()"
-      />
-
-      @if (cargando) {
-        <p>Cargando usuarios...</p>
-      }
-      @if (error) {
-        <p class="error">{{ error }}</p>
-      }
-      @if (mensaje) {
-        <p class="ok">{{ mensaje }}</p>
-      }
-
-      @if (!cargando && !error) {
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Apellido y nombre</th>
-                <th>Email</th>
-                <th>Estado</th>
-                <th>Roles</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (u of usuarios; track u.id) {
-                <app-usuario-fila
-                  [usuario]="u"
-                  (editar)="abrirEdicion($event)"
-                  (toggleActivo)="toggleActivo($event)"
-                  (eliminar)="confirmarBaja($event)"
-                />
-              }
-            </tbody>
-          </table>
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">👤</span>
+        <div>
+          <h1>Gestión de usuarios</h1>
+          <p>Editá usuarios desde el listado sin salir de la pantalla</p>
         </div>
+      </div>
 
-        <app-paginator
-          [currentPage]="page"
-          [totalPages]="totalPages"
-          [total]="total"
-          [disabled]="cargando"
-          (pageChange)="onPageChange($event)"
+      <section class="panel-card">
+        <p class="actions-top">
+          <a routerLink="/admin/usuarios/nuevo">+ Nuevo usuario</a>
+        </p>
+        <p class="muted">Perfil administrador — editá usuarios desde el modal sin salir del listado.</p>
+
+        <app-filter-bar
+          [fields]="filterFields"
+          [values]="filtros"
+          (filterApply)="onFiltrosAplicar($event)"
+          (filterClear)="onFiltrosLimpiar()"
         />
-      }
 
-      <p class="actions-top">
-        <a routerLink="/admin/usuarios/nuevo">+ Nuevo usuario</a>
-        ·
-        <a routerLink="/admin">← Menú admin</a>
-      </p>
-    </section>
+        @if (cargando) {
+          <p>Cargando usuarios...</p>
+        }
+        @if (error) {
+          <p class="error">{{ error }}</p>
+        }
+        @if (mensaje) {
+          <p class="ok">{{ mensaje }}</p>
+        }
+
+        @if (!cargando && !error) {
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Apellido y nombre</th>
+                  <th>Email</th>
+                  <th>Estado</th>
+                  <th>Roles</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (u of usuarios; track u.id) {
+                  <app-usuario-fila
+                    [usuario]="u"
+                    (editar)="abrirEdicion($event)"
+                    (toggleActivo)="toggleActivo($event)"
+                    (eliminar)="confirmarBaja($event)"
+                  />
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <app-paginator
+            [currentPage]="page"
+            [totalPages]="totalPages"
+            [total]="total"
+            [disabled]="cargando"
+            (pageChange)="onPageChange($event)"
+          />
+        }
+      </section>
+
+      <p class="panel-volver"><a routerLink="/admin">← Volver al panel</a></p>
+    </div>
   `,
 })
 export class UsuariosListaComponent extends ListadoPaginadoBase {

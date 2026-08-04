@@ -14,38 +14,48 @@ import { mensajeErrorApi, isCuentaDeshabilitada } from '../../utils/api-error.ut
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
   template: `
-    <section class="card">
-      <h1>Iniciar sesión</h1>
-      <p>
-        Ingresá con tu email y contraseña. Si recién te registraste, completá la inscripción al
-        congreso. Cuando la organización apruebe tu pago, accedés como <strong>asistente</strong>.
-      </p>
-      <p class="muted">
-        ¿Sos participante nuevo?
-        <a routerLink="/registro">Registrate acá</a>.
-      </p>
+    <section class="auth-page login-page">
+      <div class="auth-card login-card">
+        <div class="auth-header">
+          <span class="auth-icon login-icon" aria-hidden="true">↪</span>
+          <span class="login-eyebrow">Bienvenido nuevamente</span>
+          <h1>Iniciar sesión</h1>
+          <p class="muted">
+            Ingresá con tu email y contraseña. Si recién te registraste, completá la inscripción al
+            congreso. Cuando la organización apruebe tu pago, accedés como
+            <strong>asistente</strong>.
+          </p>
+          <p class="muted">
+            ¿Sos participante nuevo?
+            <a routerLink="/registro">Registrate acá</a>.
+          </p>
+        </div>
 
-      @if (error) {
-        <p class="error">{{ error }}</p>
-      }
+        @if (error) {
+          <p class="error">{{ error }}</p>
+        }
 
-      <!-- Formulario reactivo: [formGroup] enlaza con this.form -->
-      <form [formGroup]="form" (ngSubmit)="ingresar()" class="form-grid">
-        <label>
-          Email
-          <input formControlName="email" type="email" autocomplete="username" />
-        </label>
-        <label>
-          Contraseña
-          <input formControlName="password" type="password" autocomplete="current-password" />
-        </label>
-        <div class="actions">
-          <button type="submit" [disabled]="form.invalid || cargando">
+        <form [formGroup]="form" (ngSubmit)="ingresar()" class="auth-form login-form">
+          <label>
+            Email
+            <input formControlName="email" type="email" autocomplete="username" />
+          </label>
+          <label>
+            Contraseña
+            <input formControlName="password" type="password" autocomplete="current-password" />
+          </label>
+          <button
+            type="submit"
+            class="btn-primary-full login-submit"
+            [disabled]="form.invalid || cargando"
+          >
             {{ cargando ? 'Ingresando...' : 'Ingresar' }}
           </button>
-          <a routerLink="/">Volver al inicio</a>
-        </div>
-      </form>
+          <p class="muted" style="text-align: center; margin: 0.5rem 0 0">
+            <a routerLink="/">← Volver al inicio</a>
+          </p>
+        </form>
+      </div>
     </section>
   `,
 })

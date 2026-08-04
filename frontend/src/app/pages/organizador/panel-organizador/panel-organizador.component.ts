@@ -11,8 +11,8 @@ import {
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="panel-page">
-      <div class="panel-hero panel-hero--indigo">
+    <div class="panel-page comite-hub">
+      <div class="panel-hero panel-hero--admin comite-hub-hero">
         <span class="panel-hero-icon" aria-hidden="true">🎓</span>
         <div>
           <h1>Comité Académico</h1>
@@ -39,57 +39,105 @@ import {
         <a routerLink="/organizador/estadisticas">Ver estadísticas</a>
       </p>
 
-      <div class="panel-asistente-grid">
-        <a routerLink="/organizador/comite" class="accion-card">
-          <span class="accion-icono accion-icono--violeta" aria-hidden="true">📄</span>
-          <div>
-            <h3>Trabajos y prevalidación</h3>
-            <p>Listado, detalle, precheck y asignación de evaluadores</p>
-          </div>
-        </a>
-        <a routerLink="/organizador/evaluadores" class="accion-card">
-          <span class="accion-icono accion-icono--azul" aria-hidden="true">👤</span>
-          <div>
-            <h3>Evaluadores por eje temático</h3>
-            <p>Asignar ejes, ver restantes y reiniciar cupos</p>
-          </div>
-        </a>
-        <a routerLink="/organizador/solicitudes-evaluador" class="accion-card">
-          <span class="accion-icono accion-icono--naranja" aria-hidden="true">📋</span>
-          <div>
-            <h3>Solicitudes de evaluadores</h3>
-            <p>Al aprobar se asignan todos los ejes con capacidad &gt; 0</p>
-          </div>
-        </a>
-        <a routerLink="/organizador/plazo-envio" class="accion-card">
-          <span class="accion-icono accion-icono--indigo" aria-hidden="true">📅</span>
-          <div>
-            <h3>Límites de envío</h3>
-            <p>Fecha límite y cupo global de trabajos (autor / asistente)</p>
-          </div>
-        </a>
-        <a routerLink="/organizador/excepciones-cupo" class="accion-card">
-          <span class="accion-icono accion-icono--naranja" aria-hidden="true">⬆</span>
-          <div>
-            <h3>Excepciones de cupo</h3>
-            <p>Aumentar el límite de trabajos a usuarios concretos</p>
-          </div>
-        </a>
-        <a routerLink="/organizador/catalogos-envio" class="accion-card">
-          <span class="accion-icono accion-icono--violeta" aria-hidden="true">📚</span>
-          <div>
-            <h3>Catálogos de envío</h3>
-            <p>Ejes temáticos, modalidades y tipos de trabajo</p>
-          </div>
-        </a>
-        <a routerLink="/organizador/estadisticas" class="accion-card">
-          <span class="accion-icono accion-icono--verde" aria-hidden="true">📊</span>
-          <div>
-            <h3>Estadísticas</h3>
-            <p>Checklist pre-congreso, trabajos por eje y evaluaciones pendientes</p>
-          </div>
-        </a>
-      </div>
+      <section class="panel-card comite-hub-section">
+        <h2>Gestión del comité</h2>
+        <p class="muted comite-hub-lead">
+          Accedé a prevalidación, evaluadores, cupos y catálogos del proceso científico.
+        </p>
+        <div class="panel-asistente-grid comite-accion-grid">
+          <a
+            routerLink="/organizador/comite"
+            class="accion-card accion-card--visual"
+            data-card="trabajos"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/comite-card-trabajos.webp" alt="" />
+              <h3>Trabajos y prevalidación</h3>
+            </div>
+            <div class="accion-card-foot">
+              <p>Listado, detalle, precheck y asignación de evaluadores</p>
+            </div>
+          </a>
+          <a
+            routerLink="/organizador/evaluadores"
+            class="accion-card accion-card--visual"
+            data-card="evaluadores"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/comite-card-evaluadores.webp" alt="" />
+              <h3>Evaluadores por eje</h3>
+            </div>
+            <div class="accion-card-foot">
+              <p>Asignar ejes, ver restantes y reiniciar cupos</p>
+            </div>
+          </a>
+          <a
+            routerLink="/organizador/solicitudes-evaluador"
+            class="accion-card accion-card--visual"
+            data-card="solicitudes"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/comite-card-solicitudes.webp" alt="" />
+              <h3>Solicitudes de evaluadores</h3>
+            </div>
+            <div class="accion-card-foot">
+              <p>Al aprobar se asignan los ejes con capacidad &gt; 0</p>
+            </div>
+          </a>
+          <a
+            routerLink="/organizador/plazo-envio"
+            class="accion-card accion-card--visual"
+            data-card="limites"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/comite-card-limites.webp" alt="" />
+              <h3>Límites de envío</h3>
+            </div>
+            <div class="accion-card-foot">
+              <p>Fecha límite y cupo global de trabajos</p>
+            </div>
+          </a>
+          <a
+            routerLink="/organizador/excepciones-cupo"
+            class="accion-card accion-card--visual"
+            data-card="excepciones"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/comite-card-excepciones.webp" alt="" />
+              <h3>Excepciones de cupo</h3>
+            </div>
+            <div class="accion-card-foot">
+              <p>Aumentar el límite a usuarios concretos</p>
+            </div>
+          </a>
+          <a
+            routerLink="/organizador/catalogos-envio"
+            class="accion-card accion-card--visual"
+            data-card="catalogos"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/comite-card-catalogos.webp" alt="" />
+              <h3>Catálogos de envío</h3>
+            </div>
+            <div class="accion-card-foot">
+              <p>Ejes temáticos, modalidades y tipos</p>
+            </div>
+          </a>
+          <a
+            routerLink="/organizador/estadisticas"
+            class="accion-card accion-card--visual"
+            data-card="estadisticas"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/comite-card-estadisticas.webp" alt="" />
+              <h3>Estadísticas</h3>
+            </div>
+            <div class="accion-card-foot">
+              <p>Checklist pre-congreso y métricas del comité</p>
+            </div>
+          </a>
+        </div>
+      </section>
 
       <p class="panel-volver"><a routerLink="/">← Volver al inicio</a></p>
     </div>

@@ -39,9 +39,9 @@ const ORDEN_TIPO: Record<string, number> = {
   standalone: true,
   imports: [CommonModule, RouterLink, AulaUbicacionLinkComponent],
   template: `
-    <div class="agenda-page">
-      <header class="agenda-hero">
-        <span class="agenda-hero-icon" aria-hidden="true">📅</span>
+    <div class="agenda-page asistente-subvista">
+      <header class="agenda-hero panel-hero panel-hero--admin asistente-sub-hero">
+        <span class="agenda-hero-icon panel-hero-icon" aria-hidden="true">📅</span>
         <div>
           <h1>Mi agenda</h1>
           <p>Tus actividades seleccionadas del congreso (rol {{ etiquetaPerfil }})</p>
@@ -56,8 +56,8 @@ const ORDEN_TIPO: Record<string, number> = {
       }
 
       <div class="agenda-toolbar">
-        <a routerLink="/programa" class="btn-secundario">Ver programa completo</a>
-        <a [routerLink]="panelRoute" class="btn-link">← {{ etiquetaVolver }}</a>
+        <a routerLink="/programa" class="agenda-btn-programa">Ver programa completo</a>
+        <a [routerLink]="panelRoute" class="agenda-btn-volver">← {{ etiquetaVolver }}</a>
       </div>
 
       @if (cargando) {

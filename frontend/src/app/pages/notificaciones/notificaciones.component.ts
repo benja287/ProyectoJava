@@ -10,8 +10,10 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <section class="card">
-      <h1>Notificaciones</h1>
+    <section class="notificaciones-page">
+      <header class="notificaciones-header">
+        <h1>Notificaciones</h1>
+      </header>
       @if (error) {
         <p class="error">{{ error }}</p>
       }
@@ -22,28 +24,39 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
       } @else {
         <ul class="notif-lista">
           @for (n of items; track n.id) {
-            <li [class.no-leida]="!n.leida">
+            <li
+              class="notif-item"
+              [class.no-leida]="!n.leida"
+              [class.leida]="n.leida"
+              (click)="onPanelClick(n)"
+              role="button"
+              tabindex="0"
+              (keydown.enter)="onPanelClick(n)"
+            >
               <strong>{{ n.asunto }}</strong>
               <p class="notif-mensaje">{{ n.mensaje }}</p>
               <small class="muted">{{ n.fechaCreacion | date: 'short' }}</small>
-              <div class="notif-acciones">
-                @if (n.enlace) {
-                  <a [routerLink]="n.enlace" class="btn-secundario" (click)="marcarLeida(n)"
-                    >Ir a la pantalla</a
+              @if (n.enlace) {
+                <div class="notif-acciones">
+                  <a
+                    [routerLink]="n.enlace"
+                    class="btn-secundario"
+                    (click)="onEnlaceClick($event, n)"
                   >
-                }
-                @if (!n.leida) {
-                  <button type="button" (click)="marcarLeida(n)">Marcar leída</button>
-                }
-              </div>
+                    Ir a la pantalla
+                  </a>
+                </div>
+              }
             </li>
           }
         </ul>
-        <button type="button" class="btn-secundario" (click)="marcarTodas()">
-          Marcar todas leídas
-        </button>
+        @if (hayNoLeidas) {
+          <button type="button" class="btn-secundario" (click)="marcarTodas()">
+            Marcar todas leídas
+          </button>
+        }
       }
-      <p><a routerLink="/">← Inicio</a></p>
+      <p class="notificaciones-back"><a routerLink="/">← Inicio</a></p>
     </section>
   `,
   styles: [
@@ -71,6 +84,19 @@ export class NotificacionesComponent implements OnInit {
     this.cargar();
   }
 
+  get hayNoLeidas(): boolean {
+    return this.items.some((n) => !n.leida);
+  }
+
+  onPanelClick(n: Notificacion): void {
+    this.marcarLeida(n);
+  }
+
+  onEnlaceClick(event: MouseEvent, n: Notificacion): void {
+    event.stopPropagation();
+    this.marcarLeida(n);
+  }
+
   marcarLeida(n: Notificacion): void {
     if (n.leida) {
       return;
@@ -78,19 +104,23 @@ export class NotificacionesComponent implements OnInit {
     this.notificacionService.marcarLeida(n.id).subscribe({
       next: () => {
         n.leida = true;
+        this.notificacionService.avisarCambioBadge();
       },
     });
   }
 
   marcarTodas(): void {
     this.notificacionService.marcarTodasLeidas().subscribe({
-      next: () => this.cargar(),
+      next: () => {
+        this.cargar();
+        this.notificacionService.avisarCambioBadge();
+      },
     });
   }
 
   private cargar(): void {
     this.cargando = true;
-    this.notificacionService.listar().subscribe({
+    this.notificacionService.listar(1, 100).subscribe({
       next: (items) => {
         this.items = items;
         this.cargando = false;

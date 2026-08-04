@@ -29,8 +29,16 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
   template: `
-    <section class="card panel-card form-page">
-      <h1>Crear Taller (programa oficial)</h1>
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">🛠</span>
+        <div>
+          <h1>Crear Taller</h1>
+          <p>Programa oficial — día, franja y aula</p>
+        </div>
+      </div>
+
+      <section class="panel-card form-page">
       <p class="muted">Fechas permitidas: {{ fechasPermitidas }}. Elegí día y franja horaria.</p>
       @if (hintDefaults) {
         <p class="muted small">{{ hintDefaults }}</p>
@@ -116,7 +124,12 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <a routerLink="/admin/congreso/actividades" class="btn-secundario">Cancelar</a>
         </div>
       </form>
-    </section>
+      </section>
+
+      <p class="panel-volver">
+        <a routerLink="/admin/congreso/actividades">← Volver a Actividades</a>
+      </p>
+    </div>
   `,
 })
 export class CrearTallerAdminComponent implements OnInit {

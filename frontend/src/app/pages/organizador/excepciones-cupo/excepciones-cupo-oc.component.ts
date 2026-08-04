@@ -12,7 +12,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   imports: [CommonModule, RouterLink, ReactiveFormsModule],
   template: `
     <div class="panel-page">
-      <div class="panel-hero panel-hero--indigo">
+      <div class="panel-hero panel-hero--admin comite-sub-hero">
         <span class="panel-hero-icon" aria-hidden="true">⬆</span>
         <div>
           <h1>Excepciones de cupo de envío</h1>
@@ -98,9 +98,8 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         }
       </section>
 
-      <p style="margin-top: 1rem">
+      <p class="panel-volver">
         <a routerLink="/organizador">← Volver al panel del comité</a>
-        ·
         <a routerLink="/organizador/plazo-envio">Cupos globales</a>
       </p>
     </div>

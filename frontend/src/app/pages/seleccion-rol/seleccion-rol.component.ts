@@ -14,27 +14,38 @@ import { ROLE_DESCRIPCIONES, etiquetaRol } from '../../models/role-labels';
   standalone: true,
   imports: [RouterLink],
   template: `
-    <section class="card seleccion-rol">
-      <h1>Seleccioná tu perfil</h1>
-      <p>Tenés varios roles. Elegí con cuál querés ingresar.</p>
+    <section class="seleccion-rol-page">
+      <div class="seleccion-rol-panel">
+        <header class="seleccion-rol-header">
+          <h1>Seleccioná tu perfil</h1>
+          <p class="muted">Tenés varios roles. Elegí con cuál querés ingresar.</p>
+        </header>
 
-      @if (error) {
-        <p class="error">{{ error }}</p>
-      }
-
-      <!-- Una tarjeta por cada rol del usuario -->
-      <div class="rol-grid">
-        @for (rol of roles; track rol) {
-          <button type="button" class="rol-card" (click)="elegir(rol)" [disabled]="procesando">
-            <h2>{{ etiqueta(rol) }}</h2>
-            <p class="muted">{{ descripcion(rol) }}</p>
-            <span class="rol-card-action">Ingresar como {{ etiqueta(rol) }} →</span>
-          </button>
+        @if (error) {
+          <p class="error">{{ error }}</p>
         }
-      </div>
 
-      <p class="muted">Podés cambiar de perfil después desde el header.</p>
-      <p><a routerLink="/">← Volver al inicio</a></p>
+        <div class="rol-grid">
+          @for (rol of roles; track rol) {
+            <button
+              type="button"
+              class="rol-card"
+              [attr.data-rol]="rol"
+              (click)="elegir(rol)"
+              [disabled]="procesando"
+            >
+              <div class="rol-card-body">
+                <h2>{{ etiqueta(rol) }}</h2>
+                <p class="muted">{{ descripcion(rol) }}</p>
+                <span class="rol-card-action">Ingresar como {{ etiqueta(rol) }} →</span>
+              </div>
+            </button>
+          }
+        </div>
+
+        <p class="seleccion-rol-hint muted">Podés cambiar de perfil después desde el header.</p>
+        <p class="seleccion-rol-back"><a routerLink="/">← Volver al inicio</a></p>
+      </div>
     </section>
   `,
 })

@@ -24,7 +24,7 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
   ],
   template: `
     <div class="panel-page">
-      <div class="panel-hero panel-hero--indigo">
+      <div class="panel-hero panel-hero--admin comite-sub-hero">
         <span class="panel-hero-icon" aria-hidden="true">👤</span>
         <div>
           <h1>Evaluadores por eje temático</h1>
@@ -224,7 +224,9 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
         }
       </section>
 
-      <p><a routerLink="/organizador">← Volver al panel del comité</a></p>
+      <p class="panel-volver">
+        <a routerLink="/organizador">← Volver al panel del comité</a>
+      </p>
     </div>
   `,
   styles: [

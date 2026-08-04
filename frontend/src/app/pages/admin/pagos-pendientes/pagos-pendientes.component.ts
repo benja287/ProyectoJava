@@ -28,9 +28,17 @@ import { PagoFilaComponent } from './pago-fila.component';
     ValidacionEfectivoModalComponent,
   ],
   template: `
-    <section class="card">
-      <h1>Pagos pendientes de validación</h1>
-      <p>
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">💳</span>
+        <div>
+          <h1>Pagos pendientes</h1>
+          <p>Validá comprobantes y cobros en efectivo</p>
+        </div>
+      </div>
+
+      <section class="panel-card">
+      <p class="muted">
         Al aprobar un pago se confirma la inscripción vinculada y el usuario recibe el rol
         <strong>Asistente</strong>. En efectivo se exige número de recibo de caja.
       </p>
@@ -90,14 +98,14 @@ import { PagoFilaComponent } from './pago-fila.component';
         />
       }
 
-      <p>
-        <a routerLink="/admin/pagos/todos">Listado de pagos (limpieza)</a>
-        ·
-        <a routerLink="/admin/pagos/arqueo">Arqueo de caja</a>
-        ·
-        <a routerLink="/admin">← Panel admin</a>
+      </section>
+
+      <p class="panel-volver">
+        <a routerLink="/admin/pagos/todos">Listado de pagos</a>
+        <a routerLink="/admin/pagos/arqueo">Arqueo</a>
+        <a routerLink="/admin">← Volver al panel</a>
       </p>
-    </section>
+    </div>
 
     <app-validacion-efectivo-modal
       #modalEfectivo

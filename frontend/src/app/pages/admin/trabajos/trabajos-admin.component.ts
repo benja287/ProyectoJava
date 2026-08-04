@@ -25,9 +25,17 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
     AppPaginatorComponent,
   ],
   template: `
-    <section class="card">
-      <h1>Listado de trabajos</h1>
-      <p>Admin — limpieza y gestión. DELETE <code>/api/trabajos/{{ '{' }}id{{ '}' }}</code></p>
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">📄</span>
+        <div>
+          <h1>Listado de trabajos</h1>
+          <p>Limpieza y gestión de trabajos enviados</p>
+        </div>
+      </div>
+
+      <section class="panel-card">
+      <p class="muted">Admin — limpieza y gestión. DELETE <code>/api/trabajos/{{ '{' }}id{{ '}' }}</code></p>
 
       <app-filter-bar
         [fields]="filterFields"
@@ -91,8 +99,10 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
         />
       }
 
-      <p><a routerLink="/admin">← Panel admin</a></p>
-    </section>
+      </section>
+
+      <p class="panel-volver"><a routerLink="/admin">← Volver al panel</a></p>
+    </div>
   `,
 })
 export class TrabajosAdminComponent extends ListadoPaginadoBase {

@@ -21,7 +21,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     <div class="panel-page">
-      <div class="panel-hero panel-hero--indigo">
+      <div class="panel-hero panel-hero--admin">
         <span class="panel-hero-icon" aria-hidden="true">🧑‍🔬</span>
         <div>
           <h1>Solicitud al comité de evaluadores</h1>

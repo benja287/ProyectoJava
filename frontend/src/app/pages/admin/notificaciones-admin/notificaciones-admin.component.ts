@@ -168,10 +168,9 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         </div>
       }
 
-      <p class="emails-back">
+      <p class="panel-volver">
         <a routerLink="/admin/limpieza">← Volver a limpieza</a>
-        ·
-        <a routerLink="/admin">Panel admin</a>
+        <a routerLink="/admin">← Volver al panel</a>
       </p>
     </div>
   `,

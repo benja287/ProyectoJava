@@ -14,11 +14,12 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
-    <div class="auth-page">
-      <div class="auth-card">
+    <div class="auth-page registro-page">
+      <div class="auth-card registro-card">
         <div class="auth-header">
-          <div class="auth-icon">+</div>
-          <h2>Registrarse</h2>
+          <div class="auth-icon registro-icon" aria-hidden="true">+</div>
+          <span class="registro-eyebrow">Sumate al congreso</span>
+          <h2>Creá tu cuenta</h2>
           <p>
             Creá tu cuenta con los datos del certificado. Después del login completás la inscripción
             al congreso.
@@ -32,7 +33,7 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
           <p class="error">{{ error }}</p>
         }
 
-        <form [formGroup]="form" (ngSubmit)="guardar()" class="auth-form">
+        <form [formGroup]="form" (ngSubmit)="guardar()" class="auth-form registro-form">
           <label>
             Nombre (tal como aparecerá en el certificado)
             <input formControlName="nombre" autocomplete="given-name" />
@@ -101,10 +102,14 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
             </div>
           </label>
           @if (form.hasError('passwordMismatch') && form.get('confirmPassword')?.touched) {
-            <p class="error">Las contraseñas no coinciden</p>
+            <p class="error registro-form-mensaje">Las contraseñas no coinciden</p>
           }
 
-          <button type="submit" class="btn-primary-full" [disabled]="form.invalid || guardando">
+          <button
+            type="submit"
+            class="btn-primary-full registro-submit"
+            [disabled]="form.invalid || guardando"
+          >
             Registrarse
           </button>
         </form>

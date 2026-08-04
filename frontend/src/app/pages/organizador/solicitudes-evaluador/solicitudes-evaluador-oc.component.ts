@@ -13,7 +13,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   imports: [CommonModule, FormsModule, RouterLink, AppPaginatorComponent],
   template: `
     <div class="panel-page">
-      <div class="panel-hero panel-hero--indigo">
+      <div class="panel-hero panel-hero--admin comite-sub-hero">
         <span class="panel-hero-icon" aria-hidden="true">📋</span>
         <div>
           <h1>Solicitudes de evaluadores</h1>
@@ -22,7 +22,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
       </div>
 
       <p class="panel-volver">
-        <a routerLink="/organizador">← Comité</a> ·
+        <a routerLink="/organizador">← Comité</a>
         <a routerLink="/organizador/evaluadores">Evaluadores por eje</a>
       </p>
 
