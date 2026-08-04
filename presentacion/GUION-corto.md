@@ -868,16 +868,16 @@ Hablar **menos** en E3–E5 de lo que dice el texto en pantalla. Objetivo de ens
 ## SLIDE 41 — Equipo por flujo (0:40) · Lucas
 
 **Contenido**
-- Antes por capas · después por flujo del congreso  
+- Primero backend entre los tres · después front · dueños por flujo  
 
 **Guía oral**
-> Al principio nos dividimos por capas —uno backend, otro front— y chocábamos en los mismos archivos. A partir de la E3 cambiamos: cada uno se hizo dueño de un **flujo completo** del congreso, de la entidad Java hasta la pantalla Angular.
+> No recontamos acá todo el backend: al principio laburamos **los tres juntos** en esa parte; cuando estuvo, pasamos al **frontend** para consumirla. Para no pisarnos, cada uno se hizo dueño de un **flujo completo** del congreso (Java → pantalla).
 >
 > **Benjamín:** inscripción, pagos, recibos, usuarios y gran parte de la API.  
 > **Alcides:** trabajos, comité, evaluadores, programa, aulas y mapa.  
 > **Lucas:** login/JWT/roles, certificados, circulares, pipeline y Docker.
 >
-> Ser dueño del flujo bajó los choques al unir código y obligó a tocar todas las capas. Lo que nos costó: piezas compartidas (usuario, config del congreso) — las hablamos antes y las integramos primero.
+> Ser dueño del flujo bajó los choques al unir código. Lo que nos costó: piezas compartidas (usuario, config del congreso) — las hablamos antes y las integramos primero.
 >
 > Siguiente: las herramientas que sostuvieron eso — Git y el pipeline.
 
