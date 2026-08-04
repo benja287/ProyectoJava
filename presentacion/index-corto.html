@@ -2072,42 +2072,255 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 <section class="slide divider">
   <div class="num">04</div>
   <h1>Demo y reflexión</h1>
-  <p>El sistema funcionando de punta a punta, y qué nos llevamos del proceso.</p>
+  <p>Capturas: configurar + programa + fallidos ··· En vivo: registro→Autor y programa público</p>
   <div class="foot"><span>Bloque 4 de 4</span></div>
 </section>
 
-<!-- ═══════════════ 23 · DEMO ═══════════════ -->
+<!-- ═══════════════ B4 · CAPTURA · CONFIG VENTANAS/PLAZOS ═══════════════ -->
+<section class="slide" style="padding-bottom:6.5vh">
+  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+    <div><div class="kicker">Bloque 4 · Capturas · Organización</div><h2>Configurable: cuándo inicia y cierra el congreso</h2></div>
+    <span class="tag">sin esto el usuario no puede usar el sistema</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">Antes de que alguien se registre: el admin define <b>ventanas</b> y <b>plazos</b>
+      (inscripción, envío, evaluación). Si no están abiertos, no hay “Nuevo trabajo”.</p>
+    <div class="g2" style="gap:.8vw;align-items:stretch">
+      <figure style="margin:0">
+        <img src="img/demo/setup-ventanas.png" alt="Ventanas de tiempo"
+             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption class="small" style="margin-top:.3vh"><b>Ventanas</b> — inicio/fin del congreso e inscripción</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="img/demo/setup-plazos.png" alt="Plazos envío y evaluación"
+             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption class="small" style="margin-top:.3vh"><b>Plazos</b> — envío de trabajos y evaluación</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span>Captura · config → aranceles</span></div>
+</section>
+
+<!-- ═══════════════ B4 · CAPTURA · CONFIG ARANCELES ═══════════════ -->
+<section class="slide" style="padding-bottom:6.5vh">
+  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+    <div><div class="kicker">Bloque 4 · Capturas · Organización</div><h2>Configurable: aranceles y datos de pago</h2></div>
+    <span class="tag">sin precios publicados no hay inscripción clara</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">El admin publica <b>precios por categoría</b> (socio, estudiante, extranjero…)
+      y <b>cómo pagar</b> (alias/CBU, instrucciones, QR). Con eso el participante sabe cuánto y a dónde transferir.</p>
+    <figure style="margin:0;text-align:center">
+      <img src="img/demo/setup-aranceles.png" alt="Precios y datos de pago"
+           style="width:100%;max-height:50vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:10px;background:#fff">
+      <figcaption class="small" style="margin-top:.35vh"><b>Aranceles</b> — categorías · moneda · alias/CBU · instrucciones</figcaption>
+    </figure>
+  </div>
+  <div class="foot"><span>Captura · aranceles → programa</span></div>
+</section>
+
+<!-- ═══════════════ B4 · CAPTURA · PROGRAMA 1-2 ═══════════════ -->
+<section class="slide" style="padding-bottom:6.5vh">
+  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+    <div><div class="kicker">Bloque 4 · Capturas · Programa · 1/2</div><h2>Cómo habilitamos el programa (datos y franjas)</h2></div>
+    <span class="tag">configurable · admin</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">Parte de lo mismo: armar el congreso sin redeploy. Pasos 1 y 2 de la guía.</p>
+    <div class="g2" style="gap:.8vw">
+      <figure style="margin:0">
+        <img src="img/demo/prog-paso1.png" alt="Crear programa paso 1"
+             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption class="small" style="margin-top:.3vh"><b>1 · Datos</b> — nombre, edición, sede, mapa</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="img/demo/prog-paso2.png" alt="Crear programa paso 2"
+             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption class="small" style="margin-top:.3vh"><b>2 · Franjas</b> — jornada / horarios</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span>Captura · programa 1/2</span></div>
+</section>
+
+<!-- ═══════════════ B4 · CAPTURA · PROGRAMA 3-4 ═══════════════ -->
+<section class="slide" style="padding-bottom:6.5vh">
+  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+    <div><div class="kicker">Bloque 4 · Capturas · Programa · 2/2</div><h2>Aulas y actividades (luego lo vemos en vivo)</h2></div>
+    <span class="tag">mapa Leaflet · mesas / pósters / talleres</span>
+  </div>
+  <div class="body top">
+    <div class="g2" style="gap:.8vw">
+      <figure style="margin:0">
+        <img src="img/demo/prog-paso3.png" alt="Crear programa paso 3"
+             style="width:100%;max-height:46vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption class="small" style="margin-top:.3vh"><b>3 · Aulas</b> — capacidad y ubicación en mapa</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="img/demo/prog-paso4.png" alt="Crear programa paso 4"
+             style="width:100%;max-height:46vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption class="small" style="margin-top:.3vh"><b>4 · Actividades</b> — mesas, pósters, talleres…</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span>Captura · programa → paneles</span></div>
+</section>
+
+<!-- ═══════════════ B4 · CAPTURA · PANELES POR ROL ═══════════════ -->
+<section class="slide" style="padding-bottom:6.5vh">
+  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+    <div><div class="kicker">Bloque 4 · Capturas · Roles</div><h2>Tres paneles: admin · comité · evaluador</h2></div>
+    <span class="tag">adelanto de roles (además: asistente / autor)</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:.45vh;font-size:1.08vw">Configurado el congreso: un usuario opera desde paneles distintos según el rol.
+      Acá los tres de organización/evaluación; en vivo entran también <b>asistente</b> y <b>autor</b>.</p>
+    <div class="g3" style="gap:.55vw;align-items:stretch">
+      <figure style="margin:0">
+        <img src="img/demo/panel-admin.png" alt="Panel administrador"
+             style="width:100%;max-height:42vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption class="small" style="margin-top:.3vh"><b>Admin</b> — congreso, pagos, usuarios…</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="img/demo/panel-comite.png" alt="Panel organizador científico"
+             style="width:100%;max-height:42vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption class="small" style="margin-top:.3vh"><b>Comité</b> — precheck, ejes, cupos</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="img/demo/panel-evaluador.png" alt="Panel evaluador"
+             style="width:100%;max-height:42vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption class="small" style="margin-top:.3vh"><b>Evaluador</b> — dictámenes asignados</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span>Captura · paneles → fallidos</span></div>
+</section>
+
+<!-- ═══════════════ B4 · FALLIDO A · PRECHECK ═══════════════ -->
+<section class="slide" style="padding-bottom:6.5vh">
+  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+    <div><div class="kicker">Bloque 4 · Capturas · Fallido A</div><h2>Sin prevalidar: Precheck NO → observado</h2></div>
+    <span class="tag">camino A</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:.45vh;font-size:1.08vw">El asistente envía el trabajo; el comité <b>no prevalida</b> (observa).</p>
+    <div class="g2" style="gap:.8vw">
+      <figure style="margin:0">
+        <img src="img/demo/fallo-precheck.png" alt="Precheck NO"
+             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption class="small" style="margin-top:.3vh"><b>A1</b> Precheck NO — observar</figcaption>
+      </figure>
+      <figure style="margin:0">
+        <img src="img/demo/fallo-observado.png" alt="Observado"
+             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <figcaption class="small" style="margin-top:.3vh"><b>A2</b> Estado observado — aún no hay rol Autor</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span>Fallido A → reenvío</span></div>
+</section>
+
+<!-- ═══════════════ B4 · FALLIDO · REENVÍO ═══════════════ -->
+<section class="slide" style="padding-bottom:6.5vh">
+  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+    <div><div class="kicker">Bloque 4 · Capturas · Reenvío</div><h2>En ambos caminos: el asistente puede reenviar</h2></div>
+    <span class="tag">A3 y B3</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">Corrige desde el panel asistente y vuelve a mandar (sirve para precheck NO y para evaluación negativa).</p>
+    <figure style="margin:0;text-align:center">
+      <img src="img/demo/fallo-reenviar.png" alt="Reenviar trabajo"
+           style="width:100%;max-height:50vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:10px;background:#fff">
+    </figure>
+  </div>
+  <div class="foot"><span>Reenvío → fallido B</span></div>
+</section>
+
+<!-- ═══════════════ B4 · FALLIDO B1 · CUPOS ═══════════════ -->
+<section class="slide" style="padding-bottom:6.5vh">
+  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+    <div><div class="kicker">Bloque 4 · Capturas · Fallido B · 1/2</div><h2>Con prevalidar: evaluadores por eje (cupos)</h2></div>
+    <span class="tag">después del Precheck OK</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">Si el precheck pasa, hace falta tener evaluadores con cupo en el eje
+      (asignación manual; no mostramos “solicitar ser evaluador”).</p>
+    <figure style="margin:0;text-align:center">
+      <img src="img/demo/setup-evaluadores-eje.png" alt="Evaluadores por eje"
+           style="width:100%;max-height:50vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:10px;background:#fff">
+      <figcaption class="small" style="margin-top:.35vh"><b>B1</b> Cupos por eje — listos para asignar al trabajo</figcaption>
+    </figure>
+  </div>
+  <div class="foot"><span>Fallido B1 → B2</span></div>
+</section>
+
+<!-- ═══════════════ B4 · FALLIDO B2 · CORRECCIONES ═══════════════ -->
+<section class="slide" style="padding-bottom:6.5vh">
+  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+    <div><div class="kicker">Bloque 4 · Capturas · Fallido B · 2/2</div><h2>Los dos piden correcciones → reenvío</h2></div>
+    <span class="tag">evaluación negativa</span>
+  </div>
+  <div class="body top">
+    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">Tras asignar evaluadores al trabajo: ambos piden modificaciones profundas.
+      El asistente <b>reenvía</b> (misma pantalla que vimos).</p>
+    <figure style="margin:0;text-align:center">
+      <img src="img/demo/fallo-correcciones-eval.png" alt="Requiere correcciones"
+           style="width:100%;max-height:50vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:10px;background:#fff">
+      <figcaption class="small" style="margin-top:.35vh"><b>B2</b> Requiere correcciones (evaluación)</figcaption>
+    </figure>
+  </div>
+  <div class="foot"><span>Fallidos → vivo exitoso</span></div>
+</section>
+
+<!-- ═══════════════ B4 · VIVO · CIRCUITO EXITOSO ═══════════════ -->
 <section class="slide">
   <div class="head">
-    <div><div class="kicker">Bloque 4 · En vivo</div><h2>Un trabajo, de principio a fin</h2></div>
-    <span class="tag">6 min · <a href="https://grupo1.jyaa-ci.linti.unlp.edu.ar/" target="_blank" rel="noopener" style="color:inherit">grupo1.jyaa-ci.linti.unlp.edu.ar</a></span>
+    <div><div class="kicker">Bloque 4 · En vivo · 1/2</div><h2>En vivo: del registro al rol Autor</h2></div>
+    <span class="tag">~5 min · grupo1</span>
   </div>
   <div class="body">
-    <p class="lead" style="margin-bottom:1.1vh">Recorrido en
-      <a href="https://grupo1.jyaa-ci.linti.unlp.edu.ar/" target="_blank" rel="noopener"><code>https://grupo1.jyaa-ci.linti.unlp.edu.ar/</code></a>
-      — no pantallas sueltas: una acción de un rol cambia lo que ve otro, sobre la misma base.</p>
-    <div class="card fill" style="padding:1.15vh 1.2vw;margin:0">
-      <b>El flujo (en orden)</b>
-      <ol class="small" style="margin:.6vh 0 0 1.2em;padding:0;line-height:1.45;columns:2;column-gap:2.5vw">
-        <li style="margin-bottom:.45vh;break-inside:avoid"><b>Público</b> — home, programa con mapa de aulas y circulares (sin login).</li>
-        <li style="margin-bottom:.45vh;break-inside:avoid"><b>Asistente</b> — se registra, se inscribe y paga (transferencia + comprobante).</li>
-        <li style="margin-bottom:.45vh;break-inside:avoid"><b>Admin</b> — aprueba el pago; sale el recibo y llega la notificación.</li>
-        <li style="margin-bottom:.45vh;break-inside:avoid"><b>Autor</b> — carga el trabajo (coautores + PDF) y lo envía.</li>
-        <li style="margin-bottom:.45vh;break-inside:avoid"><b>Comité</b> — precheck y asigna dos evaluadores (respetando el cupo del eje).</li>
-        <li style="margin-bottom:.45vh;break-inside:avoid"><b>Evaluador</b> — acepta y dictamina.</li>
-        <li style="margin-bottom:.45vh;break-inside:avoid"><b>Autor</b> — ve la devolución en su panel.</li>
-        <li style="break-inside:avoid"><b>Admin</b> — cierra el congreso; se habilitan los certificados.</li>
+    <p class="lead" style="margin-bottom:.55vh">Lo fallido quedó en captura. Acá el camino completo que <b>sí</b> termina bien.</p>
+    <p class="small" style="margin:0 0 .7vh">
+      <b>Producción:</b>
+      <a href="https://grupo1.jyaa-ci.linti.unlp.edu.ar/" target="_blank" rel="noopener">https://grupo1.jyaa-ci.linti.unlp.edu.ar/</a>
+    </p>
+    <div class="card fill" style="padding:1vh 1.15vw;margin:0">
+      <b>En el navegador (orden)</b>
+      <ol class="small" style="margin:.5vh 0 0 1.15em;padding:0;line-height:1.48">
+        <li style="margin-bottom:.3vh"><b>Registro + inscripción + pago</b> (comprobante).</li>
+        <li style="margin-bottom:.3vh"><b>Admin valida el pago</b> → queda <b>asistente</b>.</li>
+        <li style="margin-bottom:.3vh">Asistente <b>envía</b> el trabajo.</li>
+        <li style="margin-bottom:.3vh">Comité: <b>precheck OK</b> + asigna <b>2 evaluadores</b>.</li>
+        <li style="margin-bottom:.3vh">Los dos dictaminan <b>OK</b>.</li>
+        <li style="margin-bottom:.3vh">Comité: <b>dictamen final</b> aprueba.</li>
+        <li>Se habilita el rol <b>Autor</b>.</li>
       </ol>
     </div>
   </div>
-  <div class="foot"><span>Demo en vivo</span></div>
+  <div class="foot"><span>Vivo · éxito → programa en vivo</span></div>
+</section>
+
+<!-- ═══════════════ B4 · PROGRAMA EN VIVO ═══════════════ -->
+<section class="slide">
+  <div class="head">
+    <div><div class="kicker">Bloque 4 · En vivo · 2/2</div><h2>El programa público ya cargado</h2></div>
+    <span class="tag">~1 min · sin login</span>
+  </div>
+  <div class="body">
+    <p class="lead" style="margin-bottom:1vh">Resultado de la configuración: <b>programa</b> con días, actividades y <b>mapa de aulas</b> (Leaflet), sin JWT.</p>
+    <div class="card fill" style="padding:1.2vh 1.25vw;margin:0">
+      <p class="small"><b>Qué señalar:</b> home / programa · pinchos · lo configurable que vimos en captura ya se ve publicado.
+        Cierre demo: punta a punta en grupo1.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Demo en vivo · programa</span></div>
 </section>
 
 <!-- ═══════════════ 24 · APRENDIZAJES ═══════════════ -->
 <section class="slide">
   <div class="head">
     <div><div class="kicker">Bloque 4 · Reflexión</div><h2>Qué nos llevamos</h2></div>
-    <span class="tag">2 min</span>
+    <span class="tag">1 min</span>
   </div>
   <div class="body top">
     <p class="lead" style="margin-bottom:2vh">No fue “aprender una herramienta suelta”: fue <b>armar una aplicación de punta a punta</b>,
