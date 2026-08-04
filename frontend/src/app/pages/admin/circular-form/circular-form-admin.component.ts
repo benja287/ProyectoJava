@@ -13,8 +13,16 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink, ArchivoLinkComponent],
   template: `
-    <section class="card panel-card">
-      <h1>{{ editando ? 'Editar circular' : 'Nueva circular' }}</h1>
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">📰</span>
+        <div>
+          <h1>{{ editando ? 'Editar circular' : 'Nueva circular' }}</h1>
+          <p>Publicá avisos visibles en la sección pública</p>
+        </div>
+      </div>
+
+      <section class="panel-card">
       <p class="muted">
         Las circulares publicadas se muestran en la sección pública y notifican a todos los usuarios.
       </p>
@@ -73,7 +81,10 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <a routerLink="/admin/circulares" class="btn-secundario">Cancelar</a>
         </div>
       </form>
-    </section>
+      </section>
+
+      <p class="panel-volver"><a routerLink="/admin/circulares">← Volver a circulares</a></p>
+    </div>
   `,
 })
 export class CircularFormAdminComponent implements OnInit {

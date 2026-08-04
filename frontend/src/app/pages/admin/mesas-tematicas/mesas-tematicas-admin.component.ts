@@ -34,8 +34,16 @@ const PAGE_SIZE = 20;
   standalone: true,
   imports: [CommonModule, RouterLink, ReactiveFormsModule],
   template: `
-    <section class="card panel-card form-page">
-      <h1>Crear Mesa Temática</h1>
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">🗂</span>
+        <div>
+          <h1>Crear Mesa Temática</h1>
+          <p>Paso a paso: datos, horario y trabajos orales del eje</p>
+        </div>
+      </div>
+
+      <section class="panel-card form-page">
       <p class="muted">
         Paso a paso: primero datos y horario; después elegí trabajos orales del eje.
       </p>
@@ -197,7 +205,12 @@ const PAGE_SIZE = 20;
         </button>
         <a routerLink="/admin/congreso/actividades" class="btn-link">Cancelar</a>
       </div>
-    </section>
+      </section>
+
+      <p class="panel-volver">
+        <a routerLink="/admin/congreso/actividades">← Volver a Actividades</a>
+      </p>
+    </div>
   `,
 })
 export class MesasTematicasAdminComponent implements OnInit {

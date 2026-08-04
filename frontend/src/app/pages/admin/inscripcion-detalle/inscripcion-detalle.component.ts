@@ -23,14 +23,22 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   standalone: true,
   imports: [CommonModule, RouterLink, ArchivoLinkComponent, ValidacionEfectivoModalComponent],
   template: `
-    <section class="card">
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">📋</span>
+        <div>
+          <h1>Detalle de inscripción</h1>
+          <p>Datos del participante, pago y validación</p>
+        </div>
+      </div>
+
+      <section class="panel-card">
       @if (cargando) {
         <p>Cargando inscripción...</p>
       } @else if (error && !inscripcion) {
         <p class="error">{{ error }}</p>
-        <a routerLink="/admin/inscripciones">Volver al listado</a>
       } @else if (inscripcion) {
-        <h1>Detalle de inscripción #{{ inscripcion.id }}</h1>
+        <h2>Inscripción #{{ inscripcion.id }}</h2>
 
         @if (error) {
           <p class="error">{{ error }}</p>
@@ -220,10 +228,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
             </button>
           </div>
         }
-
-        <p><a routerLink="/admin/inscripciones">← Volver al listado</a></p>
       }
-    </section>
+      </section>
+
+      <p class="panel-volver"><a routerLink="/admin/inscripciones">← Volver al listado</a></p>
+    </div>
 
     <app-validacion-efectivo-modal
       #modalEfectivo

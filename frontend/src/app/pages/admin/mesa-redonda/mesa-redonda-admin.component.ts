@@ -27,8 +27,16 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
   template: `
-    <section class="card panel-card form-page">
-      <h1>Crear Mesa Redonda</h1>
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">💬</span>
+        <div>
+          <h1>Crear Mesa Redonda</h1>
+          <p>Definí datos, moderador y horario</p>
+        </div>
+      </div>
+
+      <section class="panel-card form-page">
       @if (hintDefaults) {
         <p class="muted small">{{ hintDefaults }}</p>
       }
@@ -105,7 +113,12 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <a routerLink="/admin/congreso/actividades" class="btn-secundario">Cancelar</a>
         </div>
       </form>
-    </section>
+      </section>
+
+      <p class="panel-volver">
+        <a routerLink="/admin/congreso/actividades">← Volver a Actividades</a>
+      </p>
+    </div>
   `,
 })
 export class MesaRedondaAdminComponent implements OnInit {

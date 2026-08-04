@@ -165,13 +165,7 @@ h2,
 }
 
 .app-footer {
-  text-align: center;
-  padding: 0.45rem 1rem;
-  font-size: 0.78rem;
-  line-height: 1.35;
-  color: var(--color-muted);
-  border-top: 1px solid rgba(213, 221, 214, 0.45);
-  background: rgba(255, 255, 255, 0.55);
+  display: none;
 }
 
 .card {
@@ -4140,6 +4134,1537 @@ body:has(app-congreso-actividades-admin) .congreso-actividades-grid .accion-card
   body:has(app-congreso-actividades-admin) .congreso-actividades-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* --- Subvistas Admin (usuarios, pagos, circulares, …) --- */
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .app-footer,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .app-footer {
+  display: none;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+),
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) {
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+body:has(app-usuarios-lista),
+body:has(app-usuario-alta),
+body:has(app-usuario-detalle),
+body:has(app-solicitudes-autor-admin) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/admin-card-usuarios.webp');
+}
+
+body:has(app-inscripciones-admin),
+body:has(app-inscripcion-detalle) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/admin-card-inscripciones.webp');
+}
+
+body:has(app-pagos-pendientes),
+body:has(app-pagos-lista),
+body:has(app-pago-detalle) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/admin-card-pagos.webp');
+}
+
+body:has(app-arqueo-caja) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/admin-card-arqueo.webp');
+}
+
+body:has(app-trabajos-admin),
+body:has(app-trabajo-detalle) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/admin-card-trabajos.webp');
+}
+
+body:has(app-circulares-admin),
+body:has(app-circular-form-admin) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/admin-card-circulares.webp');
+}
+
+body:has(app-limpieza-admin) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/admin-card-limpieza.webp');
+}
+
+body:has(app-emails-admin) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/admin-card-emails.webp');
+}
+
+body:has(app-notificaciones-admin) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/admin-card-notificaciones.webp');
+}
+
+body:has(app-notificacion-broadcast-admin) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/admin-card-broadcast.webp');
+}
+
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/admin-card-estadisticas.webp');
+}
+
+body:has(app-mesas-tematicas-admin),
+body:has(app-mesa-redonda-admin),
+body:has(app-sesion-posters-admin),
+body:has(app-crear-taller-admin),
+body:has(app-crear-conferencia-admin) {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(7, 25, 14, 0.28) 0%,
+      rgba(6, 24, 13, 0.18) 45%,
+      rgba(6, 24, 13, 0.34) 100%
+    ),
+    url('/congreso-card-actividades.webp');
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .app-main,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .app-main {
+  max-width: 74rem;
+  margin: 1.25rem auto 1.5rem;
+  padding: 0 1rem;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-page,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-page {
+  max-width: 72rem;
+  margin: 0 auto;
+  gap: 1.15rem;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-hero--admin,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-hero--admin {
+  border: 3px solid rgba(104, 176, 113, 0.86);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(174, 218, 158, 0.35), transparent 42%),
+    linear-gradient(145deg, rgba(235, 247, 226, 0.96), rgba(216, 237, 211, 0.95));
+  color: #102d1c;
+  box-shadow:
+    0 24px 48px rgba(7, 31, 17, 0.28),
+    0 0 0 1px rgba(226, 255, 217, 0.55),
+    0 0 34px rgba(90, 178, 103, 0.28),
+    0 2px 0 rgba(255, 255, 255, 0.28) inset;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-hero--admin::after,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-hero--admin::after {
+  opacity: 0.3;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-hero--admin p,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-hero--admin p {
+  opacity: 0.9;
+  color: #3f4f44;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-volver,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-volver {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  color: transparent;
+  font-size: 0;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-volver a,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-volver a {
+  display: inline-flex;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid rgba(104, 176, 113, 0.55);
+  border-radius: 999px;
+  background: rgba(242, 249, 238, 0.96);
+  color: #174e2a;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  box-shadow: 0 6px 16px rgba(7, 31, 17, 0.12);
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-volver a:hover,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-volver a:hover {
+  background: #fff;
+  border-color: rgba(72, 156, 90, 0.7);
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-card,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .card,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card {
+  border: 3px solid rgba(104, 176, 113, 0.86);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(174, 218, 158, 0.28), transparent 40%),
+    linear-gradient(145deg, rgba(245, 251, 241, 0.97), rgba(226, 243, 217, 0.95));
+  box-shadow:
+    0 18px 40px rgba(7, 31, 17, 0.22),
+    0 0 0 1px rgba(226, 255, 217, 0.7),
+    0 0 30px rgba(90, 178, 103, 0.22),
+    0 2px 0 rgba(255, 255, 255, 0.7) inset;
+  backdrop-filter: blur(8px);
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-card h1,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-card h2,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card h2 {
+  color: #102d1c;
+  font-family: var(--font-display);
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-card > p.muted,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-page > p.muted,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .dashed-box,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card > p.muted {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 0.85rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid rgba(104, 176, 113, 0.55);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #102d1c;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  box-shadow: 0 8px 18px rgba(7, 31, 17, 0.12);
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-card .muted,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card .muted {
+  color: #3f4f44;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-card input,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-card select,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin
+  )
+) .panel-card textarea,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card input,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card select,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card textarea {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid rgba(104, 176, 113, 0.45);
+  border-radius: 10px;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-inscripciones-admin,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-trabajos-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-arqueo-caja
+  )
+) table,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-inscripciones-admin,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-trabajos-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-arqueo-caja
+  )
+) .tabla-simple {
+  background: rgba(255, 255, 255, 0.88);
+  border: 2px solid rgba(104, 176, 113, 0.45);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-inscripciones-admin,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-trabajos-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-arqueo-caja
+  )
+) th {
+  background: linear-gradient(180deg, #eaf6e6, #dcefd6);
+  color: #2d5f3d;
+}
+
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .report-list li {
+  font-size: 0.98rem;
+  color: #243528;
+}
+
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .report-list strong {
+  color: #102d1c;
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+
+body:has(app-emails-admin) .stat-card,
+body:has(app-notificaciones-admin) .stat-card,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .stat-card {
+  border: 2px solid rgba(104, 176, 113, 0.55);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(236, 247, 230, 0.92));
+  box-shadow: 0 12px 26px rgba(7, 31, 17, 0.12);
+}
+
+/* Legibilidad: textos y enlaces en subvistas admin (+ congreso) */
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .panel-card a:not(.btn-primary):not(.btn-secundario):not(.btn-ok):not(.btn-cta-inscripcion):not(.aulas-btn-crear),
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .panel-card .btn-link,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .actions-top a,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card a:not(.btn-primary):not(.btn-secundario):not(.btn-ok),
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card .btn-link {
+  color: #14532d;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .panel-card .muted,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .panel-card .muted.small,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .form-hint,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card .muted,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card .muted.small {
+  color: #243528;
+  font-weight: 600;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .panel-page > .ok,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .panel-card > .ok,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-page > .ok,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card > .ok {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  border: 1.5px solid rgba(72, 156, 90, 0.55);
+  background: rgba(232, 246, 228, 0.96);
+  color: #14532d;
+  font-weight: 700;
+  box-shadow: 0 6px 14px rgba(7, 31, 17, 0.1);
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .panel-page > .error,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .panel-card > .error,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-page > .error,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .panel-card > .error {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  border: 1.5px solid rgba(185, 28, 28, 0.45);
+  background: rgba(254, 242, 242, 0.96);
+  color: #991b1b;
+  font-weight: 700;
+  box-shadow: 0 6px 14px rgba(80, 10, 10, 0.1);
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-inscripciones-admin,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-trabajos-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-arqueo-caja,
+    app-congreso-aulas-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aranceles-admin,
+    app-congreso-fechas-admin
+  )
+) .filter-bar label,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-inscripciones-admin,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-trabajos-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-arqueo-caja
+  )
+) .inline-label {
+  color: #102d1c;
+  font-weight: 700;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .notice-box,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .notice-box {
+  border: 2px solid rgba(104, 176, 113, 0.65);
+  border-radius: 14px;
+  background: rgba(242, 249, 238, 0.96);
+  color: #102d1c;
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.45;
+  box-shadow: 0 8px 18px rgba(7, 31, 17, 0.1);
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .notice-box a,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .notice-box a {
+  color: #14532d;
+  font-weight: 800;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-usuario-alta,
+    app-usuario-detalle,
+    app-inscripciones-admin,
+    app-inscripcion-detalle,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-pago-detalle,
+    app-arqueo-caja,
+    app-trabajos-admin,
+    app-trabajo-detalle,
+    app-circulares-admin,
+    app-circular-form-admin,
+    app-limpieza-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-notificacion-broadcast-admin,
+    app-solicitudes-autor-admin,
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aulas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-actividades-admin,
+    app-congreso-programa-admin,
+    app-congreso-certificados-admin,
+    app-congreso-fechas-admin,
+    app-congreso-aranceles-admin
+  )
+) .notice-box.notice-box--amber,
+body:has(app-admin-estadisticas):not(:has(.comite-sub-hero)) .notice-box.notice-box--amber {
+  border-color: rgba(196, 155, 58, 0.7);
+  background: rgba(255, 248, 230, 0.97);
+  color: #5c4a1a;
+}
+
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-inscripciones-admin,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-trabajos-admin,
+    app-emails-admin,
+    app-notificaciones-admin,
+    app-arqueo-caja,
+    app-usuario-detalle,
+    app-inscripcion-detalle,
+    app-pago-detalle,
+    app-trabajo-detalle
+  )
+) td a,
+body:has(
+  :is(
+    app-usuarios-lista,
+    app-inscripciones-admin,
+    app-pagos-pendientes,
+    app-pagos-lista,
+    app-trabajos-admin,
+    app-emails-admin,
+    app-notificaciones-admin
+  )
+) .emails-asunto-btn {
+  color: #14532d;
+  font-weight: 700;
+}
+
+body:has(
+  :is(
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-circular-form-admin,
+    app-usuario-alta,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-aranceles-admin,
+    app-congreso-fechas-admin,
+    app-congreso-certificados-admin,
+    app-notificacion-broadcast-admin,
+    app-limpieza-admin
+  )
+) .panel-card label,
+body:has(
+  :is(
+    app-mesas-tematicas-admin,
+    app-mesa-redonda-admin,
+    app-sesion-posters-admin,
+    app-crear-taller-admin,
+    app-crear-conferencia-admin,
+    app-circular-form-admin,
+    app-usuario-alta,
+    app-congreso-datos-admin,
+    app-congreso-franjas-admin,
+    app-congreso-aula-form-admin,
+    app-congreso-aranceles-admin,
+    app-congreso-fechas-admin,
+    app-notificacion-broadcast-admin
+  )
+) .form-grid label {
+  color: #102d1c;
+  font-weight: 700;
 }
 
 .panel-hero {

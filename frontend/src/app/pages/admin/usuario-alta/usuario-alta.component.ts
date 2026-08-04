@@ -15,8 +15,16 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
   template: `
-    <section class="card">
-      <h1>Alta de usuario (admin)</h1>
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">👤</span>
+        <div>
+          <h1>Alta de usuario</h1>
+          <p>Creá staff o asistentes con inscripción y pago</p>
+        </div>
+      </div>
+
+      <section class="panel-card">
       <p class="muted">
         <strong>Staff</strong> (admin, evaluador, comité…): alta corta con roles.
         <strong>Asistente</strong>: mismos datos del registro + filiación; se crea inscripción y pago
@@ -177,7 +185,10 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <a routerLink="/admin/usuarios">Cancelar</a>
         </div>
       </form>
-    </section>
+      </section>
+
+      <p class="panel-volver"><a routerLink="/admin/usuarios">← Volver al listado</a></p>
+    </div>
   `,
 })
 export class UsuarioAltaComponent {

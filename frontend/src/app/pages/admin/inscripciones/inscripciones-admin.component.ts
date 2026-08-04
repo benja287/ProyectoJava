@@ -35,9 +35,17 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
     ValidacionEfectivoModalComponent,
   ],
   template: `
-    <section class="card">
-      <h1>Inscripciones al congreso</h1>
-      <p>
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">📋</span>
+        <div>
+          <h1>Inscripciones al congreso</h1>
+          <p>Revisá y validá inscripciones pendientes</p>
+        </div>
+      </div>
+
+      <section class="panel-card">
+      <p class="muted">
         Al aprobar, el usuario pasa a <strong>Asistente</strong> y se confirma el pago.
         <strong>Transferencia:</strong> basta con revisar el comprobante enviado.
         <strong>Efectivo:</strong> registrá el número de recibo de caja al validar.
@@ -193,8 +201,10 @@ import { ListadoPaginadoBase } from '../../../utils/listado-paginado.base';
         />
       }
 
-      <p><a routerLink="/admin">← Menú admin</a></p>
-    </section>
+      </section>
+
+      <p class="panel-volver"><a routerLink="/admin">← Volver al panel</a></p>
+    </div>
 
     <app-validacion-efectivo-modal
       #modalEfectivo

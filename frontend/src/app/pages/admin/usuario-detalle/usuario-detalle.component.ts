@@ -13,14 +13,22 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   standalone: true,
   imports: [CommonModule, RouterLink, ReactiveFormsModule],
   template: `
-    <section class="card">
+    <div class="panel-page">
+      <div class="panel-hero panel-hero--admin">
+        <span class="panel-hero-icon" aria-hidden="true">👤</span>
+        <div>
+          <h1>Detalle de usuario</h1>
+          <p>Datos, roles, estado de cuenta y excepciones de cupo</p>
+        </div>
+      </div>
+
+      <section class="panel-card">
       @if (cargando) {
         <p>Cargando usuario...</p>
       } @else if (error && !usuario) {
         <p class="error">{{ error }}</p>
-        <a routerLink="/admin/usuarios">Volver al listado</a>
       } @else if (usuario) {
-        <h1>Detalle de usuario #{{ usuario.id }}</h1>
+        <h2>Usuario #{{ usuario.id }}</h2>
 
         @if (error) {
           <p class="error">{{ error }}</p>
@@ -118,10 +126,11 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
             </button>
           </div>
         </form>
-
-        <p><a routerLink="/admin/usuarios">← Volver al listado</a></p>
       }
-    </section>
+      </section>
+
+      <p class="panel-volver"><a routerLink="/admin/usuarios">← Volver al listado</a></p>
+    </div>
   `,
 })
 export class UsuarioDetalleComponent implements OnInit, OnDestroy {
