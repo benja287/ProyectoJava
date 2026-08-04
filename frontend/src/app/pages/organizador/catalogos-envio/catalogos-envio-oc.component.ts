@@ -13,7 +13,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   imports: [CommonModule, RouterLink, FormsModule],
   template: `
     <div class="panel-page">
-      <div class="panel-hero panel-hero--indigo">
+      <div class="panel-hero panel-hero--admin comite-sub-hero">
         <span class="panel-hero-icon" aria-hidden="true">📚</span>
         <div>
           <h1>Catálogos de envío</h1>
@@ -124,7 +124,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         </div>
       }
 
-      <p style="margin-top: 1rem">
+      <p class="panel-volver">
         <a routerLink="/organizador">← Volver al panel del comité</a>
       </p>
     </div>

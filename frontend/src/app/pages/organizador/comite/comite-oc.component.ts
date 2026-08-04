@@ -117,7 +117,7 @@ interface PrecheckChecks {
   ],
   template: `
     <div class="panel-page">
-      <div class="panel-hero panel-hero--indigo">
+      <div class="panel-hero panel-hero--admin comite-sub-hero">
         <span class="panel-hero-icon" aria-hidden="true">🎓</span>
         <div>
           <h1>Comité Académico</h1>
@@ -248,7 +248,7 @@ interface PrecheckChecks {
               </div>
             }
 
-            @if (hayEmpate && seleccionado?.estado === 'EN_EVALUACION') {
+            @if (hayEmpate && seleccionado.estado === 'EN_EVALUACION') {
               <div class="comite-bloque comite-bloque--aviso">
                 <p class="notice-box notice-box--amber">
                   {{ mensajeComiteEmpateEvaluacion(seleccionado!) }}
@@ -509,19 +509,19 @@ interface PrecheckChecks {
                         <details class="comite-rubrica">
                           <summary>Ver rúbrica (criterios)</summary>
                           <ul>
-                            <li>Pertinencia: {{ rub.general?.pertinencia || '—' }}</li>
-                            <li>Identidad autorxs: {{ rub.general?.identidadAutor || '—' }}</li>
-                            <li>Eje correcto: {{ rub.general?.ejeCorrecto || '—' }}</li>
+                            <li>Pertinencia: {{ rub.general.pertinencia || '—' }}</li>
+                            <li>Identidad autorxs: {{ rub.general.identidadAutor || '—' }}</li>
+                            <li>Eje correcto: {{ rub.general.ejeCorrecto || '—' }}</li>
                             <li>Tipo según evaluador: {{ rub.tipoSegunEvaluador || '—' }}</li>
                             <li>
-                              Forma — lenguaje: {{ rub.forma?.lenguaje?.valor || '—' }}, título:
-                              {{ rub.forma?.titulo?.valor || '—' }}, resumen:
-                              {{ rub.forma?.resumen?.valor || '—' }}, keywords:
-                              {{ rub.forma?.palabrasClave?.valor || '—' }}
+                              Forma — lenguaje: {{ rub.forma.lenguaje.valor || '—' }}, título:
+                              {{ rub.forma.titulo.valor || '—' }}, resumen:
+                              {{ rub.forma.resumen.valor || '—' }}, keywords:
+                              {{ rub.forma.palabrasClave.valor || '—' }}
                             </li>
                             <li>
-                              Bibliografía APA: {{ rub.bibliografia?.formatoApa?.valor || '—' }};
-                              citas↔refs: {{ rub.bibliografia?.coherenciaCitas?.valor || '—' }}
+                              Bibliografía APA: {{ rub.bibliografia.formatoApa.valor || '—' }};
+                              citas↔refs: {{ rub.bibliografia.coherenciaCitas.valor || '—' }}
                             </li>
                           </ul>
                         </details>
@@ -537,7 +537,9 @@ interface PrecheckChecks {
         </section>
       </div>
 
-      <p><a routerLink="/organizador">← Volver al panel del comité</a></p>
+      <p class="panel-volver">
+        <a routerLink="/organizador">← Volver al panel del comité</a>
+      </p>
     </div>
   `,
 })

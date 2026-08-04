@@ -13,8 +13,8 @@ import { feedbackTextoTrabajo } from '../../utils/trabajo-rol.util';
   standalone: true,
   imports: [RouterLink, DevolucionEvaluacionComponent],
   template: `
-    <div class="panel-page">
-      <div class="panel-hero panel-hero--naranja">
+    <div class="panel-page asistente-hub">
+      <div class="panel-hero panel-hero--admin asistente-hub-hero">
         <span class="panel-hero-icon" aria-hidden="true">👤</span>
         <div>
           <h1>Panel Asistente</h1>
@@ -22,161 +22,209 @@ import { feedbackTextoTrabajo } from '../../utils/trabajo-rol.util';
         </div>
       </div>
 
-      <section class="panel-asistente">
-        <h2 class="panel-asistente-titulo">Acciones disponibles</h2>
+      @if (mensajeTrabajo) {
+        <p class="ok panel-asistente-aviso">{{ mensajeTrabajo }}</p>
+      }
 
-        @if (mensajeTrabajo) {
-          <p class="ok panel-asistente-aviso">{{ mensajeTrabajo }}</p>
-        }
+      @if (pendienteRehabilitacionAutor) {
+        <p class="notice-box panel-asistente-aviso">
+          Ya tenés al menos un trabajo <strong>aprobado</strong> como asistente y no tenés el rol
+          Autor. No hace falta enviar otro trabajo: el administrador puede volver a habilitarte
+          Autor desde “Habilitación Autor”. Si te lo habían sacado, pedile que te lo reactive.
+        </p>
+      }
 
-        @if (pendienteRehabilitacionAutor) {
-          <p class="notice-box panel-asistente-aviso">
-            Ya tenés al menos un trabajo <strong>aprobado</strong> como asistente y no tenés el rol
-            Autor. No hace falta enviar otro trabajo: el administrador puede volver a habilitarte
-            Autor desde “Habilitación Autor”. Si te lo habían sacado, pedile que te lo reactive.
-          </p>
-        }
+      <section class="panel-card asistente-hub-section">
+        <h2>Acciones disponibles</h2>
+        <p class="muted asistente-hub-lead">
+          Propuestas, agenda, inscripción, certificados y postulación al comité.
+        </p>
 
-        <div class="panel-asistente-grid">
-          @if (mostrarEnvioTrabajo || trabajos.length > 0) {
-            <a routerLink="/asistente/trabajos" class="accion-card">
-              <span class="accion-icono accion-icono--naranja" aria-hidden="true">📄</span>
-              <div>
+        <div
+          class="panel-asistente-grid asistente-accion-grid"
+          [class.asistente-accion-grid--con-trabajos]="mostrarCardTrabajos"
+        >
+          @if (mostrarCardTrabajos) {
+            <a
+              routerLink="/asistente/trabajos"
+              class="accion-card accion-card--visual"
+              data-card="trabajos"
+            >
+              <div class="accion-card-cover">
+                <img class="accion-card-media" src="/asistente-card-trabajos.webp" alt="" />
                 <h3>{{ trabajos.length > 0 ? 'Mis trabajos' : 'Enviar Trabajo' }}</h3>
+              </div>
+              <div class="accion-card-foot">
                 <p>
                   {{
                     trabajos.length > 0
-                      ? 'Gestioná tus trabajos enviados, el estado y las correcciones solicitadas.'
-                      : 'Presentá tu trabajo científico o relato de experiencia (1 envío como asistente)'
+                      ? 'Gestioná tus trabajos enviados, el estado y las correcciones.'
+                      : 'Presentá tu trabajo científico o relato de experiencia'
                   }}
                 </p>
               </div>
             </a>
           }
 
-          <a routerLink="/asistente/taller" class="accion-card">
-            <span class="accion-icono accion-icono--teal" aria-hidden="true">🖥</span>
-            <div>
+          <a
+            routerLink="/asistente/taller"
+            class="accion-card accion-card--visual"
+            data-card="taller"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/asistente-card-taller.webp" alt="" />
               <h3>Proponer Taller</h3>
+            </div>
+            <div class="accion-card-foot">
               <p>Enviá tu propuesta de taller para evaluación del comité</p>
             </div>
           </a>
 
-          <a routerLink="/asistente/cronograma" class="accion-card">
-            <span class="accion-icono accion-icono--violeta" aria-hidden="true">📅</span>
-            <div>
+          <a
+            routerLink="/asistente/cronograma"
+            class="accion-card accion-card--visual"
+            data-card="agenda"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/asistente-card-agenda.webp" alt="" />
               <h3>Ver mi agenda</h3>
+            </div>
+            <div class="accion-card-foot">
               <p>Consultá las actividades que agregaste al cronograma</p>
             </div>
           </a>
 
-          <a routerLink="/asistente/inscripcion" class="accion-card">
-            <span class="accion-icono accion-icono--verde" aria-hidden="true">🧾</span>
-            <div>
+          <a
+            routerLink="/asistente/inscripcion"
+            class="accion-card accion-card--visual"
+            data-card="inscripcion"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/asistente-card-inscripcion.webp" alt="" />
               <h3>Ver mi inscripción</h3>
-              <p>Consultá tu inscripción, recibo de caja y factura (si la pediste)</p>
+            </div>
+            <div class="accion-card-foot">
+              <p>Inscripción, recibo de caja y factura (si la pediste)</p>
             </div>
           </a>
 
-          <a routerLink="/mis-certificados" class="accion-card">
-            <span class="accion-icono accion-icono--azul" aria-hidden="true">✓</span>
-            <div>
+          <a
+            routerLink="/mis-certificados"
+            class="accion-card accion-card--visual"
+            data-card="certificados"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/asistente-card-certificados.webp" alt="" />
               <h3>Mis certificados</h3>
-              <p>Imprimí o guardá los certificados disponibles para tu participación</p>
+            </div>
+            <div class="accion-card-foot">
+              <p>Imprimí o guardá los certificados de tu participación</p>
             </div>
           </a>
 
-          <a routerLink="/solicitud-evaluador" class="accion-card">
-            <span class="accion-icono accion-icono--indigo" aria-hidden="true">🧑‍🔬</span>
-            <div>
+          <a
+            routerLink="/solicitud-evaluador"
+            class="accion-card accion-card--visual"
+            data-card="evaluador"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/asistente-card-evaluador.webp" alt="" />
               <h3>Solicitar ser evaluador/a</h3>
-              <p>Postulate al comité de evaluadores con tu perfil y capacidad por eje</p>
+            </div>
+            <div class="accion-card-foot">
+              <p>Postulate al comité con tu perfil y capacidad por eje</p>
             </div>
           </a>
         </div>
+      </section>
 
-        @if (esAsistente) {
-          <div class="mis-trabajos-card" id="mis-trabajos">
-            <div class="mis-trabajos-header">
-              <div>
-                <h3>Mis trabajos (rol asistente)</h3>
-                @if (resumen) {
-                  <p class="muted">
-                    Trabajos enviados (asistente): {{ resumen.trabajosEnviadosRol }} | Total histórico:
-                    {{ resumen.totalHistorico }}
-                  </p>
-                }
-              </div>
-              <a routerLink="/asistente/trabajos" class="btn-secundario">Gestionar trabajos</a>
+      @if (esAsistente) {
+        <section class="panel-card mis-trabajos-card" id="mis-trabajos">
+          <div class="mis-trabajos-header">
+            <div>
+              <h2>Mis trabajos (rol asistente)</h2>
+              @if (resumen) {
+                <p class="muted">
+                  Trabajos enviados (asistente): {{ resumen.trabajosEnviadosRol }} | Total histórico:
+                  {{ resumen.totalHistorico }}
+                </p>
+              }
+            </div>
+            <a routerLink="/asistente/trabajos" class="asistente-btn-gestionar">Gestionar trabajos</a>
+          </div>
+
+          @if (resumen) {
+            <div
+              class="limite-envio-box"
+              [class.limite-envio-box--ok]="!resumen.fechaLimitePasada"
+              [class.limite-envio-box--error]="resumen.fechaLimitePasada"
+            >
+              <strong>Límite de envíos</strong>
+              <p>
+                {{
+                  resumen.envioTrabajosHasta
+                    ? 'Fecha límite para enviar trabajos nuevos: ' +
+                      resumen.envioTrabajosHasta +
+                      ' (inclusive).'
+                    : 'El Comité Académico aún no definió fecha límite de entrega: por ahora se permiten envíos nuevos.'
+                }}
+              </p>
+              @if (resumen.fechaLimitePasada) {
+                <p>No se permiten envíos nuevos: se superó la fecha límite.</p>
+              }
             </div>
 
-            @if (resumen) {
-              <div
-                class="limite-envio-box"
-                [class.limite-envio-box--ok]="!resumen.fechaLimitePasada"
-                [class.limite-envio-box--error]="resumen.fechaLimitePasada"
-              >
-                <strong>Límite de envíos</strong>
-                <p>
-                  {{
-                    resumen.envioTrabajosHasta
-                      ? 'Fecha límite para enviar trabajos nuevos: ' + resumen.envioTrabajosHasta + ' (inclusive).'
-                      : 'El Comité Académico aún no definió fecha límite de entrega: por ahora se permiten envíos nuevos.'
-                  }}
-                </p>
-                @if (resumen.fechaLimitePasada) {
-                  <p>No se permiten envíos nuevos: se superó la fecha límite.</p>
+            @if (!resumen.puedeEnviarNuevo) {
+              <div class="limite-envio-box limite-envio-box--warn">
+                <p><strong>No podés enviar un nuevo trabajo en este momento.</strong></p>
+                @if (resumen.mensajeBloqueo) {
+                  <p>{{ resumen.mensajeBloqueo }}</p>
                 }
+                <p class="muted">
+                  Trabajos activos (asistente): {{ resumen.trabajosActivos }} | Reenvíos disponibles:
+                  {{ resumen.reenviosDisponibles }}
+                </p>
               </div>
-
-              @if (!resumen.puedeEnviarNuevo) {
-                <div class="limite-envio-box limite-envio-box--warn">
-                  <p><strong>No podés enviar un nuevo trabajo en este momento.</strong></p>
-                  @if (resumen.mensajeBloqueo) {
-                    <p>{{ resumen.mensajeBloqueo }}</p>
-                  }
-                  <p class="muted">
-                    Trabajos activos (asistente): {{ resumen.trabajosActivos }} | Reenvíos disponibles:
-                    {{ resumen.reenviosDisponibles }}
-                  </p>
-                </div>
-              }
             }
+          }
 
-            @if (cargandoTrabajos) {
-              <p class="muted">Cargando trabajos...</p>
-            } @else if (trabajos.length === 0) {
-              <p class="mis-trabajos-vacio">Todavía no enviaste trabajos como asistente.</p>
-            } @else {
-              @for (t of trabajos; track t.id) {
-                <article class="trabajo-item-detalle">
-                  <div class="trabajo-item-detalle-header">
-                    <strong>{{ t.titulo }}</strong>
-                    <div>
-                      <span class="estado-badge">Enviado como asistente</span>
-                      <span class="estado-badge estado-badge--enviado">{{ etiquetaEstado(t) }}</span>
-                    </div>
+          @if (cargandoTrabajos) {
+            <p class="muted">Cargando trabajos...</p>
+          } @else if (trabajos.length === 0) {
+            <p class="mis-trabajos-vacio">Todavía no enviaste trabajos como asistente.</p>
+          } @else {
+            @for (t of trabajos; track t.id) {
+              <article class="trabajo-item-detalle">
+                <div class="trabajo-item-detalle-header">
+                  <strong>{{ t.titulo }}</strong>
+                  <div>
+                    <span class="estado-badge">Enviado como asistente</span>
+                    <span class="estado-badge estado-badge--enviado">{{ etiquetaEstado(t) }}</span>
                   </div>
-                  <p class="trabajo-item-meta">
-                    {{ t.ejeTematico || 'Sin eje' }} • Precheck
-                    {{ Math.min(t.precheckIntentos ?? 0, 3) }}/3 • Revisión
-                    {{ Math.min(t.revisionIntentos ?? 0, 2) }}/2
-                  </p>
-                  <p class="trabajo-feedback" [class]="feedbackClass(t)">{{ feedbackTexto(t) }}</p>
-                  @if (t.id) {
-                    <app-devolucion-evaluacion [trabajoId]="t.id" [estado]="t.estado" />
-                  }
-                  @if (puedeReenviar(t)) {
-                    <a routerLink="/asistente/trabajos" [queryParams]="{ resubmit: t.id }" class="link-correccion">
-                      Editar y reenviar
-                    </a>
-                  }
-                </article>
-              }
+                </div>
+                <p class="trabajo-item-meta">
+                  {{ t.ejeTematico || 'Sin eje' }} • Precheck
+                  {{ Math.min(t.precheckIntentos ?? 0, 3) }}/3 • Revisión
+                  {{ Math.min(t.revisionIntentos ?? 0, 2) }}/2
+                </p>
+                <p class="trabajo-feedback" [class]="feedbackClass(t)">{{ feedbackTexto(t) }}</p>
+                @if (t.id) {
+                  <app-devolucion-evaluacion [trabajoId]="t.id" [estado]="t.estado" />
+                }
+                @if (puedeReenviar(t)) {
+                  <a
+                    routerLink="/asistente/trabajos"
+                    [queryParams]="{ resubmit: t.id }"
+                    class="link-correccion"
+                  >
+                    Editar y reenviar
+                  </a>
+                }
+              </article>
             }
-          </div>
-        }
-      </section>
+          }
+        </section>
+      }
     </div>
   `,
 })
@@ -234,6 +282,10 @@ export class PanelAsistenteComponent implements OnInit {
     return this.esAsistente && this.trabajos.length === 0 && (this.resumen?.puedeEnviarNuevo ?? true);
   }
 
+  get mostrarCardTrabajos(): boolean {
+    return this.mostrarEnvioTrabajo || this.trabajos.length > 0;
+  }
+
   /** Trabajo aprobado + sin rol AUTOR → no enviar de nuevo; basta re-habilitación admin. */
   get pendienteRehabilitacionAutor(): boolean {
     if (!this.esAsistente || this.loginService.hasRole('AUTOR')) {
@@ -267,8 +319,6 @@ export class PanelAsistenteComponent implements OnInit {
     ) {
       return true;
     }
-    return (
-      t.estado === 'OBSERVADO_EVALUACION' && (t.revisionIntentos ?? 0) < 2
-    );
+    return t.estado === 'OBSERVADO_EVALUACION' && (t.revisionIntentos ?? 0) < 2;
   }
 }

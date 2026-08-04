@@ -14,8 +14,8 @@ import { formatFechaActividad } from '../../utils/fecha.util';
   standalone: true,
   imports: [RouterLink, DevolucionEvaluacionComponent],
   template: `
-    <div class="panel-page">
-      <div class="panel-hero panel-hero--naranja">
+    <div class="panel-page autor-hub">
+      <div class="panel-hero panel-hero--admin autor-hub-hero">
         <span class="panel-hero-icon" aria-hidden="true">📄</span>
         <div>
           <h1>Mis Presentaciones</h1>
@@ -23,193 +23,237 @@ import { formatFechaActividad } from '../../utils/fecha.util';
         </div>
       </div>
 
-      <section class="panel-asistente">
-        <h2 class="panel-asistente-titulo">Acciones disponibles</h2>
+      @if (mensajeTrabajo) {
+        <p class="ok panel-asistente-aviso">{{ mensajeTrabajo }}</p>
+      }
 
-        @if (mensajeTrabajo) {
-          <p class="ok panel-asistente-aviso">{{ mensajeTrabajo }}</p>
-        }
+      <section class="panel-card autor-hub-section">
+        <h2>Acciones disponibles</h2>
+        <p class="muted autor-hub-lead">
+          Trabajos, agenda, programa, certificados y postulación al comité.
+        </p>
 
-        <div class="panel-asistente-grid">
-          @if (mostrarEnvioTrabajo || trabajos.length > 0) {
-            <a routerLink="/autor/trabajos" class="accion-card">
-              <span class="accion-icono accion-icono--naranja" aria-hidden="true">📄</span>
-              <div>
+        <div
+          class="panel-asistente-grid autor-accion-grid"
+          [class.autor-accion-grid--con-trabajos]="mostrarCardTrabajos"
+        >
+          @if (mostrarCardTrabajos) {
+            <a
+              routerLink="/autor/trabajos"
+              class="accion-card accion-card--visual"
+              data-card="trabajos"
+            >
+              <div class="accion-card-cover">
+                <img class="accion-card-media" src="/autor-card-trabajos.webp" alt="" />
                 <h3>{{ trabajos.length > 0 ? 'Mis trabajos' : 'Enviar trabajo' }}</h3>
+              </div>
+              <div class="accion-card-foot">
                 <p>
                   {{
                     trabajos.length > 0
-                      ? 'Gestioná tus trabajos enviados, el estado y las correcciones solicitadas.'
-                      : 'Presentá tu trabajo científico o relato de experiencia como autor'
+                      ? 'Gestioná tus trabajos enviados, el estado y las correcciones.'
+                      : 'Presentá tu trabajo científico o relato de experiencia'
                   }}
                 </p>
               </div>
             </a>
           }
 
-          <a routerLink="/autor/cronograma" class="accion-card">
-            <span class="accion-icono accion-icono--violeta" aria-hidden="true">📅</span>
-            <div>
+          <a
+            routerLink="/autor/cronograma"
+            class="accion-card accion-card--visual"
+            data-card="agenda"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/autor-card-agenda.webp" alt="" />
               <h3>Ver mi agenda</h3>
-              <p>Agregá actividades del programa del congreso a tu cronograma personal</p>
+            </div>
+            <div class="accion-card-foot">
+              <p>Agregá actividades del programa a tu cronograma personal</p>
             </div>
           </a>
 
-          <a routerLink="/programa" class="accion-card">
-            <span class="accion-icono accion-icono--teal" aria-hidden="true">🗓</span>
-            <div>
+          <a routerLink="/programa" class="accion-card accion-card--visual" data-card="programa">
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/autor-card-programa.webp" alt="" />
               <h3>Programa del congreso</h3>
-              <p>Consultá el cronograma publicado y elegí qué sumar a tu agenda</p>
+            </div>
+            <div class="accion-card-foot">
+              <p>Consultá el cronograma publicado y sumá a tu agenda</p>
             </div>
           </a>
 
-          <a routerLink="/mis-certificados" class="accion-card">
-            <span class="accion-icono accion-icono--azul" aria-hidden="true">📜</span>
-            <div>
+          <a
+            routerLink="/mis-certificados"
+            class="accion-card accion-card--visual"
+            data-card="certificados"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/autor-card-certificados.webp" alt="" />
               <h3>Mis certificados</h3>
-              <p>Imprimí o guardá los certificados disponibles para tu participación</p>
+            </div>
+            <div class="accion-card-foot">
+              <p>Imprimí o guardá los certificados de tu participación</p>
             </div>
           </a>
 
-          <a routerLink="/solicitud-evaluador" class="accion-card">
-            <span class="accion-icono accion-icono--indigo" aria-hidden="true">🧑‍🔬</span>
-            <div>
+          <a
+            routerLink="/solicitud-evaluador"
+            class="accion-card accion-card--visual"
+            data-card="evaluador"
+          >
+            <div class="accion-card-cover">
+              <img class="accion-card-media" src="/autor-card-evaluador.webp" alt="" />
               <h3>Solicitar ser evaluador/a</h3>
-              <p>Postulate al comité de evaluadores con tu perfil y capacidad por eje</p>
+            </div>
+            <div class="accion-card-foot">
+              <p>Postulate al comité con tu perfil y capacidad por eje</p>
             </div>
           </a>
         </div>
+      </section>
 
-        <div class="mis-trabajos-card" id="mis-trabajos">
-          <div class="mis-trabajos-header">
-            <div>
-              <h3>Mis trabajos en proceso</h3>
-              @if (resumen) {
-                <p class="muted">
-                  Trabajos enviados (autor): {{ resumen.trabajosEnviadosRol }} | Total histórico:
-                  {{ resumen.totalHistorico }}
-                </p>
-              }
-            </div>
-            <a routerLink="/autor/trabajos" class="btn-secundario">Gestionar trabajos</a>
-          </div>
-
-          @if (resumen) {
-            <div
-              class="limite-envio-box"
-              [class.limite-envio-box--ok]="!resumen.fechaLimitePasada"
-              [class.limite-envio-box--error]="resumen.fechaLimitePasada"
-            >
-              <strong>Límite de envíos</strong>
-              <p>
-                {{
-                  resumen.envioTrabajosHasta
-                    ? 'Fecha límite para enviar trabajos nuevos: ' + resumen.envioTrabajosHasta + ' (inclusive).'
-                    : 'El Comité Académico aún no definió fecha límite de entrega: por ahora se permiten envíos nuevos.'
-                }}
+      <section class="panel-card mis-trabajos-card" id="mis-trabajos">
+        <div class="mis-trabajos-header">
+          <div>
+            <h2>Mis trabajos en proceso</h2>
+            @if (resumen) {
+              <p class="muted">
+                Trabajos enviados (autor): {{ resumen.trabajosEnviadosRol }} | Total histórico:
+                {{ resumen.totalHistorico }}
               </p>
-              @if (resumen.fechaLimitePasada) {
-                <p>No se permiten envíos nuevos: se superó la fecha límite.</p>
-              }
-            </div>
-
-            @if (!resumen.puedeEnviarNuevo) {
-              <div class="limite-envio-box limite-envio-box--warn">
-                <p><strong>No podés enviar un nuevo trabajo en este momento.</strong></p>
-                @if (resumen.mensajeBloqueo) {
-                  <p>{{ resumen.mensajeBloqueo }}</p>
-                }
-                <p class="muted">
-                  Trabajos activos (autor): {{ resumen.trabajosActivos }} | Reenvíos disponibles:
-                  {{ resumen.reenviosDisponibles }}
-                </p>
-              </div>
             }
-          }
-
-          @if (cargandoTrabajos) {
-            <p class="muted">Cargando trabajos...</p>
-          } @else if (trabajos.length === 0) {
-            <p class="mis-trabajos-vacio">Todavía no enviaste trabajos como autor.</p>
-          } @else {
-            @for (t of trabajos; track t.id) {
-              <article class="trabajo-item-detalle">
-                <div class="trabajo-item-detalle-header">
-                  <strong>{{ t.titulo }}</strong>
-                  <div>
-                    <span class="estado-badge">Enviado como autor</span>
-                    <span class="estado-badge estado-badge--enviado">{{ etiquetaEstado(t) }}</span>
-                  </div>
-                </div>
-                <p class="trabajo-item-meta">
-                  {{ t.ejeTematico || 'Sin eje' }} • {{ etiquetaModalidad(t.modalidad) }}
-                  • Precheck {{ Math.min(t.precheckIntentos ?? 0, 3) }}/3 • Revisión
-                  {{ Math.min(t.revisionIntentos ?? 0, 2) }}/2
-                </p>
-                <p class="trabajo-feedback" [class]="feedbackClass(t)">{{ feedbackTexto(t) }}</p>
-                @if (t.id) {
-                  <app-devolucion-evaluacion [trabajoId]="t.id" [estado]="t.estado" />
-                }
-                @if (puedeReenviar(t)) {
-                  <a routerLink="/autor/trabajos" [queryParams]="{ resubmit: t.id }" class="link-correccion">
-                    Editar y reenviar
-                  </a>
-                }
-              </article>
-            }
-          }
+          </div>
+          <a routerLink="/autor/trabajos" class="autor-btn-gestionar">Gestionar trabajos</a>
         </div>
 
-        <div class="mis-trabajos-card" id="mis-presentaciones">
-          <div class="mis-trabajos-header">
-            <div>
-              <h3>Mis presentaciones programadas</h3>
-              <p class="muted">Mesas temáticas (oral) y sesiones de pósters según la modalidad elegida al enviar</p>
-            </div>
+        @if (resumen) {
+          <div
+            class="limite-envio-box"
+            [class.limite-envio-box--ok]="!resumen.fechaLimitePasada"
+            [class.limite-envio-box--error]="resumen.fechaLimitePasada"
+          >
+            <strong>Límite de envíos</strong>
+            <p>
+              {{
+                resumen.envioTrabajosHasta
+                  ? 'Fecha límite para enviar trabajos nuevos: ' +
+                    resumen.envioTrabajosHasta +
+                    ' (inclusive).'
+                  : 'El Comité Académico aún no definió fecha límite de entrega: por ahora se permiten envíos nuevos.'
+              }}
+            </p>
+            @if (resumen.fechaLimitePasada) {
+              <p>No se permiten envíos nuevos: se superó la fecha límite.</p>
+            }
           </div>
 
-          @if (cargandoPresentaciones) {
-            <p class="muted">Cargando presentaciones...</p>
-          } @else if (presentaciones.length === 0) {
-            <p class="mis-trabajos-vacio">Aún no tenés presentaciones programadas en el cronograma.</p>
-          } @else {
-            @for (p of presentaciones; track p.trabajoId + '-' + p.actividadId) {
-              <article
-                class="presentacion-autor-card"
-                [class.presentacion-autor-card--mesa]="p.tipoActividad === 'MESA_TEMATICA'"
-                [class.presentacion-autor-card--poster]="p.tipoActividad === 'POSTER'"
-              >
-                <div class="presentacion-autor-badges">
-                  @if (p.tipoActividad === 'MESA_TEMATICA') {
-                    <span class="presentacion-tipo-badge presentacion-tipo-badge--mesa">Mesa temática</span>
-                  } @else {
-                    <span class="presentacion-tipo-badge presentacion-tipo-badge--poster">Sesión de pósters</span>
-                  }
-                  @if (p.actividadCodigo) {
-                    <span class="muted small">{{ p.actividadCodigo }}</span>
-                  }
-                </div>
-                <h4>{{ p.trabajoTitulo }}</h4>
-                <p class="muted small">{{ p.actividadTitulo }}</p>
-                <div class="presentacion-autor-meta">
-                  <span>{{ formatFecha(p.inicio) }}</span>
-                  @if (p.inicio && p.fin) {
-                    <span>{{ horaRango(p.inicio, p.fin) }}</span>
-                  }
-                  @if (p.sala) {
-                    <span>{{ p.sala }}</span>
-                  }
-                  @if (p.numeroPanel) {
-                    <span class="presentacion-panel-badge">Panel {{ p.numeroPanel }}</span>
-                  }
-                </div>
-                @if (p.ejeTematico) {
-                  <p class="muted small">Eje: {{ p.ejeTematico }}</p>
-                }
-              </article>
-            }
+          @if (!resumen.puedeEnviarNuevo) {
+            <div class="limite-envio-box limite-envio-box--warn">
+              <p><strong>No podés enviar un nuevo trabajo en este momento.</strong></p>
+              @if (resumen.mensajeBloqueo) {
+                <p>{{ resumen.mensajeBloqueo }}</p>
+              }
+              <p class="muted">
+                Trabajos activos (autor): {{ resumen.trabajosActivos }} | Reenvíos disponibles:
+                {{ resumen.reenviosDisponibles }}
+              </p>
+            </div>
           }
+        }
+
+        @if (cargandoTrabajos) {
+          <p class="muted">Cargando trabajos...</p>
+        } @else if (trabajos.length === 0) {
+          <p class="mis-trabajos-vacio">Todavía no enviaste trabajos como autor.</p>
+        } @else {
+          @for (t of trabajos; track t.id) {
+            <article class="trabajo-item-detalle">
+              <div class="trabajo-item-detalle-header">
+                <strong>{{ t.titulo }}</strong>
+                <div>
+                  <span class="estado-badge">Enviado como autor</span>
+                  <span class="estado-badge estado-badge--enviado">{{ etiquetaEstado(t) }}</span>
+                </div>
+              </div>
+              <p class="trabajo-item-meta">
+                {{ t.ejeTematico || 'Sin eje' }} • {{ etiquetaModalidad(t.modalidad) }} • Precheck
+                {{ Math.min(t.precheckIntentos ?? 0, 3) }}/3 • Revisión
+                {{ Math.min(t.revisionIntentos ?? 0, 2) }}/2
+              </p>
+              <p class="trabajo-feedback" [class]="feedbackClass(t)">{{ feedbackTexto(t) }}</p>
+              @if (t.id) {
+                <app-devolucion-evaluacion [trabajoId]="t.id" [estado]="t.estado" />
+              }
+              @if (puedeReenviar(t)) {
+                <a
+                  routerLink="/autor/trabajos"
+                  [queryParams]="{ resubmit: t.id }"
+                  class="link-correccion"
+                >
+                  Editar y reenviar
+                </a>
+              }
+            </article>
+          }
+        }
+      </section>
+
+      <section class="panel-card mis-trabajos-card" id="mis-presentaciones">
+        <div class="mis-trabajos-header">
+          <div>
+            <h2>Mis presentaciones programadas</h2>
+            <p class="muted">
+              Mesas temáticas (oral) y sesiones de pósters según la modalidad elegida al enviar
+            </p>
+          </div>
         </div>
+
+        @if (cargandoPresentaciones) {
+          <p class="muted">Cargando presentaciones...</p>
+        } @else if (presentaciones.length === 0) {
+          <p class="mis-trabajos-vacio">Aún no tenés presentaciones programadas en el cronograma.</p>
+        } @else {
+          @for (p of presentaciones; track p.trabajoId + '-' + p.actividadId) {
+            <article
+              class="presentacion-autor-card"
+              [class.presentacion-autor-card--mesa]="p.tipoActividad === 'MESA_TEMATICA'"
+              [class.presentacion-autor-card--poster]="p.tipoActividad === 'POSTER'"
+            >
+              <div class="presentacion-autor-badges">
+                @if (p.tipoActividad === 'MESA_TEMATICA') {
+                  <span class="presentacion-tipo-badge presentacion-tipo-badge--mesa"
+                    >Mesa temática</span
+                  >
+                } @else {
+                  <span class="presentacion-tipo-badge presentacion-tipo-badge--poster"
+                    >Sesión de pósters</span
+                  >
+                }
+                @if (p.actividadCodigo) {
+                  <span class="muted small">{{ p.actividadCodigo }}</span>
+                }
+              </div>
+              <h4>{{ p.trabajoTitulo }}</h4>
+              <p class="muted small">{{ p.actividadTitulo }}</p>
+              <div class="presentacion-autor-meta">
+                <span>{{ formatFecha(p.inicio) }}</span>
+                @if (p.inicio && p.fin) {
+                  <span>{{ horaRango(p.inicio, p.fin) }}</span>
+                }
+                @if (p.sala) {
+                  <span>{{ p.sala }}</span>
+                }
+                @if (p.numeroPanel) {
+                  <span class="presentacion-panel-badge">Panel {{ p.numeroPanel }}</span>
+                }
+              </div>
+              @if (p.ejeTematico) {
+                <p class="muted small">Eje: {{ p.ejeTematico }}</p>
+              }
+            </article>
+          }
+        }
       </section>
     </div>
   `,
@@ -277,6 +321,10 @@ export class PanelAutorComponent implements OnInit {
 
   get mostrarEnvioTrabajo(): boolean {
     return this.trabajos.length === 0 && (this.resumen?.puedeEnviarNuevo ?? true);
+  }
+
+  get mostrarCardTrabajos(): boolean {
+    return this.mostrarEnvioTrabajo || this.trabajos.length > 0;
   }
 
   etiquetaModalidad(modalidad?: string): string {

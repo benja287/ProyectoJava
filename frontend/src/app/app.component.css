@@ -11,3 +11,49 @@
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
 }
+
+/* Refuerzo local: evita que el estilo global de button oculte el SVG */
+:host .user-menu-panel {
+  z-index: 200;
+  border: 2px solid #7dcf7a;
+  background: rgba(248, 252, 246, 0.97);
+  box-shadow:
+    0 0 0 1px rgba(180, 255, 170, 0.55),
+    0 0 28px rgba(95, 210, 110, 0.55),
+    0 18px 40px rgba(4, 24, 12, 0.35);
+}
+
+:host .nav-icon-btn,
+:host button.nav-icon-btn {
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #fff !important;
+}
+
+:host .nav-icon-btn svg,
+:host button.nav-icon-btn svg {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+
+:host .nav-icon-btn:hover,
+:host button.nav-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+:host .nav-icon-btn::after {
+  top: calc(100% + 0.55rem);
+  bottom: auto;
+}
+
+:host .user-menu-trigger-icon {
+  width: 1.7rem;
+  height: 1.7rem;
+  color: #fff;
+}

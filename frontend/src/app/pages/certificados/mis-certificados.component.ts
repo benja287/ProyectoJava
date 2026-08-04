@@ -22,7 +22,7 @@ import {
   imports: [CommonModule, RouterLink],
   template: `
     <div class="panel-page mis-certificados-page">
-      <div class="panel-hero panel-hero--verde">
+      <div class="panel-hero panel-hero--admin">
         <span class="panel-hero-icon" aria-hidden="true">📜</span>
         <div>
           <h1>Mis certificados</h1>
@@ -33,13 +33,13 @@ import {
       <p class="panel-volver">
         <a routerLink="/">← Inicio</a>
         @if (loginService.hasRole('ASISTENTE')) {
-          · <a routerLink="/asistente">Panel asistente</a>
+          <a routerLink="/asistente">Panel asistente</a>
         }
         @if (loginService.hasRole('AUTOR')) {
-          · <a routerLink="/autor">Panel autor</a>
+          <a routerLink="/autor">Panel autor</a>
         }
         @if (loginService.hasRole('EVALUADOR')) {
-          · <a routerLink="/evaluador">Panel evaluador</a>
+          <a routerLink="/evaluador">Panel evaluador</a>
         }
       </p>
 
@@ -63,7 +63,7 @@ import {
           organización.
         </div>
       } @else {
-        <p class="muted">
+        <p class="mis-certificados-intro">
           Gracias por ser parte del {{ tituloCongreso }}. Elegí un certificado o imprimí todos.
         </p>
 
@@ -82,7 +82,7 @@ import {
                   <strong>{{ usuario?.nombre }} {{ usuario?.apellido }}</strong>
                 </p>
                 <p>{{ c.detalle }}</p>
-                @if (c.lineas?.length) {
+                @if (c.lineas.length) {
                   <ul class="certificado-lineas">
                     @for (linea of c.lineas; track linea) {
                       <li>{{ linea }}</li>
@@ -132,6 +132,9 @@ import {
       }
       .mis-certificados-acciones {
         margin: 0.75rem 0 0;
+      }
+      .mis-certificados-intro {
+        margin: 0;
       }
       @media print {
         .no-print,

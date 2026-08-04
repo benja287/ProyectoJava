@@ -16,7 +16,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
   imports: [CommonModule, RouterLink],
   template: `
     <div class="panel-page">
-      <div class="panel-hero" [class.panel-hero--admin]="!esComite" [class.panel-hero--indigo]="esComite">
+      <div class="panel-hero panel-hero--admin" [class.comite-sub-hero]="esComite">
         <span class="panel-hero-icon" aria-hidden="true">📊</span>
         <div>
           <h1>Estadísticas y reportes</h1>
@@ -165,7 +165,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         <div class="report-grid">
           <section class="panel-card">
             <h2>Trabajos por eje temático</h2>
-            @if (!reporte.trabajosPorEje?.length) {
+            @if (!reporte.trabajosPorEje.length) {
               <p class="muted">Sin trabajos cargados.</p>
             } @else {
               <ul class="report-list">
@@ -229,7 +229,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 
           <section class="panel-card">
             <h2>Inscripciones por categoría</h2>
-            @if (!reporte.inscripcionesPorCategoria?.length) {
+            @if (!reporte.inscripcionesPorCategoria.length) {
               <p class="muted">Sin datos de categoría.</p>
             } @else {
               <ul class="report-list">
@@ -249,7 +249,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
 
           <section class="panel-card">
             <h2>Inscripciones por provincia</h2>
-            @if (!reporte.inscripcionesPorProvincia?.length) {
+            @if (!reporte.inscripcionesPorProvincia.length) {
               <p class="muted">Sin datos de provincia.</p>
             } @else {
               <ul class="report-list">
@@ -315,7 +315,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
           <p class="muted">
             Cuántas personas agregaron cada actividad a su cronograma personal.
           </p>
-          @if (!reporte.interesPorActividad?.length) {
+          @if (!reporte.interesPorActividad.length) {
             <p class="muted">Todavía no hay actividades en agendas personales.</p>
           } @else {
             <ul class="report-list">
@@ -364,7 +364,7 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         }
       }
 
-      <p>
+      <p class="panel-volver">
         <a [routerLink]="volverLink">← {{ volverTexto }}</a>
       </p>
     </div>

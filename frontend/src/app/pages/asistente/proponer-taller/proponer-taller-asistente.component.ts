@@ -21,8 +21,17 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
   standalone: true,
   imports: [CommonModule, RouterLink, ReactiveFormsModule, ArchivoLinkComponent, FilterBarComponent],
   template: `
-    <section class="card">
-      <h1>Proponer Taller</h1>
+    <div class="panel-page asistente-subvista">
+      <div class="panel-hero panel-hero--admin asistente-sub-hero">
+        <span class="panel-hero-icon" aria-hidden="true">🖥</span>
+        <div>
+          <h1>Proponer Taller</h1>
+          <p>Enviá tu propuesta para evaluación del comité académico</p>
+        </div>
+      </div>
+      <p class="panel-volver"><a routerLink="/asistente">← Volver al panel</a></p>
+
+      <section class="panel-card">
       <p class="muted">
         Propuestas enviadas (tus registros): <strong>{{ propuestas.length }}</strong>
       </p>
@@ -127,9 +136,8 @@ import { filtroFromParams, queryParamsFromFiltro } from '../../../utils/filtro-p
           </tbody>
         </table>
       }
-
-      <p><a routerLink="/asistente">← Panel asistente</a></p>
-    </section>
+      </section>
+    </div>
   `,
 })
 export class ProponerTallerAsistenteComponent implements OnInit {

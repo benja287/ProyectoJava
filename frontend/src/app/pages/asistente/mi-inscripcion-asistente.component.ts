@@ -16,8 +16,17 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
   standalone: true,
   imports: [CommonModule, RouterLink, ArchivoLinkComponent],
   template: `
-    <section class="card panel-asistente-detalle">
-      <h1>Mi inscripción al congreso</h1>
+    <div class="panel-page asistente-subvista">
+      <div class="panel-hero panel-hero--admin asistente-sub-hero">
+        <span class="panel-hero-icon" aria-hidden="true">🧾</span>
+        <div>
+          <h1>Mi inscripción al congreso</h1>
+          <p>Datos de inscripción, recibo de caja y factura</p>
+        </div>
+      </div>
+      <p class="panel-volver"><a routerLink="/asistente">← Volver al panel</a></p>
+
+      <section class="panel-card">
       <p class="muted">
         Datos de tu inscripción, recibo de caja (si pagaste en efectivo) y factura cuando la
         organización la adjunte.
@@ -128,10 +137,8 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
         <p class="muted">No encontramos una inscripción asociada a tu usuario.</p>
       }
 
-      <p style="margin-top: 1.25rem">
-        <a routerLink="/asistente">← Volver al panel de asistente</a>
-      </p>
-    </section>
+      </section>
+    </div>
   `,
 })
 export class MiInscripcionAsistenteComponent implements OnInit {

@@ -49,7 +49,7 @@ const TIPOS_CIENTIFICOS = [
   ],
   template: `
     <div class="panel-page">
-      <div class="panel-hero panel-hero--violeta">
+      <div class="panel-hero panel-hero--admin evaluador-hero">
         <span class="panel-hero-icon" aria-hidden="true">📋</span>
         <div>
           <h1>Panel de Evaluador</h1>

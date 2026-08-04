@@ -7,6 +7,7 @@ export const PASOS_CREAR_PROGRAMA = [
   {
     paso: 1,
     label: 'Datos',
+    card: 'datos',
     ruta: '/admin/congreso/datos',
     titulo: 'Datos del congreso',
     detalle: 'Nombre, edición, sede y ubicación en el mapa',
@@ -14,6 +15,7 @@ export const PASOS_CREAR_PROGRAMA = [
   {
     paso: 2,
     label: 'Franjas',
+    card: 'franjas',
     ruta: '/admin/congreso/franjas',
     titulo: 'Franjas horarias',
     detalle: 'Jornada y bloques de horario por día',
@@ -21,6 +23,7 @@ export const PASOS_CREAR_PROGRAMA = [
   {
     paso: 3,
     label: 'Aulas',
+    card: 'aulas',
     ruta: '/admin/congreso/aulas',
     titulo: 'Aulas',
     detalle: 'Salas con capacidad y punto en el mapa',
@@ -28,6 +31,7 @@ export const PASOS_CREAR_PROGRAMA = [
   {
     paso: 4,
     label: 'Actividades',
+    card: 'actividades',
     ruta: '/admin/congreso/actividades',
     titulo: 'Crear actividades',
     detalle: 'Mesas, pósters, taller y conferencia (elegís aula y franja)',
@@ -94,16 +98,22 @@ export const PASOS_CREAR_PROGRAMA = [
   styles: [
     `
       .guia-programa {
-        margin: 0 0 1.25rem;
-        padding: 0.85rem 1rem;
-        border: 1px solid #d8d0ea;
-        border-radius: 10px;
-        background: #f7f4ff;
+        margin: 0 0 0.35rem;
+        padding: 0.95rem 1.1rem;
+        border: 3px solid rgba(104, 176, 113, 0.86);
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 100% 0%, rgba(174, 218, 158, 0.32), transparent 42%),
+          linear-gradient(145deg, rgba(245, 251, 241, 0.97), rgba(226, 243, 217, 0.95));
+        box-shadow:
+          0 14px 28px rgba(7, 31, 17, 0.16),
+          0 0 0 1px rgba(226, 255, 217, 0.65),
+          0 0 22px rgba(90, 178, 103, 0.18);
       }
       .guia-programa-titulo {
         margin: 0 0 0.65rem;
-        font-weight: 600;
-        color: #3d2f66;
+        font-weight: 700;
+        color: #102d1c;
       }
       .guia-programa-pasos {
         display: flex;
@@ -117,23 +127,23 @@ export const PASOS_CREAR_PROGRAMA = [
         gap: 0.35rem;
         padding: 0.35rem 0.7rem;
         border-radius: 999px;
-        border: 1px solid #c5bfd8;
-        background: #fff;
-        color: #2f2940 !important;
+        border: 1.5px solid rgba(104, 176, 113, 0.5);
+        background: rgba(255, 255, 255, 0.92);
+        color: #174e2a !important;
         text-decoration: none;
         font-size: 0.85rem;
-        font-weight: 500;
-      }
-      .guia-paso--activo {
-        background: #5b4b8a !important;
-        border-color: #5b4b8a;
-        color: #fff !important;
         font-weight: 600;
       }
+      .guia-paso--activo {
+        background: #2d6a3e !important;
+        border-color: #2d6a3e;
+        color: #fff !important;
+        font-weight: 700;
+      }
       .guia-paso--hecho:not(.guia-paso--activo) {
-        border-color: #6a9a6a;
-        background: #eef6ee !important;
-        color: #1f4d1f !important;
+        border-color: rgba(72, 156, 90, 0.7);
+        background: #e8f6e4 !important;
+        color: #174e2a !important;
       }
       .guia-paso-num {
         width: 1.35rem;
@@ -142,17 +152,17 @@ export const PASOS_CREAR_PROGRAMA = [
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: #5b4b8a;
+        background: #2d6a3e;
         color: #fff;
         font-size: 0.75rem;
         font-weight: 700;
       }
       .guia-paso--activo .guia-paso-num {
         background: #fff;
-        color: #5b4b8a;
+        color: #2d6a3e;
       }
       .guia-paso--hecho:not(.guia-paso--activo) .guia-paso-num {
-        background: #3d7a3d;
+        background: #3d8b52;
       }
       .guia-programa-acciones {
         display: flex;
@@ -167,17 +177,19 @@ export const PASOS_CREAR_PROGRAMA = [
         text-decoration: none;
         display: inline-block;
         padding: 0.45rem 0.9rem;
-        border-radius: 4px;
+        border-radius: 10px;
       }
       .guia-programa-acciones .btn-secundario {
-        background: #5c5c5c;
+        background: #4b6354;
       }
       .guia-programa-acciones .btn-link {
-        color: #5b4b8a;
+        color: #174e2a;
+        font-weight: 650;
       }
       .guia-programa-hint {
         margin: 0.35rem 0 0;
         font-size: 0.85rem;
+        color: #3f4f44;
       }
     `,
   ],

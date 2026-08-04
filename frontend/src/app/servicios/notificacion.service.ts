@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   LimpiezaNotificacionResult,
@@ -19,8 +19,16 @@ export interface NotificacionAdminFiltro {
 export class NotificacionService {
   private readonly baseUrl = `${environment.apiUrl}/notificaciones`;
   private readonly adminUrl = `${environment.apiUrl}/admin/notificaciones`;
+  private readonly badgeChanged = new Subject<void>();
+
+  /** Emite cuando el badge del header debe refrescarse. */
+  readonly badgeChanged$ = this.badgeChanged.asObservable();
 
   constructor(private http: HttpClient) {}
+
+  avisarCambioBadge(): void {
+    this.badgeChanged.next();
+  }
 
   listar(page = 1, size = 30): Observable<Notificacion[]> {
     return this.http.get<Notificacion[]>(this.baseUrl, {

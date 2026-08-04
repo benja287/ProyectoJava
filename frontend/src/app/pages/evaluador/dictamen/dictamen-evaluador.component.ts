@@ -26,7 +26,7 @@ import { forkJoin } from 'rxjs';
   imports: [CommonModule, ReactiveFormsModule, RouterLink, ArchivoLinkComponent],
   template: `
     <div class="panel-page">
-      <div class="panel-hero panel-hero--violeta">
+      <div class="panel-hero panel-hero--admin evaluador-hero">
         <span class="panel-hero-icon" aria-hidden="true">📝</span>
         <div>
           <h1>Dictamen de evaluación</h1>
@@ -318,36 +318,36 @@ import { forkJoin } from 'rxjs';
         display: inline-flex;
         align-items: center;
         gap: 0.45rem;
-        border: 1px solid #b8b0d0;
-        background: #fff !important;
-        color: #2f2940 !important;
+        border: 1.5px solid rgba(104, 176, 113, 0.5);
+        background: rgba(255, 255, 255, 0.94) !important;
+        color: #174e2a !important;
         border-radius: 999px;
         padding: 0.4rem 0.85rem;
         cursor: pointer;
         font-size: 0.9rem;
-        font-weight: 500;
+        font-weight: 600;
         line-height: 1.2;
       }
       .wizard-paso:hover:not(:disabled) {
-        border-color: #5b4b8a;
-        background: #f7f4ff !important;
+        border-color: #2d6a3e;
+        background: #e8f6e4 !important;
       }
       .wizard-paso--activo {
-        border-color: #5b4b8a;
-        background: #5b4b8a !important;
+        border-color: #2d6a3e;
+        background: #2d6a3e !important;
         color: #fff !important;
-        font-weight: 600;
+        font-weight: 700;
       }
       .wizard-paso--hecho:not(.wizard-paso--activo) {
-        border-color: #6a9a6a;
-        background: #eef6ee !important;
-        color: #1f4d1f !important;
+        border-color: rgba(72, 156, 90, 0.7);
+        background: #e8f6e4 !important;
+        color: #174e2a !important;
       }
       .wizard-paso-num {
         width: 1.5rem;
         height: 1.5rem;
         border-radius: 50%;
-        background: #5b4b8a;
+        background: #2d6a3e;
         color: #fff;
         display: inline-flex;
         align-items: center;
@@ -358,20 +358,21 @@ import { forkJoin } from 'rxjs';
       }
       .wizard-paso--activo .wizard-paso-num {
         background: #fff;
-        color: #5b4b8a;
+        color: #2d6a3e;
       }
       .wizard-paso--hecho:not(.wizard-paso--activo) .wizard-paso-num {
-        background: #3d7a3d;
+        background: #3d8b52;
         color: #fff;
       }
       .wizard-paso-label {
         white-space: nowrap;
       }
       .wizard-fieldset {
-        border: 1px solid #e2e2ea;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
+        border: 2px solid rgba(104, 176, 113, 0.4);
+        border-radius: 14px;
+        padding: 0.85rem 1rem;
         margin: 0.75rem 0;
+        background: rgba(255, 255, 255, 0.55);
       }
       .wizard-acciones {
         display: flex;
@@ -381,16 +382,21 @@ import { forkJoin } from 'rxjs';
         align-items: center;
       }
       .wizard-acciones .btn-secundario {
-        background: #5c5c5c;
+        background: #4b6354;
         color: #fff;
       }
       .wizard-acciones .btn-primary {
-        background: #5b4b8a;
+        background: #2d6a3e;
         color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 0.55rem 1.1rem;
+        font-weight: 700;
       }
       .wizard-acciones .btn-link {
-        color: #5b4b8a;
-        text-decoration: underline;
+        color: #174e2a;
+        text-decoration: none;
+        font-weight: 650;
         background: transparent;
         border: none;
         padding: 0.5rem;

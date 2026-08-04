@@ -59,23 +59,23 @@ import { mensajeErrorApi } from '../../utils/api-error.util';
                 <details>
                   <summary>Ver criterios de la rúbrica</summary>
                   <ul class="devolucion-rubrica">
-                    <li>Pertinencia: {{ rub.general?.pertinencia || '—' }}</li>
-                    <li>Eje temático correcto: {{ rub.general?.ejeCorrecto || '—' }}</li>
-                    <li>Lenguaje: {{ rub.forma?.lenguaje?.valor || '—' }}</li>
-                    <li>Título: {{ rub.forma?.titulo?.valor || '—' }}</li>
-                    <li>Resumen: {{ rub.forma?.resumen?.valor || '—' }}</li>
-                    <li>Palabras clave: {{ rub.forma?.palabrasClave?.valor || '—' }}</li>
-                    <li>Bibliografía APA: {{ rub.bibliografia?.formatoApa?.valor || '—' }}</li>
+                    <li>Pertinencia: {{ rub.general.pertinencia || '—' }}</li>
+                    <li>Eje temático correcto: {{ rub.general.ejeCorrecto || '—' }}</li>
+                    <li>Lenguaje: {{ rub.forma.lenguaje.valor || '—' }}</li>
+                    <li>Título: {{ rub.forma.titulo.valor || '—' }}</li>
+                    <li>Resumen: {{ rub.forma.resumen.valor || '—' }}</li>
+                    <li>Palabras clave: {{ rub.forma.palabrasClave.valor || '—' }}</li>
+                    <li>Bibliografía APA: {{ rub.bibliografia.formatoApa.valor || '—' }}</li>
                     <li>
-                      Citas ↔ referencias: {{ rub.bibliografia?.coherenciaCitas?.valor || '—' }}
+                      Citas ↔ referencias: {{ rub.bibliografia.coherenciaCitas.valor || '—' }}
                     </li>
                     @if (esTipoCientifico(rub.tipoSegunEvaluador)) {
                       <li>
-                        Contenido — intro: {{ rub.contenidoCientifico?.introduccion?.valor || '—' }},
-                        objetivos: {{ rub.contenidoCientifico?.objetivos?.valor || '—' }},
-                        metodología: {{ rub.contenidoCientifico?.metodologia?.valor || '—' }},
-                        resultados: {{ rub.contenidoCientifico?.resultadosDiscusion?.valor || '—' }},
-                        conclusiones: {{ rub.contenidoCientifico?.conclusiones?.valor || '—' }}
+                        Contenido — intro: {{ rub.contenidoCientifico.introduccion.valor || '—' }},
+                        objetivos: {{ rub.contenidoCientifico.objetivos.valor || '—' }},
+                        metodología: {{ rub.contenidoCientifico.metodologia.valor || '—' }},
+                        resultados: {{ rub.contenidoCientifico.resultadosDiscusion.valor || '—' }},
+                        conclusiones: {{ rub.contenidoCientifico.conclusiones.valor || '—' }}
                       </li>
                     }
                   </ul>

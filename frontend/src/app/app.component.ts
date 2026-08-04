@@ -80,6 +80,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.cargarConfigCongreso();
     this.sincronizarSesion();
     this.subs.add(
+      this.notificacionService.badgeChanged$.subscribe(() => this.refrescarNotificaciones())
+    );
+    this.subs.add(
       this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
         this.sincronizarSesion();
         this.refrescarNotificaciones();
