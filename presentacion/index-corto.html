@@ -29,7 +29,7 @@ body{
   position:absolute;inset:0;
   display:none;
   flex-direction:column;
-  padding:4.2vh 6vw 8vh;
+  padding:3.2vh 5vw 6.5vh;
   background:#fff;
 }
 .slide.on{display:flex}
@@ -56,6 +56,74 @@ p,li{font-size:1.35vw;line-height:1.5}
 /* ---------- cuerpo ---------- */
 .body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
 .body.top{justify-content:flex-start}
+/* Reparto vertical del contenido (evita vacío abajo);
+   los recuadros no crecen: alto = contenido */
+.body.balance{
+  justify-content:space-between;flex:1;min-height:0;gap:1vh;
+}
+.body.balance > .g2,
+.body.balance > .g3{
+  flex:0 0 auto;align-items:start;margin-bottom:0 !important;width:100%;
+}
+.body.balance > .g2 > *,
+.body.balance > .g3 > *{
+  height:auto;width:100%;align-self:start;
+}
+.body.balance > .card,
+.body.balance > .card-rel,
+.body.balance > .lead{
+  flex:0 0 auto;
+}
+.body.balance .lead{font-size:1.32vw;line-height:1.42}
+.body.balance .small{font-size:1.12vw;line-height:1.48}
+.body.balance .card,
+.body.balance .card-rel{padding:1vh 1.15vw !important}
+.body.balance h3{font-size:1.15vw !important;margin-bottom:.35vh}
+/* Diapos con capturas: el cuerpo llena alto y las figuras crecen */
+.body.fill-shots{justify-content:flex-start;gap:.55vh;flex:1;min-height:0}
+.body.fill-shots > .g2,
+.body.fill-shots > .g3,
+.body.fill-shots > .g2-60,
+.body.fill-shots > figure{flex:1;min-height:0;align-items:stretch}
+.body.fill-shots figure{
+  display:flex;flex-direction:column;min-height:0;flex:1;
+}
+.body.fill-shots figure figcaption{flex-shrink:0}
+.body.fill-shots figure img,
+img.shot-grow{
+  width:100%;flex:1 1 auto;min-height:0;
+  max-height:none !important;
+  height:100%;
+  object-fit:contain;object-position:top;
+  border:1px solid var(--linea);border-radius:10px;background:#fff;
+}
+.body.fill-shots .lead{margin-bottom:.35vh !important}
+/* Panel log ABM (pág. test-persistencia) */
+.abm-panel{
+  display:flex;flex-direction:column;justify-content:space-evenly;
+  height:100%;min-height:0;
+  border:2px solid var(--linea);border-radius:12px;background:#fff;
+  padding:1.8vh 1.35vw;
+  font-family:"JetBrains Mono",Consolas,monospace;
+  font-size:1.18vw;line-height:1.55;color:#111;
+}
+.abm-panel .abm-title{font-size:1.35vw;font-weight:800;margin-bottom:.2vh}
+.abm-panel .abm-fail{color:var(--acento);font-weight:800;font-size:1.22vw;margin-bottom:.4vh}
+.abm-panel .abm-ok{color:#1a7a3a;font-weight:700}
+.abm-panel .abm-row{padding:.15vh 0}
+.abm-panel .abm-fail-block{color:var(--acento);margin:.45vh 0;line-height:1.45}
+.abm-panel .abm-fail-block span{font-size:1.02vw}
+.abm-panel .abm-sum{
+  margin-top:.4vh;border-top:1px solid var(--linea);padding-top:.7vh;
+  font-size:1.15vw;
+}
+/* Pie de captura desplazado a la columna de texto */
+.caption-indent{
+  margin-top:1vh;padding:.7vh 0 .2vh 1.35vw;
+  border-left:3.5px solid var(--verde-claro);
+  font-size:1.05vw;color:var(--gris);line-height:1.45;
+}
+.caption-indent code{font-size:.92em}
 
 /* ---------- visor diagrama completo (rueda = zoom, arrastrar = pan) ---------- */
 .zoom-wrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:1vh}
@@ -792,26 +860,26 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 
 <!-- ═══════════════ ENTREGA 3 · 6/7 DIFICULTADES + PUENTE E4 ═══════════════ -->
 <!-- ═══════════════ ENTREGA 3 · 5/5 DIFICULTADES + EVIDENCIA ═══════════════ -->
-<section class="slide" style="padding:2.4vh 3.5vw 6vh">
+<section class="slide">
   <div class="head" style="margin-bottom:1vh;padding-bottom:.7vh">
     <div><div class="kicker">Entrega 3 · 5/5 · Dificultades y evidencia</div><h2>Qué nos costó · resultado de <code>/test-persistencia</code></h2></div>
     <span class="tag">13 OK · 1 FALLO (lazy)</span>
   </div>
-  <div class="body top">
-    <div class="g2-60" style="gap:1.2vw;align-items:stretch">
-      <div>
-        <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:.65vh;padding:.85vh 1vw"><b>① “Unknown entity” en Tomcat</b>
+  <div class="body top fill-shots">
+    <div class="g2-60" style="gap:1.2vw;align-items:stretch;flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:.55vh;min-height:0">
+        <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:0;padding:.85vh 1vw"><b>① “Unknown entity” en Tomcat</b>
           <p class="small" style="margin-top:.35vh">Hibernate se queja porque no reconoce una clase como entidad, aunque tenga <code>@Entity</code>.
             A diferencia de otros entornos, Tomcat no escanea el proyecto para descubrirlas solo.
             Lo resolvimos declarando cada clase a mano con una etiqueta <code>&lt;class&gt;</code> dentro de <code>persistence.xml</code>.</p></div>
-        <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:.65vh;padding:.85vh 1vw"><b>② Lazy loading al listar</b>
+        <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:0;padding:.85vh 1vw"><b>② Lazy loading al listar</b>
           <p class="small" style="margin-top:.35vh">Por defecto, algunas relaciones no se traen de la base hasta que se usan.
             Si se accede a esa colección <b>después</b> de cerrar la sesión, Hibernate falla
             (<i>could not initialize proxy — no Session</i>).
             <code>/test-persistencia</code> lo dejó en evidencia: ~13 ABM en OK y un FALLO en
             <code>Actividad.trabajos</code> (salida a la derecha). En el resto lo corregimos con <code>JOIN FETCH</code> en los DAOs;
             este caso pendiente muestra que la batería de pruebas sirve para detectar huecos reales.</p></div>
-        <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:.65vh;padding:.85vh 1vw"><b>③ Capas mezcladas (límite de la E3)</b>
+        <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:0;padding:.85vh 1vw"><b>③ Capas mezcladas (límite de la E3)</b>
           <p class="small" style="margin-top:.35vh">El Servlet pedía el DAO al Factory y manejaba el acceso a datos él mismo:
             mezclaba la puerta HTTP con el caso de uso y el acceso a MySQL.
             Alcanzó para demostrar el ABM, pero no es una API prolija.
@@ -819,24 +887,23 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
             <code>Service</code> (aplicación / caso de uso) y <code>DAO</code> (infraestructura / MySQL) —
             dejando el dominio (<code>Usuario</code>, <code>Trabajo</code>…) sin HTTP ni SQL.
             <b>CDI</b> (<code>@Inject</code>) las conecta y <b>Jersey</b> atiende HTTP.</p></div>
-        <div class="card fill" style="margin:0;padding:.85vh 1vw">
+        <div class="card fill" style="margin:0;padding:.85vh 1vw;margin-top:auto">
           <p class="small"><b>Cierre:</b> en la E3 el modelo <b>se persiste</b> y se despliega; la prueba ABM lo verifica en vivo.
             En la E4 ordenamos capas con <b>DIP</b>: la web ya no crea DAOs a mano — el contenedor los inyecta.</p>
         </div>
       </div>
-      <div style="border:2px solid var(--linea);border-radius:12px;background:#fff;padding:1vh 1.1vw;
-                  font-family:'JetBrains Mono',Consolas,monospace;font-size:.88vw;line-height:1.32;color:#111;overflow:hidden">
-        <div style="font-size:1.05vw;font-weight:800;margin-bottom:.4vh">Pruebas ABM — DAO + JPA</div>
-        <div style="color:var(--acento);font-weight:800;margin-bottom:.6vh">HAY TESTS FALLIDOS</div>
-        <div>[Congreso] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
-        <div>[Usuario] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
-        <div>[Pago] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
-        <div>[Inscripcion + Pago] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
-        <div>[Trabajo] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
-        <div style="color:var(--acento);margin:.35vh 0">[Actividad + M2M trabajos] <b>FALLO</b><br>
-          <span style="font-size:.8vw">lazy init <code>Actividad.trabajos</code> — no Session</span></div>
-        <div>[Circular … Certificado … Asignacion+Evaluacion] <span style="color:#1a7a3a;font-weight:700">OK</span></div>
-        <div style="margin-top:.6vh;border-top:1px solid var(--linea);padding-top:.5vh">
+      <div class="abm-panel">
+        <div class="abm-title">Pruebas ABM — DAO + JPA</div>
+        <div class="abm-fail">HAY TESTS FALLIDOS</div>
+        <div class="abm-row">[Congreso] <span class="abm-ok">OK</span></div>
+        <div class="abm-row">[Usuario] <span class="abm-ok">OK</span></div>
+        <div class="abm-row">[Pago] <span class="abm-ok">OK</span></div>
+        <div class="abm-row">[Inscripcion + Pago] <span class="abm-ok">OK</span></div>
+        <div class="abm-row">[Trabajo] <span class="abm-ok">OK</span></div>
+        <div class="abm-fail-block">[Actividad + M2M trabajos] <b>FALLO</b><br>
+          <span>lazy init <code>Actividad.trabajos</code> — no Session</span></div>
+        <div class="abm-row">[Circular … Certificado … Asignacion+Evaluacion] <span class="abm-ok">OK</span></div>
+        <div class="abm-sum">
           --- Resumen --- &nbsp; <b>OK: 13</b> | <span style="color:var(--acento);font-weight:800">Fallos: 1</span>
         </div>
       </div>
@@ -1307,14 +1374,14 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 </section>
 
 <!-- ═══════════════ ENTREGA 4 · 13/13 EVIDENCIA SWAGGER ═══════════════ -->
-<section class="slide" style="padding-bottom:6.5vh">
+<section class="slide">
   <div class="head" style="margin-bottom:1vh;padding-bottom:.7vh">
     <div><div class="kicker">Entrega 4 · Evidencia</div><h2>Qué pedía la entrega (y cómo lo mostramos en Swagger)</h2></div>
     <span class="tag">rama <code>entrega-4</code></span>
   </div>
-  <div class="body top">
-    <div class="g2" style="gap:1.4vw;align-items:stretch">
-      <div>
+  <div class="body top fill-shots">
+    <div class="g2" style="gap:1.4vw;align-items:stretch;flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;min-height:0">
         <div class="card fill" style="padding:1.2vh 1.2vw;margin-bottom:1vh">
           <b>Lo más importante que pedía la Entrega 4</b>
           <ul class="tight" style="margin-top:.7vh">
@@ -1334,738 +1401,306 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
             con “Iniciar sesión” y “Refrescar sesión”.
             Sale solo de las anotaciones: nadie dibujó esa pantalla a mano.</p>
         </div>
+        <p class="caption-indent">Capturas reales de <code>grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/</code>:
+          tags + operaciones documentadas; se prueba con Try it out y se verifica con GET.</p>
       </div>
-      <figure style="margin:0;display:flex;flex-direction:column;gap:.7vh;min-height:0">
-        <img src="img/e4-swagger.png" alt="Swagger UI — tag Usuarios"
-             style="width:100%;max-height:42vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:10px;background:#fff">
-        <img src="img/e4-swagger-login.png" alt="Swagger UI — tag Login"
-             style="width:100%;max-height:12vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
-        <figcaption style="margin-top:.2vh">Capturas reales de <code>grupo1.jyaa-ci.linti.unlp.edu.ar/swagger-ui/</code>:
-          tags + operaciones documentadas; se prueba con Try it out y se verifica con GET.</figcaption>
+      <figure style="margin:0;display:flex;flex-direction:column;gap:.8vh;min-height:0;flex:1">
+        <img class="shot-grow" src="img/e4-swagger.png" alt="Swagger UI — tag Usuarios"
+             style="flex:3;border:1px solid var(--linea);border-radius:10px;background:#fff">
+        <img class="shot-grow" src="img/e4-swagger-login.png" alt="Swagger UI — tag Login"
+             style="flex:1;border:1px solid var(--linea);border-radius:8px;background:#fff">
       </figure>
     </div>
   </div>
   <div class="foot"><span>Entrega 4 · cierre</span></div>
 </section>
 
-<!-- ═══════════════ ENTREGA 5 · 1/11 QUÉ ES ═══════════════ -->
-<!-- ═══════════════ ENTREGA 5 · Objetivo + CORS (fusionado) ═══════════════ -->
+<!-- ═══════════════ ENTREGA 5 · 1/3 · Problema CORS ═══════════════ -->
 <section class="slide">
-  <div class="head" style="margin-bottom:1vh;padding-bottom:.7vh">
-    <div><div class="kicker">Entrega 5 · Objetivo y el problema</div><h2>Angular habla con Java · por qué el navegador bloquea</h2></div>
-    <span class="tag">rama <code>entrega-5</code> · CORS</span>
+  <div class="head" style="margin-bottom:.8vh;padding-bottom:.6vh">
+    <div><div class="kicker">Entrega 5 · 1/3 · Objetivo y el problema</div>
+      <h2>Angular habla con Java · por qué el navegador bloquea</h2></div>
+    <span class="tag">SPA · CORS · orígenes</span>
   </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:.7vh;font-size:1.3vw">La E4 dejó una API REST. La E5 suma una <b>SPA Angular</b> que pide datos a <code>/api/...</code>
-      (reemplaza el prototipo React+localStorage de la E1). Pregunta clave:
-      ¿cómo hace una app en el navegador para hablar con el backend Java en otro servidor?</p>
-    <div class="g2" style="gap:1vw;margin-bottom:.8vh">
-      <div class="card" style="padding:1vh 1.1vw;margin:0">
-        <h3 style="font-size:1.1vw">Lo que ya teníamos (E4)</h3>
-        <p class="small" style="margin-top:.4vh">Ya teníamos el motor funcionando del lado del servidor: un programa Java
-          corriendo en Tomcat que sabe recibir pedidos, buscar datos en la base y
-          devolver respuestas — organizado en capas (Resources, Services, DAOs) y
-          empaquetado en lo que se llama un WAR. Se podía probar ese motor con
-          herramientas técnicas como curl o Swagger UI, pero todavía no había una
-          pantalla real para que un usuario común lo use.</p>
-      </div>
-      <div class="card fill" style="padding:1vh 1.1vw;margin:0">
-        <h3 style="font-size:1.1vw">Lo que suma la E5</h3>
-        <p class="small" style="margin-top:.4vh">Una <b>SPA Angular</b>: una sola página que, sin recargar todo el sitio,
-          muestra pantallas (login, admin, listados) y pide datos a nuestra API REST
-          (las rutas que empiezan con <code>/api/...</code>).
-          El prototipo maquetado de la E1 (React + Vite, con datos guardados en el
-          navegador vía <code>localStorage</code>, sin backend real) servía para validar los
-          flujos del congreso antes de tener persistencia. La E5 lo reemplaza por
-          un cliente real en Angular que habla contra la API Java de la E4.</p>
-      </div>
-    </div>
-    <div class="card-rel" style="margin-bottom:.7vh;padding:.85vh 1.1vw">
-      <b>Hilo de esta entrega</b>
-      <p class="small" style="margin-top:.35vh">Para que Angular y Java se entiendan hay que resolver un problema de seguridad del navegador
-        (orígenes distintos), elegir cómo se conectan en desarrollo y en producción,
-        y entender el camino de un clic hasta los datos en pantalla.</p>
-    </div>
-    <p class="lead" style="margin-bottom:.7vh;font-size:1.25vw">CORS no es de Angular ni de Java: es una regla de seguridad del <b>navegador</b>.
+  <div class="body balance">
+    <p class="lead">La E4 dejó la API REST (Java · Tomcat · Resource → Service → DAO · WAR;
+      curl / Swagger). La E5 suma una <b>SPA Angular</b> que pide <code>/api/...</code>
+      (reemplaza el prototipo React + <code>localStorage</code> de la E1). Pregunta: ¿cómo
+      habla el navegador con el Java en otro servidor?</p>
+    <p class="lead">CORS es regla del <b>navegador</b> (no de Angular ni de Java).
       Un <b>origen</b> = protocolo + dominio + puerto.</p>
-    <div class="g2" style="gap:1vw;margin-bottom:.7vh">
-      <div class="card warn" style="padding:1vh 1.1vw;margin:0">
-        <h3 style="color:var(--acento);font-size:1.1vw">Orígenes distintos</h3>
-        <p class="small" style="margin-top:.4vh"><b>Origen A (frontend):</b> <code>http://localhost:4200</code><br>
-          <b>Origen B (API):</b> <code>https://grupo1.jyaa-ci.linti.unlp.edu.ar</code></p>
-        <p class="small" style="margin-top:.55vh">No son el mismo origen. Si la página cargada en A quiere <b>leer</b> la respuesta de B,
-          el servidor B tiene que decir explícitamente que A está autorizado
-          (headers como <code>Access-Control-Allow-Origin</code>).
-          Si no, el navegador bloquea aunque el servidor haya respondido bien.</p>
+    <div class="g2" style="gap:1.2vw">
+      <div class="card warn" style="margin:0">
+        <h3 style="color:var(--acento)">Orígenes distintos</h3>
+        <p class="small" style="margin-top:.5vh"><b>A:</b> <code>localhost:4200</code> &nbsp;·&nbsp; <b>B:</b> <code>grupo1…</code></p>
+        <p class="small" style="margin-top:.55vh">Para que A lea la respuesta de B, el servidor debe autorizar
+          (<code>Access-Control-Allow-Origin</code>). Si no → “blocked by CORS policy”,
+          aunque B haya respondido bien.</p>
       </div>
-      <div class="card fill" style="padding:1vh 1.1vw;margin:0">
-        <h3 style="font-size:1.1vw">Mismo origen</h3>
-        <p class="small" style="margin-top:.4vh">Un origen es protocolo + dominio + puerto — no importa la ruta que sigue
-          después. La página en <code>https://grupo1.../</code> y la API en
-          <code>https://grupo1.../api</code> comparten protocolo, dominio y puerto: son el mismo
-          origen, aunque las rutas sean distintas. Ahí CORS no aplica: el navegador
-          no ve un cruce de dominios. Eso es lo que buscamos en producción.</p>
+      <div class="card fill" style="margin:0">
+        <h3>Mismo origen</h3>
+        <p class="small" style="margin-top:.5vh">Página <code>grupo1…/</code> + API <code>…/api</code> = mismo origen
+          (la ruta no cuenta). CORS no aplica — meta de producción.</p>
       </div>
     </div>
-    <div class="card-rel" style="margin:0;padding:.85vh 1.1vw">
-      <b>En una frase</b>
-      <p class="small" style="margin-top:.3vh">Sin permiso del servidor, el navegador no deja usar la respuesta
-        (“blocked by CORS policy” en DevTools). Por eso hay que decidir cómo conectar en cada entorno.</p>
+    <div class="card-rel" style="margin:0">
+      <b>Hilo E5</b>
+      <p class="small" style="margin-top:.45vh">① cómo conectar en local y en producción &nbsp;·&nbsp;
+        ② un clic hasta los datos &nbsp;·&nbsp; ③ qué nos frenó.</p>
     </div>
   </div>
-  <div class="foot"><span>Entrega 5 · objetivo + CORS → desarrollo</span></div>
+  <div class="foot"><span>Entrega 5 · problema → tres formas</span></div>
 </section>
 
-<!-- ═══════════════ ENTREGA 5 · 3/11 DESARROLLO ═══════════════ -->
+<!-- ═══════════════ ENTREGA 5 · 2/3 · Tres formas ═══════════════ -->
 <section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 5 · Desarrollo</div><h2>Desarrollo: dos formas de probar sin tocar producción</h2></div>
-    <span class="tag"><code>npm start</code> vs <code>npm run start:cors</code></span>
+  <div class="head" style="margin-bottom:.8vh;padding-bottom:.6vh">
+    <div><div class="kicker">Entrega 5 · 2/3 · Conexión</div>
+      <h2>Tres formas: proxy · CORS real · producción</h2></div>
+    <span class="tag"><code>npm start</code> · <code>start:cors</code> · WAR grupo1</span>
   </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:1vh">Para programar día a día no queremos pelearnos con el problema de
-      seguridad del navegador (CORS) que vimos en la diapositiva anterior. Por
-      eso hay dos formas de levantar Angular en desarrollo: una lo evita, la
-      otra lo enfrenta a propósito.</p>
-    <div class="card fill" style="margin-bottom:.9vh;padding:1.15vh 1.25vw">
-      <b>Forma 1 — con proxy (<code>npm start</code>)</b>
-      <p class="small" style="margin-top:.4vh">Acá hay dos servidores: el de desarrollo de Angular (tu PC,
-        <code>localhost:4200</code>) y el backend real (grupo1). El navegador solo le habla
-        al primero — nunca se entera de que existe el segundo.</p>
-      <p class="small" style="margin-top:.5vh">Angular pide los datos a una dirección simple, <code>/api/usuarios</code>, sin decir
-        en qué servidor buscarla (<code>environment.ts</code>). El navegador la busca ahí
-        mismo, en <code>localhost:4200</code>: nunca cruza a otro dominio, así que CORS no se
-        activa.</p>
-      <p class="small" style="margin-top:.5vh">El que sí cruza es el servidor de Angular: <code>proxy.conf.json</code> le dice “lo
-        que llegue a <code>/api/...</code>, reenvialo a grupo1 y traé la respuesta”. Ese salto
-        lo hace por su cuenta, sin que el navegador participe.</p>
-      <p class="small" style="margin-top:.5vh">Es la forma que usamos día a día: cómoda, pero no prueba que el backend
-        sepa manejar un cruce de dominios real — acá nunca lo enfrenta.</p>
-    </div>
-    <div class="card fill" style="margin-bottom:.9vh;padding:1.15vh 1.25vw">
-      <b>Forma 2 — con CORS real (<code>npm run start:cors</code>)</b>
-      <p class="small" style="margin-top:.4vh">Acá el servidor de desarrollo de Angular deja de ser intermediario:
-        Angular pide los datos directo a la dirección completa de grupo1
-        (<code>environment.cors.ts</code>), sin pasar por ningún proxy.</p>
-      <p class="small" style="margin-top:.5vh">Ahora es el navegador el que hace ese pedido, y ve dos direcciones
-        distintas: <code>localhost:4200</code> (donde está la página) y grupo1 (donde está la
-        API). Al detectar ese cruce, exige que el servidor confirme explícitamente
-        que está permitido — eso es CORS real.</p>
-      <p class="small" style="margin-top:.5vh">No es la forma cómoda para trabajar — la usamos a propósito para
-        comprobar que el backend sabe responder ese permiso correctamente.</p>
-    </div>
-    <div class="card-rel" style="margin:0;padding:1.1vh 1.25vw">
-      <p class="small">Ninguna de las dos es la que usa quien entra al congreso desde el entorno
-        desplegado (grupo1) — esa es la Forma 3, que vemos más adelante. Antes,
-        veamos cómo el backend resuelve ese permiso que la Forma 2 exige.</p>
-    </div>
-  </div>
-  <div class="foot"><span>Entrega 5 · 3 → permiso CORS</span></div>
-</section>
-
-<!-- ═══════════════ ENTREGA 5 · 4/11 PERMISO CORS ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 5 · Permiso CORS</div><h2>Cómo el backend resuelve el permiso CORS</h2></div>
-    <span class="tag">preflight + los tres filtros Java (solo aplica a la Forma 2)</span>
-  </div>
-  <div class="body top">
-    <div class="card fill" style="margin-bottom:.85vh;padding:1.1vh 1.2vw">
-      <p class="small">Cuando Angular usa la Forma 2 (CORS real) y hace un pedido “no simple”
-        —como un POST con JSON, por ejemplo el login— el navegador no lo manda
-        directo. Antes hace una pregunta de prueba: un <code>OPTIONS</code> que dice “¿me
-        dejás que <code>localhost:4200</code> haga esto?”. Eso se llama <b>preflight</b>. Si la
-        respuesta es sí, recién ahí manda el pedido real. Si falla, ni lo intenta.</p>
-    </div>
-    <div class="card-rel" style="margin-bottom:.75vh;padding:1vh 1.2vw">
-      <b>Quién contesta esa pregunta y quién más interviene</b>
-      <p class="small" style="margin-top:.35vh">Tres filtros Java, registrados junto al resto de la API en Jersey, sin tocar Resources ni Services:</p>
-      <ul class="small" style="margin:.35vh 0 0 1.1em;padding:0">
-        <li style="margin-bottom:.3vh"><code>CorsConfig</code> es la lista de invitados: guarda qué direcciones
-          (<code>localhost:4200</code>, por ejemplo) tienen permiso.</li>
-        <li style="margin-bottom:.3vh"><code>CorsRequestFilter</code> es quien responde el preflight: si el método es
-          OPTIONS, consulta la lista y contesta sí o no. Si dice que sí, recién ahí
-          el navegador manda el POST real.</li>
-        <li style="margin-bottom:0"><code>CorsResponseFilter</code> actúa después, cuando el Resource ya armó la
-          respuesta real (el JSON del login, por ejemplo): le agrega el sello de
-          autorización para que el navegador la deje leer.</li>
-      </ul>
-    </div>
-    <div class="card-rel" style="margin:0;padding:1vh 1.2vw">
-      <b>Ejemplo completo con el login</b>
-      <p class="small" style="margin-top:.35vh">El navegador pregunta con OPTIONS,
-        <code>CorsRequestFilter</code> contesta que sí, el navegador manda el POST con el
-        email y la contraseña, el Resource procesa el login, y <code>CorsResponseFilter</code>
-        le agrega el sello final a la respuesta antes de que Angular la reciba.</p>
-    </div>
-  </div>
-  <div class="foot"><span>Entrega 5 · 4 → Forma 3</span></div>
-</section>
-
-<!-- ═══════════════ ENTREGA 5 · 5/11 FORMA 3 ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 5 · Forma 3 — producción</div><h2>Forma 3 — producción (el entorno desplegado del congreso)</h2></div>
-    <span class="tag"><code>git push</code> · mismo origen · sin CORS</span>
-  </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:1vh">Después de ver cómo el backend resuelve el permiso CORS en desarrollo,
-      toca ver el entorno donde ese problema directamente no aparece.</p>
-    <p class="lead" style="margin-bottom:1vh">A diferencia de las dos formas anteriores, que solo sirven para
-      desarrollar y probar en la máquina de quien programa, esta es la única que
-      corre para quien usa el sistema del congreso en el entorno desplegado
-      (grupo1): admin, organizador, autor, etc. abren esa URL pública, no
-      <code>localhost</code>.</p>
-    <div class="card-rel" style="margin-bottom:.95vh;padding:1.15vh 1.25vw">
-      <b>Cómo se despliega</b>
-      <p class="small" style="margin-top:.4vh">Un <code>git push</code> a GitLab dispara el pipeline: Docker arma la imagen y Tomcat
-        la despliega en grupo1. No se sube el WAR ya armado — se sube el código, y
-        el WAR se arma en el servidor.</p>
-    </div>
-    <div class="card fill" style="margin-bottom:.95vh;padding:1.15vh 1.25vw">
-      <b>Cómo se arma el paquete final</b>
-      <p class="small" style="margin-top:.4vh">El Dockerfile hace tres pasos: compila Angular (con la dirección de la API
-        ya fija en <code>/api</code>), copia esos archivos dentro de la carpeta del backend
-        (reemplazando su página de inicio), y Maven empaqueta todo junto en un solo
-        WAR.</p>
-    </div>
-    <div class="card-rel" style="margin-bottom:.85vh;padding:1.15vh 1.25vw">
-      <b>¿Hay CORS acá?</b>
-      <p class="small" style="margin-top:.4vh">No. La página y la API viven en el mismo servidor (<code>grupo1.../</code> y
-        <code>grupo1.../api</code>), así que el navegador nunca detecta un cruce de dominios.</p>
-    </div>
-    <div class="card fill" style="margin-top:.85vh;padding:1vh 1.2vw">
-      <b>Qué se buscaba con la integración</b>
-      <ul class="small" style="margin:.4vh 0 0 1.1em;padding:0;line-height:1.4">
-        <li style="margin-bottom:.25vh"><b>Cliente real</b> contra la API real (roles: admin, organizador, evaluador, autor, participante).</li>
-        <li style="margin-bottom:.25vh"><b>Entender el cruce</b> navegador/servidor: por qué falla en Angular lo que “anda” en Swagger (proxy, CORS o mismo WAR).</li>
-        <li style="margin-bottom:.25vh"><b>Camino a producción:</b> un push actualiza la app pública en grupo1, sin npm en cada máquina.</li>
-        <li>En resumen: la API de la E4 es consumible por una interfaz de congreso, en desarrollo y en el servidor de la cátedra.</li>
-      </ul>
-    </div>
-
-  </div>
-  <div class="foot"><span>Entrega 5 · forma 3 + objetivos → consumo</span></div>
-</section>
-
-
-
-<!-- ═══════════════ ENTREGA 5 · 7/11 CONSUMO ANGULAR ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 5 · Consumo</div><h2>Del clic a la tabla: cómo Angular pide datos</h2></div>
-    <span class="tag">HttpClient · Observable · servicios</span>
-  </div>
-  <div class="body top">
-    <div class="card-rel" style="margin-bottom:.85vh;padding:1.1vh 1.2vw">
-      <b>Historia: listar usuarios (admin)</b>
-      <p class="small" style="margin-top:.4vh">El administrador abre el listado de usuarios. La pantalla no habla con
-        MySQL directamente: se lo pide a un servicio Angular (<code>UsuarioService</code>),
-        que arma el pedido usando HttpClient (el cliente HTTP que Angular da
-        automáticamente).</p>
-      <p class="small" style="margin-top:.45vh">Un detalle importante: <code>listar()</code> no dispara el pedido al llamarlo.
-        Devuelve un Observable — como una receta que todavía no se cocinó. Recién
-        cuando la pantalla se suscribe, sale el GET real.</p>
-    </div>
-    <div class="card fill" style="margin-bottom:.85vh;padding:1.1vh 1.2vw">
-      <b>Camino completo</b>
-      <p class="small" style="margin-top:.4vh">Todo arranca con el clic en la pantalla, que dispara <code>listar()</code>.
-        HttpClient arma el GET (la dirección exacta depende de la forma: proxy,
-        CORS o producción) y lo manda hacia Tomcat y Jersey. Ahí el pedido pasa
-        por <code>UsuarioResource</code>, el Service y el DAO, hasta consultar MySQL. La
-        respuesta vuelve como JSON, la suscripción la guarda, y recién ahí Angular
-        repinta la tabla.</p>
-    </div>
-    <div class="card-rel" style="margin-bottom:.85vh;padding:1.1vh 1.2vw">
-      <b>Conceptos de Angular detrás de esta historia</b>
-      <p class="small" style="margin-top:.4vh">Para que este camino funcione entran en juego varias piezas de Angular:
-        el componente que muestra la pantalla, la inyección de dependencias
-        (Angular le entrega el servicio ya armado, sin que el componente tenga que
-        crearlo), el router y los guards (que veremos más adelante: deciden si el admin puede
-        llegar a esta pantalla), y HttpClient con Observables/RxJS para el pedido
-        en sí.</p>
-    </div>
-    <div class="card-rel" style="margin:0;padding:1.1vh 1.2vw">
-      <b>Qué no cambia entre las tres formas</b>
-      <p class="small" style="margin-top:.4vh">El recorrido interno (servicio, Observable, suscripción, tabla) es el
-        mismo. Solo cambia cómo llega el HTTP a la API.</p>
-    </div>
-  </div>
-  <div class="foot"><span>Entrega 5 · 7 → conceptos Angular</span></div>
-</section>
-
-<!-- ═══════════════ ENTREGA 5 · 8/11 CONCEPTOS ANGULAR ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 5 · Conceptos de Angular</div><h2>Qué conceptos de Angular se ven en esta entrega</h2></div>
-    <span class="tag">del lado del navegador, hablando con Java</span>
-  </div>
-  <div class="body top">
-    <div class="card-rel" style="margin-bottom:.7vh;padding:1vh 1.15vw">
-      <b>Inyección de dependencias, versión Angular</b>
-      <p class="small" style="margin-top:.35vh">En Java usamos CDI: le pedís a la clase que necesitás y el framework te la
-        entrega ya armada, sin que vos la construyas a mano (<code>@ApplicationScoped</code>,
-        por ejemplo). Angular hace exactamente lo mismo con sus propias palabras:
-        un servicio marcado <code>@Injectable({ providedIn: 'root' })</code> se convierte en
-        un único objeto compartido en toda la app, y cualquier componente que lo
-        necesite lo recibe armado con solo pedirlo en su constructor. Es la misma
-        idea de fondo (no construir vos mismo tus dependencias) aplicada del otro
-        lado del proyecto.</p>
-    </div>
-    <div class="card-rel" style="margin-bottom:.7vh;padding:1vh 1.15vw">
-      <b>Router</b>
-      <p class="small" style="margin-top:.35vh">Angular es una SPA: una sola página que nunca se recarga. El router es
-        quien decide qué pantalla mostrar según la URL (login, selección de rol,
-        panel de admin, listado de usuarios), sin pedirle un nuevo HTML al
-        servidor cada vez — solo intercambia componentes en el lugar de la
-        pantalla que cambia.</p>
-    </div>
-    <div class="card-rel" style="margin-bottom:.7vh;padding:1vh 1.15vw">
-      <b>Guards</b>
-      <p class="small" style="margin-top:.35vh">Antes de dejar entrar a una ruta, el router primero le pregunta a un
-        guard: “¿este usuario puede estar acá?”. En este proyecto se usan para dos
-        cosas: confirmar que hay una sesión iniciada (<code>authGuard</code>), y confirmar que
-        el rol del usuario coincide con el que exige esa pantalla (<code>roleGuard</code>,
-        por ejemplo para que solo un admin entre a <code>/admin</code>).</p>
-    </div>
-    <div class="card-rel" style="margin-bottom:.7vh;padding:1vh 1.15vw">
-      <b>HttpClient y Observables (RxJS)</b>
-      <p class="small" style="margin-top:.35vh">Es la herramienta que arma y envía los pedidos HTTP hacia la API Java. No
-        trae el dato al instante: devuelve un Observable, que recién se activa
-        cuando la pantalla se suscribe — el mismo concepto que vimos en la
-        diapositiva de Consumo.</p>
-    </div>
-    <div class="card fill" style="margin:0;padding:1vh 1.15vw">
-      <p class="small">Ninguno de estos conceptos vive aislado: la inyección de dependencias
-        conecta directamente con CDI del lado Java, y el router junto con los
-        guards son quienes deciden si un pedido llega a dispararse.</p>
-    </div>
-  </div>
-  <div class="foot"><span>Entrega 5 · 8 → conceptos Java</span></div>
-</section>
-
-<!-- ═══════════════ ENTREGA 5 · 9/11 CONCEPTOS JAVA ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 5 · Conceptos Java + herramientas</div><h2>Qué conceptos de Java web se ven en esta entrega</h2></div>
-    <span class="tag">del lado servidor, al servicio de Angular</span>
-  </div>
-  <div class="body top">
-    <div class="card-rel" style="margin-bottom:.55vh;padding:.85vh 1.05vw">
-      <b>JAX-RS y Jersey</b>
-      <p class="small" style="margin-top:.35vh">JAX-RS es el estándar para APIs REST en Java; Jersey es la implementación
-        que usamos. Define cómo una URL como <code>/api/usuarios</code> llega a un método
-        Java. Angular no “entra” a Tomcat ni ejecuta código Java: se comunica con
-        Jersey de la única forma que puede un programa externo — mandando pedidos
-        HTTP normales (GET, POST, etc.) a esas URLs, igual que lo haría un
-        navegador cualquiera. Jersey recibe ese pedido, lo enruta al método Java
-        correcto, y devuelve la respuesta en JSON. Así es como Angular consume la
-        API REST del backend, sin necesitar saber cómo está escrito el Java del
-        otro lado.</p>
-    </div>
-    <div class="card-rel" style="margin-bottom:.55vh;padding:.85vh 1.05vw">
-      <b>Filtros (<code>@Provider</code>)</b>
-      <p class="small" style="margin-top:.35vh">Piezas de código Java que envuelven cada pedido o cada respuesta, sin
-        mezclarse con la lógica del Resource. En este proyecto hay tres, todos
-        relacionados con CORS: <code>CorsConfig</code> (guarda qué orígenes tienen permiso
-        para pedir datos), <code>CorsRequestFilter</code> (contesta la pregunta previa del
-        navegador, el preflight) y <code>CorsResponseFilter</code> (agrega el sello de
-        autorización a la respuesta real antes de que Angular la reciba). Son el
-        ejemplo concreto de esta entrega de cómo resolver un problema transversal
-        sin tocar el código de negocio.</p>
-    </div>
-    <div class="card-rel" style="margin-bottom:.55vh;padding:.85vh 1.05vw">
-      <b>Manejo de peticiones HTTP</b>
-      <p class="small" style="margin-top:.35vh">Cada acción del usuario se traduce en un tipo de pedido HTTP distinto:
-        GET para pedir datos (como listar usuarios), POST para crear algo nuevo o
-        iniciar sesión, PUT para modificar, y DELETE para borrar. Angular elige el
-        método según la acción, Jersey lo recibe y lo redirige al método Java
-        correcto, y la respuesta siempre vuelve en JSON, un formato de texto
-        ordenado que Angular puede leer fácilmente.</p>
-      <p class="small" style="margin-top:.4vh">En producción hay un detalle extra: el archivo <code>web.xml</code> le dice a Tomcat
-        que todo lo que empiece con <code>/api/</code> es para Jersey, y todo lo demás son
-        pantallas de Angular. Como Angular maneja rutas internas (como
-        <code>/admin/usuarios</code>) que no existen como archivos reales en el servidor, si
-        alguien entra directo a esa URL Tomcat no la encuentra — pero en vez de
-        mostrar un error, la redirige a la página principal de Angular, que ahí sí
-        sabe armar esa pantalla. Ese es el “truco del 404”.</p>
-    </div>
-
-    <div style="margin:.55vh 0 .4vh"><b style="color:var(--verde);font-size:1.05vw">Herramientas en el flujo</b>
-      <span class="small" style="margin-left:.6vw">no solo nombres · el rol concreto</span></div>
-    <div class="g2" style="gap:1vw;margin-bottom:.55vh;align-items:stretch">
-      <div class="card fill" style="margin:0;padding:.85vh 1vw">
-        <b>Desde el usuario: un pedido real (ej. registrarse)</b>
-        <p class="small" style="margin-top:.35vh">Alguien completa el formulario de registro en Angular y aprieta enviar.
-          Angular arma ese pedido (un POST) y HttpClient es quien lo manda por HTTP
-          hacia el servidor — el intermediario entre la pantalla y la red. Ese
-          pedido llega a Jersey, que lo enruta al método Java correcto (y de paso,
-          si hace falta, pasa antes por los filtros CORS). El backend procesa el
-          registro y la respuesta vuelve como JSON, que Angular usa para actualizar
-          la pantalla.</p>
+  <div class="body balance">
+    <div class="g3" style="gap:1vw">
+      <div class="card fill" style="margin:0">
+        <b>Forma 1 — proxy</b>
+        <p class="small" style="margin-top:.55vh"><code>npm start</code>. Navegador ↔ solo
+          <code>localhost:4200</code>. Angular pide <code>/api/…</code>
+          (<code>environment.ts</code>). <code>proxy.conf.json</code> reenvía a grupo1:
+          el salto lo hace el servidor de Angular. Día a día; no prueba cruce real.</p>
       </div>
-      <div class="card fill" style="margin:0;padding:.85vh 1vw">
-        <b>Desde el desarrollo: cómo se llega a que eso funcione</b>
-        <p class="small" style="margin-top:.35vh">Para que ese pedido tenga a dónde llegar, primero hay que empaquetar
-          todo. Maven es quien compila el código Java del backend. Docker se
-          encarga del build: compila Angular, fusiona esos archivos con el backend,
-          y Maven arma el WAR final dentro de una imagen. Tomcat 10 ejecuta ese WAR:
-          sirve SPA (pantallas) y API (datos) en un solo proceso.</p>
-        <p class="small" style="margin-top:.4vh">Ese paquete llega al servidor mediante GitLab CI: cada push construye la
-          imagen y redespliega el contenedor de grupo1. Traefik publica la URL del
-          grupo y enruta el tráfico HTTPS. En local: <code>npm start</code> /
-          <code>start:cors</code> contra grupo1, sin pasar por el pipeline.</p>
+      <div class="card fill" style="margin:0">
+        <b>Forma 2 — CORS real</b>
+        <p class="small" style="margin-top:.55vh"><code>npm run start:cors</code>. Sin proxy:
+          URL completa de grupo1 (<code>environment.cors.ts</code>). El navegador exige permiso.
+          Sirve para verificar que el backend autoriza el cruce.</p>
+      </div>
+      <div class="card fill" style="margin:0">
+        <b>Forma 3 — producción</b>
+        <p class="small" style="margin-top:.55vh">La del usuario en <code>grupo1</code> (no
+          <code>localhost</code>). Push → Docker compila Angular (<code>/api</code>), lo mete en el
+          backend, Maven → un WAR. Página + API = mismo origen → <b>sin CORS</b>.</p>
       </div>
     </div>
-    <div class="card fill" style="margin:0;padding:.85vh 1.05vw">
-      <p class="small">Estos tres conceptos no aparecieron de golpe en la E5: son la
-        continuación de un mismo camino en Java web. Los Servlets simples de la E3
-        dieron paso a JAX-RS y Jersey. La E4 sumó CDI — la misma idea que Angular
-        aplica con <code>@Injectable</code>. Y en la E5 los filtros de Jersey resuelven
-        CORS sin tocar el código de los Resources.</p>
+    <div class="card-rel" style="margin:0">
+      <b>Forma 2 · permiso en el backend (casa CORS)</b>
+      <p class="small" style="margin-top:.5vh"><b>Preflight:</b> un POST JSON (login) manda antes
+        <code>OPTIONS</code> (“¿dejás que <code>localhost:4200</code>…?”). Tres filtros Jersey
+        (sin tocar Resources): <code>CorsConfig</code> (lista) ·
+        <code>CorsRequestFilter</code> (responde OPTIONS) ·
+        <code>CorsResponseFilter</code> (sella la respuesta).
+        Login: OPTIONS → sí → POST → Resource → sello → Angular.</p>
+    </div>
+    <div class="card fill" style="margin:0">
+      <b>Qué buscaba la integración</b>
+      <p class="small" style="margin-top:.5vh">Cliente real contra la API real · entender por qué
+        “anda” en Swagger y a veces no en Angular · un push actualiza grupo1 sin npm en cada PC.
+        La API de la E4 queda usable como interfaz de congreso.</p>
     </div>
   </div>
-  <div class="foot"><span>Entrega 5 · Java + herramientas → dificultades</span></div>
+  <div class="foot"><span>Entrega 5 · formas → clic + frenos</span></div>
 </section>
 
-
-
-<!-- ═══════════════ ENTREGA 5 · 11/11 DIFICULTADES ═══════════════ -->
+<!-- ═══════════════ ENTREGA 5 · 3/3 · Clic + frenos ═══════════════ -->
 <section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 5 · Dificultades</div><h2>Qué nos frenó y cómo lo resolvimos</h2></div>
-    <span class="tag">CORS · deploy · WAR único</span>
+  <div class="head" style="margin-bottom:.8vh;padding-bottom:.6vh">
+    <div><div class="kicker">Entrega 5 · 3/3 · Consumo y dificultades</div>
+      <h2>Del clic a la tabla · tres frenos</h2></div>
+    <span class="tag">HttpClient · capas · CORS / push / WAR</span>
+  </div>
+  <div class="body balance">
+    <div class="g2" style="gap:1.1vw">
+      <div class="card-rel" style="margin:0">
+        <b>Historia: listar usuarios</b>
+        <p class="small" style="margin-top:.5vh">La pantalla pide a <code>UsuarioService</code> →
+          <b>HttpClient</b>. <code>listar()</code> devuelve un <b>Observable</b>; al suscribirse
+          sale el GET. Camino: clic → Tomcat/Jersey → Resource → Service → DAO → MySQL →
+          JSON → tabla. Entre las 3 formas solo cambia cómo llega el HTTP.</p>
+      </div>
+      <div class="card fill" style="margin:0">
+        <b>Conceptos que entran (sin otra slide)</b>
+        <p class="small" style="margin-top:.5vh"><b>Angular:</b> DI (<code>@Injectable</code>, como CDI) ·
+          router (SPA) · guards (<code>authGuard</code> / <code>roleGuard</code>; JWT firme → E6) ·
+          HttpClient/RxJS.</p>
+        <p class="small" style="margin-top:.5vh"><b>Java:</b> Jersey (<code>/api/…</code> → método) ·
+          <code>web.xml</code>: <code>/api/*</code> → Jersey, resto → Angular (“truco del 404”).
+          Filtros CORS = slide anterior.</p>
+      </div>
+    </div>
+    <div class="g3" style="gap:.9vw">
+      <div class="card-rel warn" style="border-left-color:var(--acento);margin:0">
+        <b>① Swagger vs Angular</b>
+        <p class="small" style="margin-top:.45vh">Swagger = mismo origen; <code>localhost</code> = cruce.
+          Resolución: las tres formas.</p>
+      </div>
+      <div class="card-rel warn" style="border-left-color:var(--acento);margin:0">
+        <b>② Push obligatorio</b>
+        <p class="small" style="margin-top:.45vh">grupo1 solo corre el pipeline. Sin push,
+          <code>start:cors</code> falla aunque el <code>.java</code> local esté bien.</p>
+      </div>
+      <div class="card-rel warn" style="border-left-color:var(--acento);margin:0">
+        <b>③ WAR en Docker</b>
+        <p class="small" style="margin-top:.45vh">La unión SPA + backend no es a mano: build
+          multi-etapa (compilar → copiar → Maven). Detalle CI → Bloque 3.</p>
+      </div>
+    </div>
+    <div class="card fill" style="margin:0">
+      <p class="small"><b>Cierre E5:</b> el navegador es el cliente oficial de la API.
+        E6: producto completo en grupo1.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 5 → Entrega 6</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 6 · 1/2 · Producto ═══════════════ -->
+<section class="slide">
+  <div class="head" style="margin-bottom:.8vh;padding-bottom:.6vh">
+    <div><div class="kicker">Entrega 6 · 1/2 · Objetivo y producto</div>
+      <h2>Ya no es “integrar”: el congreso de punta a punta</h2></div>
+    <span class="tag">por rol · configurable en grupo1</span>
+  </div>
+  <div class="body balance">
+    <p class="lead">De “la API se consume desde el navegador” a “el congreso se gestiona
+      completo en grupo1, por rol, sin redeploy por cada edición”.</p>
+    <div class="g2" style="gap:1.1vw">
+      <div class="card" style="margin:0">
+        <b>Veníamos (E5)</b>
+        <p class="small" style="margin-top:.45vh">SPA ↔ API · tres formas · clic hasta MySQL.</p>
+      </div>
+      <div class="card fill" style="margin:0">
+        <b>Cierra la E6</b>
+        <p class="small" style="margin-top:.45vh">Inscripción → pago → trabajos → programa → cierre / certificados
+          + JWT + más API + UI configurable.</p>
+      </div>
+    </div>
+    <div class="g2" style="gap:1.1vw">
+      <div class="card-rel" style="margin:0">
+        <b>Admin / organización</b>
+        <p class="small" style="margin-top:.45vh">Datos · jornada · ventanas · cupos · aranceles (QR) ·
+          pagos / recibo / arqueo · aulas + mapa Leaflet · circulares · cierre y certificados.</p>
+      </div>
+      <div class="card-rel" style="margin:0">
+        <b>Comité académico</b>
+        <p class="small" style="margin-top:.45vh">Catálogos · plazos · cupos de evaluador · excepciones ·
+          precheck / asignación · tercer evaluador si empate 1–1.</p>
+      </div>
+    </div>
+    <div class="g2" style="gap:1.1vw">
+      <div class="card-rel" style="margin:0">
+        <b>Autores · evaluadores · participantes</b>
+        <p class="small" style="margin-top:.45vh">Inscripción y pago · envío PDF / coautores · dictámenes ·
+          agenda · certificado. Avisos in-app y email.</p>
+      </div>
+      <div class="card fill" style="margin:0">
+        <b>Público (sin sesión)</b>
+        <p class="small" style="margin-top:.45vh">Home · historia · programa + mapa · circulares. Sin JWT.
+          (Demo en vivo → Bloque 4.)</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Entrega 6 · producto → seguridad + cierre</span></div>
+</section>
+
+<!-- ═══════════════ ENTREGA 6 · 2/2 · JWT + WAR + capas ═══════════════ -->
+<section class="slide">
+  <div class="head" style="margin-bottom:.4vh;padding-bottom:.35vh">
+    <div><div class="kicker">Entrega 6 · 2/2 · Seguridad, deploy y arquitectura</div>
+      <h2>JWT · WAR verificado · capas limpias</h2></div>
+    <span class="tag">pase firmado · pipeline · un origen</span>
   </div>
   <div class="body top">
-    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:1vh;padding:1.15vh 1.25vw">
-      <b>① CORS bloqueaba pedidos que “andaban” en Swagger</b>
-      <p class="small" style="margin-top:.4vh">En Swagger todo parecía funcionar: la página de prueba y la API viven en el
-        mismo servidor. Cuando Angular corría en la PC (<code>localhost</code>), el navegador
-        veía dos direcciones distintas y bloqueaba la respuesta, aunque el backend
-        hubiera contestado bien.
-        <b>Cómo lo resolvimos:</b> tres caminos según el entorno — proxy en desarrollo
-        (<code>npm start</code>), filtros CORS + <code>npm run start:cors</code> para probar el cruce real,
-        o mismo origen en producción (página y API juntas en grupo1).</p>
+    <div class="g2" style="gap:.7vw;margin-bottom:.35vh;align-items:stretch">
+      <div class="card fill" style="margin:0;padding:.55vh .85vw">
+        <b>JWT — el hueco que cerró la E6</b>
+        <p class="small" style="margin-top:.2vh">E5: login con usuario en <code>sessionStorage</code>; la API seguía
+          abierta (Swagger / curl). E6: al login el servidor firma un JWT (email + roles);
+          un <b>interceptor</b> lo manda en cada pedido (<code>Authorization: Bearer …</code>).
+          <code>JwtAuthFilter</code> valida en casi todos los <code>/api/…</code> (libres: login,
+          registro, health, OpenAPI, lecturas públicas) y relee roles / cuenta activa en MySQL.
+          Guards + 30 min de inactividad. API ampliada al ciclo del congreso; etapas / catálogos /
+          aranceles / cupos / plazos desde la UI, sin redeploy.</p>
+      </div>
+      <div class="card-rel warn" style="border-left-color:var(--acento);margin:0;padding:.55vh .85vw">
+        <b>WAR — lo nuevo (sin recontar el Dockerfile)</b>
+        <p class="small" style="margin-top:.2vh">A veces Docker reutilizaba caché → Angular viejo en grupo1.
+          Fix: build limpio (<code>--no-cache --pull</code>) + chequeo: si el WAR no trae
+          <code>main-*.js</code> / estilos, la imagen no se publica.</p>
+        <p class="small" style="margin-top:.3vh"><b>Cierre E6:</b> congreso de punta a punta en
+          <a href="https://grupo1.jyaa-ci.linti.unlp.edu.ar/" target="_blank" rel="noopener"><code>grupo1…</code></a>.</p>
+      </div>
     </div>
-    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:1vh;padding:1.15vh 1.25vw">
-      <b>② Tener el código CORS en la PC no alcanza</b>
-      <p class="small" style="margin-top:.4vh">grupo1 no lee la carpeta de la máquina de quien programa: corre lo último
-        que desplegó el pipeline. Si los filtros CORS estaban solo en el repo local
-        y no se había hecho push, <code>start:cors</code> fallaba aunque los archivos
-        <code>.java</code> estuvieran bien escritos.
-        <b>Cómo lo resolvimos:</b> subir el backend a GitLab y esperar el pipeline en
-        verde antes de probar el cruce real.</p>
-    </div>
-    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:1vh;padding:1.15vh 1.25vw">
-      <b>③ Fusionar Angular y backend en un solo WAR</b>
-      <p class="small" style="margin-top:.4vh">En el repo local, la carpeta del backend no muestra los archivos de Angular
-        listos para servir: la unión no se hace a mano en la PC. Ocurre en el build
-        de Docker: se compila Angular, se copia dentro del backend y Maven arma un
-        solo paquete (WAR) con pantallas y API juntas.
-        <b>Cómo lo resolvimos:</b> un Dockerfile en varias etapas — build de Angular,
-        copia al <code>webapp</code>, empaquetado con Maven y despliegue en Tomcat como raíz
-        del sitio.</p>
-    </div>
-    <div class="card fill" style="padding:1.15vh 1.3vw">
-      <p class="small"><b>Cierre E5:</b> el navegador dejó de ser un obstáculo y pasó a ser el cliente
-        oficial de la API. Con eso el sistema ya se puede usar como interfaz del
-        congreso; la Entrega 6 cierra el producto completo en el entorno desplegado.</p>
-    </div>
-  </div>
-  <div class="foot"><span>Entrega 5 · puente a Entrega 6</span></div>
-</section>
-
-<!-- ═══════════════ ENTREGA 6 · 1/4 OBJETIVO ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 6 · 1/4 · Objetivo</div><h2>Sistema completo: del alta al certificado, en producción</h2></div>
-    <span class="tag">rama de integración · producto usable en grupo1</span>
-  </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:1.1vh">La Entrega 5 dejó Angular hablando con la API Java. La Entrega 6 cierra el
-      <b>producto del congreso</b>: flujos de punta a punta, seguridad de acceso,
-      configuración por roles y el despliegue estable en el servidor de la cátedra.</p>
-    <div class="g2" style="gap:1.3vw;margin-bottom:1vh">
-      <div class="card fill" style="padding:1.2vh 1.25vw;margin:0"><b>Qué ya teníamos (E5)</b>
-        <p class="small" style="margin-top:.4vh">SPA Angular contra la API, CORS/proxy/producción,
-          y el camino de un clic hasta MySQL. Todavía faltaba el ciclo de negocio completo
-          y que solo quien corresponde pueda operar cada pantalla.</p></div>
-      <div class="card fill" style="padding:1.2vh 1.25vw;margin:0"><b>Qué cierra la E6</b>
-        <p class="small" style="margin-top:.4vh">Inscripción, pago, envío y evaluación de trabajos,
-          programa, circulares, notificaciones, cierre y certificados — con JWT,
-          más endpoints y pantallas configurables para administrador y comité académico.</p></div>
-    </div>
-    <div class="card-rel" style="margin:0;padding:1.2vh 1.25vw">
-      <b>En una frase</b>
-      <p class="small" style="margin-top:.4vh">Pasar de “la API se puede consumir desde el navegador” a “el congreso se puede
-        gestionar de punta a punta en grupo1, por cada rol, sin redeployar por cada edición”.</p>
-    </div>
-  </div>
-  <div class="foot"><span>Entrega 6 · 1 → producto</span></div>
-</section>
-
-<!-- ═══════════════ ENTREGA 6 · 2/4 PRODUCTO ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 6 · 2/4 · Producto</div><h2>Qué se puede hacer en el sistema (por rol)</h2></div>
-    <span class="tag">ciclo de vida del congreso</span>
-  </div>
-  <div class="body top">
-    <div class="card-rel" style="margin-bottom:.75vh;padding:1.05vh 1.15vw">
-      <b>Administrador / organización</b>
-      <p class="small" style="margin-top:.35vh">Desde la interfaz configura el congreso sin tocar código: <b>datos</b> (nombre,
-        edición, sede y ubicación en el mapa) · <b>jornada</b> (días y horarios del evento) ·
-        <b>ventanas de tiempo</b> (cuándo se puede inscribir alguien) · <b>cupos</b> de
-        inscripción (cuántos autores y asistentes acepta la edición) · define
-        <b>aranceles por categoría</b> (con QR de pago) · valida pagos, emite
-        <b>recibo correlativo</b>, hace <b>arqueo diario</b> y factura al participante ·
-        carga aulas con su ubicación en un <b>mapa interactivo</b> (librería Leaflet,
-        estilo Google Maps: pinchos para ver a dónde ir), franjas y el programa ·
-        publica circulares y avisos · ve estadísticas, checklist pre-congreso y
-        limpieza de archivos · <b>cierra el congreso</b> y habilita certificados.</p>
-    </div>
-    <div class="card-rel" style="margin-bottom:.75vh;padding:1.05vh 1.15vw">
-      <b>Comité académico / organizador científico</b>
-      <p class="small" style="margin-top:.35vh">Edita <b>catálogos</b> (ejes, modalidades, tipos de envío) · define plazos de envío y evaluación ·
-        gestiona <b>cupos de evaluador por eje</b> (se consumen y liberan al asignar, cancelar o dictaminar) ·
-        excepciones de cupo de envío · panel de comité: precheck, asignación de evaluadores,
-        solicitudes, estadísticas · si hay empate 1–1, el sistema dispara un <b>tercer evaluador</b>.</p>
-    </div>
-    <div class="card-rel" style="margin-bottom:.75vh;padding:1.05vh 1.15vw">
-      <b>Autores, evaluadores y participantes</b>
-      <p class="small" style="margin-top:.35vh">Registro e inscripción · pago (transferencia o efectivo) con comprobante ·
-        envío de trabajos (artículo/relato), coautores, PDF · evaluación y devoluciones ·
-        agenda personal sin chocar horarios · propuestas de taller · descarga de certificado al cierre.
-        Notificaciones <b>in-app y por email</b> según plantillas.</p>
-    </div>
-    <div class="card fill" style="margin:0;padding:1.05vh 1.15vw">
-      <b>Público (sin sesión)</b>
-      <p class="small" style="margin-top:.35vh">Home, historia del congreso, programa con mapa de aulas en Leaflet
-        (ubicación en el mapa para saber a dónde ir),
-        circulares públicas y configuración visible del evento — sin token JWT.</p>
-    </div>
-  </div>
-  <div class="foot"><span>Entrega 6 · 2 → seguridad y API</span></div>
-</section>
-
-<!-- ═══════════════ ENTREGA 6 · 3/4 JWT Y API ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 6 · 3/4 · Seguridad y API</div><h2>JWT, roles y los endpoints que faltaban</h2></div>
-    <span class="tag">respecto de la E5</span>
-  </div>
-  <div class="body top">
-    <div class="card fill" style="margin-bottom:.7vh;padding:1vh 1.15vw">
-      <b>JWT — quién puede entrar a cada cosa</b>
-      <p class="small" style="margin-top:.35vh">En la E5 ya había login en Angular: al iniciar sesión se guardaba el usuario
-        de forma temporal en el navegador (<code>sessionStorage</code>), para no perder la
-        pantalla al refrescar. Eso alcanzaba para “acordarse” de quién eras en el
-        cliente, pero la API todavía se podía probar abierta (Swagger, curl) y el
-        servidor no exigía un pase firme en cada pedido. En la E6 cerramos ese
-        hueco: hay que <b>demostrar quién sos</b> también del lado Java.</p>
-      <p class="small" style="margin-top:.4vh">Al iniciar sesión, el servidor no arma una sesión clásica en memoria de
-        Tomcat: genera un <b>pase digital firmado</b> — un JWT — con el email y los
-        roles (admin, autor, evaluador, etc.). Angular lo guarda en
-        <code>sessionStorage</code> (junto con los datos del usuario) y lo manda en cada
-        pedido a la API, en el encabezado <code>Authorization: Bearer …</code>. Eso lo hace
-        un <b>interceptor</b>: un intermediario que Angular aplica solo, sin que cada
-        pantalla copie el token a mano.</p>
-      <p class="small" style="margin-top:.4vh">Del lado Java, un <b>filtro</b> (<code>JwtAuthFilter</code>) revisa ese pase en casi
-        todos los <code>/api/...</code>. Si falta o es inválido, el pedido no llega al Resource.
-        Quedan libres solo cosas públicas: login, registro, health, OpenAPI/Swagger y
-        algunas lecturas (programa, circulares, etc.). Además, en cada pedido el filtro
-        <b>vuelve a mirar roles y si la cuenta sigue activa en MySQL</b>: así, si a alguien
-        le cambian el rol o lo deshabilitan, no alcanza con tener un token viejo
-        “congelado” en el navegador.</p>
-      <p class="small" style="margin-top:.4vh">En Angular, antes de abrir una pantalla, los <b>guards</b> preguntan: ¿hay sesión
-        (<code>authGuard</code>)? ¿el rol alcanza para esta ruta (<code>roleGuard</code>, por ejemplo
-        solo admin en <code>/admin</code>)? Si no, redirigen al login o a otra pantalla.
-        También hay un control de <b>inactividad</b>: si pasan 30 minutos sin usar la app,
-        se cierra la sesión por seguridad.</p>
-    </div>
-    <div class="card-rel" style="margin-bottom:.8vh;padding:1.1vh 1.2vw">
-      <b>API ampliada (respecto de la E4/E5)</b>
-      <p class="small" style="margin-top:.35vh">Lo que vimos en la diapositiva anterior (admin, comité, autores, público)
-        no son solo pantallas: cada flujo tiene sus endpoints REST en Jersey.
-        Respecto de la E5 —centrada en conectar Angular con la API— acá el
-        mostrador creció para cubrir todo el ciclo del congreso, no solo el
-        CRUD de usuarios.</p>
-    </div>
-    <div class="card-rel" style="margin:0;padding:1.1vh 1.2vw">
-      <b>Configurable sin redeploy</b>
-      <p class="small" style="margin-top:.35vh">Etapas, catálogos, aranceles, cupos y plazos los define el organizador o el
-        comité desde la interfaz. Si estuvieran fijos en el código, cada edición del
-        congreso pediría un despliegue nuevo.</p>
-    </div>
-  </div>
-  <div class="foot"><span>Entrega 6 · 3 → despliegue</span></div>
-</section>
-
-<!-- ═══════════════ ENTREGA 6 · 4/4 DESPLIEGUE ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Entrega 6 · 4/4 · Despliegue</div><h2>Un solo WAR en grupo1, verificado en el pipeline</h2></div>
-    <span class="tag"><code>git push</code> · mismo origen · sin CORS</span>
-  </div>
-  <div class="body top">
-    <div class="card-rel" style="margin-bottom:.85vh;padding:1.1vh 1.2vw">
-      <b>Integración final</b>
-      <p class="small" style="margin-top:.35vh">Con un <code>git push</code>, el pipeline arma todo solo. Un <b>Dockerfile</b> en varias
-        etapas hace el trabajo: primero compila Angular (las pantallas), después
-        las mete adentro del backend, Maven empaqueta pantallas y API en un solo
-        archivo (el WAR) y Tomcat 10 lo ejecuta en grupo1. Como la página y la
-        API viven en la misma dirección, en producción <b>ya no hace falta CORS</b>:
-        para el navegador es un solo origen.</p>
-    </div>
-    <div class="card-rel warn" style="border-left-color:var(--acento);margin-bottom:.85vh;padding:1.1vh 1.2vw">
-      <b>Dificultad: a veces salía un Angular viejo</b>
-      <p class="small" style="margin-top:.35vh">Docker a veces reutilizaba capas guardadas de un build anterior y el
-        contenedor de grupo1 quedaba con pantallas desactualizadas, aunque el
-        código nuevo ya estuviera en GitLab.
-        <b>Cómo la resolvimos:</b> forzar un build limpio (<code>--no-cache --pull</code>) y,
-        sobre todo, una <b>verificación automática</b> dentro del Dockerfile: si el
-        WAR no trae los archivos de Angular esperados (el <code>main-*.js</code> y los
-        estilos), la imagen ni se publica. El error aparece en el pipeline, no
-        delante del tribunal en la demo.</p>
-    </div>
-    <div class="card fill" style="margin:0;padding:1.1vh 1.2vw">
-      <p class="small"><b>Cierre E6:</b> el congreso ya se gestiona de punta a punta en el entorno
-        desplegado. La app en vivo se muestra en el Bloque 4
-        (<a href="https://grupo1.jyaa-ci.linti.unlp.edu.ar/" target="_blank" rel="noopener"><code>grupo1.jyaa-ci.linti.unlp.edu.ar</code></a>).
-        Lo que sigue en el coloquio es la arquitectura resultante y cómo se organizó el trabajo del grupo.</p>
-    </div>
-  </div>
-  <div class="foot"><span>Entrega 6 · puente a arquitectura</span></div>
-</section>
-
-<!-- ═══════════════ 17 · ARQUITECTURA ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Bloque 2 · Cierre</div><h2>La arquitectura que resultó de las seis entregas</h2></div>
-    <span class="tag alt">Un solo WAR</span>
-  </div>
-  <div class="body">
-    <p class="lead" style="margin-bottom:1.4vh">Un pedido (por ejemplo listar usuarios o iniciar sesión) no “salta” al
-      MySQL de una: baja por capas. Cada capa hace una sola cosa. En la E3
-      todavía estaban mezcladas (el Servlet hablaba directo con el DAO). En la
-      E4 las separamos con CDI. En la E5 y la E6 sumamos Angular, filtros
-      CORS/JWT y el WAR único en grupo1. Hoy el camino queda así:</p>
-    <p class="small" style="margin-bottom:1.2vh">Ningún tema de la cursada quedó sin usar: todos terminaron integrados en
-      este mismo WAR.</p>
+    <p class="small" style="margin-bottom:.3vh">Un pedido baja por capas (E3 mezclaba; E4 separó con CDI; E5/E6 sumaron
+      Angular, CORS/JWT y el WAR):</p>
     <div class="arch">
-      <div class="layer"><span class="lbl">Navegador</span><span class="cnt">Angular 19 · guards (¿hay sesión y rol?) · interceptor JWT (agrega el pase a cada pedido) · Leaflet (mapa de aulas)</span></div>
-      <div class="arrow">▼ &nbsp; HTTPS · <span class="mono">Authorization: Bearer &lt;jwt&gt;</span></div>
-      <div class="layer"><span class="lbl">Filtros</span><span class="cnt">CORS (permiso entre orígenes) · JwtAuthFilter (¿el pase es válido?) · StaticCacheFilter (caché de los archivos de Angular)</span></div>
-      <div class="arrow">▼</div>
-      <div class="layer"><span class="lbl">REST</span><span class="cnt">Jersey / JAX-RS · recursos <span class="mono">@Path</span> · DTOs (qué datos viajan) · OpenAPI</span></div>
-      <div class="arrow">▼ &nbsp; <span class="mono">@Inject</span> (CDI / Weld) — ya no <code>new</code> DAO</div>
-      <div class="layer"><span class="lbl">Servicios</span><span class="cnt">Reglas del congreso · plazos · NegocioException (errores de negocio) · email / notificaciones</span></div>
-      <div class="arrow">▼</div>
-      <div class="layer"><span class="lbl">Persistencia</span><span class="cnt">GenericDAO → AbstractJpaDAO → DAOs · EntityManager por request</span></div>
-      <div class="arrow">▼</div>
-      <div class="layer soft"><span class="lbl">Infraestructura</span><span class="cnt">Hibernate · MySQL (motor BD cátedra) · Tomcat 10 · Docker</span></div>
+      <div class="layer" style="padding:.55vh .9vw"><span class="lbl">Navegador</span><span class="cnt">Angular · guards · interceptor JWT · Leaflet</span></div>
+      <div class="arrow" style="line-height:1">▼ HTTPS · Bearer JWT</div>
+      <div class="layer" style="padding:.55vh .9vw"><span class="lbl">Filtros</span><span class="cnt">CORS · JwtAuthFilter · StaticCacheFilter</span></div>
+      <div class="arrow" style="line-height:1">▼</div>
+      <div class="layer" style="padding:.55vh .9vw"><span class="lbl">REST</span><span class="cnt">Jersey / JAX-RS · <span class="mono">@Path</span> · DTOs · OpenAPI</span></div>
+      <div class="arrow" style="line-height:1">▼ <span class="mono">@Inject</span> (CDI)</div>
+      <div class="layer" style="padding:.55vh .9vw"><span class="lbl">Servicios</span><span class="cnt">Reglas · plazos · NegocioException · email / notificaciones</span></div>
+      <div class="arrow" style="line-height:1">▼</div>
+      <div class="layer" style="padding:.55vh .9vw"><span class="lbl">Persistencia</span><span class="cnt">GenericDAO → AbstractJpaDAO → DAOs · EM por request</span></div>
+      <div class="arrow" style="line-height:1">▼</div>
+      <div class="layer soft" style="padding:.55vh .9vw"><span class="lbl">Infra</span><span class="cnt">Hibernate · MySQL · Tomcat 10 · Docker</span></div>
     </div>
   </div>
-  <div class="foot"><span>Arquitectura</span></div>
+  <div class="foot"><span>Bloque 2 · cierre → cómo trabajamos</span></div>
 </section>
 
-<!-- ═══════════════ 19 · BLOQUE 3 ═══════════════ -->
+<!-- ═══════════════ BLOQUE 3 · divisor ═══════════════ -->
 <section class="slide divider">
   <div class="num">03</div>
   <h1>Cómo trabajamos</h1>
-  <p>La organización interna del grupo y las herramientas que la sostuvieron.</p>
+  <p>Organización del grupo y las herramientas que la sostuvieron.</p>
   <div class="foot"><span>Bloque 3 de 4</span></div>
 </section>
 
-<!-- ═══════════════ 20 · ORGANIZACIÓN ═══════════════ -->
+<!-- ═══════════════ BLOQUE 3 · Equipo + CI ═══════════════ -->
 <section class="slide">
-  <div class="head">
-    <div><div class="kicker">Bloque 3 · Equipo</div><h2>Nos repartimos por flujo del congreso, no por capa</h2></div>
-    <span class="tag">3 integrantes</span>
+  <div class="head" style="margin-bottom:.8vh;padding-bottom:.6vh">
+    <div><div class="kicker">Bloque 3 · Equipo y despliegue</div>
+      <h2>Por flujo del congreso · Git, Docker y CI</h2></div>
+    <span class="tag">3 integrantes · un push → grupo1</span>
   </div>
-  <div class="body">
-    <p class="lead" style="margin-bottom:2vh">Al principio laburamos <b>los tres juntos en el backend</b>
-      (modelo, persistencia, API). Cuando eso estuvo, pasamos al <b>frontend Angular</b>
-      para consumirlo. Para no pisarnos al unir código, cada uno se hizo dueño de un
-      <b>flujo completo del congreso</b> — de la entidad en Java hasta la pantalla.</p>
-    <div class="g3">
-      <div class="card"><h3>Benjamín</h3>
-        <p class="small" style="margin-top:.6vh">El camino del participante que se inscribe y paga: inscripción, aranceles,
-          validación de pagos, recibos, arqueo de caja y facturas. También la gestión
-          de usuarios y gran parte del modelo de datos y de la API REST.</p></div>
-      <div class="card"><h3>Alcides</h3>
-        <p class="small" style="margin-top:.6vh">El camino académico: envío de trabajos, comité, asignación de evaluadores,
-          dictámenes y desempates. Además el programa del congreso: aulas, horarios,
-          cronogramas y el mapa para ubicar las salas.</p></div>
-      <div class="card"><h3>Lucas</h3>
-        <p class="small" style="margin-top:.6vh">Quién puede entrar y qué puede hacer (login, JWT, roles), certificados al
-          cierre, circulares y notificaciones, y que el sistema quede desplegado:
-          pipeline, Docker y pruebas de integración.</p></div>
+  <div class="body balance">
+    <p class="lead">Primero backend los tres juntos; después Angular.
+      Para no pisarnos: cada uno dueño de un <b>flujo completo</b> (entidad → pantalla).</p>
+    <div class="g3" style="gap:1vw">
+      <div class="card" style="margin:0"><h3>Benjamín</h3>
+        <p class="small" style="margin-top:.5vh">Inscripción, aranceles, pagos, recibos, arqueo, facturas ·
+          usuarios · gran parte del modelo y la API.</p></div>
+      <div class="card" style="margin:0"><h3>Alcides</h3>
+        <p class="small" style="margin-top:.5vh">Trabajos, comité, evaluadores, dictámenes ·
+          programa, aulas, cronogramas y mapa.</p></div>
+      <div class="card" style="margin:0"><h3>Lucas</h3>
+        <p class="small" style="margin-top:.5vh">Login, JWT, roles · certificados, circulares, notificaciones ·
+          pipeline, Docker y pruebas.</p></div>
     </div>
-    <div class="g2" style="margin-top:2.2vh">
-      <div class="card fill"><h3>Lo que funcionó</h3>
-        <p class="small">Ser dueño de un flujo de punta a punta bajó casi a cero los choques al
-          unir el código, y obligó a cada uno a tocar todas las capas (base, API y pantallas).</p></div>
-      <div class="card warn"><h3>Lo que nos costó</h3>
-        <p class="small">Algunas piezas las usan los tres (por ejemplo el usuario y la configuración
-          del congreso). Esas las hablamos antes de codear y las integramos primero,
-          para no trabarnos entre nosotros.</p></div>
-    </div>
-  </div>
-  <div class="foot"><span>Organización</span></div>
-</section>
-
-<!-- ═══════════════ 21 · HERRAMIENTAS Y CI ═══════════════ -->
-<section class="slide">
-  <div class="head">
-    <div><div class="kicker">Bloque 3 · Herramientas</div><h2>Git, GitLab, Docker y despliegue continuo</h2></div>
-    <span class="tag alt">un push actualiza la app en grupo1</span>
-  </div>
-  <div class="body">
-    <div class="g2-60">
-      <div>
-        <ul class="tight">
-          <li><b>Dos lugares para el código:</b> GitHub para trabajar día a día entre nosotros,
-            y el <b>GitLab de la cátedra</b> para entregar y desplegar en el servidor del curso.</li>
-          <li><b>Una rama por entrega</b> (<code>entrega-3</code>…<code>entrega-5</code>) y ramas
-            chicas por persona. La rama <code>main</code> siempre tiene que poder desplegarse:
-            si el pipeline no está en verde, no se publica.</li>
-          <li><b>Docker arma el paquete en etapas:</b> primero compila Angular, después Maven
-            mete pantallas y API en un solo WAR, y al final queda una imagen con Tomcat 10 lista
-            para correr en grupo1.</li>
-          <li><b>GitLab CI</b> (con el runner <code>jyaa</code>) hace el trabajo solo al hacer push:
-            construye la imagen, baja el contenedor viejo y levanta el nuevo. Traefik publica
-            la URL HTTPS del grupo sin configurar certificados a mano.</li>
-          <li><b>Antes de publicar, se verifica el WAR:</b> el Dockerfile comprueba que adentro
-            estén los archivos de Angular esperados. Si faltan, la imagen no sale.</li>
+    <div class="g2" style="gap:1.1vw">
+      <div class="card-rel" style="margin:0">
+        <b>Cómo versionamos y publicamos</b>
+        <ul class="small" style="margin:.55vh 0 0 1em;padding:0;line-height:1.55">
+          <li>GitHub día a día · GitLab cátedra para entregar y desplegar</li>
+          <li>Rama por entrega + ramas chicas · <code>main</code> solo si el pipeline está verde</li>
+          <li>CI (<code>jyaa</code>): arma imagen → frena/limpia contenedor → publica · Traefik HTTPS</li>
+          <li>El WAR se verifica antes de publicar (Angular adentro)</li>
         </ul>
-        <div class="chips" style="margin-top:2vh">
-          <span class="chip solid">Git</span><span class="chip">GitLab CI</span><span class="chip">Docker</span>
-          <span class="chip">Traefik + HTTPS</span><span class="chip">Maven</span><span class="chip">Eclipse / VS Code</span>
-          <span class="chip">phpMyAdmin</span><span class="chip">Swagger UI</span><span class="chip">Postman / DevTools</span>
-        </div>
       </div>
-      <div>
-        <div class="card fill">
-          <h3>El pipeline, en cuatro pasos</h3>
-          <ul class="tight" style="margin-top:1.2vh">
-            <li><b>1 · Armar</b> — se construye la imagen de cero (sin reusar caché vieja):
-              Angular fresco + WAR verificado.</li>
-            <li><b>2 · Frenar</b> — se detiene el contenedor <code>grupo1</code> que estaba corriendo.</li>
-            <li><b>3 · Limpiar</b> — se elimina ese contenedor viejo.</li>
-            <li><b>4 · Publicar</b> — se levanta el contenedor nuevo y Traefik lo deja
-              accesible en <code>grupo1.jyaa-ci.linti.unlp.edu.ar</code>.</li>
-          </ul>
+      <div class="card fill" style="margin:0">
+        <b>Pipeline en 4 pasos</b>
+        <p class="small" style="margin-top:.5vh"><b>1 Armar</b> (sin caché vieja) ·
+          <b>2 Frenar</b> · <b>3 Limpiar</b> · <b>4 Publicar</b> en
+          <code>grupo1.jyaa-ci.linti.unlp.edu.ar</code></p>
+        <p class="small" style="margin-top:.55vh">Dueño de un flujo = menos choques al merge.
+          Piezas compartidas (usuario, config): se hablan primero.</p>
+        <div class="chips" style="margin-top:.7vh">
+          <span class="chip solid">Git</span><span class="chip">GitLab CI</span><span class="chip">Docker</span>
+          <span class="chip">Traefik</span><span class="chip">Maven</span>
         </div>
-        <figure style="margin:1.6vh 0 0;min-height:0">
-          <img src="img/ci-pipeline.png" alt="GitLab CI — pipelines de main en verde"
-               style="width:100%;max-height:28vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:10px;background:#fff">
-          <figcaption style="margin-top:.5vh;text-align:left">Pipelines de <code>main</code> en verde: cada push reconstruye y publica grupo1.</figcaption>
-        </figure>
       </div>
     </div>
   </div>
-  <div class="foot"><span>Organización</span></div>
+  <div class="foot"><span>Bloque 3 → demo (Bloque 4)</span></div>
 </section>
 
 <!-- ═══════════════ 22 · BLOQUE 4 ═══════════════ -->
@@ -2077,23 +1712,21 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 </section>
 
 <!-- ═══════════════ B4 · CAPTURA · CONFIG VENTANAS/PLAZOS ═══════════════ -->
-<section class="slide" style="padding-bottom:6.5vh">
-  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+<section class="slide">
+  <div class="head" style="margin-bottom:.55vh;padding-bottom:.45vh">
     <div><div class="kicker">Bloque 4 · Capturas · Organización</div><h2>Configurable: cuándo inicia y cierra el congreso</h2></div>
     <span class="tag">sin esto el usuario no puede usar el sistema</span>
   </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">Antes de que alguien se registre: el admin define <b>ventanas</b> y <b>plazos</b>
+  <div class="body top fill-shots">
+    <p class="lead" style="font-size:1.1vw">Antes de que alguien se registre: el admin define <b>ventanas</b> y <b>plazos</b>
       (inscripción, envío, evaluación). Si no están abiertos, no hay “Nuevo trabajo”.</p>
     <div class="g2" style="gap:.8vw;align-items:stretch">
       <figure style="margin:0">
-        <img src="img/demo/setup-ventanas.png" alt="Ventanas de tiempo"
-             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <img class="shot-grow" src="img/demo/setup-ventanas.png" alt="Ventanas de tiempo">
         <figcaption class="small" style="margin-top:.3vh"><b>Ventanas</b> — inicio/fin del congreso e inscripción</figcaption>
       </figure>
       <figure style="margin:0">
-        <img src="img/demo/setup-plazos.png" alt="Plazos envío y evaluación"
-             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <img class="shot-grow" src="img/demo/setup-plazos.png" alt="Plazos envío y evaluación">
         <figcaption class="small" style="margin-top:.3vh"><b>Plazos</b> — envío de trabajos y evaluación</figcaption>
       </figure>
     </div>
@@ -2102,17 +1735,16 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 </section>
 
 <!-- ═══════════════ B4 · CAPTURA · CONFIG ARANCELES ═══════════════ -->
-<section class="slide" style="padding-bottom:6.5vh">
-  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+<section class="slide">
+  <div class="head" style="margin-bottom:.55vh;padding-bottom:.45vh">
     <div><div class="kicker">Bloque 4 · Capturas · Organización</div><h2>Configurable: aranceles y datos de pago</h2></div>
     <span class="tag">sin precios publicados no hay inscripción clara</span>
   </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">El admin publica <b>precios por categoría</b> (socio, estudiante, extranjero…)
+  <div class="body top fill-shots">
+    <p class="lead" style="font-size:1.1vw">El admin publica <b>precios por categoría</b> (socio, estudiante, extranjero…)
       y <b>cómo pagar</b> (alias/CBU, instrucciones, QR). Con eso el participante sabe cuánto y a dónde transferir.</p>
     <figure style="margin:0;text-align:center">
-      <img src="img/demo/setup-aranceles.png" alt="Precios y datos de pago"
-           style="width:100%;max-height:50vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:10px;background:#fff">
+      <img class="shot-grow" src="img/demo/setup-aranceles.png" alt="Precios y datos de pago">
       <figcaption class="small" style="margin-top:.35vh"><b>Aranceles</b> — categorías · moneda · alias/CBU · instrucciones</figcaption>
     </figure>
   </div>
@@ -2120,22 +1752,20 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 </section>
 
 <!-- ═══════════════ B4 · CAPTURA · PROGRAMA 1-2 ═══════════════ -->
-<section class="slide" style="padding-bottom:6.5vh">
-  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+<section class="slide">
+  <div class="head" style="margin-bottom:.55vh;padding-bottom:.45vh">
     <div><div class="kicker">Bloque 4 · Capturas · Programa · 1/2</div><h2>Cómo habilitamos el programa (datos y franjas)</h2></div>
     <span class="tag">configurable · admin</span>
   </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">Parte de lo mismo: armar el congreso sin redeploy. Pasos 1 y 2 de la guía.</p>
+  <div class="body top fill-shots">
+    <p class="lead" style="font-size:1.1vw">Parte de lo mismo: armar el congreso sin redeploy. Pasos 1 y 2 de la guía.</p>
     <div class="g2" style="gap:.8vw">
       <figure style="margin:0">
-        <img src="img/demo/prog-paso1.png" alt="Crear programa paso 1"
-             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <img class="shot-grow" src="img/demo/prog-paso1.png" alt="Crear programa paso 1">
         <figcaption class="small" style="margin-top:.3vh"><b>1 · Datos</b> — nombre, edición, sede, mapa</figcaption>
       </figure>
       <figure style="margin:0">
-        <img src="img/demo/prog-paso2.png" alt="Crear programa paso 2"
-             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <img class="shot-grow" src="img/demo/prog-paso2.png" alt="Crear programa paso 2">
         <figcaption class="small" style="margin-top:.3vh"><b>2 · Franjas</b> — jornada / horarios</figcaption>
       </figure>
     </div>
@@ -2144,21 +1774,19 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 </section>
 
 <!-- ═══════════════ B4 · CAPTURA · PROGRAMA 3-4 ═══════════════ -->
-<section class="slide" style="padding-bottom:6.5vh">
-  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+<section class="slide">
+  <div class="head" style="margin-bottom:.55vh;padding-bottom:.45vh">
     <div><div class="kicker">Bloque 4 · Capturas · Programa · 2/2</div><h2>Aulas y actividades (luego lo vemos en vivo)</h2></div>
     <span class="tag">mapa Leaflet · mesas / pósters / talleres</span>
   </div>
-  <div class="body top">
+  <div class="body top fill-shots">
     <div class="g2" style="gap:.8vw">
       <figure style="margin:0">
-        <img src="img/demo/prog-paso3.png" alt="Crear programa paso 3"
-             style="width:100%;max-height:46vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <img class="shot-grow" src="img/demo/prog-paso3.png" alt="Crear programa paso 3">
         <figcaption class="small" style="margin-top:.3vh"><b>3 · Aulas</b> — capacidad y ubicación en mapa</figcaption>
       </figure>
       <figure style="margin:0">
-        <img src="img/demo/prog-paso4.png" alt="Crear programa paso 4"
-             style="width:100%;max-height:46vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <img class="shot-grow" src="img/demo/prog-paso4.png" alt="Crear programa paso 4">
         <figcaption class="small" style="margin-top:.3vh"><b>4 · Actividades</b> — mesas, pósters, talleres…</figcaption>
       </figure>
     </div>
@@ -2167,28 +1795,25 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 </section>
 
 <!-- ═══════════════ B4 · CAPTURA · PANELES POR ROL ═══════════════ -->
-<section class="slide" style="padding-bottom:6.5vh">
-  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+<section class="slide">
+  <div class="head" style="margin-bottom:.55vh;padding-bottom:.45vh">
     <div><div class="kicker">Bloque 4 · Capturas · Roles</div><h2>Tres paneles: admin · comité · evaluador</h2></div>
     <span class="tag">adelanto de roles (además: asistente / autor)</span>
   </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:.45vh;font-size:1.08vw">Configurado el congreso: un usuario opera desde paneles distintos según el rol.
+  <div class="body top fill-shots">
+    <p class="lead" style="font-size:1.08vw">Configurado el congreso: un usuario opera desde paneles distintos según el rol.
       Acá los tres de organización/evaluación; en vivo entran también <b>asistente</b> y <b>autor</b>.</p>
     <div class="g3" style="gap:.55vw;align-items:stretch">
       <figure style="margin:0">
-        <img src="img/demo/panel-admin.png" alt="Panel administrador"
-             style="width:100%;max-height:42vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <img class="shot-grow" src="img/demo/panel-admin.png" alt="Panel administrador">
         <figcaption class="small" style="margin-top:.3vh"><b>Admin</b> — congreso, pagos, usuarios…</figcaption>
       </figure>
       <figure style="margin:0">
-        <img src="img/demo/panel-comite.png" alt="Panel organizador científico"
-             style="width:100%;max-height:42vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <img class="shot-grow" src="img/demo/panel-comite.png" alt="Panel organizador científico">
         <figcaption class="small" style="margin-top:.3vh"><b>Comité</b> — precheck, ejes, cupos</figcaption>
       </figure>
       <figure style="margin:0">
-        <img src="img/demo/panel-evaluador.png" alt="Panel evaluador"
-             style="width:100%;max-height:42vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <img class="shot-grow" src="img/demo/panel-evaluador.png" alt="Panel evaluador">
         <figcaption class="small" style="margin-top:.3vh"><b>Evaluador</b> — dictámenes asignados</figcaption>
       </figure>
     </div>
@@ -2197,22 +1822,20 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 </section>
 
 <!-- ═══════════════ B4 · FALLIDO A · PRECHECK ═══════════════ -->
-<section class="slide" style="padding-bottom:6.5vh">
-  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+<section class="slide">
+  <div class="head" style="margin-bottom:.55vh;padding-bottom:.45vh">
     <div><div class="kicker">Bloque 4 · Capturas · Fallido A</div><h2>Sin prevalidar: Precheck NO → observado</h2></div>
     <span class="tag">camino A</span>
   </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:.45vh;font-size:1.08vw">El asistente envía el trabajo; el comité <b>no prevalida</b> (observa).</p>
+  <div class="body top fill-shots">
+    <p class="lead" style="font-size:1.08vw">El asistente envía el trabajo; el comité <b>no prevalida</b> (observa).</p>
     <div class="g2" style="gap:.8vw">
       <figure style="margin:0">
-        <img src="img/demo/fallo-precheck.png" alt="Precheck NO"
-             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <img class="shot-grow" src="img/demo/fallo-precheck.png" alt="Precheck NO">
         <figcaption class="small" style="margin-top:.3vh"><b>A1</b> Precheck NO — observar</figcaption>
       </figure>
       <figure style="margin:0">
-        <img src="img/demo/fallo-observado.png" alt="Observado"
-             style="width:100%;max-height:44vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:8px;background:#fff">
+        <img class="shot-grow" src="img/demo/fallo-observado.png" alt="Observado">
         <figcaption class="small" style="margin-top:.3vh"><b>A2</b> Estado observado — aún no hay rol Autor</figcaption>
       </figure>
     </div>
@@ -2221,33 +1844,31 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 </section>
 
 <!-- ═══════════════ B4 · FALLIDO · REENVÍO ═══════════════ -->
-<section class="slide" style="padding-bottom:6.5vh">
-  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+<section class="slide">
+  <div class="head" style="margin-bottom:.55vh;padding-bottom:.45vh">
     <div><div class="kicker">Bloque 4 · Capturas · Reenvío</div><h2>En ambos caminos: el asistente puede reenviar</h2></div>
     <span class="tag">A3 y B3</span>
   </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">Corrige desde el panel asistente y vuelve a mandar (sirve para precheck NO y para evaluación negativa).</p>
+  <div class="body top fill-shots">
+    <p class="lead" style="font-size:1.1vw">Corrige desde el panel asistente y vuelve a mandar (sirve para precheck NO y para evaluación negativa).</p>
     <figure style="margin:0;text-align:center">
-      <img src="img/demo/fallo-reenviar.png" alt="Reenviar trabajo"
-           style="width:100%;max-height:50vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:10px;background:#fff">
+      <img class="shot-grow" src="img/demo/fallo-reenviar.png" alt="Reenviar trabajo">
     </figure>
   </div>
   <div class="foot"><span>Reenvío → fallido B</span></div>
 </section>
 
 <!-- ═══════════════ B4 · FALLIDO B1 · CUPOS ═══════════════ -->
-<section class="slide" style="padding-bottom:6.5vh">
-  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+<section class="slide">
+  <div class="head" style="margin-bottom:.55vh;padding-bottom:.45vh">
     <div><div class="kicker">Bloque 4 · Capturas · Fallido B · 1/2</div><h2>Con prevalidar: evaluadores por eje (cupos)</h2></div>
     <span class="tag">después del Precheck OK</span>
   </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">Si el precheck pasa, hace falta tener evaluadores con cupo en el eje
+  <div class="body top fill-shots">
+    <p class="lead" style="font-size:1.1vw">Si el precheck pasa, hace falta tener evaluadores con cupo en el eje
       (asignación manual; no mostramos “solicitar ser evaluador”).</p>
     <figure style="margin:0;text-align:center">
-      <img src="img/demo/setup-evaluadores-eje.png" alt="Evaluadores por eje"
-           style="width:100%;max-height:50vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:10px;background:#fff">
+      <img class="shot-grow" src="img/demo/setup-evaluadores-eje.png" alt="Evaluadores por eje">
       <figcaption class="small" style="margin-top:.35vh"><b>B1</b> Cupos por eje — listos para asignar al trabajo</figcaption>
     </figure>
   </div>
@@ -2255,17 +1876,16 @@ figcaption{font-size:.95vw;color:var(--gris);margin-top:.9vh;text-align:center}
 </section>
 
 <!-- ═══════════════ B4 · FALLIDO B2 · CORRECCIONES ═══════════════ -->
-<section class="slide" style="padding-bottom:6.5vh">
-  <div class="head" style="margin-bottom:.65vh;padding-bottom:.5vh">
+<section class="slide">
+  <div class="head" style="margin-bottom:.55vh;padding-bottom:.45vh">
     <div><div class="kicker">Bloque 4 · Capturas · Fallido B · 2/2</div><h2>Los dos piden correcciones → reenvío</h2></div>
     <span class="tag">evaluación negativa</span>
   </div>
-  <div class="body top">
-    <p class="lead" style="margin-bottom:.5vh;font-size:1.1vw">Tras asignar evaluadores al trabajo: ambos piden modificaciones profundas.
+  <div class="body top fill-shots">
+    <p class="lead" style="font-size:1.1vw">Tras asignar evaluadores al trabajo: ambos piden modificaciones profundas.
       El asistente <b>reenvía</b> (misma pantalla que vimos).</p>
     <figure style="margin:0;text-align:center">
-      <img src="img/demo/fallo-correcciones-eval.png" alt="Requiere correcciones"
-           style="width:100%;max-height:50vh;object-fit:contain;object-position:top;border:1px solid var(--linea);border-radius:10px;background:#fff">
+      <img class="shot-grow" src="img/demo/fallo-correcciones-eval.png" alt="Requiere correcciones">
       <figcaption class="small" style="margin-top:.35vh"><b>B2</b> Requiere correcciones (evaluación)</figcaption>
     </figure>
   </div>
