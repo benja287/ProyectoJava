@@ -4,12 +4,14 @@ import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
 import ar.edu.unlp.jyaa.grupo1.modelo.CatalogoItem;
 import ar.edu.unlp.jyaa.grupo1.modelo.CatalogosCongresoDefaults;
 import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
+import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.web.dto.CatalogoItemDTO;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -53,6 +55,49 @@ public class CatalogoCongresoService {
 
   public boolean esTipoEnvioActivo(String codigo) {
     return esActivo(listarTiposEnvio(), codigo, true);
+  }
+
+  /** Grupo de agenda ({@code MESA}, {@code POSTER} o {@code NINGUNO}) de una modalidad. */
+  public String grupoAgendaDeModalidad(String codigo) {
+    CatalogoItem item = buscarPorCodigo(listarModalidades(), codigo, true);
+    return grupoAgendaDe(item, codigo);
+  }
+
+  /**
+   * Códigos de modalidad que se programan en el grupo indicado. Incluye modalidades inactivas
+   * porque los trabajos ya aprobados con esa modalidad igual deben poder programarse.
+   */
+  public Set<String> codigosModalidadPorGrupo(String grupoRaw) {
+    String grupo = grupoRaw == null ? "" : grupoRaw.trim().toUpperCase(Locale.ROOT);
+    Set<String> out = new LinkedHashSet<>();
+    for (CatalogoItem m : listarModalidades()) {
+      if (m.getCodigo() == null) {
+        continue;
+      }
+      if (grupo.equals(grupoAgendaDe(m, m.getCodigo()))) {
+        out.add(m.getCodigo().trim().toUpperCase(Locale.ROOT));
+      }
+    }
+    if ("MESA".equals(grupo)) {
+      out.add(ModalidadPresentacion.ORAL.name());
+    } else if ("POSTER".equals(grupo)) {
+      out.add(ModalidadPresentacion.POSTER.name());
+    }
+    return out;
+  }
+
+  private static String grupoAgendaDe(CatalogoItem item, String codigo) {
+    String grupo = item != null ? item.getGrupoAgenda() : null;
+    if (grupo != null && !grupo.isBlank()) {
+      return grupo.trim().toUpperCase(Locale.ROOT);
+    }
+    if (ModalidadPresentacion.esOral(codigo)) {
+      return "MESA";
+    }
+    if (ModalidadPresentacion.esPoster(codigo)) {
+      return "POSTER";
+    }
+    return "NINGUNO";
   }
 
   /** Acepta activo o (inactivo pero ya usado) si allowInactiveLegacy. */

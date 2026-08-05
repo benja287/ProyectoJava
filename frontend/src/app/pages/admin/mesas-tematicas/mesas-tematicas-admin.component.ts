@@ -9,6 +9,7 @@ import {
 } from '../../../constants/congress-event';
 import { MODALIDAD_LABELS } from '../../../constants/ejes-tematicos';
 import { Aula } from '../../../models/aula.model';
+import { CatalogoItem, coincideEje } from '../../../models/congreso-config.model';
 import {
   FranjaHoraria,
   diaCongresoDeFecha,
@@ -123,11 +124,11 @@ const PAGE_SIZE = 20;
         @if (trabajosAbiertos) {
           <div class="filtro-eje box-muted">
             <label>
-              Eje temático (recomendado)
+              Eje temático
               <select [value]="ejeFiltro" (change)="onEjeChange($event)">
-                <option value="">— Elegí un eje para filtrar —</option>
-                @for (eje of ejesTematicos; track eje) {
-                  <option [value]="eje">{{ eje }}</option>
+                <option value="">— Todos los ejes —</option>
+                @for (eje of ejesTematicos; track eje.codigo) {
+                  <option [value]="eje.codigo">{{ eje.etiqueta || eje.codigo }}</option>
                 }
               </select>
             </label>
@@ -141,7 +142,8 @@ const PAGE_SIZE = 20;
               />
             </label>
             <p class="muted form-hint">
-              Sin eje se muestran pocos resultados. Al cambiar el eje se limpia la selección.
+              Se listan los trabajos aprobados que se presentan en mesa. Al cambiar el eje se limpia
+              la selección.
               @if (seleccionados.size) {
                 · Seleccionados: <strong>{{ seleccionados.size }}</strong>
               }
@@ -150,10 +152,11 @@ const PAGE_SIZE = 20;
 
           @if (cargando) {
             <p>Cargando trabajos...</p>
-          } @else if (!ejeFiltro && !busqueda.trim()) {
+          } @else if (!trabajosAprobados.length) {
             <p class="muted dashed-box">
-              Elegí un eje temático (o escribí en la búsqueda) para listar trabajos orales
-              aprobados. Así evitamos cargar toda la lista de una vez.
+              No hay trabajos aprobados para mesa temática. Aparecen acá los que el comité dejó en
+              estado APROBADO cuya modalidad tenga grupo de agenda MESA (se configura en Comité →
+              Catálogos de envío).
             </p>
           } @else if (trabajosVisibles.length === 0) {
             <p class="muted">No hay trabajos que coincidan con el filtro.</p>
@@ -217,7 +220,8 @@ export class MesasTematicasAdminComponent implements OnInit {
   private fb = inject(FormBuilder);
   private catalogos = inject(CatalogosCongresoService);
 
-  ejesTematicos: string[] = [];
+  ejesTematicos: CatalogoItem[] = [];
+  modalidades: CatalogoItem[] = [];
   fechasCongreso = congressDateLabels();
   fechasOrdenadas = [...CONGRESS_EVENT_DATES];
   aulas: Aula[] = [];
@@ -260,8 +264,12 @@ export class MesasTematicasAdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.catalogos.ejesActivos().subscribe({
-      next: (items) => (this.ejesTematicos = items.map((e) => e.etiqueta || e.codigo)),
+      next: (items) => (this.ejesTematicos = items),
       error: () => (this.ejesTematicos = []),
+    });
+    this.catalogos.modalidadesActivas().subscribe({
+      next: (items) => (this.modalidades = items),
+      error: () => (this.modalidades = []),
     });
     this.congresoConfigService.obtener().subscribe({
       next: (c) => {
@@ -312,7 +320,10 @@ export class MesasTematicasAdminComponent implements OnInit {
 
   etiquetaModalidad(modalidad?: string): string {
     if (!modalidad) return '—';
-    return MODALIDAD_LABELS[modalidad as keyof typeof MODALIDAD_LABELS] ?? modalidad;
+    const item = this.modalidades.find((m) => m.codigo === modalidad);
+    return (
+      item?.etiqueta ?? MODALIDAD_LABELS[modalidad as keyof typeof MODALIDAD_LABELS] ?? modalidad
+    );
   }
 
   onEjeChange(event: Event): void {
@@ -396,15 +407,10 @@ export class MesasTematicasAdminComponent implements OnInit {
     const q = this.busqueda.trim().toLowerCase();
     let list = this.trabajosAprobados;
     if (this.ejeFiltro) {
-      list = list.filter((t) => (t.ejeTematico || '').trim() === this.ejeFiltro);
+      list = list.filter((t) => coincideEje(t.ejeTematico, this.ejeFiltro, this.ejesTematicos));
     }
     if (q) {
       list = list.filter((t) => (t.titulo || '').toLowerCase().includes(q));
-    }
-    // Sin eje ni búsqueda: no inundar la UI
-    if (!this.ejeFiltro && !q) {
-      this.trabajosFiltrados = [];
-      return;
     }
     this.trabajosFiltrados = list;
   }

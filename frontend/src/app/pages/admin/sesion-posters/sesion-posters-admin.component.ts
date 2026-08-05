@@ -8,6 +8,7 @@ import {
   congressDateLabels,
 } from '../../../constants/congress-event';
 import { Aula } from '../../../models/aula.model';
+import { CatalogoItem, coincideEje } from '../../../models/congreso-config.model';
 import {
   FranjaHoraria,
   diaCongresoDeFecha,
@@ -112,11 +113,11 @@ const PAGE_SIZE = 20;
         @if (trabajosAbiertos) {
           <div class="filtro-eje box-muted">
             <label>
-              Eje temático (recomendado)
+              Eje temático
               <select [value]="ejeFiltro" (change)="onEjeChange($event)">
-                <option value="">— Elegí un eje para filtrar —</option>
-                @for (eje of ejesTematicos; track eje) {
-                  <option [value]="eje">{{ eje }}</option>
+                <option value="">— Todos los ejes —</option>
+                @for (eje of ejesTematicos; track eje.codigo) {
+                  <option [value]="eje.codigo">{{ eje.etiqueta || eje.codigo }}</option>
                 }
               </select>
             </label>
@@ -130,7 +131,8 @@ const PAGE_SIZE = 20;
               />
             </label>
             <p class="muted form-hint">
-              Sin eje se muestran pocos resultados. Al cambiar el eje se limpia la selección.
+              Se listan los trabajos aprobados que se presentan como póster. Al cambiar el eje se
+              limpia la selección.
               @if (seleccionados.size) {
                 · Seleccionados: <strong>{{ seleccionados.size }}</strong>
               }
@@ -139,9 +141,11 @@ const PAGE_SIZE = 20;
 
           @if (cargando) {
             <p>Cargando pósters...</p>
-          } @else if (!ejeFiltro && !busqueda.trim()) {
+          } @else if (!trabajosAprobados.length) {
             <p class="muted dashed-box">
-              Elegí un eje temático (o escribí en la búsqueda) para listar pósters aprobados.
+              No hay trabajos aprobados para sesión de pósters. Aparecen acá los que el comité dejó
+              en estado APROBADO cuya modalidad tenga grupo de agenda POSTER (se configura en Comité
+              → Catálogos de envío).
             </p>
           } @else if (trabajosVisibles.length === 0) {
             <p class="muted">No hay pósters que coincidan con el filtro.</p>
@@ -203,7 +207,7 @@ export class SesionPostersAdminComponent implements OnInit {
   private fb = inject(FormBuilder);
   private catalogos = inject(CatalogosCongresoService);
 
-  ejesTematicos: string[] = [];
+  ejesTematicos: CatalogoItem[] = [];
   fechasCongreso = congressDateLabels();
   fechasOrdenadas = [...CONGRESS_EVENT_DATES];
   aulas: Aula[] = [];
@@ -245,7 +249,7 @@ export class SesionPostersAdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.catalogos.ejesActivos().subscribe({
-      next: (items) => (this.ejesTematicos = items.map((e) => e.etiqueta || e.codigo)),
+      next: (items) => (this.ejesTematicos = items),
       error: () => (this.ejesTematicos = []),
     });
     this.congresoConfigService.obtener().subscribe({
@@ -375,14 +379,10 @@ export class SesionPostersAdminComponent implements OnInit {
     const q = this.busqueda.trim().toLowerCase();
     let list = this.trabajosAprobados;
     if (this.ejeFiltro) {
-      list = list.filter((t) => (t.ejeTematico || '').trim() === this.ejeFiltro);
+      list = list.filter((t) => coincideEje(t.ejeTematico, this.ejeFiltro, this.ejesTematicos));
     }
     if (q) {
       list = list.filter((t) => (t.titulo || '').toLowerCase().includes(q));
-    }
-    if (!this.ejeFiltro && !q) {
-      this.trabajosFiltrados = [];
-      return;
     }
     this.trabajosFiltrados = list;
   }

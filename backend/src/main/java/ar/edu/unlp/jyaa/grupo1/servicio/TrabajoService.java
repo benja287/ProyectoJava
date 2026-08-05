@@ -10,7 +10,6 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Congreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
-import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.RecomendacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.Rol;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoActividad;
@@ -36,6 +35,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RequestScoped
 public class TrabajoService {
@@ -175,15 +175,20 @@ public class TrabajoService {
       throw new NegocioException("Debe indicar la modalidad (ORAL o POSTER)");
     }
     String modalidad = modalidadRaw.trim().toUpperCase();
-    if (!catalogoCongresoService.esModalidadActiva(modalidad)
-        && !ModalidadPresentacion.esOral(modalidad)
-        && !ModalidadPresentacion.esPoster(modalidad)) {
+    String grupo = catalogoCongresoService.grupoAgendaDeModalidad(modalidad);
+    if (!"MESA".equals(grupo) && !"POSTER".equals(grupo)) {
       throw new NegocioException("Modalidad inválida: " + modalidadRaw);
     }
+    // Incluye las modalidades que el comité agregó al catálogo con ese grupo de agenda.
+    Set<String> modalidadesDelGrupo = catalogoCongresoService.codigosModalidadPorGrupo(grupo);
     TrabajoFiltro filtro =
-        new TrabajoFiltro(null, null, null, EstadoTrabajo.APROBADO, modalidad, null, null);
+        new TrabajoFiltro(null, null, null, EstadoTrabajo.APROBADO, null, null, null);
     return trabajoDAO.listarFiltrado(filtro, 0, 500).stream()
         .filter(t -> !TipoTrabajo.esPropuestaTaller(t.getTipo()))
+        .filter(
+            t ->
+                t.getModalidad() != null
+                    && modalidadesDelGrupo.contains(t.getModalidad().trim().toUpperCase()))
         .map(this::toResumenConAsignaciones)
         .toList();
   }

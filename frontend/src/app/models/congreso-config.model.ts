@@ -51,6 +51,23 @@ export function etiquetaCatalogo(
 }
 
 /**
+ * Los trabajos guardan el código del eje, pero el catálogo puede mostrar otra etiqueta.
+ * Compara contra ambos para no ocultar trabajos si el comité renombró el eje.
+ */
+export function coincideEje(
+  ejeTrabajo: string | null | undefined,
+  seleccionado: string,
+  catalogo: CatalogoItem[] = []
+): boolean {
+  const valor = (ejeTrabajo ?? '').trim().toLocaleLowerCase();
+  if (!valor) return false;
+  const item = catalogo.find((e) => e.codigo === seleccionado);
+  return [seleccionado, item?.codigo, item?.etiqueta]
+    .filter((v): v is string => !!v)
+    .some((v) => v.trim().toLocaleLowerCase() === valor);
+}
+
+/**
  * Jackson a veces serializa LocalDate como [y, m, d]. Los &lt;input type="date"&gt;
  * necesitan "yyyy-MM-dd".
  */

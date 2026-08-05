@@ -54,7 +54,9 @@ import { mensajeErrorApi } from '../../../utils/api-error.util';
         <section class="panel-card" style="margin-top: 1rem">
           <h2>Modalidades de presentación</h2>
           <p class="muted">
-            Código estable (ej. ORAL). Grupo agenda: MESA (mesas temáticas), POSTER o NINGUNO.
+            Código estable (ej. ORAL). El grupo agenda define dónde se programa el trabajo aprobado:
+            MESA (mesas temáticas) o POSTER (sesiones de pósters). Con NINGUNO el trabajo no se
+            puede incluir en el programa.
           </p>
           <div class="catalogo-lista">
             @for (item of modalidades; track item.codigo; let i = $index) {
@@ -208,7 +210,7 @@ export class CatalogosEnvioOcComponent implements OnInit {
       activo: true,
       orden: this.modalidades.length + 1,
       sistema: false,
-      grupoAgenda: 'NINGUNO',
+      grupoAgenda: 'MESA',
     });
   }
 

@@ -11,7 +11,6 @@ import ar.edu.unlp.jyaa.grupo1.modelo.Actividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.Aula;
 import ar.edu.unlp.jyaa.grupo1.modelo.EstadoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.FranjaHoraria;
-import ar.edu.unlp.jyaa.grupo1.modelo.ModalidadPresentacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoActividad;
 import ar.edu.unlp.jyaa.grupo1.modelo.TipoTrabajo;
 import ar.edu.unlp.jyaa.grupo1.modelo.Trabajo;
@@ -31,6 +30,7 @@ import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -54,6 +54,7 @@ public class ActividadService {
   @Inject private CronogramaPersonalDAO cronogramaPersonalDAO;
   @Inject private CongresoService congresoService;
   @Inject private NotificacionService notificacionService;
+  @Inject private CatalogoCongresoService catalogoCongresoService;
 
   public PaginaActividadesDTO listar(int page, int size, ActividadFiltro filtro, AuthenticatedUser auth) {
     if (!auth.canListActividades()) {
@@ -138,8 +139,7 @@ public class ActividadService {
 
   public Actividad crearMesaTematica(CrearMesaTematicaRequest request) {
     validarRequestMesa(request);
-    List<Trabajo> trabajos =
-        cargarTrabajosParaProgramacion(request.trabajoIds(), ModalidadPresentacion.ORAL.name());
+    List<Trabajo> trabajos = cargarTrabajosParaProgramacion(request.trabajoIds(), "MESA");
     validarMismoEje(trabajos);
 
     LocalDateTime[] horario =
@@ -162,8 +162,7 @@ public class ActividadService {
 
   public Actividad crearSesionPosters(CrearSesionPostersRequest request) {
     validarRequestPosters(request);
-    List<Trabajo> trabajos =
-        cargarTrabajosParaProgramacion(request.trabajoIds(), ModalidadPresentacion.POSTER.name());
+    List<Trabajo> trabajos = cargarTrabajosParaProgramacion(request.trabajoIds(), "POSTER");
     validarMismoEje(trabajos);
 
     LocalDateTime[] horario =
@@ -391,11 +390,12 @@ public class ActividadService {
     actividadDAO.baja(id);
   }
 
-  private List<Trabajo> cargarTrabajosParaProgramacion(
-      List<Long> trabajoIds, String modalidadEsperada) {
+  private List<Trabajo> cargarTrabajosParaProgramacion(List<Long> trabajoIds, String grupoAgenda) {
     if (trabajoIds == null || trabajoIds.isEmpty()) {
       throw new NegocioException("Debe seleccionar al menos un trabajo aprobado");
     }
+    Set<String> modalidadesDelGrupo = catalogoCongresoService.codigosModalidadPorGrupo(grupoAgenda);
+    String destino = "MESA".equals(grupoAgenda) ? "mesa temática" : "sesión de pósters";
     List<Trabajo> trabajos = new ArrayList<>();
     for (Long id : trabajoIds) {
       Trabajo t = trabajoDAO.recuperarPorId(id);
@@ -406,9 +406,9 @@ public class ActividadService {
         throw new NegocioException("El trabajo #" + id + " no está aprobado");
       }
       if (t.getModalidad() == null
-          || !t.getModalidad().equalsIgnoreCase(modalidadEsperada)) {
+          || !modalidadesDelGrupo.contains(t.getModalidad().trim().toUpperCase(Locale.ROOT))) {
         throw new NegocioException(
-            "El trabajo #" + id + " no corresponde a modalidad " + modalidadEsperada);
+            "La modalidad del trabajo #" + id + " no se programa en " + destino);
       }
       trabajos.add(t);
     }
