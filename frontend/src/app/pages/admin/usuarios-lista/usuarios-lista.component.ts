@@ -148,10 +148,43 @@ export class UsuariosListaComponent extends ListadoPaginadoBase {
   }
 
   confirmarBaja(usuario: Usuario): void {
-    if (!usuario.id || !confirm(`¿Eliminar definitivamente a ${usuario.email}?`)) {
+    if (!usuario.id) {
       return;
     }
-    this.usuarioService.baja(usuario.id).subscribe({
+    this.error = '';
+    this.usuarioService.impactoBaja(usuario.id).subscribe({
+      next: (impacto) => {
+        if (impacto.bloqueado) {
+          const historial = [
+            impacto.trabajos > 0 ? `${impacto.trabajos} trabajo(s)` : '',
+            impacto.evaluaciones > 0 ? `${impacto.evaluaciones} evaluación(es)` : '',
+          ]
+            .filter(Boolean)
+            .join(' y ');
+          this.error =
+            `No se puede eliminar a ${usuario.email} porque tiene ${historial}. ` +
+            'Usá Inhabilitar para conservar el historial.';
+          return;
+        }
+        const dependencias = [
+          impacto.inscripciones > 0 ? `${impacto.inscripciones} inscripción(es)` : '',
+          impacto.pagos > 0 ? `${impacto.pagos} pago(s) vinculado(s)` : '',
+        ].filter(Boolean);
+        const detalle = dependencias.length
+          ? `\n\nTambién se eliminarán definitivamente: ${dependencias.join(' y ')}.`
+          : '';
+        if (confirm(`¿Eliminar definitivamente a ${usuario.email}?${detalle}`)) {
+          this.eliminarUsuario(usuario);
+        }
+      },
+      error: (err) => {
+        this.error = mensajeErrorApi(err, 'No se pudo verificar la baja del usuario.');
+      },
+    });
+  }
+
+  private eliminarUsuario(usuario: Usuario): void {
+    this.usuarioService.baja(usuario.id!).subscribe({
       next: () => {
         this.mensaje = `Usuario ${usuario.id} eliminado.`;
         this.error = '';

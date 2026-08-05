@@ -6,7 +6,9 @@ import ar.edu.unlp.jyaa.grupo1.rest.dto.ActualizarPerfilRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.RolesRequest;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.UsuarioFiltro;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
+import ar.edu.unlp.jyaa.grupo1.servicio.NegocioException;
 import ar.edu.unlp.jyaa.grupo1.servicio.UsuarioService;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ImpactoBajaUsuarioDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaUsuariosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.UsuarioDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -154,12 +156,26 @@ public class UsuarioResource {
     return UsuarioDTO.from(actualizado);
   }
 
+  @GET
+  @Path("/{id}/impacto-baja")
+  @Operation(summary = "Vista previa de datos afectados por la baja definitiva (admin)")
+  public ImpactoBajaUsuarioDTO impactoBaja(
+      @PathParam("id") Long id, @Context ContainerRequestContext ctx) {
+    requireAdmin(ctx);
+    return usuarioService.impactoBaja(id);
+  }
+
   @DELETE
   @Path("/{id}")
-  @Operation(summary = "Baja de usuario")
+  @Operation(summary = "Baja definitiva de usuario (admin)")
   @ApiResponse(responseCode = "204", description = "Usuario eliminado")
   @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
-  public Response baja(@PathParam("id") Long id) {
+  public Response baja(@PathParam("id") Long id, @Context ContainerRequestContext ctx) {
+    AuthenticatedUser auth = requireAdmin(ctx);
+    if (id.equals(auth.userId())) {
+      throw new NegocioException(
+          "No podés eliminar tu propia cuenta administradora. Usá otro administrador.");
+    }
     if (usuarioService.buscarPorId(id) == null) {
       throw new NotFoundException("Usuario no encontrado");
     }
@@ -297,5 +313,13 @@ public class UsuarioResource {
     if (!AuthenticatedUser.from(ctx).canGestionarEvaluadoresEje()) {
       throw new NotAuthorizedException("Solo comité académico o administrador");
     }
+  }
+
+  private AuthenticatedUser requireAdmin(ContainerRequestContext ctx) {
+    AuthenticatedUser auth = AuthenticatedUser.from(ctx);
+    if (!auth.isAdmin()) {
+      throw new NotAuthorizedException("Solo administradores");
+    }
+    return auth;
   }
 }

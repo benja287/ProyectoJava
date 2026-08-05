@@ -6,6 +6,7 @@ import ar.edu.unlp.jyaa.grupo1.dao.filtro.UsuarioFiltro;
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
 import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
 import ar.edu.unlp.jyaa.grupo1.modelo.CronogramaPersonal;
+import ar.edu.unlp.jyaa.grupo1.modelo.InscripcionCongreso;
 import ar.edu.unlp.jyaa.grupo1.modelo.SolicitudEvaluador;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import jakarta.persistence.EntityManager;
@@ -253,7 +254,13 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
     ejecutar(em, "DELETE FROM Certificado c WHERE c.usuario.id = :uid", usuarioId);
 
     // Estas entidades tienen colecciones o entidades hijas: se borran por entidad para que
-    // JPA limpie también sus tablas de relación.
+    // JPA limpie también sus tablas de relación (p. ej. pago de la inscripción).
+    em.createQuery(
+            "SELECT i FROM InscripcionCongreso i WHERE i.usuario.id = :uid",
+            InscripcionCongreso.class)
+        .setParameter("uid", usuarioId)
+        .getResultList()
+        .forEach(em::remove);
     em.createQuery(
             "SELECT s FROM SolicitudEvaluador s WHERE s.usuario.id = :uid",
             SolicitudEvaluador.class)

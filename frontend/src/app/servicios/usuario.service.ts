@@ -20,6 +20,14 @@ export interface UsuarioListFiltro {
   activo?: string;
 }
 
+export interface ImpactoBajaUsuario {
+  inscripciones: number;
+  pagos: number;
+  trabajos: number;
+  evaluaciones: number;
+  bloqueado: boolean;
+}
+
 const USUARIO_FILTER_KEYS = [
   'apellido',
   'nombre',
@@ -159,6 +167,11 @@ export class UsuarioService {
   /** DELETE /api/usuarios/{id} */
   baja(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  /** GET /api/usuarios/{id}/impacto-baja — datos que se borrarían o bloquean la baja. */
+  impactoBaja(id: number): Observable<ImpactoBajaUsuario> {
+    return this.http.get<ImpactoBajaUsuario>(`${this.baseUrl}/${id}/impacto-baja`);
   }
 
   /** PUT /api/usuarios/{id}/cupos-envio */

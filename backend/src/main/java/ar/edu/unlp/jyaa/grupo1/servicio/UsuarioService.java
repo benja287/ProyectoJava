@@ -19,6 +19,7 @@ import ar.edu.unlp.jyaa.grupo1.rest.dto.ActualizarPerfilRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.CuposEnvioUsuarioRequest;
 import ar.edu.unlp.jyaa.grupo1.rest.dto.UsuarioAltaRequest;
 import ar.edu.unlp.jyaa.grupo1.security.AuthenticatedUser;
+import ar.edu.unlp.jyaa.grupo1.web.dto.ImpactoBajaUsuarioDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.PaginaUsuariosDTO;
 import ar.edu.unlp.jyaa.grupo1.web.dto.UsuarioDTO;
 import jakarta.enterprise.context.RequestScoped;
@@ -446,7 +447,8 @@ public class UsuarioService {
     if (usuario == null) {
       throw new NegocioException("Usuario no encontrado");
     }
-    List<String> historial = historialQueImpideBaja(id);
+    ImpactoBajaUsuarioDTO impacto = impactoBaja(id);
+    List<String> historial = historialQueImpideBaja(impacto);
     if (!historial.isEmpty()) {
       throw new NegocioException(
           "No se puede eliminar a "
@@ -458,23 +460,29 @@ public class UsuarioService {
     usuarioDAO.eliminarConDependencias(id);
   }
 
+  public ImpactoBajaUsuarioDTO impactoBaja(Long id) {
+    if (usuarioDAO.recuperarPorId(id) == null) {
+      throw new NegocioException("Usuario no encontrado");
+    }
+    List<InscripcionCongreso> inscripciones = inscripcionDAO.listarPorUsuario(id);
+    int pagos = (int) inscripciones.stream().filter(i -> i.getPago() != null).count();
+    int trabajos = trabajoDAO.listarPorAutor(id).size();
+    long evaluaciones = asignacionEvaluacionDAO.contarEvaluadasPorEvaluador(id);
+    return new ImpactoBajaUsuarioDTO(
+        inscripciones.size(), pagos, trabajos, evaluaciones, trabajos > 0 || evaluaciones > 0);
+  }
+
   /**
    * Datos con valor histórico que no se borran en cascada: mientras existan, la baja definitiva
    * queda bloqueada y el admin decide si limpiarlos o simplemente inhabilitar la cuenta.
    */
-  private List<String> historialQueImpideBaja(Long id) {
+  private List<String> historialQueImpideBaja(ImpactoBajaUsuarioDTO impacto) {
     List<String> motivos = new ArrayList<>();
-    int trabajos = trabajoDAO.listarPorAutor(id).size();
-    if (trabajos > 0) {
-      motivos.add(trabajos + " trabajo(s) enviados");
+    if (impacto.trabajos() > 0) {
+      motivos.add(impacto.trabajos() + " trabajo(s) enviados");
     }
-    long evaluaciones = asignacionEvaluacionDAO.contarEvaluadasPorEvaluador(id);
-    if (evaluaciones > 0) {
-      motivos.add(evaluaciones + " evaluación(es) registradas");
-    }
-    int inscripciones = inscripcionDAO.listarPorUsuario(id).size();
-    if (inscripciones > 0) {
-      motivos.add(inscripciones + " inscripción(es) al congreso");
+    if (impacto.evaluaciones() > 0) {
+      motivos.add(impacto.evaluaciones() + " evaluación(es) registradas");
     }
     return motivos;
   }

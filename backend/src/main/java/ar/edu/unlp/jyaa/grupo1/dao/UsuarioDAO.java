@@ -35,9 +35,9 @@ public interface UsuarioDAO extends GenericDAO<Usuario> {
 
   /**
    * Elimina el usuario junto con los datos operativos que lo referencian (notificaciones, cupos de
-   * evaluador, solicitudes, asignaciones sin evaluar, certificado y agenda personal) y desvincula
-   * las referencias de auditoría que deben sobrevivir (pagos validados, solicitudes revisadas).
-   * Sin esto la baja falla por clave foránea.
+   * evaluador, solicitudes, asignaciones sin evaluar, certificado, agenda personal, inscripciones
+   * y pagos vinculados) y desvincula las referencias de auditoría que deben sobrevivir (pagos
+   * validados por este usuario, solicitudes revisadas). Sin esto la baja falla por clave foránea.
    */
   void eliminarConDependencias(Long usuarioId);
 
