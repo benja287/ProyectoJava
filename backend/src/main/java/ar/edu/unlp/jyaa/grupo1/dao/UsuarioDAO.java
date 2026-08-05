@@ -33,5 +33,13 @@ public interface UsuarioDAO extends GenericDAO<Usuario> {
   /** Evaluadores con eje temático asignado (excluye opcionalmente un usuario). */
   long contarEvaluadoresPorEje(String ejeTematico, Long excluirUsuarioId);
 
+  /**
+   * Elimina el usuario junto con los datos operativos que lo referencian (notificaciones, cupos de
+   * evaluador, solicitudes, asignaciones sin evaluar, certificado y agenda personal) y desvincula
+   * las referencias de auditoría que deben sobrevivir (pagos validados, solicitudes revisadas).
+   * Sin esto la baja falla por clave foránea.
+   */
+  void eliminarConDependencias(Long usuarioId);
+
   void flush();
 }

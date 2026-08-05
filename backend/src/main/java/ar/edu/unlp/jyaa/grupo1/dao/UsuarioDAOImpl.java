@@ -4,6 +4,9 @@ import jakarta.enterprise.context.RequestScoped;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.JpqlLikeFilters;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.UsuarioFiltro;
 import ar.edu.unlp.jyaa.grupo1.config.JpaUtil;
+import ar.edu.unlp.jyaa.grupo1.modelo.AsignacionEvaluacion;
+import ar.edu.unlp.jyaa.grupo1.modelo.CronogramaPersonal;
+import ar.edu.unlp.jyaa.grupo1.modelo.SolicitudEvaluador;
 import ar.edu.unlp.jyaa.grupo1.modelo.Usuario;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -212,6 +215,73 @@ public class UsuarioDAOImpl extends AbstractJpaDAO<Usuario> implements UsuarioDA
     } finally {
       cerrarSiLegacy(em);
     }
+  }
+
+  @Override
+  public void eliminarConDependencias(Long usuarioId) {
+    EntityManager cdi = getEntityManager();
+    if (cdi != null) {
+      borrarDependenciasYUsuario(cdi, usuarioId);
+      return;
+    }
+    EntityManager em = JpaUtil.createEntityManager();
+    var tx = em.getTransaction();
+    try {
+      tx.begin();
+      borrarDependenciasYUsuario(em, usuarioId);
+      tx.commit();
+    } catch (RuntimeException e) {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+      throw e;
+    } finally {
+      em.close();
+    }
+  }
+
+  private static void borrarDependenciasYUsuario(EntityManager em, Long usuarioId) {
+    // Auditoría: el registro queda, pero deja de apuntar al usuario borrado.
+    ejecutar(em, "UPDATE Pago p SET p.validadoPor = NULL WHERE p.validadoPor.id = :uid", usuarioId);
+    ejecutar(
+        em,
+        "UPDATE SolicitudEvaluador s SET s.revisadoPor = NULL WHERE s.revisadoPor.id = :uid",
+        usuarioId);
+
+    ejecutar(em, "DELETE FROM EvaluadorEjeCapacidad c WHERE c.usuario.id = :uid", usuarioId);
+    ejecutar(em, "DELETE FROM Notificacion n WHERE n.usuario.id = :uid", usuarioId);
+    ejecutar(em, "DELETE FROM Certificado c WHERE c.usuario.id = :uid", usuarioId);
+
+    // Estas entidades tienen colecciones o entidades hijas: se borran por entidad para que
+    // JPA limpie también sus tablas de relación.
+    em.createQuery(
+            "SELECT s FROM SolicitudEvaluador s WHERE s.usuario.id = :uid",
+            SolicitudEvaluador.class)
+        .setParameter("uid", usuarioId)
+        .getResultList()
+        .forEach(em::remove);
+    em.createQuery(
+            "SELECT a FROM AsignacionEvaluacion a WHERE a.evaluador.id = :uid",
+            AsignacionEvaluacion.class)
+        .setParameter("uid", usuarioId)
+        .getResultList()
+        .forEach(em::remove);
+    em.createQuery(
+            "SELECT c FROM CronogramaPersonal c WHERE c.usuario.id = :uid",
+            CronogramaPersonal.class)
+        .setParameter("uid", usuarioId)
+        .getResultList()
+        .forEach(em::remove);
+    em.flush();
+
+    Usuario usuario = em.find(Usuario.class, usuarioId);
+    if (usuario != null) {
+      em.remove(usuario);
+    }
+  }
+
+  private static void ejecutar(EntityManager em, String jpql, Long usuarioId) {
+    em.createQuery(jpql).setParameter("uid", usuarioId).executeUpdate();
   }
 
   @Override

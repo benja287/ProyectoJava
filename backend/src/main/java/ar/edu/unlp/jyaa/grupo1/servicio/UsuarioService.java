@@ -1,7 +1,9 @@
 package ar.edu.unlp.jyaa.grupo1.servicio;
 
+import ar.edu.unlp.jyaa.grupo1.dao.AsignacionEvaluacionDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.InscripcionCongresoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.PagoDAO;
+import ar.edu.unlp.jyaa.grupo1.dao.TrabajoDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.UsuarioDAO;
 import ar.edu.unlp.jyaa.grupo1.dao.filtro.UsuarioFiltro;
 import ar.edu.unlp.jyaa.grupo1.modelo.CategoriaInscripcion;
@@ -23,6 +25,7 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,6 +40,8 @@ public class UsuarioService {
   @Inject private UsuarioDAO usuarioDAO;
   @Inject private InscripcionCongresoDAO inscripcionDAO;
   @Inject private PagoDAO pagoDAO;
+  @Inject private TrabajoDAO trabajoDAO;
+  @Inject private AsignacionEvaluacionDAO asignacionEvaluacionDAO;
   @Inject private ArancelesService arancelesService;
   @Inject private Provider<PagoService> pagoServiceProvider;
   @Inject private NotificacionService notificacionService;
@@ -437,10 +442,41 @@ public class UsuarioService {
   }
 
   public void baja(Long id) {
-    if (usuarioDAO.recuperarPorId(id) == null) {
+    Usuario usuario = usuarioDAO.recuperarPorId(id);
+    if (usuario == null) {
       throw new NegocioException("Usuario no encontrado");
     }
-    usuarioDAO.baja(id);
+    List<String> historial = historialQueImpideBaja(id);
+    if (!historial.isEmpty()) {
+      throw new NegocioException(
+          "No se puede eliminar a "
+              + usuario.getEmail()
+              + " porque tiene "
+              + String.join(", ", historial)
+              + ". Usá \"Inhabilitar\" para bloquearle el acceso sin perder el historial.");
+    }
+    usuarioDAO.eliminarConDependencias(id);
+  }
+
+  /**
+   * Datos con valor histórico que no se borran en cascada: mientras existan, la baja definitiva
+   * queda bloqueada y el admin decide si limpiarlos o simplemente inhabilitar la cuenta.
+   */
+  private List<String> historialQueImpideBaja(Long id) {
+    List<String> motivos = new ArrayList<>();
+    int trabajos = trabajoDAO.listarPorAutor(id).size();
+    if (trabajos > 0) {
+      motivos.add(trabajos + " trabajo(s) enviados");
+    }
+    long evaluaciones = asignacionEvaluacionDAO.contarEvaluadasPorEvaluador(id);
+    if (evaluaciones > 0) {
+      motivos.add(evaluaciones + " evaluación(es) registradas");
+    }
+    int inscripciones = inscripcionDAO.listarPorUsuario(id).size();
+    if (inscripciones > 0) {
+      motivos.add(inscripciones + " inscripción(es) al congreso");
+    }
+    return motivos;
   }
 
   public Usuario asignarRoles(Long id, Set<Rol> roles, Rol rolActual) {
