@@ -6152,6 +6152,7 @@ body:has(app-notificaciones) .app-footer {
 .table-wrap {
   overflow-x: auto;
   margin: 1rem 0;
+  scrollbar-width: thin;
 }
 
 .report-grid {
@@ -6561,6 +6562,30 @@ body:has(app-programa-congreso) {
 
 .acciones-tabla .btn-link + .btn-link {
   margin-left: 0.5rem;
+}
+
+/*
+ * Con table-layout:fixed la tabla nunca excede el 100% del contenedor, así que
+ * .table-wrap no llega a scrollear y la última columna queda recortada.
+ * El min-width fuerza el desborde para que aparezca el scroll horizontal.
+ */
+.tabla-usuarios {
+  min-width: 1040px;
+}
+
+.tabla-usuarios th:nth-child(1),
+.tabla-usuarios td:nth-child(1) {
+  width: 70px;
+}
+
+.tabla-usuarios th:nth-child(4),
+.tabla-usuarios td:nth-child(4) {
+  width: 96px;
+}
+
+.tabla-usuarios th:nth-child(6),
+.tabla-usuarios td:nth-child(6) {
+  width: 300px;
 }
 
 /* --- Hub + subvistas Comité Académico --- */

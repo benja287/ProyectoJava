@@ -61,7 +61,7 @@ import { UsuarioFilaComponent } from './usuario-fila.component';
 
         @if (!cargando && !error) {
           <div class="table-wrap">
-            <table>
+            <table class="tabla-usuarios">
               <thead>
                 <tr>
                   <th>ID</th>
