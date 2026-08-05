@@ -51,7 +51,7 @@ public class SolicitudEvaluadorService {
 
   @Inject private SolicitudEvaluadorDAO solicitudDAO;
   @Inject private UsuarioDAO usuarioDAO;
-   private CatalogoCongresoService catalogoCongresoService;
+  @Inject private CatalogoCongresoService catalogoCongresoService;
   @Inject private EvaluadorEjeService evaluadorEjeService;
   @Inject private NotificacionService notificacionService;
 
