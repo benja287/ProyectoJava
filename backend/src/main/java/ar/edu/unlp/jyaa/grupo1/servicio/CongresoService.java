@@ -313,6 +313,24 @@ public class CongresoService {
     congreso.setCongresoHasta(hasta);
     // Si había plazos viejos posteriores al nuevo fin, se ajustan (no bloquean el guardado).
     ajustarPlazosAlFinCongreso(congreso, hasta);
+    reabrirCertificadosSiElCongresoNoTermino(congreso, hasta);
+  }
+
+  /**
+   * Al mover el congreso a un rango que todavía no terminó, una habilitación de certificados ya
+   * vigente quedaría dando descargas antes de tiempo: se limpia para que vuelva a emitirse cuando
+   * el congreso finalice. Una fecha futura puesta a mano por el admin se respeta.
+   */
+  private static void reabrirCertificadosSiElCongresoNoTermino(Congreso congreso, LocalDate fin) {
+    if (fin == null || LocalDate.now().isAfter(fin)) {
+      return;
+    }
+    LocalDate disponiblesDesde = congreso.getCertificadosDisponiblesDesde();
+    if (disponiblesDesde == null || disponiblesDesde.isAfter(LocalDate.now())) {
+      return;
+    }
+    congreso.setCertificadosDisponiblesDesde(null);
+    congreso.setCertificadosEmisionNotificada(false);
   }
 
   /**
