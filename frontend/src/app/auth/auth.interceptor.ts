@@ -50,6 +50,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   let outgoing = req;
   const token = login.getToken();
+  const conSesion = !!token;
   if (token && !isPublic) {
     /**
      * Acá se agrega el JWT al request.
@@ -63,12 +64,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(outgoing).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (!isPublic && (err.status === 401 || isCuentaDeshabilitada(err))) {
+      if (!isPublic && conSesion && (err.status === 401 || isCuentaDeshabilitada(err))) {
         /**
          * 401: token inválido/expirado/faltante (según mensaje del backend).
          * 403 con accountDisabled: el admin inhabilitó la cuenta.
          *
          * En ambos casos, se limpia sesión local para evitar loops de requests fallando.
+         *
+         * Sin sesión previa no se redirige: una página pública que consulta un endpoint
+         * protegido no debe mandar al login (de eso se encarga authGuard en las rutas).
          */
         const accountDisabled = isCuentaDeshabilitada(err);
         login.logout();

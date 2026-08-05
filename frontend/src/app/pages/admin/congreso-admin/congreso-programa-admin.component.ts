@@ -45,7 +45,7 @@ import { CongresoProgramaGuiaComponent } from './congreso-programa-guia.componen
             type="button"
             class="toggle-btn"
             [class.toggle-btn--on]="config?.programaPublicado"
-            [disabled]="guardandoConfig"
+            [disabled]="guardandoConfig || !config"
             (click)="togglePrograma()"
           >
             {{ config?.programaPublicado ? 'Publicado' : 'No publicado' }}
@@ -66,6 +66,11 @@ import { CongresoProgramaGuiaComponent } from './congreso-programa-guia.componen
           </button>
         } @else if (config?.programaPublicado) {
           <p class="ok">El programa está visible para todos en <strong>Programa</strong>.</p>
+        } @else {
+          <p class="notice-box notice-box--amber">
+            No se pudo leer el estado de publicación.
+            <button type="button" class="btn-secundario" (click)="cargarConfig()">Reintentar</button>
+          </p>
         }
       </section>
 
@@ -86,9 +91,19 @@ export class CongresoProgramaAdminComponent implements OnInit {
   private congresoConfigService = inject(CongresoConfigService);
 
   ngOnInit(): void {
+    this.cargarConfig();
+  }
+
+  cargarConfig(): void {
     this.congresoConfigService.obtener().subscribe({
-      next: (c) => (this.config = c),
-      error: () => (this.config = undefined),
+      next: (c) => {
+        this.config = c;
+        this.error = '';
+      },
+      error: (err) => {
+        this.config = undefined;
+        this.error = mensajeErrorApi(err, 'No se pudo cargar la configuración del congreso.');
+      },
     });
   }
 

@@ -131,6 +131,10 @@ public class JwtAuthFilter implements ContainerRequestFilter {
       if ("actividades".equals(path)) {
         return true;
       }
+      // El programa público muestra el aula/ubicación de cada actividad.
+      if ("aulas".equals(path)) {
+        return true;
+      }
     }
     return path.startsWith("openapi") || path.startsWith("swagger");
   }
